@@ -139,6 +139,12 @@ in
       };
     };
 
+    git = {
+      enable = true;
+      userName = "Ammar N";
+      userEmail = "ammar.nanjiani@gmail.com";
+    };
+
     alacritty = {
       enable = true;
       settings = {
