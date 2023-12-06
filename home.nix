@@ -141,7 +141,7 @@ in
 
     git = {
       enable = true;
-      userName = "Ammar N";
+      userName = "Ammar Nanjiani";
       userEmail = "ammar.nanjiani@gmail.com";
     };
 
