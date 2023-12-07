@@ -28,7 +28,9 @@
   # Pick only one of the below networking options.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
   networking.networkmanager.enable = true;  # Easiest to use and most distros use this by default.
-
+  networking.hosts = {
+    "192.168.1.85" = ["BRWC894023BADD0.local" "BRWC894023BADD0"];
+  };
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
@@ -98,6 +100,12 @@
 
     # Enable CUPS to print documents.
     printing.enable = true;
+   
+   avahi = {
+      enable = true;
+      nssmdns = true;
+      openFirewall = true;
+    };
 
     upower.enable = true;
 
