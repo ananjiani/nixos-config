@@ -224,6 +224,7 @@
     gamescope_git
     nwg-displays
     wlr-randr
+    ungoogled-chromium
   ];
 
   chaotic = {
