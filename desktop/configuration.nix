@@ -11,7 +11,7 @@
     ];
 
   nix.settings.experimental-features = ["nix-command" "flakes"];
-
+  
 #   # Auto upgrade
 #   system.autoUpgrade.enable = true;
 #   system.autoUpgrade.allowReboot = true;
@@ -189,9 +189,8 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-    vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-    git
     wget
+    zip
     lf
     mpd
     gedit
@@ -208,8 +207,6 @@
     killall
     swaybg
     neofetch
-    libsForQt5.qt5.qtquickcontrols2
-    libsForQt5.qt5.qtgraphicaleffects
     image-roll
     corectrl
     polkit_gnome
@@ -224,15 +221,12 @@
     gamescope_git
     nwg-displays
     wlr-randr
-    ungoogled-chromium
   ];
 
   chaotic = {
-    hdr.enable = true;
     steam.extraCompatPackages = with pkgs; [
       proton-ge-custom
     ];
-    mesa-git.enable = true;
   };
 
   # Some programs need SUID wrappers, can be configured further or are
