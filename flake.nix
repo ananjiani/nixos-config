@@ -40,20 +40,20 @@
                 ];
               };
             }
-            ./configuration.nix
+            ./desktop/configuration.nix
             chaotic.nixosModules.default
           ];
         };
       };
       homeConfigurations = {
- 	ammar = home-manager.lib.homeManagerConfiguration {
-	  inherit pkgs;
-	  modules = [
-	    hyprland.homeManagerModules.default
-	    ./home.nix
-	  ];
-	  extraSpecialArgs = { inherit nix-colors; };
-	};
+ 	      ammar = home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
+          modules = [
+            hyprland.homeManagerModules.default
+            ./desktop/home.nix
+          ];
+          extraSpecialArgs = { inherit nix-colors; };
+        };
       };
     };
 }
