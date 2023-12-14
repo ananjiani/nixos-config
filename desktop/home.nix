@@ -38,21 +38,6 @@ in
     iconTheme.name = "Gruvbox-Dark";
     };
 
-#   gtk = {
-#     enable = true;
-#     theme= {
-#       name = "Catppuccin-Macchiato-Standard-Peach-Dark";
-#       package = pkgs.catppuccin-gtk.override {
-#         accents = ["peach"];
-#         size = "standard";
-#         tweaks = [ "rimless"];
-#         variant = "macchiato";
-#       };
-#     };
-#     iconTheme.package = pkgs.papirus-icon-theme;
-#     iconTheme.name = "Papirus-Dark";
-#     };
-
   qt = {
     enable = true;
     platformTheme = "gtk";
@@ -65,6 +50,7 @@ in
   home.packages = with pkgs; [
     webcord
     swaynotificationcenter
+    gparted
     # # Adds the 'hello' command to your environment. It prints a friendly
     # # "Hello, world!" when run.
     # pkgs.hello
@@ -87,10 +73,10 @@ in
   # plain files is through 'home.file'.
   home.file = with config.colorScheme.colors; {
 
-    ".config/waybar/config.jsonc".source = ./waybar/config.jsonc;
-    ".config/waybar/style.css".source = ./waybar/style.css;
-    ".config/swaync/config.json".source = ./swaync/config.json;
-    ".config/swaync/style.css".source = ./swaync/style.css;
+    ".config/waybar/config.jsonc".source = ../waybar/config.jsonc;
+    ".config/waybar/style.css".source = ../waybar/style.css;
+    ".config/swaync/config.json".source = ../swaync/config.json;
+    ".config/swaync/style.css".source = ../swaync/style.css;
 
     # # Building this configuration will create a copy of 'dotfiles/screenrc' in
     # # the Nix store. Activating the configuration will then make '~/.screenrc' a
@@ -185,6 +171,10 @@ in
       };
     };
 
+    emacs = {
+      enable = true;
+      package = pkgs.emacs;
+    };
   };
 
   # services.mako = with config.colorScheme.colors; {
@@ -201,9 +191,12 @@ in
   wayland.windowManager.hyprland = with config.colorScheme.colors; {
     enable = true;
     extraConfig = ''
+      # See https://wiki.hyprland.org/Configuring/Monitors/
+      monitor=,highrr,auto,1,vrr,2
+      exec-once = corectrl
       exec-once = swaybg -i ${wallpaper} -m fill
-      exec-once = swaync
       exec-once = ${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1
+      exec-once = gamescope -e -W 5120 -H 1440 -f -r 240 --adaptive-sync -- steam
       general {
         
         # See https://wiki.hyprland.org/Configuring/Variables/ for more
@@ -218,7 +211,7 @@ in
         # Please see https://wiki.hyprland.org/Configuring/Tearing/ before you turn this on
         allow_tearing = false
       }
-    '' + builtins.readFile ./hyprland.conf;
+    '' + builtins.readFile ../hyprland.conf;
 
   };
 
