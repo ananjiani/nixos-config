@@ -8,6 +8,7 @@
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
+      ./samba.nix
     ];
 
   nix.settings.experimental-features = ["nix-command" "flakes"];
@@ -72,7 +73,8 @@
       displayManager.sddm.sugarCandyNix = {
         enable = true;
         settings = {
-          Background = lib.cleanSource ./wallpapers/revachol.jpg;
+          Background = lib.cleanSource ./wallpapers/revachol-horse.jpg;
+          ScaleImageCropped = false;
           ScreenWidth = 5120;
           ScreenHeight = 1440;
           FormPosition = "center";
@@ -178,7 +180,7 @@
       remmina
       openconnect
       signal-desktop
-      wxhexeditor     
+      lutris     
     ];
   };
 
@@ -191,7 +193,9 @@
   environment.systemPackages = with pkgs; [
     wget
     zip
+    unzip
     lf
+    pcmanfm
     mpd
     gedit
     pavucontrol
@@ -221,6 +225,8 @@
     gamescope_git
     nwg-displays
     wlr-randr
+    wineWowPackages.staging
+    
   ];
 
   chaotic = {
