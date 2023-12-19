@@ -194,7 +194,7 @@ in
       # See https://wiki.hyprland.org/Configuring/Monitors/
       monitor=,highrr,auto,1,vrr,2
       exec-once = corectrl
-      exec-once = swaybg -i ${wallpaper} -m fill
+      exec-once = swaybg -i ${wallpaper} -m fit
       exec-once = ${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1
       exec-once = gamescope -e -W 5120 -H 1440 -f -r 240 --adaptive-sync -- steam
       general {
