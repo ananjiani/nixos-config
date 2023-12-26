@@ -4,6 +4,12 @@ let
   wallpaper = ./wallpapers/revachol.jpg;
 in
 {
+  imports =
+  [ # Include the results of the hardware scan.
+    ./emacs.nix
+    nix-colors.homeManagerModules.default
+  ];
+
   # Home Manager needs a bit of information about you and the paths it should
   # manage.
   home.username = "ammar";
@@ -19,9 +25,6 @@ in
   home.stateVersion = "23.11"; # Please read the comment before changing.
 
   # Theming
-  imports = [
-    nix-colors.homeManagerModules.default
-  ];
   colorScheme = nix-colors.colorSchemes.gruvbox-material-dark-soft;
 #   colorScheme = nix-colors-lib.colorSchemeFromPicture {
 #     path = wallpaper;
@@ -169,11 +172,6 @@ in
           };
         }; 
       };
-    };
-
-    emacs = {
-      enable = true;
-      package = pkgs.emacs;
     };
   };
 
