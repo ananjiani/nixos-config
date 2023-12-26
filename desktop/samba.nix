@@ -5,46 +5,26 @@
   networking.firewall.allowedTCPPorts = [
     5257
   ];
-  network.firewall.allowedUDPPorts = [
+  networking.firewall.allowedUDPPorts = [
     3702
   ];
   
   services.samba = {
     enable = true;
+    openFirewall = true;
     securityType = "user";
-    extraConfig = ''
-      workgroup = WORKGROUP
-      server string = smbnix
-      netbios name = smbnix
-      security = user 
-      #use sendfile = yes
-      #max protocol = smb2
-      # note: localhost is the ipv6 localhost ::1
-      hosts allow = 192.168.0. 127.0.0.1 localhost
-      hosts deny = 0.0.0.0/0
-      guest account = nobody
-      map to guest = bad user
-    '';
     shares = {
-      public = {
-        path = "/mnt/Shares/Public";
+      bg3 = {
+        path = "/mnt/nvme/SteamLibrary/steamapps/common/Baldurs Gate 3";
         browseable = "yes";
-        "read only" = "no";
         "guest ok" = "yes";
-        "create mask" = "0644";
-        "directory mask" = "0755";
-        "force user" = "username";
-        "force group" = "groupname";
-      };
-      private = {
-        path = "/mnt/Shares/Private";
-        browseable = "yes";
         "read only" = "no";
-        "guest ok" = "no";
-        "create mask" = "0644";
-        "directory mask" = "0755";
-        "force user" = "username";
-        "force group" = "groupname";
+      };
+      bg3_local = {
+        path = "/mnt/nvme/SteamLibrary/steamapps/compatdata/1086940/pfx/drive_c/users/steamuser/AppData/Local/Larian Studios/";
+        browseable = "yes";
+        "guest ok" = "yes";
+        "read only" = "no";
       };
     };
   };
