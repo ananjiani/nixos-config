@@ -22,6 +22,12 @@
       fi
     '';
 
+  home.file = {
+    ".doom.d/config.el".source = ../doom-emacs/config.el;
+    ".doom.d/packages.el".source = ../doom-emacs/packages.el;
+    ".doom.d/init.el".source = ../doom-emacs/init.el;
+  };
+
   home.sessionPath = [
     "$HOME/.emacs.d/bin"
   ];
