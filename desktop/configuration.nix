@@ -197,6 +197,8 @@
     zip
     unzip
     lf
+    ripgrep
+    fd
     pcmanfm
     mpd
     gedit
