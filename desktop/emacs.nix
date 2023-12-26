@@ -2,11 +2,7 @@
 
 {
   home.packages = with pkgs; [
-    ((emacsPackagesFor emacs29).emacsWithPackages (
-      epkgs: [
-        epkgs.org-roam
-      ]
-    ))
+    emacs29
   ];
 
   home.activation.installDoomEmacs = lib.hm.dag.entryAfter ["installPackages"] ''
@@ -20,6 +16,11 @@
         $HOME/.emacs.d/bin/doom sync
         $HOME/.emacs.d/bin/doom env
       fi
+    '';
+
+  home.activation.doomSync = lib.hm.dag.entryAfter ["installDoomEmacs"] ''
+      PATH="${config.home.path}/bin:$PATH"
+      $HOME/.emacs.d/bin/doom sync -e
     '';
 
   home.file = {
