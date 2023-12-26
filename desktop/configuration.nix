@@ -32,6 +32,8 @@
   networking.hosts = {
     "192.168.1.85" = ["BRWC894023BADD0.local" "BRWC894023BADD0"];
   };
+  networking.firewall.enable = true;
+  networking.firewall.allowPing = true;
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
@@ -226,7 +228,6 @@
     nwg-displays
     wlr-randr
     wineWowPackages.staging
-    
   ];
 
   chaotic = {
