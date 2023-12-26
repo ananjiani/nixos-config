@@ -113,6 +113,7 @@ in
     mangohud = {
       enable = true;
     };
+
     fuzzel = {
       enable = true;
       settings = {
@@ -128,6 +129,8 @@ in
       };
     };
 
+    bash.enable = true;
+    
     git = {
       enable = true;
       userName = "Ammar Nanjiani";
