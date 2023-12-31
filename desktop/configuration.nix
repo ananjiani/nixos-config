@@ -225,18 +225,12 @@
     swappy
     imagemagick
     steamtinkerlaunch
-    vscodium-fhs
-    gamescope_git
+    gamescope
     nwg-displays
     wlr-randr
     wineWowPackages.staging
   ];
 
-  chaotic = {
-    steam.extraCompatPackages = with pkgs; [
-      proton-ge-custom
-    ];
-  };
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
