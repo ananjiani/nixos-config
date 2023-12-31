@@ -1,9 +1,12 @@
 { config, pkgs, lib, ... }:
 
 {
-  home.packages = with pkgs; [
-    emacs29
-  ];
+  programs.emacs = {
+    enable = true;
+    package = pkgs.emacs29;
+  };
+
+  services.emacs.enable = true;
 
   home.activation.installDoomEmacs = lib.hm.dag.entryAfter ["installPackages"] ''
       if [ ! -d "$HOME/.emacs.d" ]; then
