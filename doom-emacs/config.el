@@ -40,9 +40,23 @@
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/org/")
-(setq org-roam-directory (file-truename "~/org-roam"))
-(org-roam-db-autosync-mode)
+(setq org-directory (concat (getenv "HOME") "/Documents/org"))
+
+(use-package org-roam
+  :after org
+  :custom
+  (org-roam-directory (file-truename org-directory))
+  :init
+  (org-roam-db-autosync-enable)
+  :bind (("C-c n f" . org-roam-node-find)
+          ("C-c n r" . org-roam-node-random)
+          (:map org-mode-map
+                (("C-c n i" . org-roam-node-insert)
+                ("C-c n o" . org-id-get-create)
+                ("C-c n t" . org-roam-tag-add)
+                ("C-c n a" . org-roam-alias-add)
+                ("C-c n l" . org-roam-buffer-toggle)))))
+
 
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
