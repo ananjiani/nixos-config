@@ -6,13 +6,14 @@
 
 {
   imports =
-    [ # Include the results of the hardware scan.
+    [
       ./hardware-configuration.nix
       ./samba.nix
-      ./system-gaming.nix
+      ../../system/system-gaming.nix
+      ../../system/wm.nix
+      ../../system/amd.nix
+      ../../system/utils.nix
     ];
-
-  nix.settings.experimental-features = ["nix-command" "flakes"];
   
 #   # Auto upgrade
 #   system.autoUpgrade.enable = true;
@@ -21,7 +22,7 @@
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-
+  
   # Set your time zone.
   time.timeZone = "America/Chicago";
 
@@ -60,21 +61,6 @@
     xserver = {
       enable = true;
       layout = "us";
-      videoDrivers = ["amdgpu"];
-      displayManager.sddm.sugarCandyNix = {
-        enable = true;
-        settings = {
-          Background = lib.cleanSource ./wallpapers/revachol-horse.jpg;
-          ScaleImageCropped = false;
-          ScreenWidth = 5120;
-          ScreenHeight = 1440;
-          FormPosition = "center";
-          FullBlur = true;
-          ForceHideCompletePassword = true;
-          HeaderText = "";
-          DimBackgroundImage = 0.3;
-        };
-      };
     };
 
     # Configure pipewire
@@ -105,95 +91,21 @@
     gvfs.enable = true;
   };
 
-  xdg.portal = {
-    enable = true;
-    extraPortals = [pkgs.xdg-desktop-portal-gtk];
-  };
-
 
   # Enable touchpad support (enabled default in most desktopManager).
   # services.xserver.libinput.enable = true;
 
-  fonts.packages = with pkgs; [
-    nerdfonts
-    font-awesome
-  ];
-
-  programs = {
-    hyprland.enable = true;
-    thunar.enable = true;
-    file-roller.enable = true;
-  };
-
-
-  # Allow specific unfree software
-  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg)[
-      "steam"
-      "steam-original"
-      "steam-run"
-      "code"
-      "vscode"
-  ];
+  # Allow unfree software
+  nixpkgs.config.allowUnfree = true;
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.ammar = {
     isNormalUser = true;
     extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
     packages = with pkgs; [
-      firefox
-      tree
-      vscode.fhs
-      remmina
-      openconnect
       signal-desktop
-      lutris     
     ];
   };
-
-  environment.sessionVariables = {
-    NIXOS_OZONE_WL = "1";
-  };
-
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
-  environment.systemPackages = with pkgs; [
-    wget
-    zip
-    unzip
-    lf
-    ripgrep
-    fd
-    pcmanfm
-    mpd
-    gedit
-    pavucontrol
-    light
-    wlogout
-    hyprpicker
-    waybar
-    libnotify
-    mako
-    copyq
-    fuzzel
-    alacritty
-    killall
-    swaybg
-    neofetch
-    image-roll
-    corectrl
-    polkit_gnome
-    libreoffice
-    grim
-    slurp
-    wl-clipboard
-    swappy
-    imagemagick
-    steamtinkerlaunch
-    gamescope
-    nwg-displays
-    wlr-randr
-    wineWowPackages.staging
-  ];
 
 
   # Some programs need SUID wrappers, can be configured further or are

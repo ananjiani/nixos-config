@@ -34,7 +34,7 @@
                 ];
               };
             }
-            ./desktop/configuration.nix
+            ./profiles/desktop/configuration.nix
           ];
         };
       };
@@ -43,7 +43,7 @@
           inherit pkgs;
           modules = [
             {nixpkgs.overlays = [emacs-overlay.overlay];}
-            ./desktop/home.nix
+            ./profiles/desktop/home.nix
           ];
           extraSpecialArgs = { inherit nix-colors; };
         };
