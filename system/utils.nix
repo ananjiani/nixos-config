@@ -1,0 +1,28 @@
+#Stuff that will be universally useful.
+
+{ config, pkgs, lib ...}:
+
+{
+  environment.systemPackages = with pkgs; [
+    wget
+    zip
+    unzip
+    lf
+    killall
+    neofetch
+    libreoffice
+    imagemagick
+    firefox
+    vscode.fhs
+    remmina
+    openconnect
+  ];
+
+  nix.settings.experimental-features = ["nix-command" "flakes"];
+  
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 30d";
+  };
+}
