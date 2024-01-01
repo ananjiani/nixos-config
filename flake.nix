@@ -4,25 +4,19 @@
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-23.11";
     nixpkgs-unstable.url = "nixpkgs/nixpkgs-unstable";
-    chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
-
     home-manager = {
       url = "github:nix-community/home-manager/release-23.11";
       inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    hyprland = {
-      url = "github:hyprwm/Hyprland";
-      inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     sddm-sugar-candy-nix = {
       url = "gitlab:Zhaith-Izaliel/sddm-sugar-candy-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-colors.url = "github:misterio77/nix-colors";
+    emacs-overlay.url = "github:nix-community/emacs-overlay";
   };
 
-  outputs = {self, nixpkgs, chaotic, home-manager, hyprland, sddm-sugar-candy-nix, nix-colors, ...}:
+  outputs = {self, nixpkgs, home-manager, sddm-sugar-candy-nix, nix-colors, emacs-overlay, ...}:
     let
       lib = nixpkgs.lib;
       system = "x86_64-linux";
@@ -40,8 +34,7 @@
                 ];
               };
             }
-            ./desktop/configuration.nix
-            chaotic.nixosModules.default
+            ./profiles/desktop/configuration.nix
           ];
         };
       };
@@ -49,8 +42,8 @@
  	      ammar = home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
           modules = [
-            hyprland.homeManagerModules.default
-            ./desktop/home.nix
+            {nixpkgs.overlays = [emacs-overlay.overlay];}
+            ./profiles/desktop/home.nix
           ];
           extraSpecialArgs = { inherit nix-colors; };
         };
