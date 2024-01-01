@@ -9,6 +9,7 @@
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
       ./samba.nix
+      ./system-gaming.nix
     ];
 
   nix.settings.experimental-features = ["nix-command" "flakes"];
@@ -20,7 +21,6 @@
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.initrd.kernelModules = ["amdgpu"];
 
   # Set your time zone.
   time.timeZone = "America/Chicago";
@@ -51,17 +51,6 @@
   security = {
     polkit = {
       enable = true;
-      extraConfig = ''
-        polkit.addRule(function(action, subject) {
-            if ((action.id == "org.corectrl.helper.init" ||
-                action.id == "org.corectrl.helperkiller.init") &&
-                subject.local == true &&
-                subject.active == true &&
-                subject.isInGroup("users")) {
-                    return polkit.Result.YES;
-            }
-        });
-      '';
     };
     rtkit.enable = true;
   };
@@ -87,10 +76,6 @@
         };
       };
     };
-    # services.xserver.xkbOptions = "eurosign:e,caps:escape";
-
-    # services.xserver.desktopManager.plasma5.enable = true;
-
 
     # Configure pipewire
     pipewire = {
@@ -136,32 +121,10 @@
 
   programs = {
     hyprland.enable = true;
-    steam = {
-      enable = true;
-    };
     thunar.enable = true;
     file-roller.enable = true;
-    gamemode.enable = true;
-    gamescope.capSysNice = true;
   };
 
-  # Enable Settings for AMD
-  systemd.tmpfiles.rules = [
-    "L+    /opt/rocm/hip   -    -    -     -    ${pkgs.rocmPackages.clr}"
-  ];
-
-  hardware = {
-    opengl.enable = true;
-    opengl.driSupport = true;
-    opengl.driSupport32Bit = true;
-    opengl.extraPackages = with pkgs; [
-      rocm-opencl-icd
-      rocm-opencl-runtime
-      #amdvlk
-      #driversi686Linux.amdvlk
-    ];
-
-  };
 
   # Allow specific unfree software
   nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg)[
@@ -171,6 +134,7 @@
       "code"
       "vscode"
   ];
+
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.ammar = {
     isNormalUser = true;
