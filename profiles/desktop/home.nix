@@ -6,8 +6,8 @@ in
 {
   imports =
   [ # Include the results of the hardware scan.
-    ./emacs.nix
-    ./home-gaming.nix
+    ../../home/emacs/emacs.nix
+    ../../home/home-gaming.nix
     nix-colors.homeManagerModules.default
   ];
 
@@ -54,14 +54,14 @@ in
   home.packages = with pkgs; [
     swaynotificationcenter
     gparted
+    waybar
   ];
 
   home.file = with config.colorScheme.colors; {
-
-    ".config/waybar/config.jsonc".source = ../waybar/config.jsonc;
-    ".config/waybar/style.css".source = ../waybar/style.css;
-    ".config/swaync/config.json".source = ../swaync/config.json;
-    ".config/swaync/style.css".source = ../swaync/style.css;
+    ".config/waybar/config.jsonc".source = ../../home/wm/waybar/config.jsonc;
+    ".config/waybar/style.css".source = ../../home/wm/waybar/style.css;
+    ".config/swaync/config.json".source = ../../home/wm/swaync/config.json;
+    ".config/swaync/style.css".source = ../../home/wm/swaync/style.css;
   };
 
   # Home Manager can also manage your environment variables through
@@ -75,7 +75,6 @@ in
   #
   #  /etc/profiles/per-user/ammar/etc/profile.d/hm-session-vars.sh
   #
-
 
   programs = {
     fuzzel = {
@@ -144,17 +143,6 @@ in
     };
   };
 
-  # services.mako = with config.colorScheme.colors; {
-  #   enable = true;
-  #   anchor = "top-center";
-  #   backgroundColor = "#${base00}";
-  #   borderColor = "#${base09}";
-  #   borderRadius = 5;
-  #   borderSize = 2;
-  #   textColor = "#${base05}";
-  #   layer = "overlay";
-  # };
-
   wayland.windowManager.hyprland = with config.colorScheme.colors; {
     enable = true;
     extraConfig = ''
@@ -178,7 +166,7 @@ in
         # Please see https://wiki.hyprland.org/Configuring/Tearing/ before you turn this on
         allow_tearing = false
       }
-    '' + builtins.readFile ../hyprland.conf;
+    '' + builtins.readFile ../../home/wm/hyprland.conf;
 
   };
 
