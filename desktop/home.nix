@@ -75,9 +75,7 @@ in
   #
   #  /etc/profiles/per-user/ammar/etc/profile.d/hm-session-vars.sh
   #
-  home.sessionVariables = {
-    DOOMDIR = "$HOME/.dotfiles/doom-emacs";
-  };
+
 
   programs = {
     fuzzel = {
