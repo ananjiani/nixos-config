@@ -12,9 +12,7 @@
 
     vscode = {
       enable = true;
-      userSettings = {
-        "window.titleBarStyle" = "custom";
-      };
+      userSettings = builtins.fromJSON (builtins.readFile ./vscode/settings.json);
     };
   };
 }
