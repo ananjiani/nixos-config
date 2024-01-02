@@ -1,6 +1,6 @@
 #Stuff that will be universally useful.
 
-{ config, pkgs, lib ...}:
+{ config, pkgs, lib, ...}:
 
 {
   environment.systemPackages = with pkgs; [
@@ -13,7 +13,6 @@
     libreoffice
     imagemagick
     firefox
-    vscode.fhs
     remmina
     openconnect
   ];
