@@ -29,7 +29,7 @@ in
   wayland.windowManager.hyprland.settings = {
     monitor = [",preferred,auto,1"];
     exec-once = [
-        "swaybg -i ${wallpaper} -m fit"
+        "swaybg -i ${wallpaper} -m fill"
     ];
   };
 

@@ -2,7 +2,7 @@
 
 {
   boot.initrd.kernelModules = ["amdgpu"];
-  services.xeserver.videoDrivers = ["amdgpu"];
+  services.xserver.videoDrivers = ["amdgpu"];
 
   # Enable Settings for AMD
   systemd.tmpfiles.rules = [
@@ -13,7 +13,7 @@
     enable = true;
     driSupport = true;
     driSupport32Bit = true;
-    opengl.extraPackages = with pkgs; [
+    extraPackages = with pkgs; [
       rocm-opencl-icd
       rocm-opencl-runtime
       #amdvlk
@@ -23,7 +23,7 @@
 
   environment.systemPackages = with pkgs; [
     corectrl
-  ]
+  ];
 
   security.polkit.extraConfig = ''
         polkit.addRule(function(action, subject) {

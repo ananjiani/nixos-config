@@ -22,6 +22,7 @@
 
   xdg.portal = {
     enable = true;
+    config.common.default = "*";
     extraPortals = [pkgs.xdg-desktop-portal-gtk];
   };
 
@@ -33,7 +34,9 @@
   programs = {
     thunar.enable = true;
     file-roller.enable = true;
+    dconf.enable = true;
   };
+  
   environment.systemPackages = with pkgs; [
     libnotify
     image-roll
