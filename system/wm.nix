@@ -22,7 +22,7 @@
 
   xdg.portal = {
     enable = true;
-    config.common.default = "*";
+    config.common.default = [pkgs.xdg-desktop-portal-gtk]; 
     extraPortals = [pkgs.xdg-desktop-portal-gtk];
   };
 
@@ -35,6 +35,7 @@
     thunar.enable = true;
     file-roller.enable = true;
     dconf.enable = true;
+    hyprland.enable = true;
   };
   
   environment.systemPackages = with pkgs; [
