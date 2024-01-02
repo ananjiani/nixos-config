@@ -20,7 +20,8 @@
     let
       lib = nixpkgs.lib;
       system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
+      pkgs = import nixpkgs { system = "x86_64-linux"; config = { allowUnfree = true; }; };
+      active-profile = import ./active-profile.nix;
     in {
       nixosConfigurations = {
         ammars-pc = lib.nixosSystem {
@@ -37,13 +38,28 @@
             ./profiles/desktop/configuration.nix
           ];
         };
+        work-laptop = lib.nixosSystem {
+          inherit system;
+          modules = [
+            sddm-sugar-candy-nix.nixosModules.default
+            {
+              nixpkgs = {
+                overlays = [
+                  sddm-sugar-candy-nix.overlays.default
+                ];
+              };
+            }
+            ./profiles/work-laptop/configuration.nix
+          ];
+        };
       };
+
       homeConfigurations = {
  	      ammar = home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
           modules = [
             {nixpkgs.overlays = [emacs-overlay.overlay];}
-            ./profiles/desktop/home.nix
+            (./profiles + ("/" + active-profile) + "/home.nix")
           ];
           extraSpecialArgs = { inherit nix-colors; };
         };
