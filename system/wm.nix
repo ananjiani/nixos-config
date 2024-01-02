@@ -1,10 +1,10 @@
-{ config, pkgs, lib ...}:
+{ config, pkgs, lib, ...}:
 
 {
-  services.displayManager.sddm.sugarCandyNix = {
+  services.xserver.displayManager.sddm.sugarCandyNix = {
     enable = true;
     settings = {
-        Background = lib.cleanSource ./wallpapers/revachol-horse.jpg;
+        Background = lib.cleanSource ../profiles/work-laptop/wallpapers/revachol-horse.jpg;
         ScaleImageCropped = false;
         ScreenWidth = 5120;
         ScreenHeight = 1440;
