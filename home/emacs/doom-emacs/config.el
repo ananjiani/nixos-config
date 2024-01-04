@@ -49,12 +49,6 @@
                  "/Entered on/ %U"))))
 
 (define-key global-map (kbd "C-c c") 'org-capture)
-(defun org-capture-inbox ()
-     (interactive)
-     (call-interactively 'org-store-link)
-     (org-capture nil "i"))
-
-(define-key global-map (kbd "C-c i") 'org-capture-inbox)
 
 (use-package org-roam
   :after org

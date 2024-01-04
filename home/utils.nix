@@ -11,8 +11,7 @@
     };
 
     vscode = {
-      enable = true;
-      userSettings = builtins.fromJSON (builtins.readFile ./vscode/settings.json);
+      enable = true;   
     };
   };
 }
