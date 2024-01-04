@@ -30,6 +30,7 @@ in
 
   wayland.windowManager.hyprland.settings = {
       monitor = [",highrr,auto,1,vrr,2"];
+      general.layout = "master";
       exec-once = [
         "corectrl"
         "gamescope -e -W 5120 -H 1440 -f -r 240 --adaptive-sync -- steam"

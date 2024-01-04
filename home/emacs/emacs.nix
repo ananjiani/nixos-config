@@ -15,6 +15,13 @@ in
     DOOMDIR = doom-dir;
   };
 
+  # doom dependencies
+  home.packages = with pkgs; [
+        gzip
+        fd
+        ripgrep
+    ];
+
   home.activation.installDoomEmacs = lib.hm.dag.entryAfter ["installPackages"] ''
       if [ ! -d "$HOME/.emacs.d" ]; then
         PATH="${config.home.path}/bin:$PATH"

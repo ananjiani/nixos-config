@@ -1,6 +1,6 @@
 { config, pkgs, lib, ... }:
 let
-  wallpaper = ./wallpapers/revachol.jpg;
+  wallpaper = ./wallpapers/revachol.png;
 in
 {
 
@@ -27,7 +27,17 @@ in
   home.stateVersion = "23.11"; # Please read the comment before changing.
 
   wayland.windowManager.hyprland.settings = {
-    monitor = [",preferred,auto,1"];
+    monitor = [
+      "eDP-1,1920x1080@60,0x0,1"
+      "DP-4,1920x1080@60,1920x0,1"
+      "DP-3,1920x1080@60,3840x0,1,transform,3"
+    ];
+    workspace = [
+      "1, monitor:eDP-1"
+      "2, monitor:DP-4"
+      "3, monitor:DP-3"
+    ];
+    general.layout = "dwindle";
     exec-once = [
         "swaybg -i ${wallpaper} -m fill"
     ];
