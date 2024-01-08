@@ -43,12 +43,14 @@
 (setq org-directory (concat (getenv "HOME") "/Documents/org"))
 (setq org-directory "~/Documents/org")
 (setq org-agenda-files (list "inbox.org" "./naarpr-dallas-notes/meeting-notes.org" ))
-(setq org-capture-templates
-       `(("i" "Inbox" entry  (file "inbox.org")
-        ,(concat "* TODO %?\n"
-                 "/Entered on/ %U"))))
 
 (define-key global-map (kbd "C-c c") 'org-capture)
+(after! org-capture
+  (setq org-capture-templates
+  
+       `(("i" "Inbox" entry  (file "inbox.org")
+        ,(concat "* TODO %?\n"
+                 "/Entered on/ %U")))))
 
 (use-package org-roam
   :after org
