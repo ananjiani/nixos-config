@@ -13,6 +13,7 @@
     steamtinkerlaunch
     wineWowPackages.staging
     lutris
+    protontricks
   ];
 
 }
