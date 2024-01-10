@@ -9,7 +9,7 @@ in
     package = pkgs.emacs29;
   };
 
-  services.emacs.enable = true;
+  #services.emacs.enable = true;
   
   home.sessionVariables = {
     DOOMDIR = doom-dir;
