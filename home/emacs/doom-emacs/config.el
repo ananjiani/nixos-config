@@ -45,12 +45,13 @@
 (setq org-agenda-files (list "inbox.org" "./naarpr-dallas-notes/meeting-notes.org" ))
 
 (define-key global-map (kbd "C-c c") 'org-capture)
+(after! org
 (after! org-capture
   (setq org-capture-templates
   
        `(("i" "Inbox" entry  (file "inbox.org")
         ,(concat "* TODO %?\n"
-                 "/Entered on/ %U")))))
+                 "/Entered on/ %U"))))))
 
 (use-package org-roam
   :after org
