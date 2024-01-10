@@ -7,7 +7,6 @@
     wget
     zip
     unzip
-    lf
     killall
     neofetch
     libreoffice
