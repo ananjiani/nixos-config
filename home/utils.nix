@@ -13,5 +13,18 @@
     vscode = {
       enable = true;   
     };
+
+    lf = {
+      enable = true;
+      settings = {
+        hidden = true;
+        number = true;
+        relativenumber = true;
+      };
+    };
   };
+
+  home.packages = with pkgs; [
+      inkscape
+  ];
 }
