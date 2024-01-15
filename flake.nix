@@ -56,6 +56,20 @@
             ./profiles/work-laptop/configuration.nix
           ];
         };
+        surface-go = lib.nixosSystem {
+          inherit system;
+          modules = [
+            sddm-sugar-candy-nix.nixosModules.default
+            {
+              nixpkgs = {
+                overlays = [
+                  sddm-sugar-candy-nix.overlays.default
+                ];
+              };
+            }
+            ./profiles/surface-go/configuration.nix
+          ];
+        };
       };
 
       homeConfigurations = {
