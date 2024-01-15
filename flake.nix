@@ -8,6 +8,10 @@
       url = "github:nix-community/home-manager/release-23.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    home-manager-unstable = {
+      url = "github:nix-community/home-manager/master";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
     sddm-sugar-candy-nix = {
       url = "gitlab:Zhaith-Izaliel/sddm-sugar-candy-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -16,11 +20,11 @@
     emacs-overlay.url = "github:nix-community/emacs-overlay";
   };
 
-  outputs = {self, nixpkgs, home-manager, sddm-sugar-candy-nix, nix-colors, emacs-overlay, ...}:
+  outputs = {self, nixpkgs-unstable, home-manager-unstable, sddm-sugar-candy-nix, nix-colors, emacs-overlay, ...}:
     let
-      lib = nixpkgs.lib;
+      lib = nixpkgs-unstable.lib;
       system = "x86_64-linux";
-      pkgs = import nixpkgs { system = "x86_64-linux"; config = { allowUnfree = true; }; };
+      pkgs = import nixpkgs-unstable { system = "x86_64-linux"; config = { allowUnfree = true; }; };
       active-profile = import ./active-profile.nix;
     in {
       nixosConfigurations = {
@@ -55,7 +59,7 @@
       };
 
       homeConfigurations = {
- 	      ammar = home-manager.lib.homeManagerConfiguration {
+ 	      ammar = home-manager-unstable.lib.homeManagerConfiguration {
           inherit pkgs;
           modules = [
             {nixpkgs.overlays = [emacs-overlay.overlay];}
