@@ -33,7 +33,7 @@ in
       general.layout = "master";
       exec-once = [
         "corectrl"
-        "[workspace 4 silent] gamescope -e -W 5120 -H 1440 -f -r 240 --adaptive-sync -- steam"
+        "steam -silent -cef-disable-gpu"
         "swaybg -i ${wallpaper} -m fit"
       ];
   };
