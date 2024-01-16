@@ -14,7 +14,20 @@
     };
 
     vscode = {
-      enable = true;   
+      enable = true;
+      package = pkgs.vscode.fhs;
+      extensions = with pkgs.vscode-marketplace; [
+          usernamehw.errorlens
+          sainnhe.gruvbox-material
+          jonathanharty.gruvbox-material-icon-theme
+          bbenoist.nix
+          arrterian.nix-env-selector
+          charliermarsh.ruff
+          vscodevim.vim
+          ms-python.python
+          ms-python.mypy-type-checker
+          ms-python.vscode-pylance
+        ];
     };
 
     lf = {
