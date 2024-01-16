@@ -53,6 +53,10 @@
         ,(concat "* TODO %?\n"
                  "/Entered on/ %U"))))))
 
+(use-package ox-hugo
+  :after ox)
+
+
 (use-package org-roam
   :after org
   :custom
