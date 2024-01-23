@@ -26,6 +26,12 @@ in
   # release notes.
   home.stateVersion = "23.11"; # Please read the comment before changing.
 
+  services.blueman-applet.enable = true;
+  services.mpris-proxy.enable = true;
+
+  # home.packages = with pkgs; [
+  # ];
+
   wayland.windowManager.hyprland.settings = {
     monitor = [
       "eDP-1,1920x1080@60,0x0,1"

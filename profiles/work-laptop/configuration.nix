@@ -8,6 +8,7 @@
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
+      ./bluetooth.nix
       ../../system/wm.nix
       ../../system/utils.nix
     ];
@@ -40,7 +41,6 @@
       layout = "us";
     };
 
-
     # Configure pipewire
     pipewire = {
       enable = true;
@@ -54,9 +54,9 @@
     # Enable CUPS to print documents.
     printing.enable = true;
    
-   avahi = {
+    avahi = {
       enable = true;
-      nssmdns = true;
+      nssmdns4 = true;
       openFirewall = true;
     };
 
@@ -69,7 +69,7 @@
     gvfs.enable = true;
   };
 
-
+  nixpkgs.config.allowUnfree = true;
 
   # Enable touchpad support (enabled default in most desktopManager).
   # services.xserver.libinput.enable = true;
