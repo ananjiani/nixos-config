@@ -4,6 +4,11 @@
   programs = {
     bash.enable = true;
 
+    tmux = {
+      enable = true;
+      keyMode = "vi";
+    };
+
     git = {
       enable = true;
       userName = "Ammar Nanjiani";
