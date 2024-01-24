@@ -10,6 +10,7 @@
       userEmail = "ammar.nanjiani@gmail.com";
       extraConfig = {
         init.defaultBranch = "main";
+        credential.helper = "store";
       };
     };
 
@@ -27,6 +28,7 @@
           ms-python.python
           ms-python.mypy-type-checker
           ms-python.vscode-pylance
+          tamasfe.even-better-toml
         ];
     };
 
