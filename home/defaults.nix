@@ -13,7 +13,8 @@
           "x-scheme-handler/about" = "firefox.desktop";
           "x-scheme-handler/unknown" = "firefox.desktop";
           "inode/directory" = "thunar.desktop";
-          "text/org" = "emacs.desktop";
+          "text/org" = "emacsclient.desktop";
+          "text/plain" = "emacsclient.desktop";
         };
       };
     };
