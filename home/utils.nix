@@ -2,13 +2,13 @@
 
 {
 
-
   imports = [
     ./cli-tools.nix
   ];
 
   home.shellAliases = {
-    ls = "eza";
+    ls = "eza -a";
+    lf = "lfcd";
   };
 
   programs = {
@@ -31,6 +31,15 @@
           };
         }
       ];
+      functions = 
+      {
+        lfcd = {
+          body = ''
+          --wraps="lf" --description="lf - Terminal file manager (changing directory on exit)"
+          cd "$(command lf -print-last-dir $argv)"
+          '';
+        };
+      };
     };
 
     starship.enable = true;    
@@ -156,19 +165,19 @@
       };
 
       keybindings = {
-        "\\\"" = "";
-        o = "";
-        c = "mkdir";
-        "." = "set hidden!";
-        "`" = "mark-load";
-        "\\'" = "mark-load";
+        # "\\\"" = "";
+        # "`" = "mark-load";
+        # "\\'" = "mark-load";
         "<enter>" = "open";
 
         do = "ripdrag-out";
 
         "g~" = "cd";
-        gh = "cd";
-        "g/" = "/";
+        "gr" = "cd /";
+        "go" = "cd ~/Documents/org";
+        "gd" = "cd ~/Downloads";
+        "gD" = "cd ~/Documents";
+        "gp" = "cd ~/Documents/projects";
 
         ee = "editor-open";
         V = ''''$${pkgs.bat}/bin/bat --paging=always --theme=gruvbox "$f"'';
