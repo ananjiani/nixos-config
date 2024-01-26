@@ -9,6 +9,7 @@
   home.shellAliases = {
     ls = "eza -a";
     lf = "lfcd";
+    lg = "lazygit";
   };
 
   programs = {
@@ -35,7 +36,6 @@
       {
         lfcd = {
           body = ''
-          --wraps="lf" --description="lf - Terminal file manager (changing directory on exit)"
           cd "$(command lf -print-last-dir $argv)"
           '';
         };
@@ -171,7 +171,7 @@
         "<enter>" = "open";
 
         do = "ripdrag-out";
-
+        e = "editor-open";
         "g~" = "cd";
         "gr" = "cd /";
         "go" = "cd ~/Documents/org";
@@ -179,7 +179,6 @@
         "gD" = "cd ~/Documents";
         "gp" = "cd ~/Documents/projects";
 
-        ee = "editor-open";
         V = ''''$${pkgs.bat}/bin/bat --paging=always --theme=gruvbox "$f"'';
       };
 
