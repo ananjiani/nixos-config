@@ -1,9 +1,6 @@
 { config, pkgs, lib, nix-colors, ... }:
 
-let
-  nix-colors-lib = nix-colors.lib.control {inherit pkgs; };
-  
-in
+
 {
   home.packages = with pkgs; [
     swaynotificationcenter
@@ -53,45 +50,7 @@ in
       };
     };
 
-    alacritty = {
-      enable = true;
-      settings = {
-            window = {
-            opacity = 0.8;
-            blur = true;
-          };
-        colors = with config.colorScheme.colors; {
-          bright = {
-            black = "0x${base00}";
-            blue = "0x${base0D}";
-            cyan = "0x${base0C}";
-            green = "0x${base0B}";
-            magenta = "0x${base0E}";
-            red = "0x${base08}";
-            white = "0x${base06}";
-            yellow = "0x${base09}";
-          };
-          cursor = {
-            cursor = "0x${base06}";
-            text = "0x${base06}";
-          };
-          normal = {
-            black = "0x${base00}";
-            blue = "0x${base0D}";
-            cyan = "0x${base0C}";
-            green = "0x${base0B}";
-            magenta = "0x${base0E}";
-            red = "0x${base08}";
-            white = "0x${base06}";
-            yellow = "0x${base0A}";
-          };
-          primary = {
-            background = "0x${base00}";
-            foreground = "0x${base06}";
-          };
-        }; 
-      };
-    };
+    
   };
 
   wayland.windowManager.hyprland = {
@@ -103,6 +62,10 @@ in
       general = {
         "col.active_border" = with config.colorScheme.colors; "rgba(${base09}ee) rgba(${base0A}ee) 45deg";
       };
+      "$mainMod" = "SUPER";
+      bind = [
+        "$mainMod, Q, exec, foot"
+      ];
     };
     extraConfig = builtins.readFile ../../home/wm/hyprland.conf;
   };
