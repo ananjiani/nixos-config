@@ -9,7 +9,12 @@ in
     package = pkgs.emacs29;
   };
 
-  #services.emacs.enable = true;
+  services.emacs = {
+    enable = true;
+    package = pkgs.emacs29;
+    defaultEditor = true;
+  };
+
   
   home.sessionVariables = {
     DOOMDIR = doom-dir;
