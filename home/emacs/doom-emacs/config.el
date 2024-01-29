@@ -96,6 +96,8 @@
          ;; match any of these groups, with the default order position of 99
 ))
 
+(setq org-super-agenda-header-map (make-sparse-keymap))
+
 (org-super-agenda-mode t)
 (setq org-agenda-skip-function-global '(org-agenda-skip-entry-if 'todo 'done))
 
