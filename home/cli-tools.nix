@@ -10,5 +10,6 @@
     jq
     poppler_utils
     ffmpegthumbnailer
+    pandoc
   ];
 }
