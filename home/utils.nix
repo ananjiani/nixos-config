@@ -14,8 +14,6 @@
     lf = "lfcd";
     lg = "lazygit";
     cat = "bat";
-    cd = "z";
-    zz = "z -";
   };
 
   home.sessionVariables = {
