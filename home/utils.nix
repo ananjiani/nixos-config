@@ -14,6 +14,8 @@
     lf = "lfcd";
     lg = "lazygit";
     cat = "bat";
+    cd = "z";
+    zz = "z -";
   };
 
   home.sessionVariables = {
@@ -62,7 +64,10 @@
       git = true;
       icons = true;
     };
-    nushell.enable = true;
+    nushell = {
+      enable = true;
+      package = pkgs.nushellFull;
+    };
 
     fzf = {
       enable = true;
@@ -220,7 +225,6 @@
       xfce.thunar
       xfce.thunar-archive-plugin
       xfce.thunar-media-tags-plugin
-      appimage-run
   ];
 
   home.file = {
