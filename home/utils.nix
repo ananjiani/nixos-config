@@ -9,8 +9,11 @@
 
   home.shellAliases = {
     ls = "eza -a";
+    ll = "eza -alh";
+    tree = "eza -tree";
     lf = "lfcd";
     lg = "lazygit";
+    cat = "bat";
   };
 
   home.sessionVariables = {
