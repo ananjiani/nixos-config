@@ -2,7 +2,13 @@
 
 {
   programs = {
-    zoxide.enable = true;
+    zoxide = {
+      enable = true;
+      options = [
+	"--cmd cd" #doesn't work on nushell and posix shells
+      ];
+    };
+    
   };
   home.packages = with pkgs; [
     chafa
