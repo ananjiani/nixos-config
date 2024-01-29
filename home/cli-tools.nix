@@ -1,6 +1,9 @@
 { config, pkgs, lib, ... }:
 
 {
+  programs = {
+    zoxide.enable = true;
+  };
   home.packages = with pkgs; [
     chafa
     ripdrag
