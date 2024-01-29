@@ -4,12 +4,17 @@
 
   imports = [
     ./cli-tools.nix
+    ./nvim.nix
   ];
 
   home.shellAliases = {
     ls = "eza -a";
     lf = "lfcd";
     lg = "lazygit";
+  };
+
+  home.sessionVariables = {
+    EDITOR = "nvim";
   };
 
   programs = {
@@ -42,7 +47,13 @@
       };
     };
 
-    starship.enable = true;    
+    starship = {
+      enable = true;
+      settings = {
+	add_newline = false;
+	line_break.disabled = true;
+      };
+    };    
     eza = {
       enable = true;
       git = true;
@@ -154,14 +165,20 @@
 
       commands  = {
         ripdrag-out = ''%${pkgs.ripdrag}/bin/ripdrag -a -x "$fx"'';
-        editor-open = ''$$EDITOR $f'';
-        mkdir = ''
-        ''${{
+        mkdir = ''''${{
           printf "Directory Name: "
           read DIR
           mkdir $DIR
-        }}
-        '';
+        }}'';
+	extract = ''''${{
+	  set -f
+	  atool -x $f
+	}}'';
+	on-cd = ''''${{
+	    fmt="$(starship prompt)"
+	    lf -remote "send $id set promptfmt \"$fmt\""
+	}}'';
+
       };
 
       keybindings = {
@@ -169,16 +186,15 @@
         # "`" = "mark-load";
         # "\\'" = "mark-load";
         "<enter>" = "open";
-
+	z = "extract";
         do = "ripdrag-out";
-        e = "editor-open";
         "g~" = "cd";
         "gr" = "cd /";
         "go" = "cd ~/Documents/org";
         "gd" = "cd ~/Downloads";
         "gD" = "cd ~/Documents";
         "gp" = "cd ~/Documents/projects";
-
+	"g." = "cd ~/.dotfiles";
         V = ''''$${pkgs.bat}/bin/bat --paging=always --theme=gruvbox "$f"'';
       };
 
@@ -201,6 +217,7 @@
       xfce.thunar
       xfce.thunar-archive-plugin
       xfce.thunar-media-tags-plugin
+      appimage-run
   ];
 
   home.file = {
