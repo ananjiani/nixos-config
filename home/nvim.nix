@@ -18,10 +18,17 @@
       enable = true;
     };
 
-    clipboard.providers.wl-copy.enable = true;
+    clipboard = {
+      providers.wl-copy.enable = true;
+      register = "unnamedplus";
+    };
 
     plugins = {
-      treesitter.enable = true;
+      treesitter = {
+      	enable = true;
+	indent = true;
+	nixvimInjections = true;
+      };
       telescope.enable = true;
       # codeium = {
       # 	enable = true;
