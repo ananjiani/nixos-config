@@ -14,7 +14,11 @@
     firefox
     remmina
     openconnect
+    libsForQt5.qt5.qtgraphicaleffects
+    sops
   ];
+
+  
 
   programs.fish.enable = true;
   nix.settings.experimental-features = ["nix-command" "flakes"];

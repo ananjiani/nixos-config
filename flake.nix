@@ -23,9 +23,10 @@
     };
     emacs-overlay.url = "github:nix-community/emacs-overlay";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
+    sops-nix.url = "github:Mic92/sops-nix";
   };
 
-  outputs = {self, nixpkgs-unstable, home-manager-unstable, sddm-sugar-candy-nix, nix-colors, emacs-overlay, nix-vscode-extensions, nixvim, ...}:
+  outputs = {self, nixpkgs-unstable, home-manager-unstable, sddm-sugar-candy-nix, nix-colors, emacs-overlay, nix-vscode-extensions, nixvim, sops-nix, ...}:
     let
       lib = nixpkgs-unstable.lib;
       system = "x86_64-linux";
@@ -90,6 +91,7 @@
           extraSpecialArgs = { 
             inherit nix-colors;
             inherit nixvim;
+	    inherit sops-nix;
           };
         };
       };

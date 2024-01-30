@@ -13,6 +13,7 @@
       ../../system/wm.nix
       ../../system/amd.nix
       ../../system/utils.nix
+      ../../system/hosts.nix
     ];
   
 #   # Auto upgrade
