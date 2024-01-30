@@ -1,10 +1,14 @@
-{ config, pkgs, lib, nix-colors, ...}:
-
 {
-
+  config,
+  pkgs,
+  lib,
+  nix-colors,
+  ...
+}: {
   imports = [
     ./cli-tools.nix
     ./nvim.nix
+    ./helix.nix
   ];
 
   home.shellAliases = {
@@ -22,7 +26,7 @@
 
   programs = {
     bash.enable = true;
-    
+
     fish = {
       enable = true;
       interactiveShellInit = ''
@@ -40,11 +44,10 @@
           };
         }
       ];
-      functions = 
-      {
+      functions = {
         lfcd = {
           body = ''
-          cd "$(command lf -print-last-dir $argv)"
+            cd "$(command lf -print-last-dir $argv)"
           '';
         };
       };
@@ -53,10 +56,10 @@
     starship = {
       enable = true;
       settings = {
-	add_newline = false;
-	line_break.disabled = true;
+        add_newline = false;
+        line_break.disabled = true;
       };
-    };    
+    };
     eza = {
       enable = true;
       git = true;
@@ -103,7 +106,7 @@
           term = "xterm-256color";
           font = "hack:size=14";
         };
-        
+
         colors = {
           background = "282828";
           foreground = "ebdbb2";
@@ -142,18 +145,18 @@
       enable = true;
       package = pkgs.vscode.fhs;
       extensions = with pkgs.vscode-marketplace; [
-          usernamehw.errorlens
-          sainnhe.gruvbox-material
-          jonathanharty.gruvbox-material-icon-theme
-          bbenoist.nix
-          arrterian.nix-env-selector
-          charliermarsh.ruff
-          vscodevim.vim
-          ms-python.python
-          ms-python.mypy-type-checker
-          ms-python.vscode-pylance
-          tamasfe.even-better-toml
-        ];
+        usernamehw.errorlens
+        sainnhe.gruvbox-material
+        jonathanharty.gruvbox-material-icon-theme
+        bbenoist.nix
+        arrterian.nix-env-selector
+        charliermarsh.ruff
+        vscodevim.vim
+        ms-python.python
+        ms-python.mypy-type-checker
+        ms-python.vscode-pylance
+        tamasfe.even-better-toml
+      ];
     };
 
     lf = {
@@ -169,22 +172,21 @@
         sixel = true;
       };
 
-      commands  = {
+      commands = {
         ripdrag-out = ''%${pkgs.ripdrag}/bin/ripdrag -a -x "$fx"'';
-        mkdir = ''''${{
-          printf "Directory Name: "
-          read DIR
-          mkdir $DIR
-        }}'';
-	extract = ''''${{
-	  set -f
-	  atool -x $f
-	}}'';
-	on-cd = ''''${{
-	    fmt="$(starship prompt)"
-	    lf -remote "send $id set promptfmt \"$fmt\""
-	}}'';
-
+        mkdir = ''          ''${{
+                    printf "Directory Name: "
+                    read DIR
+                    mkdir $DIR
+                  }}'';
+        extract = ''          ''${{
+          	  set -f
+          	  atool -x $f
+          	}}'';
+        on-cd = ''          ''${{
+          	    fmt="$(starship prompt)"
+          	    lf -remote "send $id set promptfmt \"$fmt\""
+          	}}'';
       };
 
       keybindings = {
@@ -192,7 +194,7 @@
         # "`" = "mark-load";
         # "\\'" = "mark-load";
         "<enter>" = "open";
-	z = "extract";
+        z = "extract";
         do = "ripdrag-out";
         "g~" = "cd";
         "gr" = "cd /";
@@ -200,7 +202,7 @@
         "gd" = "cd ~/Downloads";
         "gD" = "cd ~/Documents";
         "gp" = "cd ~/Documents/projects";
-	"g." = "cd ~/.dotfiles";
+        "g." = "cd ~/.dotfiles";
         V = ''''$${pkgs.bat}/bin/bat --paging=always --theme=gruvbox "$f"'';
       };
 
@@ -214,15 +216,14 @@
         cmd on-quit %${pkgs.ctpv}/bin/ctpv -e $id
         set cleaner ${pkgs.ctpv}/bin/ctpvclear
       '';
-
     };
   };
 
   home.packages = with pkgs; [
-      inkscape
-      xfce.thunar
-      xfce.thunar-archive-plugin
-      xfce.thunar-media-tags-plugin
+    inkscape
+    xfce.thunar
+    xfce.thunar-archive-plugin
+    xfce.thunar-media-tags-plugin
   ];
 
   home.file = {
