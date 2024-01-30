@@ -38,6 +38,9 @@
         enable = true;
         servers = {
           nil_ls.enable = true;
+	  nushell.enable = true;
+	  ruff-lsp.enable = true;
+	  yamlls.enable = true;
         };
       };
     };
