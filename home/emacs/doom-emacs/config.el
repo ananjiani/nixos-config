@@ -41,17 +41,10 @@
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-
 (after! org
-  (setq org-directory (concat (getenv "HOME") "/Documents/org"))
   (setq org-directory "~/Documents/org")
-  (setq org-agenda-files (list "inbox.org" "./naarpr-dallas-notes/meeting-notes.org" ))
-  (after! org-capture
-    (setq org-capture-templates
-      `(("i" "Inbox" entry  (file "inbox.org")
-      ,(concat "* TODO %?\n"
-                "/Entered on/ %U"))))
-    (define-key global-map (kbd "C-c c") 'org-capture))
+  (setq org-agenda-files (list "inbox.org" "./naarpr-dallas-notes/meeting-notes.org" "./red-notes/pc-meeting-notes.org"))
+  (setq org-log-done 'note)
     (setq org-agenda-prefix-format '(
       (agenda  . " %i %?-12t% s%e ") ;; file name + org-agenda-entry-type
       (timeline  . "  % s")
@@ -59,42 +52,31 @@
       (tags  . " %i %-12:c")
       (search . " %i %-12:c"))))
 
+;; (add-to-list 'org-capture-templates
+;;             '("i" "Inbox" entry
+;;               (file "inbox.org")
+;;               "* TODO %?\n/Entered on/ %U"))
+
+(setq org-capture-templates `(
+  ("i" "Inbox" entry (file "inbox.org") "* TODO %?\n/Entered on/ %U")
+))
+
+(define-key global-map (kbd "C-c c") 'org-capture)
+
 (setq org-super-agenda-groups
     '(;; Each group has an implicit boolean OR operator between its selectors.
          ;; Set order of multiple groups at once
-         (:order-multi (2 (:name "Work"
-                                 ;; Boolean AND group matches items that match all subgroups
-                                 :category "work")
-                          (:name "Organizing"
-                                 ;; Multiple args given in list with implicit OR
-                                 :and (:category "organizing" :not (:tag "naarpr")))
-                          (:name "NAARPR Dallas"
-                                 :and (:tag "naarpr" :tag "@ammar"))
-                          (:name "NAARPR Dallas Team"
-                                 :and (:tag "naarpr" :not (:tag "@ammar")))
-                          (:name "IGF SPG"
-                                 :category "igf")
-                          (:name "RARE"
-                                 :category "rare")))
+         (:name "Work" :category "work")
+         (:name "Organizing" :and (:category "organizing" :not (:tag "naarpr")))
+         (:name "Unit" :category "unit")
+         (:name "NAARPR Dallas" :and (:tag "naarpr" :tag "@ammar"))
+         (:name "IGF SPG" :category "igf")
+         (:name "RARE" :category "rare")
          ;; Groups supply their own section names when none are given
-         (:todo "WAITING" :order 8)  ; Set order of this section
-         (:todo ("SOMEDAY" "TO-READ" "CHECK" "TO-WATCH" "WATCHING" "WAIT" "IDEA")
-                ;; Show this group at the end of the agenda (since it has the
-                ;; highest number). If you specified this group last, items
-                ;; with these todo keywords that e.g. have priority A would be
-                ;; displayed in that group instead, because items are grouped
-                ;; out in the order the groups are listed.
-                :order 9)
-         (:priority<= "B"
-                      ;; Show this section after "Today" and "Important", because
-                      ;; their order is unspecified, defaulting to 0. Sections
-                      ;; are displayed lowest-number-first.
-                      :order 1)
-         (:auto-category t
-                         :order 9)
+         (:auto-category t)))
          ;; After the last group, the agenda will display items that didn't
          ;; match any of these groups, with the default order position of 99
-))
+
 
 (setq org-super-agenda-header-map (make-sparse-keymap))
 
