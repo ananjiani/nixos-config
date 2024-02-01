@@ -151,11 +151,11 @@
         bbenoist.nix
         arrterian.nix-env-selector
         charliermarsh.ruff
-        vscodevim.vim
         ms-python.python
         ms-python.mypy-type-checker
         ms-python.vscode-pylance
         tamasfe.even-better-toml
+        jasew.vscode-helix-emulation
       ];
     };
 
