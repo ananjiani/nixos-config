@@ -41,13 +41,22 @@
         indent = true;
         nixvimInjections = true;
       };
+      treesitter-textobjects.enable = true;
+      treesitter-context.enable = true;
+      treesitter-refactor.enable = true;
       telescope.enable = true;
       # codeium = {
       # 	enable = true;
       #   wrapper = "";
       # };
+      nvim-cmp.enable = true;
+      friendly-snippets.enable = true;
+      bufferline.enable = true;
       lsp-format.enable = true;
       lspkind.enable = true;
+      lsp-lines.enable = true;
+      which-key.enable = true;
+      lualine.enable = true;
       dap = {
         enable = true;
         extensions = {
