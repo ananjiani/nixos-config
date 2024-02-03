@@ -18,7 +18,10 @@
     sops
   ];
 
-  
+  # xremap home manager
+  hardware.uinput.enable = true;
+  users.groups.uinput.members = ["ammar"];
+  users.groups.input.members = ["ammar"];
 
   programs.fish.enable = true;
   nix.settings.experimental-features = ["nix-command" "flakes"];
