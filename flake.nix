@@ -1,6 +1,4 @@
 {
-  description = "My first flake!";
-
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-23.11";
     nixpkgs-unstable.url = "nixpkgs/nixpkgs-unstable";
@@ -17,10 +15,17 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-colors.url = "github:misterio77/nix-colors";
+    nixvim = {
+      url = "github:nix-community/nixvim";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
     emacs-overlay.url = "github:nix-community/emacs-overlay";
+    nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
+    sops-nix.url = "github:Mic92/sops-nix";
+    xremap.url = "github:xremap/nix-flake";
   };
 
-  outputs = {self, nixpkgs-unstable, home-manager-unstable, sddm-sugar-candy-nix, nix-colors, emacs-overlay, ...}:
+  outputs = {self, nixpkgs-unstable, home-manager-unstable, sddm-sugar-candy-nix, nix-colors, emacs-overlay, nix-vscode-extensions, nixvim, sops-nix, xremap, ...}:
     let
       lib = nixpkgs-unstable.lib;
       system = "x86_64-linux";
@@ -76,10 +81,18 @@
  	      ammar = home-manager-unstable.lib.homeManagerConfiguration {
           inherit pkgs;
           modules = [
-            {nixpkgs.overlays = [emacs-overlay.overlay];}
+            {nixpkgs.overlays = [
+              emacs-overlay.overlay
+              nix-vscode-extensions.overlays.default
+            ];}
             (./profiles + ("/" + active-profile) + "/home.nix")
           ];
-          extraSpecialArgs = { inherit nix-colors; };
+          extraSpecialArgs = { 
+            inherit nix-colors;
+            inherit nixvim;
+	          inherit sops-nix;
+            inherit xremap;
+          };
         };
       };
     };

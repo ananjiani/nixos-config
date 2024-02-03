@@ -3,6 +3,7 @@
 {
     home.packages = with pkgs; [
         webcord
+        r2modman
     ];
 
     programs = {
