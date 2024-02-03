@@ -30,7 +30,7 @@ in
 
   wayland.windowManager.hyprland.settings = {
       monitor = [",highrr,auto,1,vrr,2"];
-      general.layout = "master";
+      general.layout = "dwindle";
       exec-once = [
         "corectrl"
         "steam -silent -cef-disable-gpu"
