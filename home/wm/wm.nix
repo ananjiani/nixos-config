@@ -1,10 +1,10 @@
-{ config, pkgs, lib, nix-colors, ... }:
-
-let
-  nix-colors-lib = nix-colors.lib.control {inherit pkgs; };
-  
-in
 {
+  config,
+  pkgs,
+  lib,
+  nix-colors,
+  ...
+}: {
   home.packages = with pkgs; [
     swaynotificationcenter
     waybar
@@ -22,7 +22,7 @@ in
 
   gtk = {
     enable = true;
-    theme= {
+    theme = {
       name = "gruvbox-dark";
       package = pkgs.gruvbox-dark-gtk;
     };
@@ -41,7 +41,7 @@ in
     fuzzel = {
       enable = true;
       settings = {
-        colors = with config.colorScheme.colors;{
+        colors = with config.colorScheme.colors; {
           background = "${base00}ff";
           text = "${base05}ff";
           match = "${base08}ff";
@@ -50,46 +50,6 @@ in
           selection-match = "${base08}ff";
           border = "${base09}ff";
         };
-      };
-    };
-
-    alacritty = {
-      enable = true;
-      settings = {
-            window = {
-            opacity = 0.8;
-            blur = true;
-          };
-        colors = with config.colorScheme.colors; {
-          bright = {
-            black = "0x${base00}";
-            blue = "0x${base0D}";
-            cyan = "0x${base0C}";
-            green = "0x${base0B}";
-            magenta = "0x${base0E}";
-            red = "0x${base08}";
-            white = "0x${base06}";
-            yellow = "0x${base09}";
-          };
-          cursor = {
-            cursor = "0x${base06}";
-            text = "0x${base06}";
-          };
-          normal = {
-            black = "0x${base00}";
-            blue = "0x${base0D}";
-            cyan = "0x${base0C}";
-            green = "0x${base0B}";
-            magenta = "0x${base0E}";
-            red = "0x${base08}";
-            white = "0x${base06}";
-            yellow = "0x${base0A}";
-          };
-          primary = {
-            background = "0x${base00}";
-            foreground = "0x${base06}";
-          };
-        }; 
       };
     };
   };
@@ -103,8 +63,12 @@ in
       general = {
         "col.active_border" = with config.colorScheme.colors; "rgba(${base09}ee) rgba(${base0A}ee) 45deg";
       };
+      "$mainMod" = "SUPER";
+      bind = [
+        "$mainMod, Q, exec, foot"
+        "$mainMod, E, exec, emacsclient -c"
+      ];
     };
     extraConfig = builtins.readFile ../../home/wm/hyprland.conf;
   };
 }
-

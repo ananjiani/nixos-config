@@ -1,6 +1,11 @@
 { config, pkgs, lib, ...}:
 
 {
+  
+  home.sessionVariables = {
+    EDITOR = "hx";
+  };
+
   xdg = {
       configFile."mimeapps.list".force = true;
       mimeApps = {
@@ -13,6 +18,9 @@
           "x-scheme-handler/about" = "firefox.desktop";
           "x-scheme-handler/unknown" = "firefox.desktop";
           "inode/directory" = "thunar.desktop";
+          "text/org" = "emacsclient.desktop";
+          "text/plain" = "emacsclient.desktop";
+          "application/pdf" = "org.pwmt.zathura.desktop";
         };
       };
     };

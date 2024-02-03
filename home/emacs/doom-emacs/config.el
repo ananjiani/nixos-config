@@ -36,38 +36,52 @@
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
-(setq display-line-numbers-type t)
+(setq display-line-numbers-type 'relative)
+(setq doom-font (font-spec :family "Hack" :size 18 :weight 'normal))
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory (concat (getenv "HOME") "/Documents/org"))
-(setq org-directory "~/Documents/org")
-(setq org-agenda-files (list "inbox.org" "./naarpr-dallas-notes/meeting-notes.org" ))
+(after! org
+  (setq org-directory "~/Documents/org")
+  (setq org-agenda-files (list "inbox.org" "./naarpr-dallas-notes/meeting-notes.org" "./red-notes/pc-meeting-notes.org"))
+  (setq org-log-done 'note)
+    (setq org-agenda-prefix-format '(
+      (agenda  . " %i %?-12t% s%e ") ;; file name + org-agenda-entry-type
+      (timeline  . "  % s")
+      (todo  . " %i %e ")
+      (tags  . " %i %-12:c")
+      (search . " %i %-12:c"))))
+
+;; (add-to-list 'org-capture-templates
+;;             '("i" "Inbox" entry
+;;               (file "inbox.org")
+;;               "* TODO %?\n/Entered on/ %U"))
+
+(setq org-capture-templates `(
+  ("i" "Inbox" entry (file "inbox.org") "* TODO %?\n/Entered on/ %U")
+))
 
 (define-key global-map (kbd "C-c c") 'org-capture)
-(after! org
-(after! org-capture
-  (setq org-capture-templates
-  
-       `(("i" "Inbox" entry  (file "inbox.org")
-        ,(concat "* TODO %?\n"
-                 "/Entered on/ %U"))))))
 
-(use-package org-roam
-  :after org
-  :custom
-  (org-roam-directory (file-truename org-directory))
-  :init
-  (org-roam-db-autosync-enable)
-  :bind (("C-c n f" . org-roam-node-find)
-          ("C-c n r" . org-roam-node-random)
-          (:map org-mode-map
-                (("C-c n i" . org-roam-node-insert)
-                ("C-c n o" . org-id-get-create)
-                ("C-c n t" . org-roam-tag-add)
-                ("C-c n a" . org-roam-alias-add)
-                ("C-c n l" . org-roam-buffer-toggle)))))
+(setq org-super-agenda-groups
+    '(;; Each group has an implicit boolean OR operator between its selectors.
+         ;; Set order of multiple groups at once
+         (:name "Work" :category "work")
+         (:name "Organizing" :and (:category "organizing" :not (:tag "naarpr")))
+         (:name "Unit" :and (:category "unit" :tag "@ammar"))
+         (:name "NAARPR Dallas" :and (:tag "naarpr" :tag "@ammar"))
+         (:name "IGF SPG" :category "igf")
+         (:name "RARE" :category "rare")
+         ;; Groups supply their own section names when none are given
+         (:auto-category t)))
+         ;; After the last group, the agenda will display items that didn't
+         ;; match any of these groups, with the default order position of 99
 
+
+(setq org-super-agenda-header-map (make-sparse-keymap))
+
+(org-super-agenda-mode t)
+(setq org-agenda-skip-function-global '(org-agenda-skip-entry-if 'todo 'done))
 
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
