@@ -1,7 +1,10 @@
-{ config, pkgs, lib, nix-colors, ... }:
-
-
 {
+  config,
+  pkgs,
+  lib,
+  nix-colors,
+  ...
+}: {
   home.packages = with pkgs; [
     swaynotificationcenter
     waybar
@@ -19,7 +22,7 @@
 
   gtk = {
     enable = true;
-    theme= {
+    theme = {
       name = "gruvbox-dark";
       package = pkgs.gruvbox-dark-gtk;
     };
@@ -38,7 +41,7 @@
     fuzzel = {
       enable = true;
       settings = {
-        colors = with config.colorScheme.colors;{
+        colors = with config.colorScheme.colors; {
           background = "${base00}ff";
           text = "${base05}ff";
           match = "${base08}ff";
@@ -49,8 +52,6 @@
         };
       };
     };
-
-    
   };
 
   wayland.windowManager.hyprland = {
@@ -65,9 +66,9 @@
       "$mainMod" = "SUPER";
       bind = [
         "$mainMod, Q, exec, foot"
+        "$mainMod, E, exec, emacsclient -c"
       ];
     };
     extraConfig = builtins.readFile ../../home/wm/hyprland.conf;
   };
 }
-
