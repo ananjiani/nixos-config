@@ -9,6 +9,7 @@
     ./cli-tools.nix
     ./nvim.nix
     ./helix.nix
+    ./xremap.nix
   ];
 
   home.shellAliases = {
@@ -20,13 +21,10 @@
     cat = "bat";
   };
 
-  home.sessionVariables = {
-    EDITOR = "nvim";
-  };
 
   programs = {
     bash.enable = true;
-
+    zathura.enable = true;
     fish = {
       enable = true;
       interactiveShellInit = ''
@@ -155,7 +153,6 @@
         ms-python.mypy-type-checker
         ms-python.vscode-pylance
         tamasfe.even-better-toml
-        jasew.vscode-helix-emulation
       ];
     };
 
