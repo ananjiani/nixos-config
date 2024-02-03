@@ -17,7 +17,7 @@ in {
       package = pkgs.emacs29;
     };
 
-    mu.enable = true;
+    #mu.enable = true;
   };
 
   services.emacs = {
