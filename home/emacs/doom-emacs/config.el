@@ -68,7 +68,7 @@
          ;; Set order of multiple groups at once
          (:name "Work" :category "work")
          (:name "Organizing" :and (:category "organizing" :not (:tag "naarpr")))
-         (:name "Unit" :category "unit")
+         (:name "Unit" :and (:category "unit" :tag "@ammar"))
          (:name "NAARPR Dallas" :and (:tag "naarpr" :tag "@ammar"))
          (:name "IGF SPG" :category "igf")
          (:name "RARE" :category "rare")

@@ -44,10 +44,7 @@
           normal = "block";
           select = "underline";
         };
-        indent-guides = {
-          render = true;
-          character = "|";
-        };
+        indent-guides.render = true;
         lsp = {
           display-messages = true;
         };
