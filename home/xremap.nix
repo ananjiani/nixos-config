@@ -7,7 +7,6 @@
 
   services.xremap = {
     withHypr = true;
-    userName = "ammar";
     config.modmap = [
         {
           name = "main remaps";
