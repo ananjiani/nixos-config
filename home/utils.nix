@@ -153,6 +153,7 @@
         ms-python.mypy-type-checker
         ms-python.vscode-pylance
         tamasfe.even-better-toml
+        vscodevim.vim
       ];
     };
 
