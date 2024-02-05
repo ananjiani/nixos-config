@@ -6,7 +6,7 @@
   ];
 
   services.xremap = {
-    withHypr = true;
+    withWlroots = true;
     config.modmap = [
         {
           name = "main remaps";
