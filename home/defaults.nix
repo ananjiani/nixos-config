@@ -3,7 +3,7 @@
 {
   
   home.sessionVariables = {
-    EDITOR = "hx";
+    EDITOR = "nvim";
   };
 
   xdg = {
