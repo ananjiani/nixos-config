@@ -7,7 +7,7 @@
 }: {
   imports = [
     ./cli-tools.nix
-    ./nvim.nix
+    ./lvim.nix
     ./helix.nix
     ./xremap.nix
   ];
@@ -20,7 +20,6 @@
     lg = "lazygit";
     cat = "bat";
   };
-
 
   programs = {
     bash.enable = true;
@@ -193,7 +192,7 @@
         # "\\'" = "mark-load";
         "<enter>" = "open";
         z = "extract";
-        do = "ripdrag-out";
+        o = "ripdrag-out";
         "g~" = "cd";
         "gr" = "cd /";
         "go" = "cd ~/Documents/org";
