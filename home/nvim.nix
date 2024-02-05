@@ -21,6 +21,9 @@
       enable = true;
     };
 
+    globals.mapleader = " ";
+    globals.maplocalleader = " ";
+
     options = {
       number = true;
       relativenumber = true;
@@ -33,64 +36,96 @@
     };
 
     plugins = {
-      nix.enable = true;
-      undotree.enable = true;
-      harpoon.enable = true;
-      treesitter = {
-        enable = true;
-        indent = true;
-        nixvimInjections = true;
-      };
-      treesitter-textobjects.enable = true;
-      treesitter-context.enable = true;
-      treesitter-refactor.enable = true;
-      telescope.enable = true;
-      # codeium = {
-      # 	enable = true;
-      #   wrapper = "";
-      # };
-      nvim-cmp.enable = true;
-      friendly-snippets.enable = true;
-      bufferline.enable = true;
-      lsp-format.enable = true;
-      lspkind.enable = true;
-      lsp-lines.enable = true;
-      which-key.enable = true;
+      comment-nvim.enable = true;
       lualine.enable = true;
-      dap = {
+
+      #autocompletion
+      nvim-cmp = {
         enable = true;
-        extensions = {
-          dap-python.enable = true;
-          dap-ui.enable = true;
+        snippet.expand = "luasnip";
+      };
+      luasnip.enable = true;
+      cmp-nvim-lsp.enable = true;
+      cmp-path.enable = true;
+      friendly-snippets.enable = true;
+
+      which-key.enable = true;
+      gitsigns = {
+        enable = true;
+        signs = {
+          add.text = "+";
+          change.text = "~";
+          delete.text = "_";
+          topdelete.text = "‾";
+          changedelete.text = "~";
         };
       };
-      none-ls = {
-        enable = true;
-        enableLspFormat = true;
-        sources = {
-          code_actions = {
-            statix.enable = true;
-          };
-          diagnostics = {
-            deadnix.enable = true;
-            mypy.enable = true;
-          };
-          formatting = {
-            alejandra.enable = true;
-          };
-        };
-      };
+
+      fidget.enable = true;
       lsp = {
         enable = true;
-        servers = {
-          pyright.enable = true;
-          ruff-lsp.enable = true;
-          nixd.enable = true;
-          nushell.enable = true;
-          yamlls.enable = true;
-        };
       };
     };
+
+    #plugins = {
+    #  nix.enable = true;
+    #  undotree.enable = true;
+    #  harpoon.enable = true;
+    #  treesitter = {
+    #    enable = true;
+    #    indent = true;
+    #    nixvimInjections = true;
+    #  };
+    #  treesitter-textobjects.enable = true;
+    #  treesitter-context.enable = true;
+    #  treesitter-refactor.enable = true;
+    #  telescope.enable = true;
+    #  # codeium = {
+    #  # 	enable = true;
+    #  #   wrapper = "";
+    #  # };
+    #  nvim-cmp.enable = true;
+    #  friendly-snippets.enable = true;
+    #  bufferline.enable = true;
+    #  lsp-format.enable = true;
+    #  lspkind.enable = true;
+    #  lsp-lines.enable = true;
+    #  which-key.enable = true;
+    #  lualine.enable = true;
+    #  dap = {
+    #    enable = true;
+    #    extensions = {
+    #      dap-python.enable = true;
+    #      dap-ui.enable = true;
+    #    };
+    #  };
+    #  none-ls = {
+    #    enable = true;
+    #    enableLspFormat = true;
+    #    sources = {
+    #      code_actions = {
+    #        statix.enable = true;
+    #      };
+    #      diagnostics = {
+    #        deadnix.enable = true;
+    #        mypy.enable = true;
+    #      };
+    #      formatting = {
+    #        alejandra.enable = true;
+    #      };
+    #    };
+    #  };
+    #  lsp = {
+    #    enable = true;
+    #    servers = {
+    #      pyright.enable = true;
+    #      ruff-lsp.enable = true;
+    #      nixd.enable = true;
+    #      nushell.enable = true;
+    #      yamlls.enable = true;
+    #    };
+    #  };
+    #};
 
     extraConfigLuaPost = ''
       local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
