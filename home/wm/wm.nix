@@ -67,6 +67,10 @@
       bind = [
         "$mainMod, Q, exec, foot"
         "$mainMod, E, exec, emacsclient -c"
+        "$mainMod, H, movefocus, l"
+        "$mainMod, L, movefocus, r"
+        "$mainMod, K, movefocus, u"
+        "$mainMod, J, movefocus, d"
       ];
     };
     extraConfig = builtins.readFile ../../home/wm/hyprland.conf;
