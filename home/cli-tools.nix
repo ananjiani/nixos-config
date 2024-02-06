@@ -16,6 +16,9 @@
 #  };
 
   programs = {
+    
+    thefuck.enable = true;
+  
     zoxide = {
       enable = true;
       options = [
@@ -41,7 +44,6 @@
 
   home.packages = with pkgs; [
     chafa
-    ripgrep
     ripdrag
     atool
     ffmpeg
@@ -56,5 +58,6 @@
     duf
     ripgrep-all
     fd
+    sshfs
   ];
 }
