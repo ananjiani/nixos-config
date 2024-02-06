@@ -50,16 +50,12 @@
       (timeline  . "  % s")
       (todo  . " %i %e ")
       (tags  . " %i %-12:c")
-      (search . " %i %-12:c"))))
+      (search . " %i %-12:c")))
 
-;; (add-to-list 'org-capture-templates
-;;             '("i" "Inbox" entry
-;;               (file "inbox.org")
-;;               "* TODO %?\n/Entered on/ %U"))
+    (setq org-capture-templates `(
+      ("i" "Inbox" entry (file "inbox.org") "* TODO %?\n/Entered on/ %U")
+      )))
 
-(setq org-capture-templates `(
-  ("i" "Inbox" entry (file "inbox.org") "* TODO %?\n/Entered on/ %U")
-))
 
 (define-key global-map (kbd "C-c c") 'org-capture)
 
