@@ -218,6 +218,12 @@
 
   home.packages = with pkgs; [
     inkscape
+    xournalpp
+    vlc
+    kdenlive
+    python311Full
+    python311Packages.pip
+    python311Packages.setuptools
     xfce.thunar
     xfce.thunar-archive-plugin
     xfce.thunar-media-tags-plugin
