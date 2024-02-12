@@ -10,7 +10,8 @@
     ./lvim.nix
     ./helix.nix
     ./xremap.nix
-  ];
+  ]
+;
 
   home.shellAliases = {
     ls = "eza -a";

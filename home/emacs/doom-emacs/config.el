@@ -45,31 +45,73 @@
   (setq org-directory "~/Documents/org")
   (setq org-agenda-files (list "inbox.org" "./naarpr-dallas-notes/meeting-notes.org" "./red-notes/pc-meeting-notes.org"))
   (setq org-log-done 'note)
-    (setq org-agenda-prefix-format '(
-      (agenda  . " %i %?-12t% s%e ") ;; file name + org-agenda-entry-type
-      (timeline  . "  % s")
-      (todo  . " %i %e ")
-      (tags  . " %i %-12:c")
-      (search . " %i %-12:c")))
-
-    (setq org-capture-templates `(
-      ("i" "Inbox" entry (file "inbox.org") "* TODO %?\n/Entered on/ %U")
-      )))
-
+  (setq org-agenda-prefix-format '(
+    (agenda  . " %i %?-12t% s%e ") ;; file name + org-agenda-entry-type
+    (timeline  . "  % s")
+    (todo  . " %i %e ")
+    (tags  . " %i %-12:c")
+    (search . " %i %-12:c")))
+  (setq org-agenda-span 1
+        org-agenda-start-day "+0d"
+        org-agenda-skip-timestamp-if-done t
+        org-agenda-skip-deadline-if-done t
+        org-agenda-skip-scheduled-if-done t
+        org-agenda-skip-scheduled-if-deadline-is-shown t
+        org-agenda-skip-timestamp-if-deadline-is-shown t)
+  (setq org-agenda-hide-tags-regexp ".*")
+  ;; (setq org-agenda-category-icon-alist
+  ;;       `(("tinker" ,(list (all-the-icons-faicon "cogs")) nil nil :ascent center)
+  ;;         ("rare" ,(list (all-the-icons-faicon "pencil")) nil nil :ascent center)
+  ;;         ("organizing" ,(list (all-the-icons-faicon "hand-rock-o")) nil nil :ascent center)
+  ;;         ("naarpr" ,(list (all-the-icons-faicon "renren")) nil nil :ascent center)
+  ;;         ("unit" ,(list (all-the-icons-faicon "rebel")) nil nil :ascent center)
+  ;;         ("igf" ,(list (all-the-icons-faicon "wrench")) nil nil :ascent center)
+  ;;         ("ha" ,(list (all-the-icons-faicon "home")) nil nil :ascent center)
+  ;;         ("personal" ,(list (all-the-icons-material "person")) nil nil :ascent center)
+  ;;         ("work" ,(list (all-the-icons-faicon "graduation-cap")) nil nil :ascent center)
+  ;;         ))
+  (setq org-agenda-todo-keyword-format "")
+  (setq org-capture-templates `(
+    ("i" "Inbox" entry (file "inbox.org") "* TODO %?\n/Entered on/ %U")
+   )))
 
 (define-key global-map (kbd "C-c c") 'org-capture)
 
 (setq org-super-agenda-groups
     '(;; Each group has an implicit boolean OR operator between its selectors.
          ;; Set order of multiple groups at once
-         (:name "Work" :category "work")
-         (:name "Organizing" :and (:category "organizing" :not (:tag "naarpr")))
-         (:name "Unit" :and (:category "unit" :tag "@ammar"))
-         (:name "NAARPR Dallas" :and (:tag "naarpr" :tag "@ammar"))
-         (:name "IGF SPG" :category "igf")
-         (:name "RARE" :category "rare")
+         (:discard (:and (:category "unit" :not (:tag "@ammar"))))
+         (:discard (:and (:tag "naarpr" :not (:tag "@ammar"))))
+
+
+         (:name "❗ Overdue"
+                :scheduled past
+                :deadline past
+                :order 1
+                :face 'error)
+         (:name "📅 Today"
+                :date today
+                :scheduled today
+                :deadline today
+                :order 2
+                :face 'warning)
+
+         (:name "Work" :category "work" :order 4)
+         (:order-multi (5 (:name "Organizing" :and (:category "organizing" :not (:tag "naarpr")))
+                          (:name "Unit" :and (:category "unit" :tag "@ammar"))
+                          (:name "NAARPR Dallas" :category "naarpr")
+         ))
+         (:name "IGF SPG" :category "igf" :order 6)
+         (:name "RARE" :category "rare" :order 7)
+
+         (:order-multi (8 (:name "Tinkering" :category "tinker")
+                          (:name "Home Automation" :category "ha")
+                          (:name "Weekly Habits" :tag "weekly")
+                          ))
+         (:name "Personal" :category "personal" :order 3)
          ;; Groups supply their own section names when none are given
-         (:auto-category t)))
+         (:auto-category t :order 9)
+         ))
          ;; After the last group, the agenda will display items that didn't
          ;; match any of these groups, with the default order position of 99
 
@@ -79,6 +121,11 @@
 (org-super-agenda-mode t)
 (setq org-agenda-skip-function-global '(org-agenda-skip-entry-if 'todo 'done))
 
+(defun org-agenda-open-hook()
+  (olivetti-mode))
+
+(add-hook 'org-agenda-mode-hook 'org-agenda-open-hook)
+(with-eval-after-load 'org (global-org-modern-mode))
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
