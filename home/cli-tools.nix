@@ -5,6 +5,12 @@
     df = "duf";
     du = "dust";
     grep = "rg";
+    rd = "ripdrag";
+    frd = "ripdrag $(fzf)";
+    fo = "open $(fzf)";
+    fe = "$EDITOR $(fzf)";
+    fc = "emacsclient $(fzf)";
+    fv = "vi $(fzf)";
   };
 #  imports = [
 #    sops-nix.homeManagerModules.sops
@@ -31,7 +37,8 @@
    
     fzf = {
       enable = true;
-      defaultCommand = "fd . $HOME -H";
+      defaultCommand = "fd . $HOME";
+      changeDirWidgetCommand = "fd --type d";
       colors = {
         fg = "#ebdbb2";
         bg = "#282828";

@@ -8,7 +8,8 @@
 in {
 
   home.shellAliases = {
-    ec = "emacsclient -nw";
+    ec = "emacsclient -r";
+    ecn = "emacsclient -nw";
   };
 
   programs = {
