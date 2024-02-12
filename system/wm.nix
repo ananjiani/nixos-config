@@ -29,6 +29,7 @@
     nerdfonts
     font-awesome
     hack-font
+    emacs-all-the-icons-fonts
   ];
 
   programs = {
