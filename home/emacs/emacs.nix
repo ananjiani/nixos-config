@@ -8,7 +8,7 @@
 in {
 
   home.shellAliases = {
-    ec = "emacsclient -r";
+    ec = "emacsclient -c";
     ecn = "emacsclient -nw";
   };
 
@@ -17,7 +17,6 @@ in {
       enable = true;
       package = pkgs.emacs29;
     };
-
     #mu.enable = true;
   };
 

@@ -58,19 +58,25 @@
         org-agenda-skip-scheduled-if-done t
         org-agenda-skip-scheduled-if-deadline-is-shown t
         org-agenda-skip-timestamp-if-deadline-is-shown t)
-  (setq org-agenda-hide-tags-regexp ".*")
-  ;; (setq org-agenda-category-icon-alist
-  ;;       `(("tinker" ,(list (all-the-icons-faicon "cogs")) nil nil :ascent center)
-  ;;         ("rare" ,(list (all-the-icons-faicon "pencil")) nil nil :ascent center)
-  ;;         ("organizing" ,(list (all-the-icons-faicon "hand-rock-o")) nil nil :ascent center)
-  ;;         ("naarpr" ,(list (all-the-icons-faicon "renren")) nil nil :ascent center)
-  ;;         ("unit" ,(list (all-the-icons-faicon "rebel")) nil nil :ascent center)
-  ;;         ("igf" ,(list (all-the-icons-faicon "wrench")) nil nil :ascent center)
-  ;;         ("ha" ,(list (all-the-icons-faicon "home")) nil nil :ascent center)
-  ;;         ("personal" ,(list (all-the-icons-material "person")) nil nil :ascent center)
-  ;;         ("work" ,(list (all-the-icons-faicon "graduation-cap")) nil nil :ascent center)
-  ;;         ))
-  (setq org-agenda-todo-keyword-format "")
+  ;; (setq org-agenda-hide-tags-regexp ".*")
+  (setq org-agenda-category-icon-alist
+        `(("tinker" ,(list (nerd-icons-faicon "nf-fa-cogs")) nil nil :ascent center)
+          ("rare" ,(list (nerd-icons-faicon "nf-fa-pencil")) nil nil :ascent center)
+          ("organizing" ,(list (nerd-icons-faicon "nf-fa-hand_rock_o")) nil nil :ascent center)
+          ("naarpr" ,(list (nerd-icons-faicon "nf-fa-renren")) nil nil :ascent center)
+          ("unit" ,(list (nerd-icons-faicon "nf-fa-rebel")) nil nil :ascent center)
+          ("igf" ,(list (nerd-icons-faicon "nf-fae-dice")) nil nil :ascent center)
+          ("ha" ,(list (nerd-icons-faicon "nf-fa-home")) nil nil :ascent center)
+          ("personal" ,(list (nerd-icons-mdicon "nf-md-human")) nil nil :ascent center)
+          ("work" ,(list (nerd-icons-faicon "nf-fa-graduation_cap")) nil nil :ascent center)
+          ))
+  (setq org-agenda-custom-commands
+        '(("n" "NAARPR Dallas" tags "naarpr")
+          ("u" "Unit"
+           ((tags "+CATEGORY=\"unit\"")
+           (todo "TODO"))
+          )))
+  ;; (setq org-agenda-todo-keyword-format "")
   (setq org-capture-templates `(
     ("i" "Inbox" entry (file "inbox.org") "* TODO %?\n/Entered on/ %U")
    )))
@@ -80,7 +86,7 @@
 (setq org-super-agenda-groups
     '(;; Each group has an implicit boolean OR operator between its selectors.
          ;; Set order of multiple groups at once
-         (:discard (:and (:category "unit" :not (:tag "@ammar"))))
+         (:discard (:and (:category "unit " :not (:tag "@ammar"))))
          (:discard (:and (:tag "naarpr" :not (:tag "@ammar"))))
 
 
@@ -107,6 +113,7 @@
          (:order-multi (8 (:name "Tinkering" :category "tinker")
                           (:name "Home Automation" :category "ha")
                           (:name "Weekly Habits" :tag "weekly")
+                          (:name "Daily Habits" :tag "daily")
                           ))
          (:name "Personal" :category "personal" :order 3)
          ;; Groups supply their own section names when none are given
