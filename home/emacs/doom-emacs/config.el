@@ -71,10 +71,10 @@
           ("work" ,(list (nerd-icons-faicon "nf-fa-graduation_cap")) nil nil :ascent center)
           ))
   (setq org-agenda-custom-commands
-        '(("n" "NAARPR Dallas" tags "naarpr")
+        '(("n" "NAARPR Dallas"
+           ((tags-todo "naarpr")))
           ("u" "Unit"
-           ((tags "+CATEGORY=\"unit\"")
-           (todo "TODO"))
+           ((tags-todo "+CATEGORY=\"unit\""))
           )))
   ;; (setq org-agenda-todo-keyword-format "")
   (setq org-capture-templates `(
@@ -86,9 +86,8 @@
 (setq org-super-agenda-groups
     '(;; Each group has an implicit boolean OR operator between its selectors.
          ;; Set order of multiple groups at once
-         (:discard (:and (:category "unit " :not (:tag "@ammar"))))
-         (:discard (:and (:tag "naarpr" :not (:tag "@ammar"))))
-
+         ;; (:discard (:and (:category "unit " :not (:tag "@ammar"))))
+         ;; (:discard (:and (:tag "naarpr" :not (:tag "@ammar"))))
 
          (:name "❗ Overdue"
                 :scheduled past
@@ -117,6 +116,11 @@
                           ))
          (:name "Personal" :category "personal" :order 3)
          ;; Groups supply their own section names when none are given
+
+         (:order-multi (10 (:name "Unit (team)" :and (:category "unit" :not (:tag "@ammar")))
+                           (:name "NAARPR Dallas (team)" :and (:category "naarpr" :not (:tag "@ammar")))
+                           ))
+
          (:auto-category t :order 9)
          ))
          ;; After the last group, the agenda will display items that didn't
@@ -129,7 +133,9 @@
 (setq org-agenda-skip-function-global '(org-agenda-skip-entry-if 'todo 'done))
 
 (defun org-agenda-open-hook()
-  (olivetti-mode))
+  (olivetti-mode)
+  (olivetti-set-width 120))
+
 
 (add-hook 'org-agenda-mode-hook 'org-agenda-open-hook)
 (with-eval-after-load 'org (global-org-modern-mode))
