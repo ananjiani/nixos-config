@@ -74,8 +74,10 @@
         '(("n" "NAARPR Dallas"
            ((tags-todo "naarpr")))
           ("u" "Unit"
-           ((tags-todo "+CATEGORY=\"unit\""))
-          )))
+           ((tags-todo "+CATEGORY=\"unit\"")))
+          ("w" "Work"
+           ((tags-todo "+CATEGORY=\"work\"")))
+          ))
   ;; (setq org-agenda-todo-keyword-format "")
   (setq org-capture-templates `(
     ("i" "Inbox" entry (file "inbox.org") "* TODO %?\n/Entered on/ %U")
