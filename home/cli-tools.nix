@@ -37,7 +37,7 @@
    
     fzf = {
       enable = true;
-      defaultCommand = "fd . $HOME";
+      defaultCommand = "fd --type f";
       changeDirWidgetCommand = "fd --type d";
       colors = {
         fg = "#ebdbb2";
