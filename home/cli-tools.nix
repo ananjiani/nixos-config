@@ -23,7 +23,6 @@
 #  };
 
   programs = {
-    
     thefuck.enable = true;
   
     zoxide = {

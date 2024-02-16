@@ -26,7 +26,9 @@
   };
 
   fonts.packages = with pkgs; [
-    nerdfonts
+    (nerdfonts.override { fonts = [
+      "FiraCode"
+    ]; })
     font-awesome
     hack-font
     emacs-all-the-icons-fonts
@@ -40,7 +42,6 @@
   };
   
   environment.systemPackages = with pkgs; [
-    libnotify
     image-roll
     wl-clipboard
     pavucontrol
