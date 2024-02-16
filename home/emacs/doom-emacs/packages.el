@@ -41,6 +41,7 @@
 ;; (package! builtin-package :pin "1a2b3c4d5e")
 
 (package! org-super-agenda)
+(package! org-ql)
 (package! olivetti)
 (package! org-modern)
 (package! fzf)
