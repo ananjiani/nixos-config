@@ -10,6 +10,7 @@
     ./lvim.nix
     ./helix.nix
     ./xremap.nix
+    ./wezterm.nix
   ]
 ;
 
@@ -29,7 +30,8 @@
       enable = true;
       interactiveShellInit = ''
         set fish_greeting # Disable greeting
-        set -g fish_key_bindings fish_default_key_bindings
+        set -g fish_key_bindings fish_vi_key_bindings
+        bind -M insert \cf forward-char
       '';
       plugins = with pkgs.fishPlugins; [
         {
@@ -48,6 +50,17 @@
             cd "$(command lf -print-last-dir $argv)"
           '';
         };
+
+        vterm_printf = ''
+          if begin; [  -n "$TMUX" ]  ; and  string match -q -r "screen|tmux" "$TERM"; end
+              # tell tmux to pass the escape sequences through
+              printf "\ePtmux;\e\e]%s\007\e\\" "$argv"
+          else if string match -q -- "screen*" "$TERM"
+              # GNU screen (screen, screen-256color, screen-256color-bce)
+              printf "\eP\e]%s\007\e\\" "$argv"
+          else
+              printf "\e]%s\e\\" "$argv"
+        '';
       };
     };
 
@@ -76,6 +89,9 @@
       settings = {
         theme = "gruvbox-dark";
         default_shell = "fish";
+        copy_on_select = false;
+        pane_frames = false;
+        on_force_close = "quit";
       };
     };
 

@@ -39,6 +39,8 @@
 (setq display-line-numbers-type 'relative)
 (setq doom-font (font-spec :family "Hack" :size 18 :weight 'normal))
 
+(setq vterm-timer-delay 0.01
+      vterm-shell "fish")
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
 (after! org
@@ -46,11 +48,11 @@
   (setq org-agenda-files (list "inbox.org" "./naarpr-dallas-notes/meeting-notes.org" "./red-notes/pc-meeting-notes.org"))
   (setq org-log-done 'note)
   (setq org-agenda-prefix-format '(
-    (agenda  . " %i %?-12t% s%e ") ;; file name + org-agenda-entry-type
-    (timeline  . "  % s")
-    (todo  . " %i %e ")
-    (tags  . " %i %-12:c")
-    (search . " %i %-12:c")))
+                                   (agenda  . " %i %?-12t% s%e ") ;; file name + org-agenda-entry-type
+                                   (timeline  . "  % s")
+                                   (todo  . " %i %e ")
+                                   (tags  . " %i %-12:c")
+                                   (search . " %i %-12:c")))
   (setq org-agenda-span 1
         org-agenda-start-day "+0d"
         org-agenda-skip-timestamp-if-done t
@@ -68,8 +70,8 @@
           ("igf" ,(list (nerd-icons-faicon "nf-fae-dice")) nil nil :ascent center)
           ("ha" ,(list (nerd-icons-faicon "nf-fa-home")) nil nil :ascent center)
           ("personal" ,(list (nerd-icons-mdicon "nf-md-human")) nil nil :ascent center)
-          ("work" ,(list (nerd-icons-faicon "nf-fa-graduation_cap")) nil nil :ascent center)
-          ))
+          ("work" ,(list (nerd-icons-faicon "nf-fa-graduation_cap")) nil nil :ascent center)))
+          
   (setq org-agenda-custom-commands
         '(("n" "NAARPR Dallas"
            ((org-ql-block '(and (todo "TODO")
@@ -79,13 +81,13 @@
             (org-ql-block '(and (todo "TODO")
                                 (not (tags "@ammar"))
                                 (tags "naarpr"))
-                         ((org-ql-block-header "Everyone else's Tasks")))
+                          ((org-ql-block-header "Everyone else's Tasks")))
             (org-ql-block '(and (todo)
                                 (not (todo "TODO"))
                                 (tags "naarpr"))
-                         ((org-ql-block-header "Backlog")))
-            )
-           )
+                          ((org-ql-block-header "Backlog")))))
+            
+           
           ("u" "Unit"
            ((org-ql-block '(and (todo "TODO")
                                 (tags "@ammar")
@@ -94,31 +96,31 @@
             (org-ql-block '(and (todo "TODO")
                                 (not (tags "@ammar"))
                                 (category "unit"))
-                         ((org-ql-block-header "Everyone else's Tasks"))
-                         )
+                          ((org-ql-block-header "Everyone else's Tasks")))
+                         
             (org-ql-block '(and (todo)
                                 (not (todo "TODO"))
                                 (category "unit"))
-                         ((org-ql-block-header "Backlog"))
-                         )
-            )
-           )
+                          ((org-ql-block-header "Backlog")))))
+                         
+            
+           
           ("w" "Work"
            ((org-ql-block '(and (category "work")
                                 (todo "TODO"))
-                         ((org-ql-block-header "Tasks"))
-                            )
-           (org-ql-block '(and (category "work")
+                          ((org-ql-block-header "Tasks")))
+                            
+            (org-ql-block '(and (category "work")
                                 (todo)
-                                (not (todo "TODO"))
-                            )
-                         ((org-ql-block-header "Backlog"))
-                         )
-           ))))
+                                (not (todo "TODO")))
+                            
+                          ((org-ql-block-header "Backlog")))))))
+                         
+           
   ;; (setq org-agenda-todo-keyword-format "")
   (setq org-capture-templates `(
-    ("i" "Inbox" entry (file "inbox.org") "* TODO %?\n/Entered on/ %U")
-   )))
+                                ("i" "Inbox" entry (file "inbox.org") "* TODO %?\n/Entered on/ %U"))))
+   
 
 (define-key global-map (kbd "C-c c") 'org-capture)
 
@@ -143,25 +145,25 @@
          (:name "Work" :category "work" :order 4)
          (:order-multi (5 (:name "Organizing" :and (:category "organizing" :not (:tag "naarpr")))
                           (:name "Unit" :and (:category "unit" :tag "@ammar"))
-                          (:name "NAARPR Dallas" :category "naarpr")
-         ))
+                          (:name "NAARPR Dallas" :category "naarpr")))
+         
          (:name "IGF SPG" :category "igf" :order 6)
          (:name "RARE" :category "rare" :order 7)
 
          (:order-multi (8 (:name "Tinkering" :category "tinker")
                           (:name "Home Automation" :category "ha")
                           (:name "Weekly Habits" :tag "weekly")
-                          (:name "Daily Habits" :tag "daily")
-                          ))
+                          (:name "Daily Habits" :tag "daily")))
+                          
          (:name "Personal" :category "personal" :order 3)
          ;; Groups supply their own section names when none are given
 
          (:order-multi (10 (:name "Unit (team)" :and (:category "unit" :not (:tag "@ammar")))
-                           (:name "NAARPR Dallas (team)" :and (:category "naarpr" :not (:tag "@ammar")))
-                           ))
+                           (:name "NAARPR Dallas (team)" :and (:category "naarpr" :not (:tag "@ammar")))))
+                           
 
-         (:auto-category t :order 9)
-         ))
+         (:auto-category t :order 9)))
+         
          ;; After the last group, the agenda will display items that didn't
          ;; match any of these groups, with the default order position of 99
 
