@@ -38,7 +38,6 @@
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type 'relative)
 (setq doom-font (font-spec :family "Hack" :size 18 :weight 'normal))
-
 (setq vterm-timer-delay 0.01
       vterm-shell "fish")
 ;; If you use `org' and don't want your org files in the default location below,
@@ -130,6 +129,10 @@
          ;; (:discard (:and (:category "unit " :not (:tag "@ammar"))))
          ;; (:discard (:and (:tag "naarpr" :not (:tag "@ammar"))))
 
+         (:name "Habits"
+          :tag "daily"
+          :order 0
+          :face 'warning)
          (:name "❗ Overdue"
                 :scheduled past
                 :deadline past
