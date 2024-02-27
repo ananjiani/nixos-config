@@ -133,6 +133,8 @@
           :tag "daily"
           :order 0
           :face 'warning)
+         (:order-multi (10 (:name "Unit (team)" :and (:category "unit" :not (:tag "@ammar")))
+                           (:name "NAARPR Dallas (team)" :and (:category "naarpr" :not (:tag "@ammar")))))
          (:name "❗ Overdue"
                 :scheduled past
                 :deadline past
@@ -148,7 +150,7 @@
          (:name "Work" :category "work" :order 4)
          (:order-multi (5 (:name "Organizing" :and (:category "organizing" :not (:tag "naarpr")))
                           (:name "Unit" :and (:category "unit" :tag "@ammar"))
-                          (:name "NAARPR Dallas" :category "naarpr")))
+                          (:name "NAARPR Dallas" :and (:category "naarpr" :tag "@ammar"))))
          
          (:name "IGF SPG" :category "igf" :order 6)
          (:name "RARE" :category "rare" :order 7)
@@ -160,10 +162,6 @@
                           
          (:name "Personal" :category "personal" :order 3)
          ;; Groups supply their own section names when none are given
-
-         (:order-multi (10 (:name "Unit (team)" :and (:category "unit" :not (:tag "@ammar")))
-                           (:name "NAARPR Dallas (team)" :and (:category "naarpr" :not (:tag "@ammar")))))
-                           
 
          (:auto-category t :order 9)))
          
