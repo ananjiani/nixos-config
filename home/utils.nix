@@ -11,6 +11,7 @@
     ./helix.nix
     ./xremap.nix
     ./wezterm.nix
+    ./lsp.nix
   ]
 ;
 
@@ -227,6 +228,7 @@
     xfce.thunar
     xfce.thunar-archive-plugin
     xfce.thunar-media-tags-plugin
+    microsoft-edge
   ];
 
   home.file = {
