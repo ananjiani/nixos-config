@@ -70,7 +70,7 @@
           ("ha" ,(list (nerd-icons-faicon "nf-fa-home")) nil nil :ascent center)
           ("personal" ,(list (nerd-icons-mdicon "nf-md-human")) nil nil :ascent center)
           ("work" ,(list (nerd-icons-faicon "nf-fa-graduation_cap")) nil nil :ascent center)))
-          
+
   (setq org-agenda-custom-commands
         '(("n" "NAARPR Dallas"
            ((org-ql-block '(and (todo "TODO")
@@ -85,8 +85,8 @@
                                 (not (todo "TODO"))
                                 (tags "naarpr"))
                           ((org-ql-block-header "Backlog")))))
-            
-           
+
+
           ("u" "Unit"
            ((org-ql-block '(and (todo "TODO")
                                 (tags "@ammar")
@@ -96,77 +96,77 @@
                                 (not (tags "@ammar"))
                                 (category "unit"))
                           ((org-ql-block-header "Everyone else's Tasks")))
-                         
+
             (org-ql-block '(and (todo)
                                 (not (todo "TODO"))
                                 (category "unit"))
                           ((org-ql-block-header "Backlog")))))
-                         
-            
-           
+
+
+
           ("w" "Work"
            ((org-ql-block '(and (category "work")
                                 (todo "TODO"))
                           ((org-ql-block-header "Tasks")))
-                            
+
             (org-ql-block '(and (category "work")
                                 (todo)
                                 (not (todo "TODO")))
-                            
+
                           ((org-ql-block-header "Backlog")))))))
-                         
-           
+
+
   ;; (setq org-agenda-todo-keyword-format "")
   (setq org-capture-templates `(
                                 ("i" "Inbox" entry (file "inbox.org") "* TODO %?\n/Entered on/ %U"))))
-   
+
 
 (define-key global-map (kbd "C-c c") 'org-capture)
 
 (setq org-super-agenda-groups
-    '(;; Each group has an implicit boolean OR operator between its selectors.
-         ;; Set order of multiple groups at once
-         ;; (:discard (:and (:category "unit " :not (:tag "@ammar"))))
-         ;; (:discard (:and (:tag "naarpr" :not (:tag "@ammar"))))
+      '(;; Each group has an implicit boolean OR operator between its selectors.
+        ;; Set order of multiple groups at once
+        ;; (:discard (:and (:category "unit " :not (:tag "@ammar"))))
+        ;; (:discard (:and (:tag "naarpr" :not (:tag "@ammar"))))
 
-         (:name "Habits"
-          :tag "daily"
-          :order 0
-          :face 'warning)
-         (:order-multi (10 (:name "Unit (team)" :and (:category "unit" :not (:tag "@ammar")))
-                           (:name "NAARPR Dallas (team)" :and (:category "naarpr" :not (:tag "@ammar")))))
-         (:name "❗ Overdue"
-                :scheduled past
-                :deadline past
-                :order 1
-                :face 'error)
-         (:name "📅 Today"
-                :date today
-                :scheduled today
-                :deadline today
-                :order 2
-                :face 'warning)
+        (:name "Habits"
+         :tag "daily"
+         :order 0
+         :face 'warning)
+        (:order-multi (10 (:name "Unit (team)" :and (:category "unit" :not (:tag "@ammar")))
+                          (:name "NAARPR Dallas (team)" :and (:category "naarpr" :not (:tag "@ammar")))))
+        (:name "❗ Overdue"
+         :scheduled past
+         :deadline past
+         :order 1
+         :face 'error)
+        (:name "📅 Today"
+         :date today
+         :scheduled today
+         :deadline today
+         :order 2
+         :face 'warning)
 
-         (:name "Work" :category "work" :order 4)
-         (:order-multi (5 (:name "Organizing" :and (:category "organizing" :not (:tag "naarpr")))
-                          (:name "Unit" :and (:category "unit" :tag "@ammar"))
-                          (:name "NAARPR Dallas" :and (:category "naarpr" :tag "@ammar"))))
-         
-         (:name "IGF SPG" :category "igf" :order 6)
-         (:name "RARE" :category "rare" :order 7)
+        (:name "Work" :category "work" :order 4)
+        (:order-multi (5 (:name "Organizing" :and (:category "organizing" :not (:tag "naarpr")))
+                         (:name "Unit" :and (:category "unit" :tag "@ammar"))
+                         (:name "NAARPR Dallas" :and (:category "naarpr" :tag "@ammar"))))
 
-         (:order-multi (8 (:name "Tinkering" :category "tinker")
-                          (:name "Home Automation" :category "ha")
-                          (:name "Weekly Habits" :tag "weekly")
-                          (:name "Daily Habits" :tag "daily")))
-                          
-         (:name "Personal" :category "personal" :order 3)
-         ;; Groups supply their own section names when none are given
+        (:name "IGF SPG" :category "igf" :order 6)
+        (:name "RARE" :category "rare" :order 7)
 
-         (:auto-category t :order 9)))
-         
-         ;; After the last group, the agenda will display items that didn't
-         ;; match any of these groups, with the default order position of 99
+        (:order-multi (8 (:name "Tinkering" :category "tinker")
+                         (:name "Home Automation" :category "ha")
+                         (:name "Weekly Habits" :tag "weekly")
+                         (:name "Daily Habits" :tag "daily")))
+
+        (:name "Personal" :category "personal" :order 3)
+        ;; Groups supply their own section names when none are given
+
+        (:auto-category t :order 9)))
+
+;; After the last group, the agenda will display items that didn't
+;; match any of these groups, with the default order position of 99
 
 
 (setq org-super-agenda-header-map (make-sparse-keymap))
@@ -178,9 +178,25 @@
   (olivetti-mode)
   (olivetti-set-width 120))
 
-
 (add-hook 'org-agenda-mode-hook 'org-agenda-open-hook)
 (with-eval-after-load 'org (global-org-modern-mode))
+
+(setq +format-on-save-enabled-modes
+      '(not emacs-lisp-mode))
+
+(defun fzf-home ()
+  (interactive)
+  (fzf-find-file-in-dir "~"))
+
+(map! :leader
+      (:prefix ("z" . "Fuzzy Find")
+               (:desc "Current directory" "f" #'fzf
+                :desc "Directory" "d" #'fzf-directory
+                :desc "Home" "h" #'fzf-home)))
+
+
+
+
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
