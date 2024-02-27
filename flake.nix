@@ -25,11 +25,12 @@
     xremap.url = "github:xremap/nix-flake";
   };
 
-  outputs = {self, nixpkgs-unstable, home-manager-unstable, sddm-sugar-candy-nix, nix-colors, emacs-overlay, nix-vscode-extensions, nixvim, sops-nix, xremap, ...}:
+  outputs = {self, nixpkgs, nixpkgs-unstable, home-manager-unstable, sddm-sugar-candy-nix, nix-colors, emacs-overlay, nix-vscode-extensions, nixvim, sops-nix, xremap, ...}:
     let
       lib = nixpkgs-unstable.lib;
       system = "x86_64-linux";
       pkgs = import nixpkgs-unstable { system = "x86_64-linux"; config = { allowUnfree = true; }; };
+      pkgs-stable = import nixpkgs{ system = "x86_64-linux"; config = { allowUnfree = true; }; };
       active-profile = import ./active-profile.nix;
     in {
       nixosConfigurations = {
@@ -46,6 +47,9 @@
             }
             ./profiles/desktop/configuration.nix
           ];
+          specialArgs = {
+            inherit pkgs-stable;
+          };
         };
         work-laptop = lib.nixosSystem {
           inherit system;
@@ -60,6 +64,9 @@
             }
             ./profiles/work-laptop/configuration.nix
           ];
+          specialArgs = {
+            inherit pkgs-stable;
+          };
         };
         surface-go = lib.nixosSystem {
           inherit system;
@@ -74,6 +81,9 @@
             }
             ./profiles/surface-go/configuration.nix
           ];
+          specialArgs = {
+            inherit pkgs-stable;
+          };
         };
       };
 
@@ -92,6 +102,7 @@
             inherit nixvim;
 	          inherit sops-nix;
             inherit xremap;
+            inherit pkgs-stable;
           };
         };
       };
