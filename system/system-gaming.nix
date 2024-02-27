@@ -1,11 +1,10 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, pkgs-stable, ... }:
 
 {
 
   programs = {
     steam = {
       enable = true;
-      gamescopeSession.enable = true;
       package = pkgs.steam.override {
         extraEnv = {};
         extraLibraries = pkgs: with pkgs; [
@@ -26,10 +25,16 @@
     gamemode.enableRenice = true;
   };
 
-  environment.systemPackages = with pkgs; [
-    steamtinkerlaunch
-    lutris
-    gamescope
-  ];
+  environment.systemPackages = 
+    (with pkgs; [
+      steamtinkerlaunch
+      lutris
+    ])
+
+    ++
+
+    (with pkgs-stable; [
+      gamescope
+    ]);
 
 }
