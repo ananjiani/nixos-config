@@ -37,8 +37,8 @@
 ;; our package manager can't deal with; see radian-software/straight.el#279)
 ;; (package! builtin-package :recipe (:branch "develop"))
 
-;; Use `:pin' to specify a particular commit to install.
-;; (package! builtin-package :pin "1a2b3c4d5e")
+;; Use `:pin' to specify a particular commit to install. (package!
+;; builtin-package :pin "1a2b3c4d5e")
 
 (package! org-super-agenda)
 (package! org-ql)
@@ -46,6 +46,8 @@
 (package! org-modern)
 (package! fzf)
 (package! hyperbole)
+(package! anki
+  :recipe (:host github :repo "chenyanming/anki.el"))
 ;; Doom's packages are pinned to a specific commit and updated from release to
 ;; release. The `unpin!' macro allows you to unpin single packages...
 ;; (unpin! pinned-package)

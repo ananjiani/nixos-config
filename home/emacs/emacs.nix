@@ -48,10 +48,10 @@ in {
     fi
   '';
 
-  home.activation.doomUpgrade = lib.hm.dag.entryAfter ["installDoomEmacs"] ''
+  home.activation.doomSync = lib.hm.dag.entryAfter ["installDoomEmacs"] ''
     PATH="${config.home.path}/bin:$PATH"
     export DOOMDIR=${doom-dir}
-    $HOME/.emacs.d/bin/doom upgrade
+    $HOME/.emacs.d/bin/doom sync
   '';
 
   home.sessionPath = [
