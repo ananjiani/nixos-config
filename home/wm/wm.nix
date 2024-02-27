@@ -54,6 +54,10 @@
     };
   };
 
+  home.activation.reloadHyprland = lib.hm.dag.entryAfter ["reloadSystemd"] ''
+    hyprctl reload
+  '';
+
   wayland.windowManager.hyprland = {
     enable = true;
     settings = {
