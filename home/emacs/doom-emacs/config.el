@@ -120,6 +120,9 @@
   (setq org-capture-templates `(
                                 ("i" "Inbox" entry (file "inbox.org") "* TODO %?\n/Entered on/ %U"))))
 
+(setq org-roam-directory "~/Documents/org-roam")
+(org-roam-db-autosync-mode)
+(setq org-roam-database-connector 'emacsql-sqlite-builtin)
 
 (define-key global-map (kbd "C-c c") 'org-capture)
 
