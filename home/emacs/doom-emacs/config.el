@@ -121,7 +121,7 @@
                                 ("i" "Inbox" entry (file "inbox.org") "* TODO %?\n/Entered on/ %U"))))
 
 (setq org-roam-directory "~/Documents/org-roam")
-(org-roam-db-autosync-mode)
+;; (org-roam-db-autosync-mode)
 (setq org-roam-database-connector 'emacsql-sqlite-builtin)
 
 (define-key global-map (kbd "C-c c") 'org-capture)
@@ -196,6 +196,22 @@
                (:desc "Current directory" "f" #'fzf
                 :desc "Directory" "d" #'fzf-directory
                 :desc "Home" "h" #'fzf-home)))
+
+(after! nov
+  (evil-collection-nov-setup)
+  (setq nov-text-width t)
+  (setq visual-fill-column-center-text t))
+
+(add-hook 'nov-mode-hook 'visual-line-mode)
+(add-hook 'nov-mode-hook 'visual-fill-column-mode)
+(add-hook 'nov-mode-hook 'org-agenda-open-hook)
+(add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
+
+(after! org-noter
+  (setq org-noter-notes-search-path '("~/Documents/org-roam"))
+  (org-noter-enable-org-roam-integration))
+
+
 
 
 
