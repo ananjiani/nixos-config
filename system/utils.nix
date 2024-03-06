@@ -1,8 +1,11 @@
-#Stuff that will be universally useful.
+# Stuff that will be universally useful.
 
-{ config, pkgs, lib, ...}:
+{ config, pkgs, lib, ... }:
 
 {
+
+  imports = [ ./fonts.nix ];
+
   environment.systemPackages = with pkgs; [
     wget
     zip
@@ -18,14 +21,16 @@
     sops
   ];
 
+  boot.kernelPackages = pkgs.linuxPackages_6_1;
+
   # xremap home manager
   hardware.uinput.enable = true;
-  users.groups.uinput.members = ["ammar"];
-  users.groups.input.members = ["ammar"];
+  users.groups.uinput.members = [ "ammar" ];
+  users.groups.input.members = [ "ammar" ];
 
   programs.fish.enable = true;
-  nix.settings.experimental-features = ["nix-command" "flakes"];
-  
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
   nix.gc = {
     automatic = true;
     dates = "weekly";
