@@ -203,6 +203,8 @@
 
 (after! nov
   (evil-collection-nov-setup)
+  (org-remark-mode)
+  (org-remark-nov-mode)
   (setq nov-text-width t)
   (setq visual-fill-column-center-text t))
 
@@ -211,10 +213,6 @@
 (add-hook 'nov-mode-hook 'my-nov-font-setup)
 (add-hook 'nov-mode-hook 'org-agenda-open-hook)
 (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
-
-(after! org-noter
-  (setq org-noter-notes-search-path '("~/Documents/org-roam"))
-  (org-noter-enable-org-roam-integration))
 
 (use-package! org-remark
   :bind (;; :bind keyword also implicitly defers org-remark itself.
@@ -246,6 +244,32 @@
           (concat "~/Documents/org-roam/"
                   (file-name-base (org-remark-notes-file-name-function))
                   ".org"))))
+
+(use-package! consult-org-roam
+  :after org-roam
+  :init
+  (require 'consult-org-roam)
+  ;; Activate the minor mode
+  (consult-org-roam-mode 1)
+  :custom
+  (consult-org-roam-grep-func #'consult-ripgrep)
+  (consult-org-roam-buffer-narrow-key ?r)
+  (consult-org-roam-buffer-after-buffers t)
+  :config
+  (consult-customize
+   consult-org-roam-forward-links
+   :preview-key "M-."))
+;; :bind
+;; ("SPC n r e" . consult-org-roam-file-find)
+;; ("SPC n r b" . consult-org-roam-backlinks)
+;; ("SPC n r B" . consult-org-roam-backlinks-recursive)
+;; ("SPC n r l" . consult-org-roam-forward-links)
+;; ("SPC n r S" . consult-org-roam-search))
+
+
+
+
+
 
 
 
