@@ -122,7 +122,7 @@
 
 (setq org-roam-directory "~/Documents/org-roam")
 ;; (org-roam-db-autosync-mode)
-(setq org-roam-database-connector 'emacsql-sqlite-builtin)
+;; (setq org-roam-database-connector 'emacsql-sqlite-builtin)
 
 (define-key global-map (kbd "C-c c") 'org-capture)
 
@@ -197,6 +197,10 @@
                 :desc "Directory" "d" #'fzf-directory
                 :desc "Home" "h" #'fzf-home)))
 
+(defun my-nov-font-setup ()
+  (face-remap-add-relative 'variable-pitch :family "Liberation Serif"
+                           :height 1.0))
+
 (after! nov
   (evil-collection-nov-setup)
   (setq nov-text-width t)
@@ -204,6 +208,7 @@
 
 (add-hook 'nov-mode-hook 'visual-line-mode)
 (add-hook 'nov-mode-hook 'visual-fill-column-mode)
+(add-hook 'nov-mode-hook 'my-nov-font-setup)
 (add-hook 'nov-mode-hook 'org-agenda-open-hook)
 (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
 
@@ -211,6 +216,36 @@
   (setq org-noter-notes-search-path '("~/Documents/org-roam"))
   (org-noter-enable-org-roam-integration))
 
+(use-package! org-remark
+  :bind (;; :bind keyword also implicitly defers org-remark itself.
+         ;; Keybindings before :map is set for global-map.
+         ("C-c n m" . org-remark-mark)
+         ("C-c n l" . org-remark-mark-line) ; new in v1.3
+         :map org-remark-mode-map
+         ("C-c n o" . org-remark-open)
+         ("C-c n ]" . org-remark-view-next)
+         ("C-c n [" . org-remark-view-prev)
+         ("C-c n r" . org-remark-remove)
+         ("C-c n d" . org-remark-delete))
+  ;; Alternative way to enable `org-remark-global-tracking-mode' in
+  ;; `after-init-hook'.
+  ;; :hook (after-init . org-remark-global-tracking-mode)
+  :init
+  ;; It is recommended that `org-remark-global-tracking-mode' be
+  ;; enabled when Emacs initializes. Alternatively, you can put it to
+  ;; `after-init-hook' as in the comment above
+  (org-remark-global-tracking-mode +1)
+  :config
+  (use-package! org-remark-info :after info :config (org-remark-info-mode +1))
+  (use-package! org-remark-eww  :after eww  :config (org-remark-eww-mode +1))
+  (use-package! org-remark-nov  :after nov  :config (org-remark-nov-mode +1)))
+(after! org-remark
+  (tooltip-mode +1)
+  (setq org-remark-notes-file-name
+        (lambda ()
+          (concat "~/Documents/org-roam/"
+                  (file-name-base (org-remark-notes-file-name-function))
+                  ".org"))))
 
 
 
