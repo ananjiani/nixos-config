@@ -45,11 +45,11 @@
 (package! olivetti)
 (package! org-modern)
 (package! fzf)
-(package! hyperbole)
-(package! shrface)
+(package! hyperbole :disable t)
+(package! shrface :disable t)
 (package! nov)
-(package! org-noter)
 (package! org-remark)
+(package! consult-org-roam)
 (package! anki
   :recipe (:host github :repo "chenyanming/anki.el"))
 ;; Doom's packages are pinned to a specific commit and updated from release to
