@@ -49,6 +49,7 @@
 (package! shrface)
 (package! nov)
 (package! org-noter)
+(package! org-remark)
 (package! anki
   :recipe (:host github :repo "chenyanming/anki.el"))
 ;; Doom's packages are pinned to a specific commit and updated from release to
