@@ -1,8 +1,6 @@
-{config, pkgs, lib, ...}:
-{
+{ config, pkgs, lib, ... }: {
   services.xserver.windowManager.exwm = {
     enable = true;
-    loadScript =  builtins.readFile ../home/emacs/doom-emacs/exwm.el;
+    loadScript = builtins.readFile ../home/emacs/doom-emacs/exwm.el;
   };
-
 }
