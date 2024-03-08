@@ -43,8 +43,7 @@
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
 (after! org
-  (setq org-directory "~/Documents/org")
-  (setq org-agenda-files (list "inbox.org" "./naarpr-dallas-notes/meeting-notes.org" "./red-notes/pc-meeting-notes.org"))
+  (setq org-directory "~/Documents/org-roam")
   (setq org-log-done 'note)
   (setq org-agenda-prefix-format '(
                                    (agenda  . " %i %?-12t% s%e ") ;; file name + org-agenda-entry-type
@@ -259,6 +258,14 @@
   (consult-customize
    consult-org-roam-forward-links
    :preview-key "M-."))
+
+(map! :leader
+      (:prefix ("nr")
+               (:desc "backlinks" "b" #'consult-org-roam-backlinks
+                :desc "backlinks recursive" "B" #'consult-org-roam-backlinks-recursive
+                :desc "forward links" "l" #'consult-org-roam-forward-links
+                :desc "search" "S" #'consult-org-roam-search)))
+
 ;; :bind
 ;; ("SPC n r e" . consult-org-roam-file-find)
 ;; ("SPC n r b" . consult-org-roam-backlinks)
@@ -267,14 +274,48 @@
 ;; ("SPC n r S" . consult-org-roam-search))
 
 
+(defun org-roam-subtree-aware-preview-function ()
+  "Same as `org-roam-preview-default-function', but gets entire subtree in specific buffers."
+  (if (--> (org-roam-node-at-point)
+           (org-roam-node-file it)
+           (or (member it
+                       ;; This is a list of buffers where I want to see preview of subtree
+                       org-roam-subtree-aware-preview-buffers)
+               (f-ancestor-of-p bibtex-completion-notes-path it)))
+      (let ((beg (progn (org-roam-end-of-meta-data t)
+                        (point)))
+            (end (progn (org-previous-visible-heading 1)
+                        (org-end-of-subtree)
+                        (point))))
+        (-reduce
+         (lambda (str el)
+           ;; remove properties not interested. If prop drawer is empty at the end, remove drawer itself
+           (s-replace-regexp (format "\n *:%s:.*$" el) "" str))
+         ;; remove links
+         (list (s-replace-regexp "\\[id:\\([a-z]\\|[0-9]\\)\\{8\\}-\\([a-z]\\|[0-9]\\)\\{4\\}-\\([a-z]\\|[0-9]\\)\\{4\\}-\\([a-z]\\|[0-9]\\)\\{4\\}-\\([a-z]\\|[0-9]\\)\\{12\\}\\]"
+                                 ""
+                                 (string-trim (buffer-substring-no-properties beg end)))
+               "INTERLEAVE_PAGE_NOTE" "BRAIN_CHILDREN" okm-parent-property-name "PROPERTIES:\n *:END")))
+    (org-roam-preview-default-function))
 
+  (setq org-roam-preview-function #'org-roam-subtree-aware-preview-function))
 
+(defun my/org-roam-filter-by-tag (tag-name)
+  (lambda (node)
+    (member tag-name (org-roam-node-tags node))))
 
+(defun my/org-roam-list-notes-by-tag (tag-name)
+  (mapcar #'org-roam-node-file
+          (seq-filter
+           (my/org-roam-filter-by-tag tag-name)
+           (org-roam-node-list))))
 
+(defun my/org-roam-refresh-agenda-list ()
+  (interactive)
+  (setq org-agenda-files (my/org-roam-list-notes-by-tag "agenda")))
 
-
-
-
+;; Build the agenda list the first time for the session
+(my/org-roam-refresh-agenda-list)
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
