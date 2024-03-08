@@ -11,6 +11,8 @@
     fe = "$EDITOR $(fzf)";
     fc = "emacsclient $(fzf)";
     fv = "vi $(fzf)";
+    nrs = "sudo nixos-rebuild switch --flake ~/.dotfiles --show-trace";
+    hms = "home-manager switch --flake ~/.dotfiles --show-trace";
   };
 #  imports = [
 #    sops-nix.homeManagerModules.sops
