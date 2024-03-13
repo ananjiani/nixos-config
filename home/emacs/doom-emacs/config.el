@@ -42,9 +42,11 @@
       vterm-shell "fish")
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
+
+(setq org-directory "~/Documents/org-roam")
+
 (after! org
-  (setq org-directory "~/Documents/org-roam")
-  (setq org-log-done 'note)
+  (setq org-log-refile 'note)
   (setq org-agenda-prefix-format '(
                                    (agenda  . " %i %?-12t% s%e ") ;; file name + org-agenda-entry-type
                                    (timeline  . "  % s")
@@ -176,7 +178,19 @@
 (org-super-agenda-mode t)
 (setq org-agenda-skip-function-global '(org-agenda-skip-entry-if 'todo 'done))
 
+(defun my/org-roam-list-notes-by-tag (tag-name)
+  (mapcar #'org-roam-node-file
+          (seq-filter
+           (my/org-roam-filter-by-tag tag-name)
+           (org-roam-node-list))))
+
+(defun my/org-roam-refresh-agenda-list ()
+  (interactive)
+  (setq org-agenda-files (my/org-roam-list-notes-by-tag "agenda")))
+
+;; Build the agenda list the first time for the session
 (defun org-agenda-open-hook()
+  (my/org-roam-refresh-agenda-list)
   (olivetti-mode)
   (olivetti-set-width 120))
 
@@ -223,19 +237,8 @@
          ("C-c n ]" . org-remark-view-next)
          ("C-c n [" . org-remark-view-prev)
          ("C-c n r" . org-remark-remove)
-         ("C-c n d" . org-remark-delete))
-  ;; Alternative way to enable `org-remark-global-tracking-mode' in
-  ;; `after-init-hook'.
-  ;; :hook (after-init . org-remark-global-tracking-mode)
-  :init
-  ;; It is recommended that `org-remark-global-tracking-mode' be
-  ;; enabled when Emacs initializes. Alternatively, you can put it to
-  ;; `after-init-hook' as in the comment above
-  (org-remark-global-tracking-mode +1)
-  :config
-  (use-package! org-remark-info :after info :config (org-remark-info-mode +1))
-  (use-package! org-remark-eww  :after eww  :config (org-remark-eww-mode +1))
-  (use-package! org-remark-nov  :after nov  :config (org-remark-nov-mode +1)))
+         ("C-c n d" . org-remark-delete)))
+
 (after! org-remark
   (tooltip-mode +1)
   (setq org-remark-notes-file-name
@@ -266,14 +269,6 @@
                 :desc "forward links" "l" #'consult-org-roam-forward-links
                 :desc "search" "S" #'consult-org-roam-search)))
 
-;; :bind
-;; ("SPC n r e" . consult-org-roam-file-find)
-;; ("SPC n r b" . consult-org-roam-backlinks)
-;; ("SPC n r B" . consult-org-roam-backlinks-recursive)
-;; ("SPC n r l" . consult-org-roam-forward-links)
-;; ("SPC n r S" . consult-org-roam-search))
-
-
 (defun org-roam-subtree-aware-preview-function ()
   "Same as `org-roam-preview-default-function', but gets entire subtree in specific buffers."
   (if (--> (org-roam-node-at-point)
@@ -296,27 +291,89 @@
                                  ""
                                  (string-trim (buffer-substring-no-properties beg end)))
                "INTERLEAVE_PAGE_NOTE" "BRAIN_CHILDREN" okm-parent-property-name "PROPERTIES:\n *:END")))
-    (org-roam-preview-default-function))
+    (org-roam-preview-default-function)))
 
-  (setq org-roam-preview-function #'org-roam-subtree-aware-preview-function))
 
 (defun my/org-roam-filter-by-tag (tag-name)
   (lambda (node)
     (member tag-name (org-roam-node-tags node))))
 
-(defun my/org-roam-list-notes-by-tag (tag-name)
-  (mapcar #'org-roam-node-file
-          (seq-filter
-           (my/org-roam-filter-by-tag tag-name)
-           (org-roam-node-list))))
-
-(defun my/org-roam-refresh-agenda-list ()
+(defun bhankas-org-age-encrypt-and-replace ()
+  "Replace current org file with age-encrypted version"
   (interactive)
-  (setq org-agenda-files (my/org-roam-list-notes-by-tag "agenda")))
+  (let* ((current-file-name (buffer-file-name))
+         (encr-file-name (-> (buffer-file-name)
+                             (string-trim)
+                             (concat ".age")))
+         (encr-file-exists nil))
+    (when (string-suffix-p ".org" current-file-name)
+      (if (file-exists-p encr-file-name)
+          (progn
+            (message "Using existing encrypted version instead of overwriting")
+            (setq encr-file-exists t))
+        (progn
+          (message "Encrypting file %s" current-file-name)
+          (shell-command (concat "rage -R ~/.ssh/id_ed25519.pub -e " current-file-name " -o " encr-file-name))
+          (when (file-exists-p encr-file-name)
+            (setq encr-file-exists t))))
+      (when encr-file-exists
+        (doom/delete-this-file current-file-name t)
+        (find-file encr-file-name)))))
 
-;; Build the agenda list the first time for the session
-(my/org-roam-refresh-agenda-list)
+(use-package! org-roam
+  :after (org age org-roam-dailies)
+  :init
+  (add-to-list 'auto-mode-alist '("\\.org\\.age" . org-mode)))
 
+(use-package! age
+  :after (org)
+  :commands (age-file-enable)
+  :init
+  (setq! age-program "rage"
+         age-default-identity "~/.ssh/id_ed25519"
+         age-default-recipient "~/.ssh/id_ed25519.pub")
+  (age-file-enable))
+
+(use-package! websocket
+  :after org-roam)
+
+(use-package! org-roam-ui
+  :after org-roam ;; or :after org
+  ;;         normally we'd recommend hooking orui after org-roam, but since org-roam does not have
+  ;;         a hookable mode anymore, you're advised to pick something yourself
+  ;;         if you don't care about startup time, use
+  ;;  :hook (after-init . org-roam-ui-mode)
+  :config
+  (setq org-roam-ui-sync-theme t
+        org-roam-ui-follow t
+        org-roam-ui-update-on-save t
+        org-roam-ui-open-on-start t))
+
+
+
+(defun my/org-roam-copy-todo-to-today ()
+  (interactive)
+  (let ((org-refile-keep t) ;; Set this to nil to delete the original!
+        (org-roam-dailies-capture-templates
+         '(("t" "tasks" entry "%?"
+            :if-new (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" ("Tasks")))))
+        (org-after-refile-insert-hook #'save-buffer)
+        today-file
+        pos)
+    (save-window-excursion
+      (org-roam-dailies--capture (current-time) t)
+      (setq today-file (buffer-file-name))
+      (setq pos (point)))
+
+    ;; Only refile if the target file is different than the current file
+    (unless (equal (file-truename today-file)
+                   (file-truename (buffer-file-name)))
+      (org-refile nil nil (list "Tasks" today-file nil pos)))))
+
+(add-to-list 'org-after-todo-state-change-hook
+             (lambda ()
+               (when (equal org-state "DONE")
+                 (my/org-roam-copy-todo-to-today))))
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
 ;;
