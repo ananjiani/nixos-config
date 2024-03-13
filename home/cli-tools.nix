@@ -87,5 +87,7 @@
     ripgrep-all
     fd
     sshfs
+    pinentry
+    rage
   ];
 }
