@@ -51,8 +51,12 @@
 (package! nov)
 (package! org-remark)
 (package! consult-org-roam)
+(package! age)
 (package! anki
   :recipe (:host github :repo "chenyanming/anki.el"))
+(unpin! org-roam)
+(package! org-roam-ui)
+(package! git-auto-commit-mode)
 ;; Doom's packages are pinned to a specific commit and updated from release to
 ;; release. The `unpin!' macro allows you to unpin single packages...
 ;; (unpin! pinned-package)
