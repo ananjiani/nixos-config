@@ -1,7 +1,0 @@
-# -*- mode: snippet -*-
-# name: meeting
-# key: meeting
-# --
-* [`(format-time-string "%Y-%m-%d %a")`$0]
-** Agenda
-** Attendees

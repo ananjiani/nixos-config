@@ -1,8 +1,0 @@
-(require 'exwm)
-(require 'exwm-config)
-(exwm-config-default)
-(require 'exwm-system-tray)
-(exwm-system-tray-enable)
-(require 'exwm-randr)
-(exwm-randr-enable)
-(start-process-shell-command "xrandr" nil "")
