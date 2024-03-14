@@ -18,7 +18,6 @@
     remmina
     openconnect
     libsForQt5.qt5.qtgraphicaleffects
-    sops
   ];
 
   boot.kernelPackages = pkgs.linuxPackages_6_1;
