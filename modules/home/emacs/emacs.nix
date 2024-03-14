@@ -1,5 +1,5 @@
 { config, pkgs, lib, ... }:
-let doom-dir = "$HOME/.dotfiles/home/emacs/doom-emacs";
+let doom-dir = "$HOME/.dotfiles/modules/home/emacs/doom-emacs";
 in {
 
   home.shellAliases = {
