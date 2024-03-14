@@ -52,7 +52,7 @@
                 overlays = [ sddm-sugar-candy-nix.overlays.default ];
               };
             }
-            ./profiles/desktop/configuration.nix
+            ./hosts/desktop/configuration.nix
           ];
           specialArgs = { inherit pkgs-stable; };
         };
@@ -65,7 +65,7 @@
                 overlays = [ sddm-sugar-candy-nix.overlays.default ];
               };
             }
-            ./profiles/work-laptop/configuration.nix
+            ./hosts/work-laptop/configuration.nix
           ];
           specialArgs = { inherit pkgs-stable; };
         };
@@ -78,7 +78,7 @@
                 overlays = [ sddm-sugar-candy-nix.overlays.default ];
               };
             }
-            ./profiles/surface-go/configuration.nix
+            ./hosts/surface-go/configuration.nix
           ];
           specialArgs = { inherit pkgs-stable; };
         };
@@ -94,7 +94,7 @@
                 nix-vscode-extensions.overlays.default
               ];
             }
-            (./profiles + ("/" + active-profile) + "/home.nix")
+            (./hosts + ("/" + active-profile) + "/home.nix")
           ];
           extraSpecialArgs = {
             inherit nix-colors;
