@@ -65,6 +65,7 @@
         "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
       ];
       general = {
+        layout = "dwindle";
         "col.active_border" = with config.colorScheme.colors; "rgba(${base09}ee) rgba(${base0A}ee) 45deg";
       };
       "$mainMod" = "SUPER";
