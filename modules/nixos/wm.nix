@@ -5,7 +5,7 @@
     enable = true;
     settings = {
       Background =
-        lib.cleanSource ../profiles/work-laptop/wallpapers/revachol-horse.jpg;
+        lib.cleanSource ../../hosts/default/wallpapers/revachol-horse.jpg;
       ScaleImageCropped = false;
       ScreenWidth = 5120;
       ScreenHeight = 1440;
