@@ -1,10 +1,8 @@
-{ config, pkgs, lib, ...}:
+{ config, pkgs, lib, ... }:
 
 {
-  
-  home.sessionVariables = {
-    EDITOR = "lvim";
-  };
+
+  home.sessionVariables = { EDITOR = "lvim"; };
 
   xdg = {
     configFile."mimeapps.list".force = true;
@@ -20,7 +18,7 @@
         "inode/directory" = "thunar.desktop";
         "text/org" = "emacsclient.desktop";
         "text/plain" = "emacsclient.desktop";
-        "application/pdf" = "org.pwmt.zathura.desktop";
+        "application/pdf" = "emacsclient.desktop";
       };
     };
   };

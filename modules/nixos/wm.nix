@@ -27,7 +27,6 @@
   };
 
   programs = {
-    file-roller.enable = true;
     dconf.enable = true;
     hyprland.enable = true;
     xwayland.enable = true;

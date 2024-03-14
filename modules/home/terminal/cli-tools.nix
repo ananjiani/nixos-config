@@ -1,7 +1,12 @@
-{ config, pkgs, lib, sops-nix, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   home.shellAliases = {
+    ls = "eza -a";
+    ll = "eza -alh";
+    tree = "eza -tree";
+    lg = "lazygit";
+    cat = "bat";
     df = "duf";
     du = "dust";
     grep = "rg";
@@ -14,28 +19,33 @@
     nrs = "sudo nixos-rebuild switch --flake ~/.dotfiles --show-trace";
     hms = "home-manager switch --flake ~/.dotfiles --show-trace";
   };
-#  imports = [
-#    sops-nix.homeManagerModules.sops
-#  ];
-#
-#  sops = {
-#    defaultSopsFile = ../secrets/secrets.yaml;
-#    defaultSopsFormat = "yaml";
-#    sops.age.keyFile = "~/.config/sops/age/keys.txt";
-#  };
 
   programs = {
+    eza = {
+      enable = true;
+      git = true;
+      icons = true;
+    };
+    bat.enable = true;
+
+    git = {
+      enable = true;
+      userName = "Ammar Nanjiani";
+      userEmail = "ammar.nanjiani@gmail.com";
+      extraConfig = {
+        init.defaultBranch = "main";
+        credential.helper = "store";
+      };
+    };
+    lazygit.enable = true;
     thefuck.enable = true;
-  
     zoxide = {
       enable = true;
       options = [
-  	"--cmd cd" #doesn't work on nushell and posix shells
+        "--cmd cd" # doesn't work on nushell and posix shells
       ];
     };
-
     ripgrep.enable = true;
-   
     fzf = {
       enable = true;
       defaultCommand = "fd --type f";
@@ -55,20 +65,8 @@
         header = "#665c54";
       };
     };
-   
-    atuin = {
-      enable = true;
-      settings = {
-    	keymap_mode = "vim-normal";
-      #	key_path = config.sops.secrets.atuin_key.path;
-      };
-    };
-    
-  };
 
-#  sops.secrets.atuin_key = {
-#    sopsFile = ../secrets.yaml;
-#  };
+  };
 
   home.packages = with pkgs; [
     chafa
