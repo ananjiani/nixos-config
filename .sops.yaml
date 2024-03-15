@@ -1,0 +1,11 @@
+keys:
+  - &desktop age1h96q7q8m88zl0cwsskmlmxgelnf863978hzrukqa3alcst5pv4dq8syj4c
+creation_rules:
+  - path_regex: secrets/work-vpn.conf
+    key_groups:
+    - age:
+      - *desktop
+  - path_regex: secrets/emacs/*
+    key_groups:
+    - age:
+      - *desktop
