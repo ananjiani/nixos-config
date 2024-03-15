@@ -38,6 +38,8 @@ in {
 
   home.activation.doomSync = lib.hm.dag.entryAfter [ "installDoomEmacs" ] ''
     PATH="${config.home.path}/bin:$PATH"
+    sops -d ~/.dotfiles/secrets/emacs/emacs.sops > ~/.dotfiles/secrets/emacs/emacs
+    sops -d ~/.dotfiles/secrets/emacs/emacs.pub.sops > ~/.dotfiles/secrets/emacs/emacs.pub
     export DOOMDIR=${doom-dir}
     $HOME/.emacs.d/bin/doom sync
   '';
