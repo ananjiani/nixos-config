@@ -9,3 +9,7 @@ creation_rules:
     key_groups:
     - age:
       - *desktop
+  - path_regex: secrets/secrets.yaml$
+    key_groups:
+    - age:
+      - *desktop
