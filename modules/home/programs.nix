@@ -6,5 +6,6 @@
     xfce.thunar
     xfce.thunar-archive-plugin
     xfce.thunar-media-tags-plugin
+    obs-studio
   ];
 }
