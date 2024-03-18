@@ -1,10 +1,12 @@
 keys:
   - &desktop age1h96q7q8m88zl0cwsskmlmxgelnf863978hzrukqa3alcst5pv4dq8syj4c
+  - &work-laptop age12kkgw58e8e9hg0a980e03zrzxjsrfdfnevt2jcydjx0ntdyw03kqqduzqm
 creation_rules:
   - path_regex: secrets/work-vpn.conf
     key_groups:
     - age:
       - *desktop
+      - *work-laptop
   - path_regex: secrets/emacs/*
     key_groups:
     - age:
@@ -13,3 +15,4 @@ creation_rules:
     key_groups:
     - age:
       - *desktop
+      - *work-laptop
