@@ -12,12 +12,14 @@ in
     ../../modules/home/programs.nix
     ../../modules/home/config/defaults.nix
     ../../modules/home/config/xremap.nix
+    ../../modules/home/config/sops.nix
     ../../modules/home/dev/lsp.nix
     ../../modules/home/dev/lvim.nix
     ../../modules/home/dev/vscode.nix
     ../../modules/home/terminal/environment.nix
     ../../modules/home/terminal/cli-tools.nix
     ../../modules/home/terminal/programs/lf.nix
+    ../../modules/home/terminal/programs/atuin.nix
 
   ];
 
