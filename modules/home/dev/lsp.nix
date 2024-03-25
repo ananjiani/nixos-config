@@ -4,6 +4,7 @@
     nil
     nodePackages.pyright
     python311Packages.python-lsp-server
+    gopls
   ];
 
 }
