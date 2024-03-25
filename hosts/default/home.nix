@@ -1,11 +1,8 @@
 { config, pkgs, lib, ... }:
 
-let
-  wallpaper = ./wallpapers/revachol.jpg;
-in
-{
-  imports =
-  [
+let wallpaper = ./wallpapers/revachol.jpg;
+in {
+  imports = [
     ../../modules/home/emacs/emacs.nix
     ../../modules/home/gaming.nix
     ../../modules/home/wm/wm.nix
@@ -20,7 +17,7 @@ in
     ../../modules/home/terminal/cli-tools.nix
     ../../modules/home/terminal/programs/lf.nix
     ../../modules/home/terminal/programs/atuin.nix
-
+    ../../modules/home/dev/nix-direnv.nix
   ];
 
   # Home Manager needs a bit of information about you and the paths it should
