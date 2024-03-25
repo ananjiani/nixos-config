@@ -18,6 +18,7 @@ in {
     ../../modules/home/terminal/programs/lf.nix
     ../../modules/home/terminal/programs/atuin.nix
     ../../modules/home/dev/nix-direnv.nix
+    ../../modules/home/dev/debugging.nix
   ];
 
   # Home Manager needs a bit of information about you and the paths it should
