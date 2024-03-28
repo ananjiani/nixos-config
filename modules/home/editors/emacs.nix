@@ -1,5 +1,5 @@
 { config, pkgs, lib, ... }:
-let doom-dir = "$HOME/.dotfiles/modules/home/emacs/doom-emacs";
+let doom-dir = "$HOME/.dotfiles/modules/home/editors/doom-emacs";
 in {
 
   home.shellAliases = {
@@ -36,7 +36,8 @@ in {
       fi
     '';
 
-  home.activation.decryptEmacs = lib.hm.dag.entryAfter [ "installDoomEmacs"] ''
+  home.activation.decryptEmacs = lib.hm.dag.entryAfter [ "installDoomEmacs" ] ''
+    PATH="${config.home.path}/bin:$PATH"
     sops -d ~/.dotfiles/secrets/emacs/emacs.sops > ~/.dotfiles/secrets/emacs/emacs
     sops -d ~/.dotfiles/secrets/emacs/emacs.pub.sops > ~/.dotfiles/secrets/emacs/emacs.pub
   '';
