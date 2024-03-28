@@ -1,3 +1,3 @@
-[submodule "modules/home/emacs/doom-emacs"]
+[submodule "modules/home/editors/doom-emacs"]
 	path = modules/home/emacs/doom-emacs
 	url = git@github.com:ananjiani/doom-emacs.git
