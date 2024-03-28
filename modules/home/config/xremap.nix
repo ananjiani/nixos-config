@@ -1,17 +1,13 @@
-{ pkgs, xremap, ...}:
+{ pkgs, inputs, ... }:
 
 {
-  imports = [
-    xremap.homeManagerModules.default
-  ];
+  imports = [ inputs.xremap.homeManagerModules.default ];
 
   services.xremap = {
     withWlroots = true;
-    config.modmap = [
-        {
-          name = "main remaps";
-          remap.CapsLock = "CONTROL_L";
-        }
-    ];
+    config.modmap = [{
+      name = "main remaps";
+      remap.CapsLock = "CONTROL_L";
+    }];
   };
 }
