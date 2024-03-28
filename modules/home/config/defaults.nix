@@ -2,7 +2,7 @@
 
 {
 
-  home.sessionVariables = { EDITOR = "lvim"; };
+  home.sessionVariables = { EDITOR = "emacsclient -nw"; };
 
   xdg = {
     configFile."mimeapps.list".force = true;
