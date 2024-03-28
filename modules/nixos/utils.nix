@@ -29,7 +29,7 @@
 
   programs.fish.enable = true;
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
-
+  nix.settings.trusted-users = [ "root" "ammar" ];
   nix.gc = {
     automatic = true;
     dates = "weekly";
