@@ -76,6 +76,19 @@
           ];
           specialArgs = { inherit pkgs-stable; };
         };
+	framework13 = lib.nixosSystem {
+          inherit system;
+          modules = [
+            inputs.sddm-sugar-candy-nix.nixosModules.default
+            {
+              nixpkgs = {
+                overlays = [ inputs.sddm-sugar-candy-nix.overlays.default ];
+              };
+            }
+            ./hosts/framework13/configuration.nix
+          ];
+          specialArgs = { inherit pkgs-stable; };
+        };
       };
 
       homeConfigurations = {
