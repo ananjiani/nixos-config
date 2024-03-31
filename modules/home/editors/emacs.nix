@@ -41,7 +41,7 @@ in {
     sops -d ~/.dotfiles/secrets/emacs/emacs.sops > ~/.dotfiles/secrets/emacs/emacs
     sops -d ~/.dotfiles/secrets/emacs/emacs.pub.sops > ~/.dotfiles/secrets/emacs/emacs.pub
   '';
-  home.activation.doomSync = lib.hm.dag.entryAfter [ "installDoomEmacs" ] ''
+  home.activation.doomSync = lib.hm.dag.entryAfter [ "decryptEmacs" ] ''
     PATH="${config.home.path}/bin:$PATH"
     export DOOMDIR=${doom-dir}
     $HOME/.emacs.d/bin/doom sync
