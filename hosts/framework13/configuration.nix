@@ -14,6 +14,7 @@
       ../../modules/nixos/utils.nix
     ];
 
+  programs.nm-applet.enable = true;
   networking.hostName = "framework13"; # Define your hostname.
 }
 
