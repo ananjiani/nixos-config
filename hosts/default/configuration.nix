@@ -5,27 +5,27 @@
 { config, pkgs, lib, ... }:
 
 {
-  imports =
-    [
-      ../../modules/nixos/wm.nix
-      ../../modules/nixos/utils.nix
-      ../../modules/nixos/fonts.nix
-    ];
-  
-#   # Auto upgrade
-#   system.autoUpgrade.enable = true;
-#   system.autoUpgrade.allowReboot = true;
+  imports = [
+    ../../modules/nixos/wm.nix
+    ../../modules/nixos/utils.nix
+    ../../modules/nixos/fonts.nix
+  ];
+
+  #   # Auto upgrade
+  #   system.autoUpgrade.enable = true;
+  #   system.autoUpgrade.allowReboot = true;
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-  
+
   # Set your time zone.
   time.timeZone = "America/Chicago";
 
   # Pick only one of the below networking options.
   #networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
-  networking.networkmanager.enable = true;  # Easiest to use and most distros use this by default.
+  networking.networkmanager.enable =
+    true; # Easiest to use and most distros use this by default.
   networking.firewall.enable = true;
   networking.firewall.allowPing = true;
 
@@ -51,9 +51,7 @@
   # Enable sound.
   sound.enable = true;
   security = {
-    polkit = {
-      enable = true;
-    };
+    polkit = { enable = true; };
     rtkit.enable = true;
   };
 
@@ -76,8 +74,8 @@
 
     # Enable CUPS to print documents.
     printing.enable = true;
-   
-   avahi = {
+
+    avahi = {
       enable = true;
       nssmdns4 = true;
       openFirewall = true;
@@ -92,11 +90,15 @@
     gvfs.enable = true;
   };
 
-
   # Enable touchpad support (enabled default in most desktopManager).
   services.xserver.libinput.enable = true;
 
-
+  services.pcscd.enable = true;
+  programs.gnupg.agent = {
+    enable = true;
+    pinentryPackage = pkgs.pinentry-curses;
+    enableSSHSupport = true;
+  };
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.ammar = {
     isNormalUser = true;
