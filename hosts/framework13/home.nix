@@ -13,6 +13,9 @@ in
   services.mpris-proxy.enable = true;
 
   wayland.windowManager.hyprland.settings = {
+    monitor = [
+    ",preferred,auto,1"
+    ];
     exec-once = [
         "swaybg -i ${wallpaper} -m fill"
     ];
