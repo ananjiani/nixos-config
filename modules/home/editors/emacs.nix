@@ -22,7 +22,7 @@ in {
     package = pkgs.emacs29;
   };
 
-  home.packages = with pkgs; [ gzip fd ripgrep nixfmt nodejs_21 ];
+  home.packages = with pkgs; [ gzip fd ripgrep nixfmt nodejs_21 prettierd ];
 
   home.sessionVariables = { DOOMDIR = doom-dir; };
 
