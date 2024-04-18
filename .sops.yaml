@@ -2,20 +2,24 @@ keys:
   - &desktop age1h96q7q8m88zl0cwsskmlmxgelnf863978hzrukqa3alcst5pv4dq8syj4c
   - &work-laptop age12kkgw58e8e9hg0a980e03zrzxjsrfdfnevt2jcydjx0ntdyw03kqqduzqm
   - &surface-go age1fykldc7sk5pg4nvczf35ayrga4p3z29j7l38tncuuw48y4xvtcssj08sce
+  - &framework13 age1upzxx3l4ce5e0mcje59sekkwpcnczusxs0sgn8emyuv39q8gg99s5uupkn
 creation_rules:
   - path_regex: secrets/work-vpn.conf
     key_groups:
     - age:
       - *desktop
       - *work-laptop
+      - *framework13
   - path_regex: secrets/emacs/*
     key_groups:
     - age:
       - *desktop
       - *surface-go
+      - *framework13
   - path_regex: secrets/secrets.yaml$
     key_groups:
     - age:
       - *desktop
       - *work-laptop
       - *surface-go
+      - *framework13

@@ -9,7 +9,6 @@
     cat = "bat";
     df = "duf";
     du = "dust";
-    grep = "rg";
     rd = "ripdrag";
     frd = "ripdrag $(fzf)";
     fo = "open $(fzf)";
@@ -35,6 +34,7 @@
       extraConfig = {
         init.defaultBranch = "main";
         credential.helper = "store";
+        pull.rebase = false;
       };
     };
     lazygit.enable = true;

@@ -1,5 +1,5 @@
 { config, pkgs, lib, ... }:
-let doom-dir = "$HOME/.dotfiles/modules/home/emacs/doom-emacs";
+let doom-dir = "$HOME/.dotfiles/modules/home/editors/doom-emacs";
 in {
 
   home.shellAliases = {
@@ -22,7 +22,7 @@ in {
     package = pkgs.emacs29;
   };
 
-  home.packages = with pkgs; [ gzip fd ripgrep nixfmt ];
+  home.packages = with pkgs; [ gzip fd ripgrep nixfmt nodejs_21 prettierd ];
 
   home.sessionVariables = { DOOMDIR = doom-dir; };
 
@@ -36,10 +36,13 @@ in {
       fi
     '';
 
-  home.activation.doomSync = lib.hm.dag.entryAfter [ "installDoomEmacs" ] ''
+  home.activation.decryptEmacs = lib.hm.dag.entryAfter [ "installDoomEmacs" ] ''
     PATH="${config.home.path}/bin:$PATH"
     sops -d ~/.dotfiles/secrets/emacs/emacs.sops > ~/.dotfiles/secrets/emacs/emacs
     sops -d ~/.dotfiles/secrets/emacs/emacs.pub.sops > ~/.dotfiles/secrets/emacs/emacs.pub
+  '';
+  home.activation.doomSync = lib.hm.dag.entryAfter [ "decryptEmacs" ] ''
+    PATH="${config.home.path}/bin:$PATH"
     export DOOMDIR=${doom-dir}
     $HOME/.emacs.d/bin/doom sync
   '';
