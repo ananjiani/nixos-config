@@ -2,7 +2,7 @@
   config,
   pkgs,
   lib,
-  nix-colors,
+  inputs,
   ...
 }: {
   home.packages = with pkgs; [
@@ -11,10 +11,10 @@
   ];
 
   imports = [
-    nix-colors.homeManagerModules.default
+    inputs.nix-colors.homeManagerModules.default
   ];
 
-  colorScheme = nix-colors.colorSchemes.gruvbox-material-dark-soft;
+  colorScheme = inputs.nix-colors.colorSchemes.gruvbox-material-dark-soft;
   #   colorScheme = nix-colors-lib.colorSchemeFromPicture {
   #     path = wallpaper;
   #     kind = "dark";

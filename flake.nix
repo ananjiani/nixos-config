@@ -15,20 +15,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-colors.url = "github:misterio77/nix-colors";
-    nixvim = {
-      url = "github:nix-community/nixvim";
-      inputs.nixpkgs.follows = "nixpkgs-unstable";
-    };
     emacs-overlay.url = "github:nix-community/emacs-overlay";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     sops-nix.url = "github:Mic92/sops-nix";
     xremap.url = "github:xremap/nix-flake";
-    nil.url = "github:oxalica/nil";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager-unstable
-    , sddm-sugar-candy-nix, nix-colors, emacs-overlay, nix-vscode-extensions
-    , nixvim, sops-nix, xremap, nil, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager
+    , home-manager-unstable, ... }@inputs:
     let
       lib = nixpkgs-unstable.lib;
       system = "x86_64-linux";
@@ -46,10 +40,10 @@
         ammars-pc = lib.nixosSystem {
           inherit system;
           modules = [
-            sddm-sugar-candy-nix.nixosModules.default
+            inputs.sddm-sugar-candy-nix.nixosModules.default
             {
               nixpkgs = {
-                overlays = [ sddm-sugar-candy-nix.overlays.default ];
+                overlays = [ inputs.sddm-sugar-candy-nix.overlays.default ];
               };
             }
             ./hosts/desktop/configuration.nix
@@ -59,10 +53,10 @@
         work-laptop = lib.nixosSystem {
           inherit system;
           modules = [
-            sddm-sugar-candy-nix.nixosModules.default
+            inputs.sddm-sugar-candy-nix.nixosModules.default
             {
               nixpkgs = {
-                overlays = [ sddm-sugar-candy-nix.overlays.default ];
+                overlays = [ inputs.sddm-sugar-candy-nix.overlays.default ];
               };
             }
             ./hosts/work-laptop/configuration.nix
@@ -72,13 +66,26 @@
         surface-go = lib.nixosSystem {
           inherit system;
           modules = [
-            sddm-sugar-candy-nix.nixosModules.default
+            inputs.sddm-sugar-candy-nix.nixosModules.default
             {
               nixpkgs = {
-                overlays = [ sddm-sugar-candy-nix.overlays.default ];
+                overlays = [ inputs.sddm-sugar-candy-nix.overlays.default ];
               };
             }
             ./hosts/surface-go/configuration.nix
+          ];
+          specialArgs = { inherit pkgs-stable; };
+        };
+	framework13 = lib.nixosSystem {
+          inherit system;
+          modules = [
+            inputs.sddm-sugar-candy-nix.nixosModules.default
+            {
+              nixpkgs = {
+                overlays = [ inputs.sddm-sugar-candy-nix.overlays.default ];
+              };
+            }
+            ./hosts/framework13/configuration.nix
           ];
           specialArgs = { inherit pkgs-stable; };
         };
@@ -90,20 +97,13 @@
           modules = [
             {
               nixpkgs.overlays = [
-                emacs-overlay.overlay
-                nix-vscode-extensions.overlays.default
+                inputs.emacs-overlay.overlay
+                inputs.nix-vscode-extensions.overlays.default
               ];
             }
             (./hosts + ("/" + active-profile) + "/home.nix")
           ];
-          extraSpecialArgs = {
-            inherit nix-colors;
-            inherit nixvim;
-            inherit sops-nix;
-            inherit xremap;
-            inherit pkgs-stable;
-            inherit nil;
-          };
+          extraSpecialArgs = { inherit inputs; };
         };
       };
     };

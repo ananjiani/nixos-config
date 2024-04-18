@@ -29,12 +29,6 @@
     (with pkgs; [
       steamtinkerlaunch
       lutris
-    ])
-
-    ++
-
-    (with pkgs-stable; [
       gamescope
     ]);
-
 }

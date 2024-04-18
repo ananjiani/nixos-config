@@ -8,6 +8,7 @@
     hack-font
     emacs-all-the-icons-fonts
     liberation_ttf
+    inter
   ];
 
 }

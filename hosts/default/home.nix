@@ -3,22 +3,23 @@
 let wallpaper = ./wallpapers/revachol.jpg;
 in {
   imports = [
-    ../../modules/home/emacs/emacs.nix
     ../../modules/home/gaming.nix
+    ../../modules/home/editors/emacs.nix
+    ../../modules/home/editors/lvim.nix
+    ../../modules/home/editors/vscode.nix
     ../../modules/home/wm/wm.nix
     ../../modules/home/programs.nix
     ../../modules/home/config/defaults.nix
     ../../modules/home/config/xremap.nix
     ../../modules/home/config/sops.nix
-    ../../modules/home/dev/lsp.nix
-    ../../modules/home/dev/lvim.nix
-    ../../modules/home/dev/vscode.nix
     ../../modules/home/terminal/environment.nix
     ../../modules/home/terminal/cli-tools.nix
+    ../../modules/home/terminal/emulator/foot.nix
     ../../modules/home/terminal/programs/lf.nix
     ../../modules/home/terminal/programs/atuin.nix
+    ../../modules/home/dev/lang/python.nix
+    ../../modules/home/dev/lang/nixlang.nix
     ../../modules/home/dev/nix-direnv.nix
-    ../../modules/home/dev/debugging.nix
   ];
 
   # Home Manager needs a bit of information about you and the paths it should
