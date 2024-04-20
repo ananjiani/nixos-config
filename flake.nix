@@ -19,6 +19,7 @@
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     sops-nix.url = "github:Mic92/sops-nix";
     xremap.url = "github:xremap/nix-flake";
+    hyprland.url = "github:hyprwm/Hyprland";
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, home-manager
@@ -67,6 +68,7 @@
           inherit system;
           modules = [
             inputs.sddm-sugar-candy-nix.nixosModules.default
+            inputs.hyprland.nixosModules.default
             {
               nixpkgs = {
                 overlays = [ inputs.sddm-sugar-candy-nix.overlays.default ];
@@ -76,7 +78,7 @@
           ];
           specialArgs = { inherit pkgs-stable; };
         };
-	framework13 = lib.nixosSystem {
+        framework13 = lib.nixosSystem {
           inherit system;
           modules = [
             inputs.sddm-sugar-candy-nix.nixosModules.default
@@ -95,6 +97,7 @@
         ammar = home-manager-unstable.lib.homeManagerConfiguration {
           inherit pkgs;
           modules = [
+            inputs.hyprland.homeManagerModules.default
             {
               nixpkgs.overlays = [
                 inputs.emacs-overlay.overlay
