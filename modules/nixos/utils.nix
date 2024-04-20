@@ -20,7 +20,13 @@
     libsForQt5.qt5.qtgraphicaleffects
   ];
 
-  boot.kernelPackages = pkgs.linuxPackages_6_1;
+ boot.kernelPackages = pkgs.linuxPackages_6_1;
+
+  nix.settings = {
+    substituters = [ "https://hyprland.cachix.org" ];
+    trusted-public-keys =
+      [ "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" ];
+  };
 
   # xremap home manager
   hardware.uinput.enable = true;
