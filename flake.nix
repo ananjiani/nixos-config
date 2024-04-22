@@ -20,6 +20,7 @@
     sops-nix.url = "github:Mic92/sops-nix";
     xremap.url = "github:xremap/nix-flake";
     hyprland.url = "github:hyprwm/Hyprland";
+    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, home-manager
@@ -88,6 +89,7 @@
               };
             }
             ./hosts/framework13/configuration.nix
+            inputs.nixos-hardware.nixosModules.framework-13-7040-amd
           ];
           specialArgs = { inherit pkgs-stable; };
         };
