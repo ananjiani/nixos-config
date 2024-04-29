@@ -59,7 +59,7 @@
     # Enable the X11 windowing system.
     xserver = {
       enable = true;
-      layout = "us";
+      xkb.layout = "us";
     };
 
     # Configure pipewire
@@ -91,7 +91,7 @@
   };
 
   # Enable touchpad support (enabled default in most desktopManager).
-  services.xserver.libinput.enable = true;
+  services.libinput.enable = true;
 
   services.pcscd.enable = true;
   programs.gnupg.agent = {

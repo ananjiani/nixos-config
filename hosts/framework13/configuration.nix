@@ -14,6 +14,7 @@
       ../../modules/nixos/utils.nix
     ];
 
+  boot.kernelPackages = pkgs.linuxPackages_6_8;
   programs.nm-applet.enable = true;
   networking.hostName = "framework13"; # Define your hostname.
 }
