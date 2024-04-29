@@ -87,5 +87,6 @@
     sshfs
     pinentry
     rage
+    unrar
   ];
 }
