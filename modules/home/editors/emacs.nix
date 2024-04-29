@@ -27,8 +27,9 @@ in {
     fd
     ripgrep
     nixfmt
-    nodejs_21
+    nodejs
     nodePackages.prettier
+    findutils
   ];
 
   home.sessionVariables = { DOOMDIR = doom-dir; };
