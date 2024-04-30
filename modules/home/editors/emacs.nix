@@ -30,6 +30,7 @@ in {
     nodejs
     nodePackages.prettier
     findutils
+    nodePackages.vscode-json-languageserver
   ];
 
   home.sessionVariables = { DOOMDIR = doom-dir; };
