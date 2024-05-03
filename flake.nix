@@ -20,6 +20,7 @@
     sops-nix.url = "github:Mic92/sops-nix";
     xremap.url = "github:xremap/nix-flake";
     hyprland.url = "github:hyprwm/Hyprland";
+    waybar.url = "github:alexays/waybar";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   };
 
