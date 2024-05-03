@@ -108,7 +108,8 @@
             }
             (./hosts + ("/" + active-profile) + "/home.nix")
           ];
-          extraSpecialArgs = { inherit inputs; };
+          extraSpecialArgs = { inherit inputs pkgs-stable; };
+
         };
       };
     };
