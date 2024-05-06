@@ -88,5 +88,6 @@
     pinentry
     rage
     unrar
+    p7zip
   ];
 }
