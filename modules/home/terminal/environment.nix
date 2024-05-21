@@ -44,7 +44,6 @@
       settings = {
         theme = "gruvbox-dark";
         default_shell = "fish";
-        copy_on_select = false;
         pane_frames = false;
         on_force_close = "quit";
       };
