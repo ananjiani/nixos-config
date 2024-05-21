@@ -32,8 +32,11 @@
     xwayland.enable = true;
   };
 
+  services.xserver.displayManager.sddm = {
+    enable = true;
+    wayland.enable = true;
+  };
   environment.systemPackages = with pkgs; [
-    image-roll
     wl-clipboard
     pavucontrol
     light
