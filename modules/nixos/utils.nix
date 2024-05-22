@@ -17,7 +17,6 @@
     firefox
     remmina
     openconnect
-    libsForQt5.qt5.qtgraphicaleffects
   ];
 
   nix.settings = {
