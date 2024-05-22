@@ -33,7 +33,7 @@
   };
 
   environment.systemPackages = with pkgs; [
-    image-roll
+    swayimg
     wl-clipboard
     pavucontrol
     light

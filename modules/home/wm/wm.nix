@@ -44,7 +44,6 @@
       style = ../../home/wm/waybar/style.css;
       settings.mainBar =
         builtins.fromJSON (builtins.readFile ../../home/wm/waybar/config.json);
-      package = inputs.waybar.packages.x86_64-linux.waybar;
     };
   };
 
