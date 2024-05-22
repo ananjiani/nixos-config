@@ -19,7 +19,6 @@
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     sops-nix.url = "github:Mic92/sops-nix";
     xremap.url = "github:xremap/nix-flake";
-    hyprland.url = "github:hyprwm/Hyprland";
     waybar.url = "github:alexays/waybar";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   };
@@ -70,7 +69,6 @@
           inherit system;
           modules = [
             inputs.sddm-sugar-candy-nix.nixosModules.default
-            inputs.hyprland.nixosModules.default
             {
               nixpkgs = {
                 overlays = [ inputs.sddm-sugar-candy-nix.overlays.default ];
@@ -100,7 +98,6 @@
         ammar = home-manager-unstable.lib.homeManagerConfiguration {
           inherit pkgs;
           modules = [
-            inputs.hyprland.homeManagerModules.default
             {
               nixpkgs.overlays = [
                 inputs.emacs-overlay.overlay

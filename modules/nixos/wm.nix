@@ -32,8 +32,11 @@
     xwayland.enable = true;
   };
 
+  services.xserver.displayManager.sddm = {
+    enable = true;
+    wayland.enable = true;
+  };
   environment.systemPackages = with pkgs; [
-    swayimg
     wl-clipboard
     pavucontrol
     light
