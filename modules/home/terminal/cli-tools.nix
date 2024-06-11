@@ -69,6 +69,7 @@
   };
 
   home.packages = with pkgs; [
+    visidata
     chafa
     ripdrag
     atool

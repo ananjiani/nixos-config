@@ -20,11 +20,12 @@
     sops-nix.url = "github:Mic92/sops-nix";
     xremap.url = "github:xremap/nix-flake";
     waybar.url = "github:alexays/waybar";
+    nix-std.url = "github:chessai/nix-std";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, home-manager
-    , home-manager-unstable, ... }@inputs:
+    , home-manager-unstable, nix-std, ... }@inputs:
     let
       lib = nixpkgs-unstable.lib;
       system = "x86_64-linux";
@@ -36,6 +37,7 @@
         system = "x86_64-linux";
         config = { allowUnfree = true; };
       };
+      std = nix-std.lib;
       active-profile = import ./active-profile.nix;
     in {
       nixosConfigurations = {
@@ -106,7 +108,7 @@
             }
             (./hosts + ("/" + active-profile) + "/home.nix")
           ];
-          extraSpecialArgs = { inherit inputs pkgs-stable; };
+          extraSpecialArgs = { inherit inputs std pkgs-stable; };
 
         };
       };
