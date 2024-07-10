@@ -29,7 +29,7 @@
 
     nushell = {
       enable = true;
-      package = pkgs.nushellFull;
+      package = pkgs.nushell;
     };
 
     starship = {

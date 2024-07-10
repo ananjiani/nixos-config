@@ -26,7 +26,7 @@ in {
     gzip
     fd
     ripgrep
-    nixfmt
+    nixfmt-classic
     nodejs
     nodePackages.prettier
     findutils
