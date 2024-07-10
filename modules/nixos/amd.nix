@@ -1,17 +1,18 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, pkgs-stable, ... }:
 
 {
   boot.initrd.kernelModules = [ "amdgpu" ];
   services.xserver.videoDrivers = [ "amdgpu" ];
 
   # Enable Settings for AMD
-  systemd.tmpfiles.rules =
-    [ "L+    /opt/rocm/hip   -    -    -     -    ${pkgs.rocmPackages.clr}" ];
+  systemd.tmpfiles.rules = [
+    "L+    /opt/rocm/hip   -    -    -     -    ${pkgs-stable.rocmPackages.clr}"
+  ];
 
-  hardware.opengl = {
+  hardware.graphics = {
     enable = true;
-    driSupport32Bit = true;
-    extraPackages = with pkgs; [
+    enable32Bit = true;
+    extraPackages = with pkgs-stable; [
       rocm-opencl-icd
       rocm-opencl-runtime
       #amdvlk
