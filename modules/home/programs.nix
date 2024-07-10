@@ -10,6 +10,8 @@ let
   });
 in {
   home.packages = with pkgs; [
+    appflowy
+    revolt-desktop
     tex
     inkscape
     pinta
