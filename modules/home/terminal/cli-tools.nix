@@ -38,7 +38,7 @@
       };
     };
     lazygit.enable = true;
-    thefuck.enable = true;
+    # thefuck.enable = true;
     zoxide = {
       enable = true;
       options = [
@@ -69,7 +69,7 @@
   };
 
   home.packages = with pkgs; [
-    visidata
+    # visidata
     chafa
     ripdrag
     atool
