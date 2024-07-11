@@ -32,10 +32,11 @@
     xwayland.enable = true;
   };
 
-  services.xserver.displayManager.sddm = {
+  services.displayManager.sddm = {
     enable = true;
     wayland.enable = true;
   };
+
   environment.systemPackages = with pkgs; [
     wl-clipboard
     pavucontrol
