@@ -10,10 +10,6 @@
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
-    sddm-sugar-candy-nix = {
-      url = "gitlab:Zhaith-Izaliel/sddm-sugar-candy-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     nix-colors.url = "github:misterio77/nix-colors";
     emacs-overlay.url = "github:nix-community/emacs-overlay";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
@@ -44,12 +40,6 @@
         ammars-pc = lib.nixosSystem {
           inherit system;
           modules = [
-            inputs.sddm-sugar-candy-nix.nixosModules.default
-            {
-              nixpkgs = {
-                overlays = [ inputs.sddm-sugar-candy-nix.overlays.default ];
-              };
-            }
             ./hosts/desktop/configuration.nix
           ];
           specialArgs = { inherit pkgs-stable; };
@@ -57,12 +47,6 @@
         work-laptop = lib.nixosSystem {
           inherit system;
           modules = [
-            inputs.sddm-sugar-candy-nix.nixosModules.default
-            {
-              nixpkgs = {
-                overlays = [ inputs.sddm-sugar-candy-nix.overlays.default ];
-              };
-            }
             ./hosts/work-laptop/configuration.nix
           ];
           specialArgs = { inherit pkgs-stable; };
@@ -70,12 +54,6 @@
         surface-go = lib.nixosSystem {
           inherit system;
           modules = [
-            inputs.sddm-sugar-candy-nix.nixosModules.default
-            {
-              nixpkgs = {
-                overlays = [ inputs.sddm-sugar-candy-nix.overlays.default ];
-              };
-            }
             ./hosts/surface-go/configuration.nix
           ];
           specialArgs = { inherit pkgs-stable; };
@@ -83,12 +61,6 @@
         framework13 = lib.nixosSystem {
           inherit system;
           modules = [
-            inputs.sddm-sugar-candy-nix.nixosModules.default
-            {
-              nixpkgs = {
-                overlays = [ inputs.sddm-sugar-candy-nix.overlays.default ];
-              };
-            }
             ./hosts/framework13/configuration.nix
             inputs.nixos-hardware.nixosModules.framework-13-7040-amd
           ];
