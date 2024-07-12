@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, pkgs-stable, ... }:
 
 {
   home.shellAliases = {
@@ -68,7 +68,7 @@
 
   };
 
-  home.packages = with pkgs; [
+  home.packages = (with pkgs; [
     # visidata
     chafa
     ripdrag
@@ -79,7 +79,6 @@
     poppler_utils
     ffmpegthumbnailer
     pandoc
-    sops
     tealdeer
     du-dust
     duf
@@ -90,5 +89,9 @@
     rage
     unrar
     p7zip
-  ];
+  ])
+
+    ++
+
+    (with pkgs-stable; [ sops ]);
 }
