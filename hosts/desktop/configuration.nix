@@ -5,17 +5,16 @@
 { config, pkgs, lib, ... }:
 
 {
-  imports =
-    [
-      ./hardware-configuration.nix
-      ../default/configuration.nix
-      ./samba.nix
-      ../../modules/nixos/gaming.nix
-      ../../modules/nixos/amd.nix
-    ];
-  networking.hostName = "ammars-pc"; 
-  boot.kernelPackages = pkgs.linuxPackages_6_1;
-  environment.systemPackages = with pkgs; [signal-desktop];
+  imports = [
+    ./hardware-configuration.nix
+    ../default/configuration.nix
+    ./samba.nix
+    ../../modules/nixos/gaming.nix
+    ../../modules/nixos/amd.nix
+  ];
+  networking.hostName = "ammars-pc";
+  # boot.kernelPackages = pkgs.linuxPackages_6_1;
+  environment.systemPackages = with pkgs; [ signal-desktop ];
 
 }
 
