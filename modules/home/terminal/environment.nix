@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, pkgs-stable, ... }:
 
 {
   home.sessionPath = [ "$HOME/.local/bin" ];
@@ -38,15 +38,16 @@
         add_newline = false;
         line_break.disabled = true;
       };
+      package = pkgs-stable.starship;
     };
-    zellij = {
-      enable = true;
-      settings = {
-        theme = "gruvbox-dark";
-        default_shell = "fish";
-        pane_frames = false;
-        on_force_close = "quit";
-      };
-    };
+    # zellij = {
+    #   enable = true;
+    #   settings = {
+    #     theme = "gruvbox-dark";
+    #     default_shell = "fish";
+    #     pane_frames = false;
+    #     on_force_close = "quit";
+    #   };
+    # };
   };
 }
