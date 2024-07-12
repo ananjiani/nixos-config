@@ -5,7 +5,7 @@
     enable = true;
     settings = {
       main = {
-        shell = "${pkgs.zellij}/bin/zellij";
+        shell = "fish";
         term = "xterm-256color";
         font = "hack:size=14";
       };
