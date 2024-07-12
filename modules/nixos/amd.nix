@@ -5,14 +5,13 @@
   services.xserver.videoDrivers = [ "amdgpu" ];
 
   # Enable Settings for AMD
-  systemd.tmpfiles.rules = [
-    "L+    /opt/rocm/hip   -    -    -     -    ${pkgs-stable.rocmPackages.clr}"
-  ];
+  systemd.tmpfiles.rules =
+    [ "L+    /opt/rocm/hip   -    -    -     -    ${pkgs.rocmPackages.clr}" ];
 
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
-    extraPackages = with pkgs-stable; [
+    extraPackages = with pkgs; [
       rocm-opencl-icd
       rocm-opencl-runtime
       #amdvlk
