@@ -69,7 +69,6 @@
   };
 
   home.packages = (with pkgs; [
-    # visidata
     chafa
     ripdrag
     atool
@@ -93,5 +92,5 @@
 
     ++
 
-    (with pkgs-stable; [ sops ]);
+    (with pkgs-stable; [ sops visidata ]);
 }
