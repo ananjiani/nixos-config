@@ -14,7 +14,7 @@
       charliermarsh.ruff
       ms-python.python
       ms-python.mypy-type-checker
-      ms-python.vscode-pylance
+      # ms-python.vscode-pylance
       tamasfe.even-better-toml
       vscodevim.vim
     ];
