@@ -31,6 +31,7 @@ in {
     nodePackages.prettier
     findutils
     nodePackages.vscode-json-languageserver
+    (aspellWithDicts (dicts: with dicts; [ en en-computers en-science ]))
   ];
 
   home.sessionVariables = { DOOMDIR = doom-dir; };
