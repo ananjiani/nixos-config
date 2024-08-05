@@ -10,7 +10,6 @@ in {
     ../../modules/home/wm/wm.nix
     ../../modules/home/programs.nix
     ../../modules/home/config/defaults.nix
-    ../../modules/home/config/xremap.nix
     ../../modules/home/config/sops.nix
     ../../modules/home/terminal/environment.nix
     ../../modules/home/terminal/cli-tools.nix
