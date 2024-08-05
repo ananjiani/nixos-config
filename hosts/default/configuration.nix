@@ -48,8 +48,6 @@
     LC_TIME = "en_US.UTF-8";
   };
 
-  # Enable sound.
-  sound.enable = true;
   security = {
     polkit = { enable = true; };
     rtkit.enable = true;
