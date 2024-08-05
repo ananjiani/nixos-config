@@ -1,9 +1,9 @@
 {
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-23.11";
+    nixpkgs.url = "nixpkgs/nixos-24.05";
     nixpkgs-unstable.url = "nixpkgs/nixpkgs-unstable";
     home-manager = {
-      url = "github:nix-community/home-manager/release-23.11";
+      url = "github:nix-community/home-manager/release-24.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     home-manager-unstable = {
@@ -36,26 +36,21 @@
       std = nix-std.lib;
       active-profile = import ./active-profile.nix;
     in {
+      nix.nixPath = [ "nixpkgs=${nixpkgs-unstable}" ];
       nixosConfigurations = {
         ammars-pc = lib.nixosSystem {
           inherit system;
-          modules = [
-            ./hosts/desktop/configuration.nix
-          ];
+          modules = [ ./hosts/desktop/configuration.nix ];
           specialArgs = { inherit pkgs-stable; };
         };
         work-laptop = lib.nixosSystem {
           inherit system;
-          modules = [
-            ./hosts/work-laptop/configuration.nix
-          ];
+          modules = [ ./hosts/work-laptop/configuration.nix ];
           specialArgs = { inherit pkgs-stable; };
         };
         surface-go = lib.nixosSystem {
           inherit system;
-          modules = [
-            ./hosts/surface-go/configuration.nix
-          ];
+          modules = [ ./hosts/surface-go/configuration.nix ];
           specialArgs = { inherit pkgs-stable; };
         };
         framework13 = lib.nixosSystem {
