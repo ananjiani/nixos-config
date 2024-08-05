@@ -11,7 +11,7 @@ in {
   programs = {
     emacs = {
       enable = true;
-      package = pkgs.emacs29-pgtk;
+      package = pkgs.emacs29;
       extraPackages = epkgs: [ epkgs.vterm ];
     };
     #mu.enable = true;
@@ -19,14 +19,13 @@ in {
 
   services.emacs = {
     enable = true;
-    package = pkgs.emacs29-pgtk;
+    package = pkgs.emacs29;
   };
 
   home.packages = with pkgs; [
     gzip
     fd
     ripgrep
-    nixfmt-classic
     nodejs
     nodePackages.prettier
     findutils
