@@ -1,7 +1,7 @@
 { config, lib, pkgs, ... }:
 
 {
-  imports = [ ../../modules/nixos/utils.nix ];
+  imports = [ ./hardware-confiiguration.nix ../../modules/nixos/utils.nix ];
 
   networking.hostName = "router";
 

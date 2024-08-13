@@ -66,6 +66,11 @@
           modules = [ ./hosts/iso/configuration.nix ];
           specialArgs = { inherit pkgs-stable; };
         };
+        router = lib.nixosSystem {
+          inherit system;
+          modules = [ ./hosts/router/configuration.nix ];
+          specialArgs = { inherit pkgs-stable; };
+        };
       };
 
       homeConfigurations = {
