@@ -61,6 +61,11 @@
           ];
           specialArgs = { inherit pkgs-stable; };
         };
+        iso = lib.nixosSystem {
+          inherit system;
+          modules = [ ./hosts/iso/configuration.nix ];
+          specialArgs = { inherit pkgs-stable; };
+        };
       };
 
       homeConfigurations = {
