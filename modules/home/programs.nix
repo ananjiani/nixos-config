@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, pkgs-stable, lib, ... }:
 
 let
   tex = (pkgs.texlive.combine {
@@ -10,9 +10,7 @@ let
     #(setq org-preview-latex-default-process 'dvisvgm)
   });
 in {
-  home.packages = with pkgs; [
-    zotero
-    revolt-desktop
+  home.packages = (with pkgs; [
     tex
     inkscape
     pinta
@@ -28,5 +26,7 @@ in {
     libva-utils
     cmatrix
     ungoogled-chromium
-  ];
+  ])
+
+    ++ (with pkgs-stable; [ zotero ]);
 }
