@@ -73,41 +73,6 @@
     rtkit.enable = true;
   };
 
-  services = {
-    # Enable the X11 windowing system.
-    xserver = {
-      enable = true;
-      xkb.layout = "us";
-    };
-
-    # Configure pipewire
-    pipewire = {
-      enable = true;
-      wireplumber.enable = true;
-      alsa.enable = true;
-      alsa.support32Bit = true;
-      pulse.enable = true;
-      # jack.enable = true;
-    };
-
-    # Enable CUPS to print documents.
-    printing.enable = true;
-
-    avahi = {
-      enable = true;
-      nssmdns4 = true;
-      openFirewall = true;
-    };
-
-    upower.enable = true;
-
-    flatpak.enable = true;
-
-    dbus.enable = true;
-
-    gvfs.enable = true;
-  };
-
   services.pcscd.enable = true;
   programs.gnupg.agent = {
     enable = true;
