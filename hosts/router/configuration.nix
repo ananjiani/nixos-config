@@ -1,8 +1,12 @@
 { config, lib, pkgs, ... }:
 
 {
-  imports = [ ./hardware-confiiguration.nix ../../modules/nixos/utils.nix ];
+  imports = [ ./hardware-configuration.nix ../../modules/nixos/utils.nix ];
 
   networking.hostName = "router";
+  services.openssh = {
+    enable = true;
+    passwordAuthentication = true;
+  };
 
 }
