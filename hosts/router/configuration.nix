@@ -8,6 +8,9 @@
     enable = true;
     passwordAuthentication = true;
   };
+  users.users.root.openssh.authorizedKeys.keys = [
+	"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMoo8KQiLBJ6WrWmG0/6O8lww/v6ggPaLfv70/ksMZbD ammar.nanjiani@gmail.com"
+	];
   nix.settings = {
     substituters = [ "https://cache.saumon.network/proxmox-nixos" ];
     trusted-public-keys =
