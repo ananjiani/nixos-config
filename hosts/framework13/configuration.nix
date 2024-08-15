@@ -5,16 +5,14 @@
 { config, pkgs, lib, ... }:
 
 {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-      ../default/configuration.nix
-      ../../modules/nixos/bluetooth.nix
-      ../../modules/nixos/wm.nix
-      ../../modules/nixos/utils.nix
-    ];
+  imports = [ # Include the results of the hardware scan.
+    ./hardware-configuration.nix
+    ../default/configuration.nix
+    ../../modules/nixos/bluetooth.nix
+    ../../modules/nixos/wm.nix
+    ../../modules/nixos/utils.nix
+  ];
 
-  boot.kernelPackages = pkgs.linuxPackages_6_8;
   programs.nm-applet.enable = true;
   networking.hostName = "framework13"; # Define your hostname.
 }
