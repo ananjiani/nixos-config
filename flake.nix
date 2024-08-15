@@ -67,13 +67,13 @@
           modules = [ ./hosts/iso/configuration.nix ];
           specialArgs = { inherit pkgs-stable; };
         };
-        router = lib.nixosSystem {
+        router = nixpkgs.lib.nixosSystem {
           inherit system;
           modules = [
             inputs.proxmox-nixos.nixosModules.proxmox-ve
             ./hosts/router/configuration.nix
           ];
-          specialArgs = { inherit pkgs-stable; };
+          specialArgs = { inherit inputs pkgs-stable; };
         };
       };
 
