@@ -16,7 +16,7 @@ in {
     ../../modules/home/terminal/emulator/foot.nix
     ../../modules/home/terminal/programs/lf.nix
     ../../modules/home/terminal/programs/atuin.nix
-    ../../modules/home/terminal/programs/iamb.nix
+    # ../../modules/home/terminal/programs/iamb.nix
     ../../modules/home/dev/lang/python.nix
     ../../modules/home/dev/lang/nixlang.nix
     ../../modules/home/dev/nix-direnv.nix
