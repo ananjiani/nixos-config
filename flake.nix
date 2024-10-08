@@ -18,7 +18,6 @@
     waybar.url = "github:alexays/waybar";
     nix-std.url = "github:chessai/nix-std";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-    proxmox-nixos.url = "github:SaumonNet/proxmox-nixos";
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, home-manager
@@ -66,14 +65,6 @@
           inherit system;
           modules = [ ./hosts/iso/configuration.nix ];
           specialArgs = { inherit pkgs-stable; };
-        };
-        router = nixpkgs.lib.nixosSystem {
-          inherit system;
-          modules = [
-            inputs.proxmox-nixos.nixosModules.proxmox-ve
-            ./hosts/router/configuration.nix
-          ];
-          specialArgs = { inherit inputs pkgs-stable; };
         };
       };
 
