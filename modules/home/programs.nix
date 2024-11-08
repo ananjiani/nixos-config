@@ -5,7 +5,7 @@ let
     inherit (pkgs.texlive)
       scheme-medium dvisvgm dvipng # for preview and export as html
       wrapfig amsmath ulem hyperref capt-of biblatex biber biblatex-chicago
-      geometry hwemoji;
+      footmisc ragged2e titlesec geometry;
     #(setq org-latex-compiler "lualatex")
     #(setq org-preview-latex-default-process 'dvisvgm)
   });
@@ -26,6 +26,7 @@ in {
     libva-utils
     cmatrix
     ungoogled-chromium
+    element-desktop
   ])
 
     ++ (with pkgs-stable; [ zotero ]);
