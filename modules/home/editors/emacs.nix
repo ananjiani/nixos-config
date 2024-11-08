@@ -23,6 +23,7 @@ in {
   };
 
   home.packages = with pkgs; [
+    xclip
     gzip
     fd
     ripgrep
