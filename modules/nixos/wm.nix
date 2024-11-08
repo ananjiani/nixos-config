@@ -40,7 +40,6 @@
   # Enable touchpad support (enabled default in most desktopManager).
 
   environment.systemPackages = with pkgs; [
-    openconnect
     libreoffice
     imagemagick
     firefox
