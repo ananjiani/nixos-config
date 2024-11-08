@@ -11,9 +11,12 @@
     ../../modules/nixos/bluetooth.nix
     ../../modules/nixos/wm.nix
     ../../modules/nixos/utils.nix
+    ../../modules/nixos/openconnect.nix
+    ../../modules/nixos/docker.nix
   ];
 
   programs.nm-applet.enable = true;
+  environment.systemPackages = with pkgs; [ networkmanagerapplet ];
   networking.hostName = "framework13"; # Define your hostname.
 }
 
