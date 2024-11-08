@@ -5,7 +5,7 @@ let
     inherit (pkgs.texlive)
       scheme-medium dvisvgm dvipng # for preview and export as html
       wrapfig amsmath ulem hyperref capt-of biblatex biber biblatex-chicago
-      geometry;
+      geometry hwemoji;
     #(setq org-latex-compiler "lualatex")
     #(setq org-preview-latex-default-process 'dvisvgm)
   });
