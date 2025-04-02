@@ -5,13 +5,14 @@ let
     inherit (pkgs.texlive)
       scheme-medium dvisvgm dvipng # for preview and export as html
       wrapfig amsmath ulem hyperref capt-of biblatex biber biblatex-chicago
-      footmisc ragged2e titlesec geometry;
+      footmisc ragged2e titlesec geometry xcolor;
     #(setq org-latex-compiler "lualatex")
     #(setq org-preview-latex-default-process 'dvisvgm)
   });
 in {
   home.packages = (with pkgs; [
     tex
+    xcolor
     inkscape
     pinta
     vlc
@@ -27,6 +28,7 @@ in {
     cmatrix
     ungoogled-chromium
     element-desktop
+    xournalpp
   ])
 
     ++ (with pkgs-stable; [ zotero ]);
