@@ -1,10 +1,7 @@
 { config, lib, pkgs, ... }:
 
 {
-  environment.systemPackages = with pkgs; [
-    openconnect_gnutls
-    globalprotect-openconnect
-  ];
+  environment.systemPackages = with pkgs; [ openconnect_gnutls ];
   networking.openconnect.package = pkgs.openconnect_gnutls;
   networking.openconnect.interfaces = {
     work-vpn = {

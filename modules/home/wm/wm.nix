@@ -1,4 +1,4 @@
-{ config, pkgs, lib, inputs, ... }: {
+{ config, pkgs, pkgs-stable, lib, inputs, ... }: {
   home.packages = with pkgs; [ swaynotificationcenter ];
 
   imports = [ inputs.nix-colors.homeManagerModules.default ];
@@ -53,6 +53,7 @@
 
   wayland.windowManager.hyprland = {
     enable = true;
+    package = pkgs.hyprland;
     settings = {
       exec =
         [ "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1" ];
@@ -70,6 +71,14 @@
         "$mainMod, K, movefocus, u"
         "$mainMod, J, movefocus, d"
       ];
+
+      decoration.shadow = {
+        enabled = true;
+        range = 4;
+        render_power = 3;
+        color = "rgba(1a1a1aee)";
+      };
+
     };
     extraConfig = builtins.readFile ../../home/wm/hyprland.conf;
   };

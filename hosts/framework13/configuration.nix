@@ -11,7 +11,7 @@
     ../../modules/nixos/bluetooth.nix
     ../../modules/nixos/wm.nix
     ../../modules/nixos/utils.nix
-    ../../modules/nixos/openconnect.nix
+    # ../../modules/nixos/openconnect.nix
     ../../modules/nixos/docker.nix
   ];
 
