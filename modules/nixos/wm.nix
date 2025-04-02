@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, pkgs-stable, lib, ... }:
 
 {
   # services.displayManager.sddm.sugarCandyNix = {
@@ -29,6 +29,7 @@
   programs = {
     dconf.enable = true;
     hyprland.enable = true;
+    hyprland.package = pkgs.hyprland;
     xwayland.enable = true;
   };
 
