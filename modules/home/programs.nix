@@ -16,7 +16,6 @@ in {
     inkscape
     pinta
     vlc
-    kdenlive
     xfce.thunar
     xfce.thunar-archive-plugin
     xfce.thunar-media-tags-plugin

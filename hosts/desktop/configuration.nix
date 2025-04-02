@@ -13,9 +13,7 @@
     ../../modules/nixos/amd.nix
   ];
   networking.hostName = "ammars-pc";
-  environment.systemPackages = with pkgs; [
-    signal-desktop
-  ];
+  environment.systemPackages = with pkgs; [ signal-desktop ];
 
   virtualisation.docker.enable = true;
   services.udev = {
