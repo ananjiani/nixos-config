@@ -15,5 +15,11 @@
   networking.hostName = "ammars-pc";
   environment.systemPackages = with pkgs; [ signal-desktop ];
 
+  virtualisation.docker.enable = true;
+  services.udev = {
+    enable = true;
+    packages = with pkgs; [ android-udev-rules ];
+  };
+
 }
 

@@ -11,7 +11,7 @@ in {
   programs = {
     emacs = {
       enable = true;
-      package = pkgs.emacs29;
+      package = pkgs.emacs;
       extraPackages = epkgs: [ epkgs.vterm ];
     };
     #mu.enable = true;
@@ -19,7 +19,7 @@ in {
 
   services.emacs = {
     enable = true;
-    package = pkgs.emacs29;
+    package = pkgs.emacs;
   };
 
   home.packages = with pkgs; [
