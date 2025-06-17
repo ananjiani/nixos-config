@@ -7,6 +7,14 @@
       enable = true;
       interactiveShellInit = ''
         set fish_greeting # Disable greeting
+        if set -q INSIDE_EMACS
+            # Use default (emacs-style) keybindings when inside Emacs
+            set -g fish_key_bindings fish_default_key_bindings
+        else
+            # Use vi keybindings in regular terminals
+            set -g fish_key_bindings fish_vi_key_bindings
+            bind -M insert \cf forward-char
+        end
         set -g fish_key_bindings fish_vi_key_bindings
         bind -M insert \cf forward-char
       '';
