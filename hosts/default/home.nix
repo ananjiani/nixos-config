@@ -6,7 +6,7 @@ in {
     ../../modules/home/gaming.nix
     ../../modules/home/editors/emacs.nix
     # ../../modules/home/editors/lvim.nix
-    ../../modules/home/editors/vscode.nix
+    #../../modules/home/editors/vscode.nix
     ../../modules/home/wm/wm.nix
     ../../modules/home/programs.nix
     ../../modules/home/config/defaults.nix
