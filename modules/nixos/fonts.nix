@@ -1,4 +1,9 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 {
 
@@ -9,6 +14,7 @@
     emacs-all-the-icons-fonts
     liberation_ttf
     inter
+    ia-writer-duospace
   ];
 
 }
