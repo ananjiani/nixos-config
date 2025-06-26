@@ -1,4 +1,10 @@
-{ config, pkgs, lib, pkgs-stable, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  pkgs-stable,
+  ...
+}:
 
 {
   home.shellAliases = {
@@ -15,8 +21,8 @@
     fe = "$EDITOR $(fzf)";
     fc = "emacsclient $(fzf)";
     fv = "vi $(fzf)";
-    nrs = "sudo nixos-rebuild switch --flake ~/.dotfiles --show-trace";
-    hms = "home-manager switch --flake ~/.dotfiles --show-trace";
+    # nrs = "nh os switch";
+    # hms = "nh home switch";
   };
 
   programs = {
@@ -68,29 +74,33 @@
 
   };
 
-  home.packages = (with pkgs; [
-    chafa
-    ripdrag
-    atool
-    ffmpeg
-    gnupg
-    jq
-    poppler_utils
-    ffmpegthumbnailer
-    pandoc
-    tealdeer
-    du-dust
-    duf
-    ripgrep-all
-    fd
-    sshfs
-    pinentry
-    rage
-    unrar
-    p7zip
-  ])
+  home.packages =
+    (with pkgs; [
+      chafa
+      ripdrag
+      atool
+      ffmpeg
+      gnupg
+      jq
+      poppler_utils
+      ffmpegthumbnailer
+      pandoc
+      tealdeer
+      du-dust
+      duf
+      ripgrep-all
+      fd
+      sshfs
+      pinentry
+      rage
+      unrar
+      p7zip
+    ])
 
     ++
 
-    (with pkgs-stable; [ sops visidata ]);
+      (with pkgs-stable; [
+        sops
+        visidata
+      ]);
 }
