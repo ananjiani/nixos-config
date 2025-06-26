@@ -1,4 +1,10 @@
-{ config, pkgs, lib, nix-colors, ...}:
+{
+  config,
+  pkgs,
+  lib,
+  nix-colors,
+  ...
+}:
 
 {
   imports = [
@@ -15,7 +21,7 @@
         opacity = 0.8;
         blur = true;
       };
-      colors = with config.colorScheme.colors; {
+      colors = with config.colorScheme.palette; {
         bright = {
           black = "0x${base00}";
           blue = "0x${base0D}";
@@ -44,7 +50,7 @@
           background = "0x${base00}";
           foreground = "0x${base06}";
         };
-      }; 
+      };
     };
   };
 

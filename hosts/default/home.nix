@@ -1,13 +1,21 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
-let wallpaper = ./wallpapers/revachol.jpg;
-in {
+let
+  wallpaper = ./wallpapers/revachol.jpg;
+in
+{
   imports = [
     ../../modules/home/gaming.nix
     ../../modules/home/editors/emacs.nix
     # ../../modules/home/editors/lvim.nix
     #../../modules/home/editors/vscode.nix
     ../../modules/home/wm/wm.nix
+    ../../modules/home/writing.nix
     ../../modules/home/programs.nix
     ../../modules/home/config/defaults.nix
     ../../modules/home/config/sops.nix

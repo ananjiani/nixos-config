@@ -1,8 +1,16 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 {
 
-  home.sessionVariables = { EDITOR = "emacsclient -nw"; };
+  home.sessionVariables = {
+    EDITOR = "emacsclient -nw";
+    NH_FLAKE = "/home/ammar/.dotfiles";
+  };
 
   xdg = {
     configFile."mimeapps.list".force = true;

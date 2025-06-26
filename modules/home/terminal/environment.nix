@@ -1,4 +1,10 @@
-{ config, lib, pkgs, pkgs-stable, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  pkgs-stable,
+  ...
+}:
 
 {
   home.sessionPath = [ "$HOME/.local/bin" ];
@@ -17,6 +23,7 @@
         end
         set -g fish_key_bindings fish_vi_key_bindings
         bind -M insert \cf forward-char
+        functions --copy fish_prompt vterm_old_fish_prompt
       '';
       # plugins = with pkgs.fishPlugins; [ ];
       functions = {
@@ -29,6 +36,20 @@
               printf "\eP\e]%s\007\e\\" "$argv"
           else
               printf "\e]%s\e\\" "$argv"
+        '';
+        vterm_prompt_end = "vterm_printf '51;A'(whoami)'@'(hostname)':'(pwd)";
+        fish_prompt = ''
+          --description 'Write out the prompt; do not replace this. Instead, put this at end of your file.'
+              # Remove the trailing newline from the original prompt. This is done
+              # using the string builtin from fish, but to make sure any escape codes
+              # are correctly interpreted, use %b for printf.
+              printf "%b" (string join "\n" (vterm_old_fish_prompt))
+              vterm_prompt_end
+        '';
+        fish_title = ''
+          hostname
+          echo ":"
+          prompt_pwd
         '';
       };
     };

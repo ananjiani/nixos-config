@@ -1,4 +1,12 @@
-{ config, pkgs, pkgs-stable, lib, inputs, ... }: {
+{
+  config,
+  pkgs,
+  pkgs-stable,
+  lib,
+  inputs,
+  ...
+}:
+{
   home.packages = with pkgs; [ swaynotificationcenter ];
 
   imports = [ inputs.nix-colors.homeManagerModules.default ];
@@ -28,7 +36,7 @@
     fuzzel = {
       enable = true;
       settings = {
-        colors = with config.colorScheme.colors; {
+        colors = with config.colorScheme.palette; {
           background = "${base00}ff";
           text = "${base05}ff";
           match = "${base08}ff";
@@ -42,8 +50,7 @@
     waybar = {
       enable = true;
       style = ../../home/wm/waybar/style.css;
-      settings.mainBar =
-        builtins.fromJSON (builtins.readFile ../../home/wm/waybar/config.json);
+      settings.mainBar = builtins.fromJSON (builtins.readFile ../../home/wm/waybar/config.json);
     };
   };
 
@@ -55,12 +62,10 @@
     enable = true;
     package = pkgs.hyprland;
     settings = {
-      exec =
-        [ "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1" ];
+      exec = [ "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1" ];
       general = {
         layout = "dwindle";
-        "col.active_border" = with config.colorScheme.colors;
-          "rgba(${base09}ee) rgba(${base0A}ee) 45deg";
+        "col.active_border" = with config.colorScheme.palette; "rgba(${base09}ee) rgba(${base0A}ee) 45deg";
       };
       "$mainMod" = "SUPER";
       bind = [
