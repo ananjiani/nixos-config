@@ -23,9 +23,12 @@
       libva-utils
       cmatrix
       ungoogled-chromium
+      google-chrome
       element-desktop
       xournalpp
       openai-whisper
+      uv
+      ntfy
     ]
   );
 

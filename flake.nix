@@ -18,6 +18,10 @@
     waybar.url = "github:alexays/waybar";
     nix-std.url = "github:chessai/nix-std";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+    claude-desktop = {
+      url = "github:k3d3/claude-desktop-linux-flake";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, home-manager
@@ -76,6 +80,7 @@
               nixpkgs.overlays = [
                 inputs.emacs-overlay.overlay
                 inputs.nix-vscode-extensions.overlays.default
+                (import ./overlays/opencode.nix)
               ];
             }
             (./hosts + ("/" + active-profile) + "/home.nix")
