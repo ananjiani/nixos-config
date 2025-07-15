@@ -9,7 +9,7 @@
 {
   home.packages = with pkgs; [
     claude-code
-    opencode
+    inputs.opencode.packages.${pkgs.system}.default
     aider-chat
     gh
     pgadmin4-desktopmode
