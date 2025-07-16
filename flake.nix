@@ -23,7 +23,7 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     opencode = {
-      url = "path:./flakes/opencode";
+      url = "github:ananjiani/opencode-flake";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
   };
