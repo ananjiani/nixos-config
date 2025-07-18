@@ -15,6 +15,8 @@
     liberation_ttf
     inter
     ia-writer-duospace
+    etBook
+    alegreya
   ];
 
 }
