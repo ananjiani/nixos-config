@@ -1,6 +1,13 @@
-{ config, pkgs, lib, ... }:
-let doom-dir = "$HOME/.dotfiles/modules/home/editors/doom-emacs";
-in {
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
+let
+  doom-dir = "$HOME/.dotfiles/modules/home/editors/doom-emacs";
+in
+{
 
   home.shellAliases = {
     ecc = "emacsclient -c";
@@ -11,7 +18,7 @@ in {
   programs = {
     emacs = {
       enable = true;
-      package = pkgs.emacs;
+      package = pkgs.emacs-pgtk;
       extraPackages = epkgs: [ epkgs.vterm ];
     };
     #mu.enable = true;
@@ -19,7 +26,7 @@ in {
 
   services.emacs = {
     enable = true;
-    package = pkgs.emacs;
+    package = pkgs.emacs-pgtk;
   };
 
   home.packages = with pkgs; [
@@ -31,20 +38,27 @@ in {
     nodePackages.prettier
     findutils
     nodePackages.vscode-json-languageserver
-    (aspellWithDicts (dicts: with dicts; [ en en-computers en-science ]))
+    (aspellWithDicts (
+      dicts: with dicts; [
+        en
+        en-computers
+        en-science
+      ]
+    ))
   ];
 
-  home.sessionVariables = { DOOMDIR = doom-dir; };
+  home.sessionVariables = {
+    DOOMDIR = doom-dir;
+  };
 
   # doom dependencies
 
-  home.activation.installDoomEmacs =
-    lib.hm.dag.entryAfter [ "installPackages" ] ''
-      if [ ! -d "$HOME/.emacs.d" ]; then
-        PATH="${config.home.path}/bin:$PATH"
-        git clone --depth=1 --single-branch https://github.com/doomemacs/doomemacs $HOME/.emacs.d
-      fi
-    '';
+  home.activation.installDoomEmacs = lib.hm.dag.entryAfter [ "installPackages" ] ''
+    if [ ! -d "$HOME/.emacs.d" ]; then
+      PATH="${config.home.path}/bin:$PATH"
+      git clone --depth=1 --single-branch https://github.com/doomemacs/doomemacs $HOME/.emacs.d
+    fi
+  '';
 
   home.activation.decryptEmacs = lib.hm.dag.entryAfter [ "installDoomEmacs" ] ''
     PATH="${config.home.path}/bin:$PATH"
