@@ -29,6 +29,7 @@ in
     ../../modules/home/dev/lang/nixlang.nix
     ../../modules/home/dev/nix-direnv.nix
     ../../modules/home/dev/programs.nix
+    ../../modules/home/dev/claude-code.nix
   ];
 
   # Home Manager needs a bit of information about you and the paths it should
