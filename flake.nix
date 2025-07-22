@@ -22,28 +22,43 @@
       url = "github:k3d3/claude-desktop-linux-flake";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+    claude-code.url = "github:sadjow/claude-code-nix";
+    whisper-dictation.url = "github:ananjiani/whisper-dictation";
     opencode = {
       url = "github:ananjiani/opencode-flake";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager
-    , home-manager-unstable, nix-std, ... }@inputs:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      nixpkgs-unstable,
+      home-manager,
+      home-manager-unstable,
+      nix-std,
+      ...
+    }@inputs:
     let
       lib = nixpkgs-unstable.lib;
       system = "x86_64-linux";
       pkgs = import nixpkgs-unstable {
         system = "x86_64-linux";
-        config = { allowUnfree = true; };
+        config = {
+          allowUnfree = true;
+        };
       };
       pkgs-stable = import nixpkgs {
         system = "x86_64-linux";
-        config = { allowUnfree = true; };
+        config = {
+          allowUnfree = true;
+        };
       };
       std = nix-std.lib;
       active-profile = import ./active-profile.nix;
-    in {
+    in
+    {
       nix.nixPath = [ "nixpkgs=${nixpkgs-unstable}" ];
       nixosConfigurations = {
         ammars-pc = lib.nixosSystem {
@@ -84,6 +99,7 @@
               nixpkgs.overlays = [
                 inputs.emacs-overlay.overlay
                 inputs.nix-vscode-extensions.overlays.default
+                inputs.claude-code.overlays.default
               ];
             }
             (./hosts + ("/" + active-profile) + "/home.nix")
