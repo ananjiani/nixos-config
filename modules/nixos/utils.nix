@@ -1,6 +1,11 @@
 # Stuff that will be universally useful.
 
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 {
 
@@ -16,19 +21,36 @@
 
   programs.fish.enable = true;
 
+  # Enable ydotool for input automation
+  programs.ydotool = {
+    enable = true;
+    group = "ydotool";
+  };
+
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.ammar = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
+    extraGroups = [ "wheel" "ydotool" ]; # Enable 'sudo' for the user and ydotool access.
   };
 
   nixpkgs.config.allowUnfree = true;
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
-  nix.settings.trusted-users = [ "root" "ammar" ];
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
+  nix.settings.trusted-users = [
+    "root"
+    "ammar"
+  ];
   nix.settings = {
-    substituters = [ "https://hyprland.cachix.org" ];
-    trusted-public-keys =
-      [ "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" ];
+    substituters = [
+      "https://hyprland.cachix.org"
+      "https://claude-code.cachix.org"
+    ];
+    trusted-public-keys = [
+      "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+      "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
+    ];
   };
   nix.gc = {
     automatic = true;
@@ -49,8 +71,7 @@
 
   # Pick only one of the below networking options.
   #networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
-  networking.networkmanager.enable =
-    true; # Easiest to use and most distros use this by default.
+  networking.networkmanager.enable = true; # Easiest to use and most distros use this by default.
   networking.firewall.enable = true;
   networking.firewall.allowPing = true;
 
@@ -74,7 +95,9 @@
   };
 
   security = {
-    polkit = { enable = true; };
+    polkit = {
+      enable = true;
+    };
     rtkit.enable = true;
   };
 
