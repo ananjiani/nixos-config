@@ -2,6 +2,7 @@
   config,
   pkgs,
   lib,
+  inputs,
   ...
 }:
 
@@ -28,7 +29,7 @@
       xournalpp
       openai-whisper
       uv
-      ntfy
+      inputs.whisper-dictation.packages.${pkgs.system}.default
     ]
   );
 
