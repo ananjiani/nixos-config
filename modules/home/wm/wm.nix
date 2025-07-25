@@ -45,6 +45,11 @@
           selection-match = "${base08}ff";
           border = "${base09}ff";
         };
+        key-bindings = {
+          delete-line-forward = "none";  # Unmap default Control+k binding
+          next = "Control+j";
+          prev = "Control+k";
+        };
       };
     };
     waybar = {
@@ -70,6 +75,7 @@
       "$mainMod" = "SUPER";
       bind = [
         "$mainMod, Q, exec, foot"
+        "$mainMod SHIFT, Q, exec, foot zellij"
         "$mainMod, E, exec, emacsclient -c"
         "$mainMod, H, movefocus, l"
         "$mainMod, L, movefocus, r"
