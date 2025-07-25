@@ -6,6 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a NixOS and Home Manager dotfiles repository that manages system configurations for multiple machines using Nix flakes. The codebase follows a modular architecture with clear separation between system-level (NixOS) and user-level (Home Manager) configurations.
 
+### Key Features
+- **Modular Configuration**: Reusable modules for common functionality
+- **Multi-Host Support**: Configurations for desktop, laptops, and Surface Go
+- **Secure Secrets**: SOPS-NIX integration for encrypted credentials
+- **Unified Theming**: Consistent colors and styles across applications
+
 ## Common Commands
 
 ### System Rebuild (using nh)
@@ -70,6 +76,8 @@ nix flake metadata
 - **Doom Emacs**: Main editor configuration in `modules/home/editors/doom-emacs/` with custom Doom config
 - **Theming**: Uses nix-colors for consistent theming across applications
 - **State Version**: NixOS 24.05 (important for compatibility)
+- **Laptop Profile**: Common laptop configurations in `modules/home/profiles/laptop.nix`
+- **Wallpaper Module**: Centralized wallpaper management in `modules/home/config/wallpaper.nix`
 
 ## Working with This Repository
 
@@ -93,4 +101,12 @@ nix flake metadata
 - For editor configs: Look in `modules/home/editors/`
 - System services: Check `modules/nixos/services/`
 - Gaming-related: See `modules/nixos/gaming/`
+- Laptop-specific: Use `modules/home/profiles/laptop.nix`
+- Wallpaper settings: Configure via `wallpaper` option in host home.nix
 - Any time you make a new file, make sure to stage it
+
+### Best Practices
+- Import shared modules rather than duplicating configuration
+- Use options for configurable modules (see wallpaper.nix example)
+- Keep host-specific config minimal, leverage modules
+- Document module options and their purpose

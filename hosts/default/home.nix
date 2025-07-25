@@ -5,9 +5,6 @@
   ...
 }:
 
-let
-  wallpaper = ./wallpapers/revachol.jpg;
-in
 {
   imports = [
     ../../modules/home/gaming.nix
@@ -19,6 +16,7 @@ in
     ../../modules/home/programs.nix
     ../../modules/home/config/defaults.nix
     ../../modules/home/config/sops.nix
+    ../../modules/home/config/wallpaper.nix
     ../../modules/home/terminal/environment.nix
     ../../modules/home/terminal/cli-tools.nix
     ../../modules/home/terminal/emulator/foot.nix
@@ -45,6 +43,13 @@ in
   # want to update the value, then make sure to first check the Home Manager
   # release notes.
   home.stateVersion = "23.11"; # Please read the comment before changing.
+
+  # Default wallpaper configuration
+  wallpaper = {
+    enable = lib.mkDefault true;
+    path = lib.mkDefault ./wallpapers/revachol.jpg;
+    mode = lib.mkDefault "fill";
+  };
 
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;

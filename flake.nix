@@ -41,60 +41,74 @@
       ...
     }@inputs:
     let
-      lib = nixpkgs-unstable.lib;
+      # System configuration
       system = "x86_64-linux";
-      pkgs = import nixpkgs-unstable {
-        system = "x86_64-linux";
-        config = {
-          allowUnfree = true;
-        };
-      };
-      pkgs-stable = import nixpkgs {
-        system = "x86_64-linux";
-        config = {
-          allowUnfree = true;
-        };
-      };
+      lib = nixpkgs-unstable.lib;
       std = nix-std.lib;
       active-profile = import ./active-profile.nix;
+      
+      # Package sets
+      pkgs = import nixpkgs-unstable {
+        inherit system;
+        config.allowUnfree = true;
+      };
+      
+      pkgs-stable = import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
+      
+      # Special arguments passed to all configurations
+      specialArgs = { inherit pkgs-stable; };
+      extraSpecialArgs = { inherit inputs std pkgs-stable; };
     in
     {
+      # Set nixPath for compatibility
       nix.nixPath = [ "nixpkgs=${nixpkgs-unstable}" ];
+      
+      # NixOS system configurations
       nixosConfigurations = {
+        # Desktop system
         ammars-pc = lib.nixosSystem {
-          inherit system;
+          inherit system specialArgs;
           modules = [ ./hosts/desktop/configuration.nix ];
-          specialArgs = { inherit pkgs-stable; };
         };
+        
+        # Work laptop
         work-laptop = lib.nixosSystem {
-          inherit system;
+          inherit system specialArgs;
           modules = [ ./hosts/work-laptop/configuration.nix ];
-          specialArgs = { inherit pkgs-stable; };
         };
+        
+        # Surface Go tablet
         surface-go = lib.nixosSystem {
-          inherit system;
+          inherit system specialArgs;
           modules = [ ./hosts/surface-go/configuration.nix ];
-          specialArgs = { inherit pkgs-stable; };
         };
+        
+        # Framework 13 laptop
         framework13 = lib.nixosSystem {
-          inherit system;
+          inherit system specialArgs;
           modules = [
             ./hosts/framework13/configuration.nix
             inputs.nixos-hardware.nixosModules.framework-13-7040-amd
           ];
-          specialArgs = { inherit pkgs-stable; };
         };
+        
+        # ISO image for installation
         iso = lib.nixosSystem {
-          inherit system;
+          inherit system specialArgs;
           modules = [ ./hosts/iso/configuration.nix ];
-          specialArgs = { inherit pkgs-stable; };
         };
       };
 
+      # Home Manager configurations
       homeConfigurations = {
         ammar = home-manager-unstable.lib.homeManagerConfiguration {
-          inherit pkgs;
+          inherit pkgs extraSpecialArgs;
+          
           modules = [
+            # Apply overlays
             {
               nixpkgs.overlays = [
                 inputs.emacs-overlay.overlay
@@ -102,10 +116,10 @@
                 inputs.claude-code.overlays.default
               ];
             }
+            
+            # Load profile-specific home configuration
             (./hosts + ("/" + active-profile) + "/home.nix")
           ];
-          extraSpecialArgs = { inherit inputs std pkgs-stable; };
-
         };
       };
     };
