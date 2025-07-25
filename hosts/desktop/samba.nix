@@ -8,8 +8,10 @@
   services.samba = {
     enable = true;
     openFirewall = true;
-    securityType = "user";
-    shares = {
+    settings = {
+      global = {
+        security = "user";
+      };
       home = {
         path = "/home/ammar";
         browseable = "yes";
