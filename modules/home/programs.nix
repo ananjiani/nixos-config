@@ -30,6 +30,8 @@
       openai-whisper
       uv
       inputs.whisper-dictation.packages.${pkgs.system}.default
+      youtube-music
+      playerctl
     ]
   );
 

@@ -93,3 +93,4 @@ nix flake metadata
 - For editor configs: Look in `modules/home/editors/`
 - System services: Check `modules/nixos/services/`
 - Gaming-related: See `modules/nixos/gaming/`
+- Any time you make a new file, make sure to stage it
