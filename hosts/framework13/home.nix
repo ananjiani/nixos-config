@@ -2,6 +2,7 @@
 let wallpaper = ../default/wallpapers/revachol.png;
 in {
 
+  imports = [ ../default/home.nix ../../modules/home/work.nix ];
   services.blueman-applet.enable = true;
   services.mpris-proxy.enable = true;
 
