@@ -110,3 +110,6 @@ nix flake metadata
 - Use options for configurable modules (see wallpaper.nix example)
 - Keep host-specific config minimal, leverage modules
 - Document module options and their purpose
+- **Context and MCP Best Practices**:
+  - Use context7 for modular and context-aware Nix configurations
+  - Leverage NixOS MCP (Master Control Program) for advanced system management and deployment strategies

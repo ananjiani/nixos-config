@@ -46,7 +46,7 @@
           border = "${base09}ff";
         };
         key-bindings = {
-          delete-line-forward = "none";  # Unmap default Control+k binding
+          delete-line-forward = "none"; # Unmap default Control+k binding
           next = "Control+j";
           prev = "Control+k";
         };
@@ -62,6 +62,30 @@
   home.activation.reloadHyprland = lib.hm.dag.entryAfter [ "reloadSystemd" ] ''
     hyprctl reload
   '';
+
+  services.wlsunset = {
+    enable = false;
+  };
+
+  services.hyprsunset = {
+    enable = true;
+    transitions = {
+      sunset = {
+        calendar = "18:45:00";  # Approximate Dallas winter sunset
+        requests = [
+          [ "temperature" "4000" ]
+          [ "gamma" "0.9" ]
+        ];
+      };
+      sunrise = {
+        calendar = "07:30:00";  # Approximate Dallas winter sunrise
+        requests = [
+          [ "temperature" "6500" ]
+          [ "gamma" "1.0" ]
+        ];
+      };
+    };
+  };
 
   wayland.windowManager.hyprland = {
     enable = true;
