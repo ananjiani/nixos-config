@@ -101,6 +101,7 @@
         "$mainMod, Q, exec, foot"
         "$mainMod SHIFT, Q, exec, foot zellij"
         "$mainMod, E, exec, emacsclient -c"
+        "$mainMod, B, exec, claude-desktop"
         "$mainMod, H, movefocus, l"
         "$mainMod, L, movefocus, r"
         "$mainMod, K, movefocus, u"
