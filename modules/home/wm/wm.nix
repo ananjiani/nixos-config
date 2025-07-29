@@ -90,6 +90,9 @@
   wayland.windowManager.hyprland = {
     enable = true;
     package = pkgs.hyprland;
+    plugins = [
+      pkgs.hyprlandPlugins.hyprspace
+    ];
     settings = {
       exec = [ "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1" ];
       general = {
