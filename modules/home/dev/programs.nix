@@ -1,6 +1,4 @@
 {
-  config,
-  lib,
   pkgs,
   inputs,
   ...
@@ -8,8 +6,7 @@
 
 {
   home.packages = with pkgs; [
-    claude-code
-    inputs.opencode.packages.${pkgs.system}.default
+    # inputs.opencode.packages.${pkgs.system}.default
     aider-chat
     gh
     pgadmin4-desktopmode

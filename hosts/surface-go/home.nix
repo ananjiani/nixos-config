@@ -1,23 +1,27 @@
-{ config, pkgs, lib, ... }:
+{
+  lib,
+  ...
+}:
 
-let
-  wallpaper = ../default/wallpapers/revachol.jpg;
-in
 {
 
-  imports =
-  [ 
+  imports = [
     ../default/home.nix
+    ../../modules/home/profiles/laptop.nix
+    ../../modules/home/config/wallpaper.nix
   ];
 
-  services.blueman-applet.enable = true;
+  wallpaper = {
+    enable = true;
+    path = ../default/wallpapers/revachol.jpg;
+    mode = lib.mkForce "fit";
+  };
+
   services.mpris-proxy.enable = true;
 
   wayland.windowManager.hyprland.settings = {
-    monitor = [",highrr,auto,1"];
-      exec-once = [
-        "swaybg -i ${wallpaper} -m fit"
-      ];
+    monitor = [ ",highrr,auto,1" ];
+    # Wallpaper is now handled by the wallpaper module
   };
 
 }
