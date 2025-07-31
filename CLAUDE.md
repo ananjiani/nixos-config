@@ -11,6 +11,8 @@ This is a NixOS and Home Manager dotfiles repository that manages system configu
 - **Multi-Host Support**: Configurations for desktop, laptops, and Surface Go
 - **Secure Secrets**: SOPS-NIX integration for encrypted credentials
 - **Unified Theming**: Consistent colors and styles across applications
+- **CI/CD Automation**: GitHub Actions for validation and automated updates
+- **Pre-commit Hooks**: Automatic formatting and linting with git-hooks.nix
 
 ## Common Commands
 
@@ -51,6 +53,18 @@ nix flake update
 
 # Show flake metadata
 nix flake metadata
+
+# Run pre-commit hooks manually
+nix develop --command pre-commit run --all-files
+
+# Enter development shell with pre-commit hooks
+nix develop
+```
+
+### CI/CD Commands
+```bash
+# Test what CI will run locally
+nix flake check --all-systems
 ```
 
 ## Architecture
@@ -64,6 +78,9 @@ nix flake metadata
   - `home/`: User-level modules (editors, shell, desktop environment)
   - `nixos/`: System-level modules (hardware, services, gaming)
 - **`secrets/`**: SOPS-encrypted secrets (keys, tokens)
+- **`.github/workflows/`**: CI/CD automation
+  - `ci.yml`: Quick validation on every push
+  - `weekly-check.yml`: Comprehensive weekly validation with auto-updates
 
 ### Key Design Patterns
 1. **Modular Configuration**: Features are split into focused modules that can be enabled/disabled per host
@@ -78,6 +95,8 @@ nix flake metadata
 - **State Version**: NixOS 24.05 (important for compatibility)
 - **Laptop Profile**: Common laptop configurations in `modules/home/profiles/laptop.nix`
 - **Wallpaper Module**: Centralized wallpaper management in `modules/home/config/wallpaper.nix`
+- **Pre-commit Hooks**: Automatic formatting (nixfmt), linting (statix), dead code removal (deadnix), and secret scanning (ripsecrets)
+- **CI/CD**: GitHub Actions validate all configurations on push and weekly auto-update flake inputs
 
 ## Working with This Repository
 
