@@ -1,14 +1,11 @@
 {
   config,
   pkgs,
-  pkgs-stable,
   lib,
   inputs,
   ...
 }:
 {
-  home.packages = with pkgs; [ swaynotificationcenter ];
-
   imports = [ inputs.nix-colors.homeManagerModules.default ];
 
   colorScheme = inputs.nix-colors.colorSchemes.gruvbox-material-dark-soft;
@@ -16,6 +13,19 @@
   #     path = wallpaper;
   #     kind = "dark";
   #   };
+
+  home = {
+    packages = with pkgs; [ swaynotificationcenter ];
+
+    file = {
+      ".config/swaync/config.json".source = ../../home/wm/swaync/config.json;
+      ".config/swaync/style.css".source = ../../home/wm/swaync/style.css;
+    };
+
+    activation.reloadHyprland = lib.hm.dag.entryAfter [ "reloadSystemd" ] ''
+      hyprctl reload
+    '';
+  };
 
   gtk = {
     enable = true;
@@ -25,11 +35,6 @@
     };
     iconTheme.package = pkgs.gruvbox-dark-icons-gtk;
     iconTheme.name = "Gruvbox-Dark";
-  };
-
-  home.file = {
-    ".config/swaync/config.json".source = ../../home/wm/swaync/config.json;
-    ".config/swaync/style.css".source = ../../home/wm/swaync/style.css;
   };
 
   programs = {
@@ -46,7 +51,7 @@
           border = "${base09}ff";
         };
         key-bindings = {
-          delete-line-forward = "none";  # Unmap default Control+k binding
+          delete-line-forward = "none"; # Unmap default Control+k binding
           next = "Control+j";
           prev = "Control+k";
         };
@@ -59,9 +64,29 @@
     };
   };
 
-  home.activation.reloadHyprland = lib.hm.dag.entryAfter [ "reloadSystemd" ] ''
-    hyprctl reload
-  '';
+  services.wlsunset = {
+    enable = false;
+  };
+
+  # services.hyprsunset = {
+  #   enable = true;
+  #   transitions = {
+  #     sunset = {
+  #       calendar = "18:45:00";  # Approximate Dallas winter sunset
+  #       requests = [
+  #         [ "temperature" "4000" ]
+  #         [ "gamma" "0.9" ]
+  #       ];
+  #     };
+  #     sunrise = {
+  #       calendar = "07:30:00";  # Approximate Dallas winter sunrise
+  #       requests = [
+  #         [ "temperature" "6500" ]
+  #         [ "gamma" "1.0" ]
+  #       ];
+  #     };
+  #   };
+  # };
 
   wayland.windowManager.hyprland = {
     enable = true;
@@ -77,6 +102,7 @@
         "$mainMod, Q, exec, foot"
         "$mainMod SHIFT, Q, exec, foot zellij"
         "$mainMod, E, exec, emacsclient -c"
+        "$mainMod, B, exec, claude-desktop"
         "$mainMod, H, movefocus, l"
         "$mainMod, L, movefocus, r"
         "$mainMod, K, movefocus, u"

@@ -1,5 +1,11 @@
-{ config, lib, pkgs, ... }:
+{
+  pkgs,
+  ...
+}:
 
 {
-  home.packages = with pkgs; [ microsoft-edge pgadmin4-desktopmode ];
+  home.packages = with pkgs; [
+    microsoft-edge
+    pgadmin4-desktopmode
+  ];
 }

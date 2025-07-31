@@ -2,18 +2,19 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running `nixos-help`).
 
-{ config, pkgs, lib, ... }:
+{
+  ...
+}:
 
 {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-      ../default/configuration.nix
-      ../../modules/nixos/bluetooth.nix
-      ../../modules/nixos/wm.nix
-      ../../modules/nixos/utils.nix
-    ];
+  imports = [
+    # Include the results of the hardware scan.
+    ./hardware-configuration.nix
+    ../default/configuration.nix
+    ../../modules/nixos/bluetooth.nix
+    ../../modules/nixos/wm.nix
+    ../../modules/nixos/utils.nix
+  ];
 
   networking.hostName = "work-laptop"; # Define your hostname.
 }
-

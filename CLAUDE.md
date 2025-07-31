@@ -6,6 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a NixOS and Home Manager dotfiles repository that manages system configurations for multiple machines using Nix flakes. The codebase follows a modular architecture with clear separation between system-level (NixOS) and user-level (Home Manager) configurations.
 
+### Key Features
+- **Modular Configuration**: Reusable modules for common functionality
+- **Multi-Host Support**: Configurations for desktop, laptops, and Surface Go
+- **Secure Secrets**: SOPS-NIX integration for encrypted credentials
+- **Unified Theming**: Consistent colors and styles across applications
+- **CI/CD Automation**: GitHub Actions for validation and automated updates
+- **Pre-commit Hooks**: Automatic formatting and linting with git-hooks.nix
+
 ## Common Commands
 
 ### System Rebuild (using nh)
@@ -45,6 +53,18 @@ nix flake update
 
 # Show flake metadata
 nix flake metadata
+
+# Run pre-commit hooks manually
+nix develop --command pre-commit run --all-files
+
+# Enter development shell with pre-commit hooks
+nix develop
+```
+
+### CI/CD Commands
+```bash
+# Test what CI will run locally
+nix flake check --all-systems
 ```
 
 ## Architecture
@@ -58,10 +78,13 @@ nix flake metadata
   - `home/`: User-level modules (editors, shell, desktop environment)
   - `nixos/`: System-level modules (hardware, services, gaming)
 - **`secrets/`**: SOPS-encrypted secrets (keys, tokens)
+- **`.github/workflows/`**: CI/CD automation
+  - `ci.yml`: Quick validation on every push
+  - `weekly-check.yml`: Comprehensive weekly validation with auto-updates
 
 ### Key Design Patterns
 1. **Modular Configuration**: Features are split into focused modules that can be enabled/disabled per host
-2. **Profile System**: Active profile (desktop/laptop/server) is set in `active-profile.nix`
+2. **Automatic Host Detection**: Home Manager automatically detects hostname and loads appropriate configuration
 3. **Hardware Abstraction**: Hardware-specific configurations are isolated in dedicated modules
 4. **Secret Management**: Uses SOPS-NIX for encrypted secrets with age keys
 
@@ -70,6 +93,10 @@ nix flake metadata
 - **Doom Emacs**: Main editor configuration in `modules/home/editors/doom-emacs/` with custom Doom config
 - **Theming**: Uses nix-colors for consistent theming across applications
 - **State Version**: NixOS 24.05 (important for compatibility)
+- **Laptop Profile**: Common laptop configurations in `modules/home/profiles/laptop.nix`
+- **Wallpaper Module**: Centralized wallpaper management in `modules/home/config/wallpaper.nix`
+- **Pre-commit Hooks**: Automatic formatting (nixfmt), linting (statix), dead code removal (deadnix), and secret scanning (ripsecrets)
+- **CI/CD**: GitHub Actions validate all configurations on push and weekly auto-update flake inputs
 
 ## Working with This Repository
 
@@ -93,4 +120,15 @@ nix flake metadata
 - For editor configs: Look in `modules/home/editors/`
 - System services: Check `modules/nixos/services/`
 - Gaming-related: See `modules/nixos/gaming/`
+- Laptop-specific: Use `modules/home/profiles/laptop.nix`
+- Wallpaper settings: Configure via `wallpaper` option in host home.nix
 - Any time you make a new file, make sure to stage it
+
+### Best Practices
+- Import shared modules rather than duplicating configuration
+- Use options for configurable modules (see wallpaper.nix example)
+- Keep host-specific config minimal, leverage modules
+- Document module options and their purpose
+- **Context and MCP Best Practices**:
+  - Use context7 for modular and context-aware Nix configurations
+  - Leverage NixOS MCP (Master Control Program) for advanced system management and deployment strategies

@@ -1,4 +1,8 @@
-{ config, pkgs, lib, pkgs-stable, ... }:
+{
+  pkgs,
+  lib,
+  ...
+}:
 
 {
   programs = {
@@ -6,8 +10,8 @@
       enable = true;
       package = pkgs.steam.override {
         extraEnv = { };
-        extraLibraries = pkgs:
-          with pkgs; [
+        extraLibraries =
+          pkgs: with pkgs; [
             xorg.libXcursor
             xorg.libXi
             xorg.libXinerama
@@ -28,5 +32,8 @@
   programs.gamescope.enable = true;
   programs.gamescope.capSysNice = true;
 
-  environment.systemPackages = (with pkgs; [ steamtinkerlaunch lutris ]);
+  environment.systemPackages = with pkgs; [
+    steamtinkerlaunch
+    lutris
+  ];
 }

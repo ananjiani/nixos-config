@@ -3,7 +3,6 @@
 {
   config,
   pkgs,
-  lib,
   ...
 }:
 
@@ -19,43 +18,57 @@
     vim
   ];
 
-  programs.fish.enable = true;
+  programs = {
+    fish.enable = true;
 
-  # Enable ydotool for input automation
-  programs.ydotool = {
-    enable = true;
-    group = "ydotool";
+    # Enable ydotool for input automation
+    ydotool = {
+      enable = true;
+      group = "ydotool";
+    };
+
+    gnupg.agent = {
+      enable = true;
+      pinentryPackage = pkgs.pinentry-curses;
+      enableSSHSupport = true;
+    };
   };
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.ammar = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "ydotool" ]; # Enable 'sudo' for the user and ydotool access.
+    extraGroups = [
+      "wheel"
+      "ydotool"
+    ]; # Enable 'sudo' for the user and ydotool access.
   };
 
   nixpkgs.config.allowUnfree = true;
-  nix.settings.experimental-features = [
-    "nix-command"
-    "flakes"
-  ];
-  nix.settings.trusted-users = [
-    "root"
-    "ammar"
-  ];
-  nix.settings = {
-    substituters = [
-      "https://hyprland.cachix.org"
-      "https://claude-code.cachix.org"
-    ];
-    trusted-public-keys = [
-      "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
-      "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
-    ];
-  };
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 30d";
+
+  nix = {
+    settings = {
+      experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
+      trusted-users = [
+        "root"
+        "ammar"
+      ];
+      substituters = [
+        "https://hyprland.cachix.org"
+        "https://claude-code.cachix.org"
+      ];
+      trusted-public-keys = [
+        "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+        "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
+      ];
+    };
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 30d";
+    };
   };
 
   #   # Auto upgrade
@@ -71,9 +84,13 @@
 
   # Pick only one of the below networking options.
   #networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
-  networking.networkmanager.enable = true; # Easiest to use and most distros use this by default.
-  networking.firewall.enable = true;
-  networking.firewall.allowPing = true;
+  networking = {
+    networkmanager.enable = true; # Easiest to use and most distros use this by default.
+    firewall = {
+      enable = true;
+      allowPing = true;
+    };
+  };
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
@@ -102,11 +119,6 @@
   };
 
   services.pcscd.enable = true;
-  programs.gnupg.agent = {
-    enable = true;
-    pinentryPackage = pkgs.pinentry-curses;
-    enableSSHSupport = true;
-  };
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.

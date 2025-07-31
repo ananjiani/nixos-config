@@ -1,8 +1,20 @@
-{ config, pkgs, lib, ... }:
+{
+  lib,
+  ...
+}:
 
-let wallpaper = ../default/wallpapers/revachol.jpg;
-in {
-  imports = [ ../default/home.nix ../../modules/home/gaming.nix ];
+{
+  imports = [
+    ../default/home.nix
+    ../../modules/home/gaming.nix
+    ../../modules/home/config/wallpaper.nix
+  ];
+
+  wallpaper = {
+    enable = true;
+    path = ../default/wallpapers/revachol.jpg;
+    mode = lib.mkForce "fit";
+  };
 
   wayland.windowManager.hyprland.settings = {
     monitor = [
@@ -13,7 +25,6 @@ in {
     exec-once = [
       "corectrl"
       "steam -silent -cef-disable-gpu"
-      "swaybg -i ${wallpaper} -m fit"
     ];
   };
 }
