@@ -157,7 +157,9 @@
             # Note: statix doesn't support auto-fixing well in pre-commit
             # Consider running `statix fix` manually when needed
           };
+          ripsecrets.enable = true;
           flake-checker.enable = true;
+
         };
       };
 
