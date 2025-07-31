@@ -8,6 +8,7 @@
     ../default/home.nix
     ../../modules/home/profiles/laptop.nix
     ../../modules/home/config/wallpaper.nix
+    ../../modules/home/work.nix
   ];
 
   wallpaper = {
@@ -16,6 +17,7 @@
     mode = "fill";
   };
 
+  services.blueman-applet.enable = true;
   services.mpris-proxy.enable = true;
 
   home.packages = with pkgs; [ signal-desktop ];
