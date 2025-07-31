@@ -12,7 +12,6 @@
       ../../modules/nixos/wm.nix
       ../../modules/nixos/utils.nix
       ../../modules/nixos/bluetooth.nix
-      <home-manager/nixos>
     ];
 
   networking.hostName = "surface-go"; # Define your hostname.
