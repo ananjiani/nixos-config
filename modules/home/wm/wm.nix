@@ -67,32 +67,29 @@
     enable = false;
   };
 
-  services.hyprsunset = {
-    enable = true;
-    transitions = {
-      sunset = {
-        calendar = "18:45:00";  # Approximate Dallas winter sunset
-        requests = [
-          [ "temperature" "4000" ]
-          [ "gamma" "0.9" ]
-        ];
-      };
-      sunrise = {
-        calendar = "07:30:00";  # Approximate Dallas winter sunrise
-        requests = [
-          [ "temperature" "6500" ]
-          [ "gamma" "1.0" ]
-        ];
-      };
-    };
-  };
+  # services.hyprsunset = {
+  #   enable = true;
+  #   transitions = {
+  #     sunset = {
+  #       calendar = "18:45:00";  # Approximate Dallas winter sunset
+  #       requests = [
+  #         [ "temperature" "4000" ]
+  #         [ "gamma" "0.9" ]
+  #       ];
+  #     };
+  #     sunrise = {
+  #       calendar = "07:30:00";  # Approximate Dallas winter sunrise
+  #       requests = [
+  #         [ "temperature" "6500" ]
+  #         [ "gamma" "1.0" ]
+  #       ];
+  #     };
+  #   };
+  # };
 
   wayland.windowManager.hyprland = {
     enable = true;
     package = pkgs.hyprland;
-    plugins = [
-      pkgs.hyprlandPlugins.hyprspace
-    ];
     settings = {
       exec = [ "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1" ];
       general = {
