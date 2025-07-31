@@ -14,7 +14,7 @@ This directory contains CI/CD workflows for the NixOS dotfiles repository.
 - **Duration**: ~2-3 minutes
 
 ### 📅 Weekly Validation (weekly-check.yml)
-- **Triggers**: 
+- **Triggers**:
   - Every Sunday at 2 AM UTC
   - Manual trigger via GitHub UI
   - All pushes to main/master
