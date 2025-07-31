@@ -1,0 +1,254 @@
+name: Weekly Flake Validation
+on:
+  schedule:
+    # Run every Sunday at 2 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:  # Allow manual trigger
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  check-flake:
+    name: Flake Health Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            experimental-features = nix-command flakes
+            
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Check flake and show metadata
+        run: |
+          echo "🔍 Checking flake health..."
+          nix flake check --all-systems
+          
+          echo "📊 Flake metadata:"
+          nix flake metadata
+          
+          echo "🔗 Flake inputs:"
+          nix flake metadata --json | jq '.locks.nodes | to_entries[] | select(.key != "root") | {input: .key, url: .value.locked.url or .value.locked.type}'
+
+  build-hosts:
+    name: Build ${{ matrix.host }} (${{ matrix.type }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false  # Continue building other hosts even if one fails
+      matrix:
+        include:
+          - host: ammars-pc
+            type: desktop
+          - host: work-laptop
+            type: laptop
+          - host: framework13
+            type: laptop
+          - host: surface-go
+            type: tablet
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build NixOS configuration
+        run: |
+          echo "🏗️ Building NixOS configuration for ${{ matrix.host }}..."
+          nix build .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel --no-link --print-build-logs
+          
+      - name: Build Home Manager configuration
+        run: |
+          echo "🏠 Building Home Manager configuration for ammar@${{ matrix.host }}..."
+          nix build .#homeConfigurations."ammar@${{ matrix.host }}".activationPackage --no-link --print-build-logs
+
+      - name: Check evaluation time
+        run: |
+          echo "⏱️ Checking evaluation performance..."
+          time nix eval .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel.drvPath
+
+      - name: Create issue on failure
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueTitle = `Weekly build failed for ${{ matrix.host }}`;
+            const issueBody = `## Build Failure Report
+            
+            The weekly build check failed for **${{ matrix.host }}** (${{ matrix.type }}).
+            
+            ### Details
+            - **Host**: ${{ matrix.host }}
+            - **Type**: ${{ matrix.type }}
+            - **Workflow Run**: [View logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            - **Commit**: ${{ github.sha }}
+            
+            ### Next Steps
+            1. Check the workflow logs for detailed error messages
+            2. Test the build locally with: \`nix build .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel\`
+            3. Fix any issues and push the changes
+            
+            This issue was automatically created by the weekly validation workflow.`;
+            
+            // Check if similar issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'build-failure,automated'
+            });
+            
+            const existingIssue = issues.data.find(issue => 
+              issue.title.includes('${{ matrix.host }}')
+            );
+            
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issueTitle,
+                body: issueBody,
+                labels: ['build-failure', 'automated', '${{ matrix.type }}']
+              });
+            }
+
+  update-flakes:
+    name: Check and Update Flakes
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: [check-flake, build-hosts]  # Only run if builds pass
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update flake inputs
+        id: update
+        run: |
+          echo "📦 Checking for flake updates..."
+          
+          # Store current lock file
+          cp flake.lock flake.lock.old
+          
+          # Update all inputs
+          nix flake update
+          
+          # Check if there were changes
+          if git diff --quiet flake.lock; then
+            echo "✅ All inputs are up to date!"
+            echo "has_updates=false" >> $GITHUB_OUTPUT
+          else
+            echo "📝 Updates found, generating changelog..."
+            echo "has_updates=true" >> $GITHUB_OUTPUT
+            
+            # Generate a nice changelog
+            echo "## Flake Input Updates" > update_message.md
+            echo "" >> update_message.md
+            
+            # Parse the changes (this is a bit complex but provides nice output)
+            nix eval --json .#inputs | jq -r 'to_entries[] | .key' | while read -r input; do
+              OLD_REV=$(jq -r ".nodes[\"$input\"].locked.rev // empty" flake.lock.old 2>/dev/null || echo "")
+              NEW_REV=$(jq -r ".nodes[\"$input\"].locked.rev // empty" flake.lock 2>/dev/null || echo "")
+              
+              if [ -n "$OLD_REV" ] && [ -n "$NEW_REV" ] && [ "$OLD_REV" != "$NEW_REV" ]; then
+                echo "### $input" >> update_message.md
+                echo "- Old: \`${OLD_REV:0:8}\`" >> update_message.md
+                echo "- New: \`${NEW_REV:0:8}\`" >> update_message.md
+                
+                # Try to get GitHub URL for nice links
+                URL=$(jq -r ".nodes[\"$input\"].locked.url // empty" flake.lock 2>/dev/null || echo "")
+                if [[ "$URL" == *"github:"* ]]; then
+                  REPO=$(echo "$URL" | sed 's/github://' | sed 's/\/archive\/.*//')
+                  echo "- [Compare changes](https://github.com/$REPO/compare/${OLD_REV:0:8}...${NEW_REV:0:8})" >> update_message.md
+                fi
+                echo "" >> update_message.md
+              fi
+            done
+            
+            # Add summary
+            echo "## Summary" >> update_message.md
+            echo "" >> update_message.md
+            echo "This is an automated update of flake inputs. Please review the changes and ensure all systems still build correctly." >> update_message.md
+            echo "" >> update_message.md
+            echo "To test locally:" >> update_message.md
+            echo "\`\`\`bash" >> update_message.md
+            echo "nix flake check" >> update_message.md
+            echo "# Or test specific hosts:" >> update_message.md
+            echo "nix build .#nixosConfigurations.ammars-pc.config.system.build.toplevel" >> update_message.md
+            echo "\`\`\`" >> update_message.md
+          fi
+
+      - name: Create Pull Request
+        if: steps.update.outputs.has_updates == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "flake.lock: Update"
+          title: "Weekly flake update"
+          body-path: update_message.md
+          branch: flake-update-${{ github.run_number }}
+          delete-branch: true
+          labels: |
+            dependencies
+            automated
+          assignees: ananjiani
+
+  summary:
+    name: Summary Report
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [check-flake, build-hosts, update-flakes]
+    steps:
+      - name: Generate summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jobs = ${{ toJSON(needs) }};
+            let allSuccess = true;
+            let summary = '# Weekly Validation Summary\n\n';
+            
+            // Check job statuses
+            Object.entries(jobs).forEach(([job, status]) => {
+              const emoji = status.result === 'success' ? '✅' : '❌';
+              summary += `${emoji} **${job}**: ${status.result}\n`;
+              if (status.result !== 'success') allSuccess = false;
+            });
+            
+            // Add timestamp
+            summary += `\n🕐 Run at: ${new Date().toUTCString()}\n`;
+            
+            // Add badge to README (optional)
+            if (context.eventName === 'schedule') {
+              const badgeColor = allSuccess ? 'success' : 'critical';
+              const badgeUrl = `https://img.shields.io/badge/weekly%20build-${badgeColor}`;
+              summary += `\n![Weekly Build](${badgeUrl})`;
+            }
+            
+            // Write to summary
+            await core.summary
+              .addRaw(summary)
+              .write();
