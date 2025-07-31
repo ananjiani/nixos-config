@@ -1,10 +1,9 @@
 {
-  config,
   pkgs,
-  lib,
   ...
-}: {
-  
+}:
+{
+
   home.shellAliases = {
     vi = "lvim";
     vim = "lvim";

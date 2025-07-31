@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+_:
 
 {
   services.samba-wsdd.enable = true;
@@ -8,8 +8,10 @@
   services.samba = {
     enable = true;
     openFirewall = true;
-    securityType = "user";
-    shares = {
+    settings = {
+      global = {
+        security = "user";
+      };
       home = {
         path = "/home/ammar";
         browseable = "yes";

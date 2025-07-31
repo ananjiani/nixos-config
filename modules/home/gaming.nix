@@ -1,4 +1,7 @@
-{ config, pkgs, lib, ... }:
+{
+  pkgs,
+  ...
+}:
 
 {
   home.packages = with pkgs; [
@@ -10,5 +13,7 @@
     protontricks
   ];
 
-  programs = { mangohud.enable = true; };
+  programs = {
+    mangohud.enable = true;
+  };
 }
