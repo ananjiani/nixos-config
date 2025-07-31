@@ -1,8 +1,11 @@
-{ config, pkgs, lib, ... }:
+{
+  lib,
+  ...
+}:
 
 {
-  imports = [ 
-    ../default/home.nix 
+  imports = [
+    ../default/home.nix
     ../../modules/home/gaming.nix
     ../../modules/home/config/wallpaper.nix
   ];

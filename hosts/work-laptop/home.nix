@@ -1,9 +1,10 @@
-{ config, pkgs, lib, ... }:
+{
+  ...
+}:
 
 {
 
-  imports =
-  [
+  imports = [
     ../default/home.nix
     ../../modules/home/profiles/laptop.nix
     ../../modules/home/config/wallpaper.nix

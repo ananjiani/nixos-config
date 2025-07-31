@@ -1,4 +1,7 @@
-{ config, pkgs, pkgs-stable, lib, ... }:
+{
+  pkgs,
+  ...
+}:
 
 {
   # services.displayManager.sddm.sugarCandyNix = {

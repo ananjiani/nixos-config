@@ -1,5 +1,12 @@
-{ config, pkgs, lib, ... }: {
+{
+  pkgs,
+  ...
+}:
+{
 
-  home.packages = with pkgs; [ nixd nixfmt-rfc-style ];
+  home.packages = with pkgs; [
+    nixd
+    nixfmt-rfc-style
+  ];
 
 }

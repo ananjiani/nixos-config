@@ -28,6 +28,10 @@
       url = "github:ananjiani/opencode-flake";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+    git-hooks = {
+      url = "github:cachix/git-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
   };
 
   outputs =
@@ -35,7 +39,6 @@
       self,
       nixpkgs,
       nixpkgs-unstable,
-      home-manager,
       home-manager-unstable,
       nix-std,
       ...
@@ -43,20 +46,20 @@
     let
       # System configuration
       system = "x86_64-linux";
-      lib = nixpkgs-unstable.lib;
+      inherit (nixpkgs-unstable) lib;
       std = nix-std.lib;
-      
+
       # Package sets
       pkgs = import nixpkgs-unstable {
         inherit system;
         config.allowUnfree = true;
       };
-      
+
       pkgs-stable = import nixpkgs {
         inherit system;
         config.allowUnfree = true;
       };
-      
+
       # Special arguments passed to all configurations
       specialArgs = { inherit pkgs-stable; };
       extraSpecialArgs = { inherit inputs std pkgs-stable; };
@@ -64,7 +67,7 @@
     {
       # Set nixPath for compatibility
       nix.nixPath = [ "nixpkgs=${nixpkgs-unstable}" ];
-      
+
       # NixOS system configurations
       nixosConfigurations = {
         # Desktop system
@@ -72,19 +75,19 @@
           inherit system specialArgs;
           modules = [ ./hosts/desktop/configuration.nix ];
         };
-        
+
         # Work laptop
         work-laptop = lib.nixosSystem {
           inherit system specialArgs;
           modules = [ ./hosts/work-laptop/configuration.nix ];
         };
-        
+
         # Surface Go tablet
         surface-go = lib.nixosSystem {
           inherit system specialArgs;
           modules = [ ./hosts/surface-go/configuration.nix ];
         };
-        
+
         # Framework 13 laptop
         framework13 = lib.nixosSystem {
           inherit system specialArgs;
@@ -93,7 +96,7 @@
             inputs.nixos-hardware.nixosModules.framework-13-7040-amd
           ];
         };
-        
+
         # ISO image for installation
         iso = lib.nixosSystem {
           inherit system specialArgs;
@@ -102,25 +105,27 @@
       };
 
       # Home Manager configurations with automatic hostname detection
-      homeConfigurations = 
+      homeConfigurations =
         let
-          mkHomeConfig = hostPath: home-manager-unstable.lib.homeManagerConfiguration {
-            inherit pkgs extraSpecialArgs;
-            
-            modules = [
-              # Apply overlays
-              {
-                nixpkgs.overlays = [
-                  inputs.emacs-overlay.overlay
-                  inputs.nix-vscode-extensions.overlays.default
-                  inputs.claude-code.overlays.default
-                ];
-              }
-              
-              # Load host-specific home configuration
-              hostPath
-            ];
-          };
+          mkHomeConfig =
+            hostPath:
+            home-manager-unstable.lib.homeManagerConfiguration {
+              inherit pkgs extraSpecialArgs;
+
+              modules = [
+                # Apply overlays
+                {
+                  nixpkgs.overlays = [
+                    inputs.emacs-overlay.overlay
+                    inputs.nix-vscode-extensions.overlays.default
+                    inputs.claude-code.overlays.default
+                  ];
+                }
+
+                # Load host-specific home configuration
+                hostPath
+              ];
+            };
         in
         {
           # Automatic hostname detection: home-manager looks for $USER@$HOSTNAME then $USER
@@ -128,9 +133,38 @@
           "ammar@work-laptop" = mkHomeConfig ./hosts/work-laptop/home.nix;
           "ammar@framework13" = mkHomeConfig ./hosts/framework13/home.nix;
           "ammar@surface-go" = mkHomeConfig ./hosts/surface-go/home.nix;
-          
+
           # Fallback configuration (if hostname doesn't match)
           "ammar" = mkHomeConfig ./hosts/default/home.nix;
         };
+
+      # Pre-commit hooks configuration
+      checks.${system}.pre-commit-check = inputs.git-hooks.lib.${system}.run {
+        src = ./.;
+        hooks = {
+          # First run formatters
+          nixfmt-rfc-style.enable = true;
+
+          # Then run linters/fixers
+          deadnix = {
+            enable = true;
+            # Apply fixes automatically
+            entry = "${pkgs.deadnix}/bin/deadnix --edit";
+            pass_filenames = true;
+          };
+          statix = {
+            enable = true;
+            # Note: statix doesn't support auto-fixing well in pre-commit
+            # Consider running `statix fix` manually when needed
+          };
+          flake-checker.enable = true;
+        };
+      };
+
+      # Development shell with pre-commit hooks
+      devShells.${system}.default = pkgs.mkShell {
+        inherit (self.checks.${system}.pre-commit-check) shellHook;
+        buildInputs = self.checks.${system}.pre-commit-check.enabledPackages;
+      };
     };
 }

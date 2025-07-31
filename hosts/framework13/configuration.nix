@@ -2,10 +2,14 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running `nixos-help`).
 
-{ config, pkgs, lib, ... }:
+{
+  pkgs,
+  ...
+}:
 
 {
-  imports = [ # Include the results of the hardware scan.
+  imports = [
+    # Include the results of the hardware scan.
     ./hardware-configuration.nix
     ../default/configuration.nix
     ../../modules/nixos/bluetooth.nix
@@ -19,4 +23,3 @@
   environment.systemPackages = with pkgs; [ networkmanagerapplet ];
   networking.hostName = "framework13"; # Define your hostname.
 }
-

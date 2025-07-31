@@ -1,9 +1,11 @@
-{ config, pkgs, lib, ... }:
+{
+  lib,
+  ...
+}:
 
 {
 
-  imports =
-  [ 
+  imports = [
     ../default/home.nix
     ../../modules/home/profiles/laptop.nix
     ../../modules/home/config/wallpaper.nix
@@ -18,7 +20,7 @@
   services.mpris-proxy.enable = true;
 
   wayland.windowManager.hyprland.settings = {
-    monitor = [",highrr,auto,1"];
+    monitor = [ ",highrr,auto,1" ];
     # Wallpaper is now handled by the wallpaper module
   };
 
