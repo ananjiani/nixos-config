@@ -1,14 +1,11 @@
 {
   config,
   pkgs,
-  pkgs-stable,
   lib,
   inputs,
   ...
 }:
 {
-  home.packages = with pkgs; [ swaynotificationcenter ];
-
   imports = [ inputs.nix-colors.homeManagerModules.default ];
 
   colorScheme = inputs.nix-colors.colorSchemes.gruvbox-material-dark-soft;
@@ -16,6 +13,19 @@
   #     path = wallpaper;
   #     kind = "dark";
   #   };
+
+  home = {
+    packages = with pkgs; [ swaynotificationcenter ];
+
+    file = {
+      ".config/swaync/config.json".source = ../../home/wm/swaync/config.json;
+      ".config/swaync/style.css".source = ../../home/wm/swaync/style.css;
+    };
+
+    activation.reloadHyprland = lib.hm.dag.entryAfter [ "reloadSystemd" ] ''
+      hyprctl reload
+    '';
+  };
 
   gtk = {
     enable = true;
@@ -25,11 +35,6 @@
     };
     iconTheme.package = pkgs.gruvbox-dark-icons-gtk;
     iconTheme.name = "Gruvbox-Dark";
-  };
-
-  home.file = {
-    ".config/swaync/config.json".source = ../../home/wm/swaync/config.json;
-    ".config/swaync/style.css".source = ../../home/wm/swaync/style.css;
   };
 
   programs = {
@@ -58,10 +63,6 @@
       settings.mainBar = builtins.fromJSON (builtins.readFile ../../home/wm/waybar/config.json);
     };
   };
-
-  home.activation.reloadHyprland = lib.hm.dag.entryAfter [ "reloadSystemd" ] ''
-    hyprctl reload
-  '';
 
   services.wlsunset = {
     enable = false;

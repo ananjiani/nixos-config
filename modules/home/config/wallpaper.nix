@@ -1,4 +1,8 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  lib,
+  ...
+}:
 
 with lib;
 
@@ -8,15 +12,21 @@ in
 {
   options.wallpaper = {
     enable = mkEnableOption "wallpaper configuration";
-    
+
     path = mkOption {
       type = types.path;
       default = ../../hosts/default/wallpapers/revachol.jpg;
       description = "Path to the wallpaper image";
     };
-    
+
     mode = mkOption {
-      type = types.enum [ "fill" "fit" "center" "stretch" "tile" ];
+      type = types.enum [
+        "fill"
+        "fit"
+        "center"
+        "stretch"
+        "tile"
+      ];
       default = "fill";
       description = "Wallpaper display mode";
     };
