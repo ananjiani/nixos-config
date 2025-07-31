@@ -157,9 +157,27 @@
             # Note: statix doesn't support auto-fixing well in pre-commit
             # Consider running `statix fix` manually when needed
           };
-          ripsecrets.enable = true;
-          flake-checker.enable = true;
 
+          # Security scanning
+          ripsecrets.enable = true;
+
+          # Custom vulnix hook for vulnerability scanning
+          vulnix = {
+            enable = true;
+            name = "vulnix";
+            description = "Scan for security vulnerabilities in Nix dependencies";
+            entry = "${pkgs.vulnix}/bin/vulnix --quiet";
+            pass_filenames = false;
+            files = "flake\\.lock$";
+          };
+
+          # Git hygiene
+          check-merge-conflicts.enable = true;
+          check-added-large-files.enable = true;
+          end-of-file-fixer.enable = true;
+          trim-trailing-whitespace.enable = true;
+
+          flake-checker.enable = true;
         };
       };
 
