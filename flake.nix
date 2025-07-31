@@ -45,7 +45,6 @@
       system = "x86_64-linux";
       lib = nixpkgs-unstable.lib;
       std = nix-std.lib;
-      active-profile = import ./active-profile.nix;
       
       # Package sets
       pkgs = import nixpkgs-unstable {
@@ -102,25 +101,36 @@
         };
       };
 
-      # Home Manager configurations
-      homeConfigurations = {
-        ammar = home-manager-unstable.lib.homeManagerConfiguration {
-          inherit pkgs extraSpecialArgs;
-          
-          modules = [
-            # Apply overlays
-            {
-              nixpkgs.overlays = [
-                inputs.emacs-overlay.overlay
-                inputs.nix-vscode-extensions.overlays.default
-                inputs.claude-code.overlays.default
-              ];
-            }
+      # Home Manager configurations with automatic hostname detection
+      homeConfigurations = 
+        let
+          mkHomeConfig = hostPath: home-manager-unstable.lib.homeManagerConfiguration {
+            inherit pkgs extraSpecialArgs;
             
-            # Load profile-specific home configuration
-            (./hosts + ("/" + active-profile) + "/home.nix")
-          ];
+            modules = [
+              # Apply overlays
+              {
+                nixpkgs.overlays = [
+                  inputs.emacs-overlay.overlay
+                  inputs.nix-vscode-extensions.overlays.default
+                  inputs.claude-code.overlays.default
+                ];
+              }
+              
+              # Load host-specific home configuration
+              hostPath
+            ];
+          };
+        in
+        {
+          # Automatic hostname detection: home-manager looks for $USER@$HOSTNAME then $USER
+          "ammar@ammars-pc" = mkHomeConfig ./hosts/desktop/home.nix;
+          "ammar@work-laptop" = mkHomeConfig ./hosts/work-laptop/home.nix;
+          "ammar@framework13" = mkHomeConfig ./hosts/framework13/home.nix;
+          "ammar@surface-go" = mkHomeConfig ./hosts/surface-go/home.nix;
+          
+          # Fallback configuration (if hostname doesn't match)
+          "ammar" = mkHomeConfig ./hosts/default/home.nix;
         };
-      };
     };
 }

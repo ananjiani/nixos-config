@@ -67,7 +67,7 @@ nix flake metadata
 
 ### Key Design Patterns
 1. **Modular Configuration**: Features are split into focused modules that can be enabled/disabled per host
-2. **Profile System**: Active profile (desktop/laptop/server) is set in `active-profile.nix`
+2. **Automatic Host Detection**: Home Manager automatically detects hostname and loads appropriate configuration
 3. **Hardware Abstraction**: Hardware-specific configurations are isolated in dedicated modules
 4. **Secret Management**: Uses SOPS-NIX for encrypted secrets with age keys
 
