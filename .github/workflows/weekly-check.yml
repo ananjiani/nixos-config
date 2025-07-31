@@ -27,7 +27,7 @@ jobs:
         with:
           extra-conf: |
             experimental-features = nix-command flakes
-            
+
       - name: Setup Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@main
 
@@ -35,10 +35,10 @@ jobs:
         run: |
           echo "🔍 Checking flake health..."
           nix flake check --all-systems
-          
+
           echo "📊 Flake metadata:"
           nix flake metadata
-          
+
           echo "🔗 Flake inputs:"
           nix flake metadata --json | jq '.locks.nodes | to_entries[] | select(.key != "root") | {input: .key, url: .value.locked.url or .value.locked.type}'
 
@@ -71,7 +71,7 @@ jobs:
         run: |
           echo "🏗️ Building NixOS configuration for ${{ matrix.host }}..."
           nix build .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel --no-link --print-build-logs
-          
+
       - name: Build Home Manager configuration
         run: |
           echo "🏠 Building Home Manager configuration for ammar@${{ matrix.host }}..."
@@ -89,22 +89,22 @@ jobs:
           script: |
             const issueTitle = `Weekly build failed for ${{ matrix.host }}`;
             const issueBody = `## Build Failure Report
-            
+
             The weekly build check failed for **${{ matrix.host }}** (${{ matrix.type }}).
-            
+
             ### Details
             - **Host**: ${{ matrix.host }}
             - **Type**: ${{ matrix.type }}
             - **Workflow Run**: [View logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
             - **Commit**: ${{ github.sha }}
-            
+
             ### Next Steps
             1. Check the workflow logs for detailed error messages
             2. Test the build locally with: \`nix build .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel\`
             3. Fix any issues and push the changes
-            
+
             This issue was automatically created by the weekly validation workflow.`;
-            
+
             // Check if similar issue already exists
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
@@ -112,11 +112,11 @@ jobs:
               state: 'open',
               labels: 'build-failure,automated'
             });
-            
-            const existingIssue = issues.data.find(issue => 
+
+            const existingIssue = issues.data.find(issue =>
               issue.title.includes('${{ matrix.host }}')
             );
-            
+
             if (!existingIssue) {
               await github.rest.issues.create({
                 owner: context.repo.owner,
@@ -150,13 +150,13 @@ jobs:
         id: update
         run: |
           echo "📦 Checking for flake updates..."
-          
+
           # Store current lock file
           cp flake.lock flake.lock.old
-          
+
           # Update all inputs
           nix flake update
-          
+
           # Check if there were changes
           if git diff --quiet flake.lock; then
             echo "✅ All inputs are up to date!"
@@ -164,21 +164,21 @@ jobs:
           else
             echo "📝 Updates found, generating changelog..."
             echo "has_updates=true" >> $GITHUB_OUTPUT
-            
+
             # Generate a nice changelog
             echo "## Flake Input Updates" > update_message.md
             echo "" >> update_message.md
-            
+
             # Parse the changes (this is a bit complex but provides nice output)
             nix eval --json .#inputs | jq -r 'to_entries[] | .key' | while read -r input; do
               OLD_REV=$(jq -r ".nodes[\"$input\"].locked.rev // empty" flake.lock.old 2>/dev/null || echo "")
               NEW_REV=$(jq -r ".nodes[\"$input\"].locked.rev // empty" flake.lock 2>/dev/null || echo "")
-              
+
               if [ -n "$OLD_REV" ] && [ -n "$NEW_REV" ] && [ "$OLD_REV" != "$NEW_REV" ]; then
                 echo "### $input" >> update_message.md
                 echo "- Old: \`${OLD_REV:0:8}\`" >> update_message.md
                 echo "- New: \`${NEW_REV:0:8}\`" >> update_message.md
-                
+
                 # Try to get GitHub URL for nice links
                 URL=$(jq -r ".nodes[\"$input\"].locked.url // empty" flake.lock 2>/dev/null || echo "")
                 if [[ "$URL" == *"github:"* ]]; then
@@ -188,7 +188,7 @@ jobs:
                 echo "" >> update_message.md
               fi
             done
-            
+
             # Add summary
             echo "## Summary" >> update_message.md
             echo "" >> update_message.md
@@ -230,24 +230,24 @@ jobs:
             const jobs = ${{ toJSON(needs) }};
             let allSuccess = true;
             let summary = '# Weekly Validation Summary\n\n';
-            
+
             // Check job statuses
             Object.entries(jobs).forEach(([job, status]) => {
               const emoji = status.result === 'success' ? '✅' : '❌';
               summary += `${emoji} **${job}**: ${status.result}\n`;
               if (status.result !== 'success') allSuccess = false;
             });
-            
+
             // Add timestamp
             summary += `\n🕐 Run at: ${new Date().toUTCString()}\n`;
-            
+
             // Add badge to README (optional)
             if (context.eventName === 'schedule') {
               const badgeColor = allSuccess ? 'success' : 'critical';
               const badgeUrl = `https://img.shields.io/badge/weekly%20build-${badgeColor}`;
               summary += `\n![Weekly Build](${badgeUrl})`;
             }
-            
+
             // Write to summary
             await core.summary
               .addRaw(summary)
