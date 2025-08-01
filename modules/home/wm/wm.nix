@@ -93,6 +93,7 @@
     package = pkgs.hyprland;
     settings = {
       exec = [ "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1" ];
+      exec-once = [ "${pkgs.bash}/bin/bash ${./weekday-work-edge.sh}" ];
       general = {
         layout = "dwindle";
         "col.active_border" = with config.colorScheme.palette; "rgba(${base09}ee) rgba(${base0A}ee) 45deg";
