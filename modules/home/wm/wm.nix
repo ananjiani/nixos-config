@@ -107,6 +107,13 @@
         "$mainMod, L, movefocus, r"
         "$mainMod, K, movefocus, u"
         "$mainMod, J, movefocus, d"
+        "$mainMod CTRL, H, movewindow, l"
+        "$mainMod CTRL, L, movewindow, r"
+        "$mainMod CTRL, K, movewindow, u"
+        "$mainMod CTRL, J, movewindow, d"
+        "$mainMod CTRL, I, togglesplit"
+        "$mainMod CTRL, N, swapnext"
+        "$mainMod CTRL, P, swapnext, prev"
       ];
 
       decoration.shadow = {
