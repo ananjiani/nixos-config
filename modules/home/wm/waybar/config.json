@@ -7,9 +7,23 @@
     "modules-right": ["idle_inhibitor", "pulseaudio", "cpu", "memory", "temperature", "backlight", "battery", "tray"],
     "hyprland/workspaces": {
         "disable-scroll": true,
-        "all-outputs": true,
+        "all-outputs": false,
         "warp-on-scroll": false,
-        "format": "{name}: {windows}",
+        "format": "{icon}",
+        "format-icons": {
+            "1": "1",
+            "2": "2",
+            "3": "3",
+            "4": "4 󰙯",
+            "5": "5 󰕧"
+        },
+        "active-only": false,
+        "show-special": false,
+        "persistent-workspaces": {
+            "DP-2": [1, 2, 3],
+            "HDMI-A-1": [4],
+            "DP-1": [5]
+        },
         "format-window-separator": " ",
         "window-rewrite-default": "",
         "window-rewrite": {
