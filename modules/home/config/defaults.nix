@@ -1,10 +1,11 @@
-_:
+{ config, ... }:
 
 {
 
   home.sessionVariables = {
     EDITOR = "emacsclient -nw";
     NH_FLAKE = "/home/ammar/.dotfiles";
+    HF_TOKEN = config.sops.secrets.hf_token.path;
   };
 
   xdg = {

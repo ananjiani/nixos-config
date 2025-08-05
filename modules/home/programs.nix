@@ -24,6 +24,7 @@
     element-desktop
     xournalpp
     openai-whisper
+    whisperx
     uv
     inputs.whisper-dictation.packages.${pkgs.system}.default
     youtube-music
