@@ -135,7 +135,7 @@
           "ammar@surface-go" = mkHomeConfig ./hosts/surface-go/home.nix;
 
           # Fallback configuration (if hostname doesn't match)
-          "ammar" = mkHomeConfig ./hosts/default/home.nix;
+          "ammar" = mkHomeConfig ./hosts/profiles/workstation/home.nix;
         };
 
       # Pre-commit hooks configuration
