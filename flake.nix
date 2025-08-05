@@ -166,7 +166,7 @@
             enable = true;
             name = "vulnix";
             description = "Scan for security vulnerabilities in Nix dependencies";
-            entry = "${pkgs.vulnix}/bin/vulnix --quiet";
+            entry = "${pkgs.vulnix}/bin/vulnix";
             pass_filenames = false;
             files = "flake\\.lock$";
           };
