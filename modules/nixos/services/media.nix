@@ -83,8 +83,8 @@ in
 
     # qBittorrent will be configured with VPN in vpn-torrents.nix
 
-    # Nginx reverse proxies
-    services.nginx.virtualHosts = {
+    # Nginx reverse proxy - only for Jellyfin (public access)
+    services.nginx.virtualHosts = lib.mkIf (cfg.domains.jellyfin != "jellyfin.local") {
       ${cfg.domains.jellyfin} = {
         forceSSL = true;
         enableACME = true;
@@ -93,43 +93,17 @@ in
           proxyWebsockets = true;
         };
       };
-
-      ${cfg.domains.radarr} = {
-        forceSSL = true;
-        enableACME = true;
-        locations."/" = {
-          proxyPass = "http://localhost:7878";
-        };
-      };
-
-      ${cfg.domains.sonarr} = {
-        forceSSL = true;
-        enableACME = true;
-        locations."/" = {
-          proxyPass = "http://localhost:8989";
-        };
-      };
-
-      ${cfg.domains.prowlarr} = {
-        forceSSL = true;
-        enableACME = true;
-        locations."/" = {
-          proxyPass = "http://localhost:9696";
-        };
-      };
     };
 
-    # SOPS secrets for API keys
-    sops.secrets = {
-      "arr_stack/radarr_api_key" = {
-        owner = mediaUser;
-      };
-      "arr_stack/sonarr_api_key" = {
-        owner = mediaUser;
-      };
-      "arr_stack/prowlarr_api_key" = {
-        owner = mediaUser;
-      };
-    };
+    # Open firewall for local access to arr stack
+    networking.firewall.allowedTCPPorts = [
+      7878
+      8989
+      9696
+      8096
+    ];
+
+    # TODO: Configure API keys once SOPS is set up
+    # For now, API keys will need to be configured manually in each service
   };
 }

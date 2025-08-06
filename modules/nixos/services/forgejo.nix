@@ -68,7 +68,8 @@ in
         enable = true;
         name = "homeserver-runner";
         url = "http://localhost:3000";
-        tokenFile = config.sops.secrets."forgejo/runner_token".path;
+        # TODO: Set up runner token file once SOPS is configured
+        # tokenFile = "/path/to/runner/token";
         labels = [
           "nixos:docker://nixos/nix:latest"
           "ubuntu-latest:docker://ubuntu:latest"
@@ -88,14 +89,7 @@ in
     # Open firewall
     networking.firewall.allowedTCPPorts = [ cfg.sshPort ];
 
-    # SOPS secrets
-    sops.secrets = {
-      "forgejo/admin_password" = {
-        owner = "forgejo";
-      };
-      "forgejo/runner_token" = {
-        owner = "gitea-runner";
-      };
-    };
+    # TODO: Add password configuration once SOPS is set up
+    # For now, you'll need to set the admin password manually after installation
   };
 }

@@ -1,9 +1,19 @@
 # Homeserver configuration
 {
   pkgs,
+  lib,
   ...
 }:
 
+let
+  # Load secrets from unencrypted YAML file
+  secretsYaml = builtins.readFile ../../homeserver-secrets.yaml;
+  secrets = lib.importJSON (
+    pkgs.runCommand "secrets-json" { } ''
+      ${pkgs.yq}/bin/yq -o json < ${builtins.toFile "secrets.yaml" secretsYaml} > $out
+    ''
+  );
+in
 {
   imports = [
     ./hardware-configuration.nix
@@ -52,64 +62,51 @@
     allowReboot = false; # Manual reboots for servers
   };
 
-  # SOPS configuration for system-level secrets
-  sops = {
-    defaultSopsFile = ../../secrets/homeserver.yaml;
-    age = {
-      keyFile = "/var/lib/sops-nix/key.txt";
-      generateKey = false; # Don't auto-generate, we'll create it manually
-    };
-    # Define secrets that will be available system-wide
-    secrets = {
-      # VPN secrets
-      "mullvad/account" = { };
-      "mullvad/wireguard_private_key" = { };
+  # TODO: Enable SOPS once testing is complete
+  # For now, we'll read from unencrypted file and create fake secret files
+  # sops = {
+  #   defaultSopsFile = ../../secrets/homeserver.yaml;
+  #   age = {
+  #     keyFile = "/var/lib/sops-nix/key.txt";
+  #     generateKey = false;
+  #   };
+  #   secrets = { ... };
+  # };
 
-      # Domain configuration
-      "domains/base_domain" = { };
-      "domains/forgejo" = { };
-      "domains/jellyfin" = { };
-      "domains/homeassistant" = { };
-      "domains/radarr" = { };
-      "domains/sonarr" = { };
-      "domains/prowlarr" = { };
-
-      # ACME email
-      "acme/email" = { };
-    };
-  };
-
-  # Service configurations
-  # TODO: These will use SOPS secrets once we set up proper templating
+  # Service configurations using secrets from YAML
   services.homeserver-proxy = {
     enable = true;
-    baseDomain = "example.com"; # Will be replaced from SOPS
-    acmeEmail = "admin@example.com"; # Will be replaced from SOPS
+    baseDomain = secrets.domains.base_domain;
+    acmeEmail = secrets.acme.email;
   };
 
   services.homeserver-forgejo = {
     enable = true;
-    domain = "git.example.com"; # Will be replaced from SOPS
+    domain = secrets.domains.forgejo;
   };
 
   services.homeserver-media = {
     enable = true;
     domains = {
-      jellyfin = "media.example.com"; # Will be replaced from SOPS
-      radarr = "radarr.example.com"; # Will be replaced from SOPS
-      sonarr = "sonarr.example.com"; # Will be replaced from SOPS
-      prowlarr = "prowlarr.example.com"; # Will be replaced from SOPS
+      jellyfin = secrets.domains.jellyfin;
+      radarr = secrets.domains.radarr;
+      sonarr = secrets.domains.sonarr;
+      prowlarr = secrets.domains.prowlarr;
     };
   };
 
   services.homeserver-vpn-torrents = {
     enable = true;
+    mullvadPrivateKey = secrets.mullvad.wireguard_private_key;
+    mullvadAddress = secrets.mullvad.wireguard_address;
+    mullvadPublicKey = secrets.mullvad.server_public_key;
+    mullvadEndpoint = secrets.mullvad.server_endpoint;
     # qBittorrent will be accessible at http://homeserver:8118
   };
 
   services.homeserver-home-assistant = {
     enable = true;
-    domain = "home.example.com"; # Will be replaced from SOPS
+    domain = secrets.domains.homeassistant;
     # Voice assistant, ESPHome, Matter, and Signal CLI are enabled by default
   };
 }

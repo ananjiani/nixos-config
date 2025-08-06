@@ -171,7 +171,8 @@ in
           users = {
             homeassistant = {
               acl = [ "readwrite #" ];
-              passwordFile = config.sops.secrets."homeassistant/mqtt_password".path;
+              # TODO: Set password once SOPS is configured
+              password = "CHANGE_ME_MQTT_PASSWORD";
             };
           };
         }
@@ -279,30 +280,32 @@ in
       ];
     };
 
-    # Nginx reverse proxy
-    services.nginx.virtualHosts.${cfg.domain} = {
-      forceSSL = true;
-      enableACME = true;
-      locations."/" = {
-        proxyPass = "http://localhost:${toString cfg.ports.homeassistant}";
-        proxyWebsockets = true;
-        extraConfig = ''
-          proxy_set_header Host $host;
-          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          proxy_set_header X-Forwarded-Proto $scheme;
-          proxy_set_header Upgrade $http_upgrade;
-          proxy_set_header Connection $connection_upgrade;
-        '';
+    # Nginx reverse proxy - only if not local access
+    services.nginx = lib.mkIf (cfg.domain != "homeassistant.local") {
+      virtualHosts.${cfg.domain} = {
+        forceSSL = true;
+        enableACME = true;
+        locations."/" = {
+          proxyPass = "http://localhost:${toString cfg.ports.homeassistant}";
+          proxyWebsockets = true;
+          extraConfig = ''
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection $connection_upgrade;
+          '';
+        };
       };
-    };
 
-    # Add upgrade header for websockets
-    services.nginx.appendHttpConfig = ''
-      map $http_upgrade $connection_upgrade {
-        default upgrade;
-        "" close;
-      }
-    '';
+      # Add upgrade header for websockets
+      appendHttpConfig = ''
+        map $http_upgrade $connection_upgrade {
+          default upgrade;
+          "" close;
+        }
+      '';
+    };
 
     # Open firewall ports
     networking.firewall.allowedTCPPorts =
@@ -330,18 +333,7 @@ in
       "d '${cfg.configDir}/signal-cli' 0755 ${haUser} ${haGroup} -"
     ];
 
-    # SOPS secrets
-    sops.secrets = {
-      "homeassistant/secrets" = {
-        owner = haUser;
-        path = "${cfg.configDir}/secrets.yaml";
-      };
-      "homeassistant/mqtt_password" = {
-        owner = "mosquitto";
-      };
-    };
-
-    # Add domain to secrets
-    sops.secrets."domains/homeassistant" = { };
+    # TODO: Configure secrets once SOPS is set up
+    # For now, create the secrets.yaml file manually in ${cfg.configDir}
   };
 }
