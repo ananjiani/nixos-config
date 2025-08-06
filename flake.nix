@@ -102,6 +102,12 @@
           inherit system specialArgs;
           modules = [ ./hosts/iso/configuration.nix ];
         };
+
+        # Homeserver
+        homeserver = lib.nixosSystem {
+          inherit system specialArgs;
+          modules = [ ./hosts/homeserver/configuration.nix ];
+        };
       };
 
       # Home Manager configurations with automatic hostname detection
@@ -133,6 +139,7 @@
           "ammar@work-laptop" = mkHomeConfig ./hosts/work-laptop/home.nix;
           "ammar@framework13" = mkHomeConfig ./hosts/framework13/home.nix;
           "ammar@surface-go" = mkHomeConfig ./hosts/surface-go/home.nix;
+          "ammar@homeserver" = mkHomeConfig ./hosts/homeserver/home.nix;
 
           # Fallback configuration (if hostname doesn't match)
           "ammar" = mkHomeConfig ./hosts/profiles/workstation/home.nix;
