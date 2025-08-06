@@ -31,7 +31,27 @@ in
     configDir = lib.mkOption {
       type = lib.types.path;
       default = "/mnt/storage2/arr-data/config/qbittorrent";
-      description = "Directory for qBittorrent configuration";
+    };
+
+    # Mullvad configuration - to be passed from main config
+    mullvadPrivateKey = lib.mkOption {
+      type = lib.types.str;
+      description = "Mullvad WireGuard private key";
+    };
+
+    mullvadAddress = lib.mkOption {
+      type = lib.types.str;
+      description = "Mullvad WireGuard IP address";
+    };
+
+    mullvadPublicKey = lib.mkOption {
+      type = lib.types.str;
+      description = "Mullvad server public key";
+    };
+
+    mullvadEndpoint = lib.mkOption {
+      type = lib.types.str;
+      description = "Mullvad server endpoint";
     };
   };
 
@@ -58,22 +78,21 @@ in
       # Run in the VPN namespace
       interfaceNamespace = vpnNamespace;
 
-      # Private key from SOPS
-      privateKeyFile = config.sops.secrets."mullvad/wireguard_private_key".path;
+      # Private key - for now just use the value directly
+      # TODO: Use SOPS in production
+      privateKey = cfg.mullvadPrivateKey;
 
       # Mullvad configuration
-      # TODO: These should come from SOPS secrets once we figure out templating
-      ips = [ "10.64.0.1/32" ]; # Your Mullvad assigned IP
+      ips = [ cfg.mullvadAddress ];
 
       peers = [
         {
-          # Get these values from your Mullvad WireGuard configuration
-          publicKey = "TODO_MULLVAD_SERVER_PUBLIC_KEY";
+          publicKey = cfg.mullvadPublicKey;
           allowedIPs = [
             "0.0.0.0/0"
             "::0/0"
           ];
-          endpoint = "TODO_MULLVAD_SERVER:51820";
+          endpoint = cfg.mullvadEndpoint;
         }
       ];
 
