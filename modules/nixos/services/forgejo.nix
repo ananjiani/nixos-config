@@ -2,7 +2,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 
@@ -61,21 +60,21 @@ in
       };
     };
 
-    # Forgejo runner
-    services.gitea-actions-runner = {
-      package = pkgs.forgejo-actions-runner;
-      instances.default = {
-        enable = true;
-        name = "homeserver-runner";
-        url = "http://localhost:3000";
-        # TODO: Set up runner token file once SOPS is configured
-        # tokenFile = "/path/to/runner/token";
-        labels = [
-          "nixos:docker://nixos/nix:latest"
-          "ubuntu-latest:docker://ubuntu:latest"
-        ];
-      };
-    };
+    # Forgejo runner - disabled until SOPS is configured
+    # services.gitea-actions-runner = {
+    #   package = pkgs.forgejo-actions-runner;
+    #   instances.default = {
+    #     enable = true;
+    #     name = "homeserver-runner";
+    #     url = "http://localhost:3000";
+    #     # TODO: Set up runner token file once SOPS is configured
+    #     tokenFile = "/path/to/runner/token";
+    #     labels = [
+    #       "nixos:docker://nixos/nix:latest"
+    #       "ubuntu-latest:docker://ubuntu:latest"
+    #     ];
+    #   };
+    # };
 
     # Nginx reverse proxy
     services.nginx.virtualHosts.${cfg.domain} = {

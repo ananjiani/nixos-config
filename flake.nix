@@ -32,6 +32,10 @@
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+    nixarr = {
+      url = "github:rasmus-kirk/nixarr";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
   };
 
   outputs =
@@ -106,7 +110,10 @@
         # Homeserver
         homeserver = lib.nixosSystem {
           inherit system specialArgs;
-          modules = [ ./hosts/homeserver/configuration.nix ];
+          modules = [
+            ./hosts/homeserver/configuration.nix
+            inputs.nixarr.nixosModules.default
+          ];
         };
       };
 

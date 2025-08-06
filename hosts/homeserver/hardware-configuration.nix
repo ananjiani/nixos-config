@@ -6,38 +6,44 @@
   imports = [ ];
 
   # PLACEHOLDER VALUES - Replace with actual hardware configuration
-  boot.initrd.availableKernelModules = [
-    "xhci_pci"
-    "ahci"
-    "usb_storage"
-    "sd_mod"
-  ];
-  boot.initrd.kernelModules = [ ];
-  boot.kernelModules = [ "kvm-intel" ];
-  boot.extraModulePackages = [ ];
+  boot = {
+    initrd = {
+      availableKernelModules = [
+        "xhci_pci"
+        "ahci"
+        "usb_storage"
+        "sd_mod"
+      ];
+      kernelModules = [ ];
+    };
+    kernelModules = [ "kvm-intel" ];
+    extraModulePackages = [ ];
+  };
 
   # Filesystem configuration - MUST be updated for your actual system
-  fileSystems."/" = {
-    device = "/dev/disk/by-label/nixos";
-    fsType = "ext4";
-  };
+  fileSystems = {
+    "/" = {
+      device = "/dev/disk/by-label/nixos";
+      fsType = "ext4";
+    };
 
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-label/boot";
-    fsType = "vfat";
-  };
+    "/boot" = {
+      device = "/dev/disk/by-label/boot";
+      fsType = "vfat";
+    };
 
-  # Storage mount points for services
-  fileSystems."/mnt/storage1" = {
-    device = "/dev/disk/by-label/storage1";
-    fsType = "ext4";
-    options = [ "nofail" ];
-  };
+    # Storage mount points for services
+    "/mnt/storage1" = {
+      device = "/dev/disk/by-label/storage1";
+      fsType = "ext4";
+      options = [ "nofail" ];
+    };
 
-  fileSystems."/mnt/storage2" = {
-    device = "/dev/disk/by-label/storage2";
-    fsType = "ext4";
-    options = [ "nofail" ];
+    "/mnt/storage2" = {
+      device = "/dev/disk/by-label/storage2";
+      fsType = "ext4";
+      options = [ "nofail" ];
+    };
   };
 
   swapDevices = [ ];

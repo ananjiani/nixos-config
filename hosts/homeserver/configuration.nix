@@ -6,36 +6,74 @@
 }:
 
 let
-  # Load secrets from unencrypted YAML file
-  secretsYaml = builtins.readFile ../../homeserver-secrets.yaml;
-  secrets = lib.importJSON (
-    pkgs.runCommand "secrets-json" { } ''
-      ${pkgs.yq}/bin/yq -o json < ${builtins.toFile "secrets.yaml" secretsYaml} > $out
-    ''
-  );
+  # Load secrets from JSON file (converted from YAML)
+  secrets = lib.importJSON ./secrets.json;
 in
 {
   imports = [
     ./hardware-configuration.nix
     ../../modules/nixos/services/reverse-proxy.nix
     ../../modules/nixos/services/forgejo.nix
-    ../../modules/nixos/services/media.nix
-    ../../modules/nixos/services/vpn-torrents.nix
+    # Replaced by nixarr:
+    # ../../modules/nixos/services/media.nix
+    # ../../modules/nixos/services/vpn-torrents.nix
     ../../modules/nixos/services/home-assistant.nix
   ];
 
   # Set hostname
   networking.hostName = "homeserver";
 
+  # Boot loader configuration (adjust for your system)
+  boot.loader.grub = {
+    enable = true;
+    devices = [ "nodev" ]; # For UEFI systems
+    efiSupport = true;
+    efiInstallAsRemovable = true;
+  };
+
+  # System state version
+  system.stateVersion = "24.05";
+
   # Enable Docker as fallback for any services that might need it
   virtualisation.docker.enable = true;
 
-  # Enable SSH for remote management
-  services.openssh = {
-    enable = true;
-    settings = {
-      PasswordAuthentication = false;
-      PermitRootLogin = "no";
+  # Services configuration
+  services = {
+    # Enable SSH for remote management
+    openssh = {
+      enable = true;
+      settings = {
+        PasswordAuthentication = false;
+        PermitRootLogin = "no";
+      };
+    };
+
+    # Service configurations using secrets from YAML
+    homeserver-proxy = {
+      enable = true;
+      baseDomain = secrets.domains.base_domain;
+      acmeEmail = secrets.acme.email;
+    };
+
+    homeserver-forgejo = {
+      enable = true;
+      domain = secrets.domains.forgejo;
+    };
+
+    homeserver-home-assistant = {
+      enable = true;
+      domain = secrets.domains.homeassistant;
+      # Voice assistant, ESPHome, Matter, and Signal CLI are enabled by default
+    };
+
+    # Nginx reverse proxy for Jellyfin (nixarr doesn't handle this)
+    nginx.virtualHosts.${secrets.domains.jellyfin} = {
+      forceSSL = true;
+      enableACME = true;
+      locations."/" = {
+        proxyPass = "http://localhost:8096";
+        proxyWebsockets = true;
+      };
     };
   };
 
@@ -73,40 +111,62 @@ in
   #   secrets = { ... };
   # };
 
-  # Service configurations using secrets from YAML
-  services.homeserver-proxy = {
+  # Nixarr configuration for media services
+  nixarr = {
     enable = true;
-    baseDomain = secrets.domains.base_domain;
-    acmeEmail = secrets.acme.email;
-  };
 
-  services.homeserver-forgejo = {
-    enable = true;
-    domain = secrets.domains.forgejo;
-  };
+    # Set media and state directories
+    mediaDir = "/mnt/storage2/arr-data/media";
+    stateDir = "/data/.state/nixarr"; # nixarr's default state location
 
-  services.homeserver-media = {
-    enable = true;
-    domains = {
-      jellyfin = secrets.domains.jellyfin;
-      radarr = secrets.domains.radarr;
-      sonarr = secrets.domains.sonarr;
-      prowlarr = secrets.domains.prowlarr;
+    # VPN configuration for torrents
+    vpn = {
+      enable = true;
+      wgConf =
+        if builtins.pathExists ./secrets/mullvad.conf then
+          ./secrets/mullvad.conf
+        else
+          builtins.toFile "mullvad.conf" ''
+            # Example WireGuard config - replace with actual config
+            [Interface]
+            PrivateKey = CHANGE_ME
+            Address = 10.0.0.1/32
+            DNS = 1.1.1.1
+
+            [Peer]
+            PublicKey = CHANGE_ME
+            AllowedIPs = 0.0.0.0/0, ::/0
+            Endpoint = 1.2.3.4:51820
+          '';
     };
-  };
 
-  services.homeserver-vpn-torrents = {
-    enable = true;
-    mullvadPrivateKey = secrets.mullvad.wireguard_private_key;
-    mullvadAddress = secrets.mullvad.wireguard_address;
-    mullvadPublicKey = secrets.mullvad.server_public_key;
-    mullvadEndpoint = secrets.mullvad.server_endpoint;
-    # qBittorrent will be accessible at http://homeserver:8118
-  };
+    # Enable services (matching your current setup)
+    jellyfin = {
+      enable = true;
+      openFirewall = true;
+    };
 
-  services.homeserver-home-assistant = {
-    enable = true;
-    domain = secrets.domains.homeassistant;
-    # Voice assistant, ESPHome, Matter, and Signal CLI are enabled by default
+    radarr = {
+      enable = true;
+      openFirewall = true;
+    };
+
+    sonarr = {
+      enable = true;
+      openFirewall = true;
+    };
+
+    prowlarr = {
+      enable = true;
+      openFirewall = true;
+    };
+
+    # Use Transmission instead of qBittorrent
+    transmission = {
+      enable = true;
+      vpn.enable = true;
+      openFirewall = true;
+      peerPort = 51413;
+    };
   };
 }

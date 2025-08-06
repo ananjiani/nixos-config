@@ -8,10 +8,10 @@
 
 {
   imports = [
-    ../../modules/nixos/wm.nix
-    ../../modules/nixos/utils.nix
-    ../../modules/nixos/fonts.nix
-    ../../modules/nixos/privacy.nix
+    ../../../modules/nixos/wm.nix
+    ../../../modules/nixos/utils.nix
+    ../../../modules/nixos/fonts.nix
+    ../../../modules/nixos/privacy.nix
   ];
   programs.nh = {
     enable = true;
