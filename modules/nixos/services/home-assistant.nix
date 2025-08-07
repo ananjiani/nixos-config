@@ -1,5 +1,10 @@
 # Home Assistant with voice assistants and smart home services
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.services.homeserver-home-assistant;
@@ -173,8 +178,11 @@ in
             users = {
               homeassistant = {
                 acl = [ "readwrite #" ];
-                # TODO: Set password once SOPS is configured
-                password = "CHANGE_ME_MQTT_PASSWORD";
+                passwordFile =
+                  if config.sops.secrets ? "homeassistant/mqtt_password" then
+                    config.sops.secrets."homeassistant/mqtt_password".path
+                  else
+                    pkgs.writeText "mqtt-password" "CHANGE_ME_MQTT_PASSWORD";
               };
             };
           }
@@ -338,7 +346,27 @@ in
       "d '${cfg.configDir}/signal-cli' 0755 ${haUser} ${haGroup} -"
     ];
 
-    # TODO: Configure secrets once SOPS is set up
-    # For now, create the secrets.yaml file manually in ${cfg.configDir}
+    # Create Home Assistant secrets.yaml file from SOPS
+    systemd.services.homeassistant-secrets =
+      lib.mkIf (config.sops.secrets ? "homeassistant/mqtt_password")
+        {
+          description = "Generate Home Assistant secrets.yaml";
+          before = [ "home-assistant.service" ];
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            User = haUser;
+            Group = haGroup;
+          };
+          script = ''
+            cat > ${cfg.configDir}/secrets.yaml <<EOF
+            # Home Assistant secrets
+            mqtt_password: "$(cat ${config.sops.secrets."homeassistant/mqtt_password".path})"
+            signal_api_key: "$(cat ${config.sops.secrets."homeassistant/signal_api_key".path})"
+            EOF
+            chmod 600 ${cfg.configDir}/secrets.yaml
+          '';
+        };
   };
 }

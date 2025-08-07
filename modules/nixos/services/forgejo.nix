@@ -2,6 +2,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 
@@ -60,21 +61,20 @@ in
       };
     };
 
-    # Forgejo runner - disabled until SOPS is configured
-    # services.gitea-actions-runner = {
-    #   package = pkgs.forgejo-actions-runner;
-    #   instances.default = {
-    #     enable = true;
-    #     name = "homeserver-runner";
-    #     url = "http://localhost:3000";
-    #     # TODO: Set up runner token file once SOPS is configured
-    #     tokenFile = "/path/to/runner/token";
-    #     labels = [
-    #       "nixos:docker://nixos/nix:latest"
-    #       "ubuntu-latest:docker://ubuntu:latest"
-    #     ];
-    #   };
-    # };
+    # Forgejo runner with SOPS integration
+    services.gitea-actions-runner = lib.mkIf (config.sops.secrets ? "forgejo/runner_token") {
+      package = pkgs.forgejo-actions-runner;
+      instances.default = {
+        enable = true;
+        name = "homeserver-runner";
+        url = "http://localhost:3000";
+        tokenFile = config.sops.secrets."forgejo/runner_token".path;
+        labels = [
+          "nixos:docker://nixos/nix:latest"
+          "ubuntu-latest:docker://ubuntu:latest"
+        ];
+      };
+    };
 
     # Nginx reverse proxy
     services.nginx.virtualHosts.${cfg.domain} = {
@@ -88,7 +88,28 @@ in
     # Open firewall
     networking.firewall.allowedTCPPorts = [ cfg.sshPort ];
 
-    # TODO: Add password configuration once SOPS is set up
-    # For now, you'll need to set the admin password manually after installation
+    # Create systemd service to set admin password on first run
+    systemd.services.forgejo-admin-setup = lib.mkIf (config.sops.secrets ? "forgejo/admin_password") {
+      description = "Forgejo admin password setup";
+      after = [ "forgejo.service" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        User = "forgejo";
+        StateDirectory = "forgejo-admin-setup";
+      };
+      script = ''
+        if [ ! -f /var/lib/forgejo-admin-setup/admin-created ]; then
+          ${pkgs.forgejo}/bin/forgejo admin user create \
+            --username admin \
+            --password "$(cat ${config.sops.secrets."forgejo/admin_password".path})" \
+            --email "admin@${cfg.domain}" \
+            --admin \
+            --config ${config.services.forgejo.customDir}/conf/app.ini || true
+          touch /var/lib/forgejo-admin-setup/admin-created
+        fi
+      '';
+    };
   };
 }
