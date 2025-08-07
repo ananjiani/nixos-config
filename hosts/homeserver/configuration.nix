@@ -1,14 +1,11 @@
 # Homeserver configuration
 {
+  config,
   pkgs,
   lib,
   ...
 }:
 
-let
-  # Load secrets from JSON file (converted from YAML)
-  secrets = lib.importJSON ./secrets.json;
-in
 {
   imports = [
     ./hardware-configuration.nix
@@ -48,33 +45,55 @@ in
       };
     };
 
-    # Service configurations using secrets from YAML
+    # Service configurations using SOPS secrets
     homeserver-proxy = {
       enable = true;
-      baseDomain = secrets.domains.base_domain;
-      acmeEmail = secrets.acme.email;
+      baseDomain =
+        if config.sops.secrets ? "domains/base_domain" then
+          config.sops.placeholder."domains/base_domain"
+        else
+          "example.com";
+      acmeEmail =
+        if config.sops.secrets ? "acme/email" then
+          config.sops.placeholder."acme/email"
+        else
+          "admin@example.com";
     };
 
     homeserver-forgejo = {
       enable = true;
-      domain = secrets.domains.forgejo;
+      domain =
+        if config.sops.secrets ? "domains/forgejo" then
+          config.sops.placeholder."domains/forgejo"
+        else
+          "git.example.com";
     };
 
     homeserver-home-assistant = {
       enable = true;
-      domain = secrets.domains.homeassistant;
+      domain =
+        if config.sops.secrets ? "domains/homeassistant" then
+          config.sops.placeholder."domains/homeassistant"
+        else
+          "homeassistant.local";
       # Voice assistant, ESPHome, Matter, and Signal CLI are enabled by default
     };
 
     # Nginx reverse proxy for Jellyfin (nixarr doesn't handle this)
-    nginx.virtualHosts.${secrets.domains.jellyfin} = {
-      forceSSL = true;
-      enableACME = true;
-      locations."/" = {
-        proxyPass = "http://localhost:8096";
-        proxyWebsockets = true;
+    nginx.virtualHosts.${
+      if config.sops.secrets ? "domains/jellyfin" then
+        config.sops.placeholder."domains/jellyfin"
+      else
+        "media.example.com"
+    } =
+      {
+        forceSSL = true;
+        enableACME = true;
+        locations."/" = {
+          proxyPass = "http://localhost:8096";
+          proxyWebsockets = true;
+        };
       };
-    };
   };
 
   # Firewall configuration
@@ -100,16 +119,86 @@ in
     allowReboot = false; # Manual reboots for servers
   };
 
-  # TODO: Enable SOPS once testing is complete
-  # For now, we'll read from unencrypted file and create fake secret files
-  # sops = {
-  #   defaultSopsFile = ../../secrets/homeserver.yaml;
-  #   age = {
-  #     keyFile = "/var/lib/sops-nix/key.txt";
-  #     generateKey = false;
-  #   };
-  #   secrets = { ... };
-  # };
+  # SOPS configuration for secrets management
+  sops = lib.mkIf (builtins.pathExists ../../secrets/homeserver.yaml) {
+    defaultSopsFile = ../../secrets/homeserver.yaml;
+    age = {
+      keyFile = "/var/lib/sops-nix/key.txt";
+      generateKey = false;
+    };
+    secrets = {
+      # Forgejo secrets
+      "forgejo/admin_password" = {
+        owner = "forgejo";
+        restartUnits = [ "forgejo.service" ];
+      };
+      "forgejo/runner_token" = {
+        owner = "root";
+      };
+      "forgejo/lfs_jwt_secret" = {
+        owner = "forgejo";
+      };
+
+      # Mullvad VPN configuration
+      "mullvad/wireguard_private_key" = { };
+      "mullvad/wireguard_address" = { };
+      "mullvad/server_public_key" = { };
+      "mullvad/server_endpoint" = { };
+
+      # Home Assistant secrets
+      "homeassistant/mqtt_password" = {
+        owner = "homeassistant";
+        group = "homeassistant";
+      };
+      "homeassistant/signal_api_key" = {
+        owner = "homeassistant";
+        group = "homeassistant";
+      };
+
+      # Arr stack secrets
+      "arr_stack/radarr_api_key" = { };
+      "arr_stack/sonarr_api_key" = { };
+      "arr_stack/prowlarr_api_key" = { };
+      "arr_stack/transmission_password" = { };
+
+      # Domain configuration
+      "domains/base_domain" = { };
+      "domains/forgejo" = { };
+      "domains/jellyfin" = { };
+      "domains/homeassistant" = { };
+
+      # ACME email
+      "acme/email" = { };
+    };
+  };
+
+  # Create WireGuard config from SOPS secrets if available
+  systemd.services.nixarr-wireguard-config =
+    lib.mkIf (config.sops ? secrets && config.sops.secrets ? "mullvad/wireguard_private_key")
+      {
+        description = "Generate WireGuard config for nixarr";
+        before = [ "nixarr.service" ];
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        script = ''
+          mkdir -p /var/lib/nixarr
+          cat > /var/lib/nixarr/wg0.conf <<EOF
+          [Interface]
+          PrivateKey = $(cat ${config.sops.secrets."mullvad/wireguard_private_key".path})
+          Address = $(cat ${config.sops.secrets."mullvad/wireguard_address".path})
+          DNS = 1.1.1.1
+
+          [Peer]
+          PublicKey = $(cat ${config.sops.secrets."mullvad/server_public_key".path})
+          AllowedIPs = 0.0.0.0/0, ::/0
+          Endpoint = $(cat ${config.sops.secrets."mullvad/server_endpoint".path})
+          EOF
+          chmod 600 /var/lib/nixarr/wg0.conf
+        '';
+      };
 
   # Nixarr configuration for media services
   nixarr = {
@@ -123,7 +212,9 @@ in
     vpn = {
       enable = true;
       wgConf =
-        if builtins.pathExists ./secrets/mullvad.conf then
+        if config.sops ? secrets && config.sops.secrets ? "mullvad/wireguard_private_key" then
+          "/var/lib/nixarr/wg0.conf"
+        else if builtins.pathExists ./secrets/mullvad.conf then
           ./secrets/mullvad.conf
         else
           builtins.toFile "mullvad.conf" ''

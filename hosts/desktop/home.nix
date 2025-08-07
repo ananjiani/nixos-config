@@ -5,14 +5,13 @@
 
 {
   imports = [
-    ../default/home.nix
+    ../profiles/workstation/home.nix
     ../../modules/home/gaming.nix
     ../../modules/home/config/wallpaper.nix
   ];
 
   wallpaper = {
     enable = true;
-    path = ../default/wallpapers/revachol.jpg;
     mode = lib.mkForce "fit";
   };
 
