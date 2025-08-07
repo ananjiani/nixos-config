@@ -32,63 +32,63 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    # Forgejo service
-    services.forgejo = {
-      enable = true;
-      stateDir = cfg.dataDir;
-
-      settings = {
-        server = {
-          DOMAIN = cfg.domain;
-          ROOT_URL = "https://${cfg.domain}";
-          HTTP_PORT = 3000;
-          SSH_PORT = cfg.sshPort;
-        };
-
-        service = {
-          DISABLE_REGISTRATION = true;
-        };
-
-        # Enable actions (CI/CD)
-        actions = {
-          ENABLED = true;
-        };
-      };
-
-      # Database
-      database = {
-        type = "sqlite3";
-      };
-    };
-
-    # Forgejo runner with SOPS integration
-    services.gitea-actions-runner = lib.mkIf (config.sops.secrets ? "forgejo/runner_token") {
-      package = pkgs.forgejo-actions-runner;
-      instances.default = {
+    # Services configuration
+    services = {
+      # Forgejo service
+      forgejo = {
         enable = true;
-        name = "homeserver-runner";
-        url = "http://localhost:3000";
-        tokenFile = config.sops.secrets."forgejo/runner_token".path;
-        labels = [
-          "nixos:docker://nixos/nix:latest"
-          "ubuntu-latest:docker://ubuntu:latest"
-        ];
+        stateDir = cfg.dataDir;
+
+        settings = {
+          server = {
+            DOMAIN = cfg.domain;
+            ROOT_URL = "https://${cfg.domain}";
+            HTTP_PORT = 3000;
+            SSH_PORT = cfg.sshPort;
+          };
+
+          service = {
+            DISABLE_REGISTRATION = true;
+          };
+
+          # Enable actions (CI/CD)
+          actions = {
+            ENABLED = true;
+          };
+        };
+
+        # Database
+        database = {
+          type = "sqlite3";
+        };
+      };
+
+      # Forgejo runner with SOPS integration
+      gitea-actions-runner = lib.mkIf (config.sops.secrets ? "forgejo/runner_token") {
+        package = pkgs.forgejo-actions-runner;
+        instances.default = {
+          enable = true;
+          name = "homeserver-runner";
+          url = "http://localhost:3000";
+          tokenFile = config.sops.secrets."forgejo/runner_token".path;
+          labels = [
+            "nixos:docker://nixos/nix:latest"
+            "ubuntu-latest:docker://ubuntu:latest"
+          ];
+        };
+      };
+
+      # Nginx reverse proxy
+      nginx.virtualHosts.${cfg.domain} = {
+        forceSSL = true;
+        enableACME = true;
+        locations."/" = {
+          proxyPass = "http://localhost:3000";
+        };
       };
     };
 
-    # Nginx reverse proxy
-    services.nginx.virtualHosts.${cfg.domain} = {
-      forceSSL = true;
-      enableACME = true;
-      locations."/" = {
-        proxyPass = "http://localhost:3000";
-      };
-    };
-
-    # Open firewall
-    networking.firewall.allowedTCPPorts = [ cfg.sshPort ];
-
-    # Create systemd service to set admin password on first run
+    # System services for admin password setup
     systemd.services.forgejo-admin-setup = lib.mkIf (config.sops.secrets ? "forgejo/admin_password") {
       description = "Forgejo admin password setup";
       after = [ "forgejo.service" ];

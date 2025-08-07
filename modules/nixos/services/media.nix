@@ -53,47 +53,50 @@ in
       gid = 1000; # Match your current setup
     };
 
-    # Jellyfin media server
-    services.jellyfin = {
-      enable = true;
-      user = mediaUser;
-      group = mediaGroup;
-    };
+    # Media services configuration
+    services = {
+      # Jellyfin media server
+      jellyfin = {
+        enable = true;
+        user = mediaUser;
+        group = mediaGroup;
+      };
 
-    # Radarr (movies)
-    services.radarr = {
-      enable = true;
-      user = mediaUser;
-      group = mediaGroup;
-      dataDir = "${cfg.configDir}/radarr";
-    };
+      # Radarr (movies)
+      radarr = {
+        enable = true;
+        user = mediaUser;
+        group = mediaGroup;
+        dataDir = "${cfg.configDir}/radarr";
+      };
 
-    # Sonarr (TV shows)
-    services.sonarr = {
-      enable = true;
-      user = mediaUser;
-      group = mediaGroup;
-      dataDir = "${cfg.configDir}/sonarr";
-    };
+      # Sonarr (TV shows)
+      sonarr = {
+        enable = true;
+        user = mediaUser;
+        group = mediaGroup;
+        dataDir = "${cfg.configDir}/sonarr";
+      };
 
-    # Prowlarr (indexer manager)
-    services.prowlarr = {
-      enable = true;
-    };
+      # Prowlarr (indexer manager)
+      prowlarr = {
+        enable = true;
+      };
 
-    # qBittorrent will be configured with VPN in vpn-torrents.nix
-
-    # Nginx reverse proxy - only for Jellyfin (public access)
-    services.nginx.virtualHosts = lib.mkIf (cfg.domains.jellyfin != "jellyfin.local") {
-      ${cfg.domains.jellyfin} = {
-        forceSSL = true;
-        enableACME = true;
-        locations."/" = {
-          proxyPass = "http://localhost:8096";
-          proxyWebsockets = true;
+      # Nginx reverse proxy - only for Jellyfin (public access)
+      nginx.virtualHosts = lib.mkIf (cfg.domains.jellyfin != "jellyfin.local") {
+        ${cfg.domains.jellyfin} = {
+          forceSSL = true;
+          enableACME = true;
+          locations."/" = {
+            proxyPass = "http://localhost:8096";
+            proxyWebsockets = true;
+          };
         };
       };
     };
+
+    # qBittorrent will be configured with VPN in vpn-torrents.nix
 
     # Open firewall for local access to arr stack
     networking.firewall.allowedTCPPorts = [
