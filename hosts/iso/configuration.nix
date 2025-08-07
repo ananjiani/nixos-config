@@ -1,6 +1,7 @@
 {
   config,
   pkgs,
+  lib,
   modulesPath,
   ...
 }:
@@ -20,8 +21,13 @@
   # Set your time zone.
   time.timeZone = "America/Chicago";
 
-  networking.firewall.enable = true;
-  networking.firewall.allowPing = true;
+  networking = {
+    firewall = {
+      enable = true;
+      allowPing = true;
+    };
+    networkmanager.enable = true;
+  };
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
@@ -73,5 +79,24 @@
   environment.systemPackages = with pkgs; [
     vim
     git
+    # Tools for nixos-anywhere compatibility
+    rsync
+    curl
   ];
+
+  # Enable SSH for remote installation via nixos-anywhere
+  services.openssh = {
+    enable = true;
+    settings = {
+      PermitRootLogin = "yes";
+      PasswordAuthentication = true;
+    };
+  };
+
+  # Override the empty password from installation-cd-minimal.nix
+  users.users.root = {
+    initialHashedPassword = lib.mkForce null;
+    initialPassword = "nixos";
+  };
+
 }
