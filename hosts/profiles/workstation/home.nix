@@ -30,10 +30,6 @@
     ../../../modules/home/dev/claude-code.nix
   ];
 
-  # Note: Basic home configuration is inherited from essentials
-  # Only override stateVersion if different from essentials
-  home.stateVersion = "23.11"; # Keeping older state version for compatibility
-
   # Default wallpaper configuration
   wallpaper = {
     enable = lib.mkDefault true;

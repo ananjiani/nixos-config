@@ -24,10 +24,6 @@
     };
     claude-code.url = "github:sadjow/claude-code-nix";
     whisper-dictation.url = "github:ananjiani/whisper-dictation";
-    opencode = {
-      url = "github:ananjiani/opencode-flake";
-      inputs.nixpkgs.follows = "nixpkgs-unstable";
-    };
     git-hooks = {
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
@@ -113,6 +109,7 @@
           modules = [
             ./hosts/homeserver/configuration.nix
             inputs.nixarr.nixosModules.default
+            inputs.sops-nix.nixosModules.sops
           ];
         };
       };
