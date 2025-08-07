@@ -56,23 +56,6 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    # Create network namespace for VPN isolation
-    systemd.services.vpn-namespace = {
-      description = "Create VPN network namespace";
-      wantedBy = [ "multi-user.target" ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        ExecStart = pkgs.writeShellScript "create-vpn-namespace" ''
-          ${pkgs.iproute2}/bin/ip netns add ${vpnNamespace} || true
-          ${pkgs.iproute2}/bin/ip -n ${vpnNamespace} link set lo up
-        '';
-        ExecStop = pkgs.writeShellScript "destroy-vpn-namespace" ''
-          ${pkgs.iproute2}/bin/ip netns delete ${vpnNamespace} || true
-        '';
-      };
-    };
-
     # WireGuard configuration for Mullvad
     networking.wireguard.interfaces.${vpnInterface} = {
       # Run in the VPN namespace
@@ -103,64 +86,90 @@ in
       '';
     };
 
-    # qBittorrent service running in VPN namespace
-    systemd.services.qbittorrent = {
-      description = "qBittorrent (in VPN namespace)";
-      after = [
-        "network.target"
-        "vpn-namespace.service"
-        "wireguard-${vpnInterface}.service"
-      ];
-      requires = [
-        "vpn-namespace.service"
-        "wireguard-${vpnInterface}.service"
-      ];
-      wantedBy = [ "multi-user.target" ];
-
-      serviceConfig = {
-        Type = "simple";
-        User = "media";
-        Group = "media";
-        UMask = "0002";
-
-        # Run in VPN namespace
-        NetworkNamespacePath = "/var/run/netns/${vpnNamespace}";
-
-        # Security hardening
-        PrivateTmp = true;
-        NoNewPrivileges = true;
-
-        ExecStart = ''
-          ${pkgs.qbittorrent-nox}/bin/qbittorrent-nox \
-            --webui-port=${toString cfg.qbittorrentPort} \
-            --profile=${cfg.configDir}
-        '';
-
-        Restart = "on-failure";
-        RestartSec = "10s";
+    # System services for VPN namespace and qBittorrent
+    systemd.services = {
+      # Create network namespace for VPN isolation
+      vpn-namespace = {
+        description = "Create VPN network namespace";
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = pkgs.writeShellScript "create-vpn-namespace" ''
+            ${pkgs.iproute2}/bin/ip netns add ${vpnNamespace} || true
+            ${pkgs.iproute2}/bin/ip -n ${vpnNamespace} link set lo up
+          '';
+          ExecStop = pkgs.writeShellScript "destroy-vpn-namespace" ''
+            ${pkgs.iproute2}/bin/ip netns delete ${vpnNamespace} || true
+          '';
+        };
       };
-    };
 
-    # Proxy service to access qBittorrent from host network
-    systemd.services.qbittorrent-proxy = {
-      description = "Proxy for qBittorrent web UI";
-      after = [ "qbittorrent.service" ];
-      requires = [ "qbittorrent.service" ];
-      wantedBy = [ "multi-user.target" ];
+      # qBittorrent service running in VPN namespace
+      qbittorrent = {
+        description = "qBittorrent (in VPN namespace)";
+        after = [
+          "network.target"
+          "vpn-namespace.service"
+          "wireguard-${vpnInterface}.service"
+        ];
+        requires = [
+          "vpn-namespace.service"
+          "wireguard-${vpnInterface}.service"
+        ];
+        wantedBy = [ "multi-user.target" ];
 
-      serviceConfig = {
-        Type = "simple";
-        DynamicUser = true;
+        serviceConfig = {
+          Type = "simple";
+          User = "media";
+          Group = "media";
+          UMask = "0002";
 
-        ExecStart = ''
-          ${pkgs.socat}/bin/socat \
-            TCP-LISTEN:${toString cfg.qbittorrentPort},fork,reuseaddr \
-            EXEC:'${pkgs.iproute2}/bin/ip netns exec ${vpnNamespace} ${pkgs.socat}/bin/socat STDIO TCP:localhost:${toString cfg.qbittorrentPort}'
-        '';
+          # Run in VPN namespace
+          NetworkNamespacePath = "/var/run/netns/${vpnNamespace}";
 
-        Restart = "always";
-        RestartSec = "5s";
+          # Security hardening
+          PrivateTmp = true;
+          NoNewPrivileges = true;
+
+          ExecStart = ''
+            ${pkgs.qbittorrent-nox}/bin/qbittorrent-nox \
+              --webui-port=${toString cfg.qbittorrentPort} \
+              --profile=${cfg.configDir}
+          '';
+
+          Restart = "on-failure";
+          RestartSec = "10s";
+        };
       };
+
+      # Proxy service to access qBittorrent from host network
+      qbittorrent-proxy = {
+        description = "Proxy for qBittorrent web UI";
+        after = [ "qbittorrent.service" ];
+        requires = [ "qbittorrent.service" ];
+        wantedBy = [ "multi-user.target" ];
+
+        serviceConfig = {
+          Type = "simple";
+          DynamicUser = true;
+
+          ExecStart = ''
+            ${pkgs.socat}/bin/socat \
+              TCP-LISTEN:${toString cfg.qbittorrentPort},fork,reuseaddr \
+              EXEC:'${pkgs.iproute2}/bin/ip netns exec ${vpnNamespace} ${pkgs.socat}/bin/socat STDIO TCP:localhost:${toString cfg.qbittorrentPort}'
+          '';
+
+          Restart = "always";
+          RestartSec = "5s";
+        };
+      };
+
+      # Create directories
+      tmpfiles.rules = [
+        "d '${cfg.dataDir}' 0755 media media -"
+        "d '${cfg.configDir}' 0755 media media -"
+      ];
     };
 
     # Ensure media user exists (from media.nix)
@@ -176,10 +185,5 @@ in
     # Firewall - only allow qBittorrent UI access
     networking.firewall.allowedTCPPorts = [ cfg.qbittorrentPort ];
 
-    # Create directories
-    systemd.tmpfiles.rules = [
-      "d '${cfg.dataDir}' 0755 media media -"
-      "d '${cfg.configDir}' 0755 media media -"
-    ];
   };
 }

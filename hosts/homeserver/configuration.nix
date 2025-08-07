@@ -113,6 +113,17 @@
     vim
   ];
 
+  # User configuration for VM testing
+  users.users.root.initialPassword = "test";
+  users.users.ammar = {
+    isNormalUser = true;
+    extraGroups = [
+      "wheel"
+      "docker"
+    ];
+    initialPassword = "test";
+  };
+
   # Enable automatic updates
   system.autoUpgrade = {
     enable = true;
