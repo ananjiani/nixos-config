@@ -320,12 +320,12 @@
  *   margin: 8px;
  *   border-radius: 12px;
  * }
- * 
+ *
  * .AnyName>button {
  *   background: transparent;
  *   border: none;
  * }
- * 
+ *
  * .AnyName>button:hover {
  *   background-color: @noti-bg-hover;
  * }
