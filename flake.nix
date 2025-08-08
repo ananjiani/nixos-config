@@ -177,15 +177,15 @@
           # Security scanning
           ripsecrets.enable = true;
 
-          # Custom vulnix hook for vulnerability scanning
-          vulnix = {
-            enable = true;
-            name = "vulnix";
-            description = "Scan for security vulnerabilities in Nix dependencies";
-            entry = "${pkgs.vulnix}/bin/vulnix";
-            pass_filenames = false;
-            files = "flake\\.lock$";
-          };
+          # # Custom vulnix hook for vulnerability scanning
+          # vulnix = {
+          #   enable = true;
+          #   name = "vulnix";
+          #   description = "Scan for security vulnerabilities in Nix dependencies";
+          #   entry = "${pkgs.vulnix}/bin/vulnix --system";
+          #   pass_filenames = false;
+          #   files = "flake\\.lock$";
+          # };
 
           # Git hygiene
           check-merge-conflicts.enable = true;
