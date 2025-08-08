@@ -2,7 +2,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 
@@ -131,14 +130,7 @@ in
             internal_url = "http://localhost:${toString cfg.ports.homeassistant}";
           };
 
-          http = {
-            server_port = cfg.ports.homeassistant;
-            use_x_forwarded_for = true;
-            trusted_proxies = [
-              "127.0.0.1"
-              "::1"
-            ];
-          };
+          # No reverse proxy configuration needed for local access
 
           # MQTT for device communication
           mqtt = lib.mkIf (cfg.enableESPHome || cfg.enableMatter) {
@@ -173,48 +165,13 @@ in
             port = cfg.ports.mosquitto;
             address = "0.0.0.0";
             settings = {
-              allow_anonymous = false;
-            };
-            users = {
-              homeassistant = {
-                acl = [ "readwrite #" ];
-                passwordFile =
-                  if config.sops.secrets ? "homeassistant/mqtt_password" then
-                    config.sops.secrets."homeassistant/mqtt_password".path
-                  else
-                    pkgs.writeText "mqtt-password" "CHANGE_ME_MQTT_PASSWORD";
-              };
+              allow_anonymous = true;
             };
           }
         ];
       };
 
-      # Nginx reverse proxy - only if not local access
-      nginx = lib.mkIf (cfg.domain != "homeassistant.local") {
-        virtualHosts.${cfg.domain} = {
-          forceSSL = true;
-          enableACME = true;
-          locations."/" = {
-            proxyPass = "http://localhost:${toString cfg.ports.homeassistant}";
-            proxyWebsockets = true;
-            extraConfig = ''
-              proxy_set_header Host $host;
-              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto $scheme;
-              proxy_set_header Upgrade $http_upgrade;
-              proxy_set_header Connection $connection_upgrade;
-            '';
-          };
-        };
-
-        # Add upgrade header for websockets
-        appendHttpConfig = ''
-          map $http_upgrade $connection_upgrade {
-            default upgrade;
-            "" close;
-          }
-        '';
-      };
+      # No nginx - direct access only
     };
 
     # Voice Assistant Services (using Docker for now)
@@ -346,27 +303,6 @@ in
       "d '${cfg.configDir}/signal-cli' 0755 ${haUser} ${haGroup} -"
     ];
 
-    # Create Home Assistant secrets.yaml file from SOPS
-    systemd.services.homeassistant-secrets =
-      lib.mkIf (config.sops.secrets ? "homeassistant/mqtt_password")
-        {
-          description = "Generate Home Assistant secrets.yaml";
-          before = [ "home-assistant.service" ];
-          wantedBy = [ "multi-user.target" ];
-          serviceConfig = {
-            Type = "oneshot";
-            RemainAfterExit = true;
-            User = haUser;
-            Group = haGroup;
-          };
-          script = ''
-            cat > ${cfg.configDir}/secrets.yaml <<EOF
-            # Home Assistant secrets
-            mqtt_password: "$(cat ${config.sops.secrets."homeassistant/mqtt_password".path})"
-            signal_api_key: "$(cat ${config.sops.secrets."homeassistant/signal_api_key".path})"
-            EOF
-            chmod 600 ${cfg.configDir}/secrets.yaml
-          '';
-        };
+    # No secrets needed for local-only configuration
   };
 }
