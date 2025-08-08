@@ -7,10 +7,12 @@
     # Core terminal configuration (shells, CLI tools, etc.)
     ../../modules/home/terminal/core.nix
 
+    # ../../modules/home/terminal/programs/atuin.nix
+
     # System monitoring tools
     ../../modules/home/terminal/monitoring.nix
 
-    # SOPS disabled for initial deployment
+    # # SOPS for secrets management
     # ../../modules/home/config/sops.nix
   ];
 
