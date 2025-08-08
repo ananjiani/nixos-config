@@ -42,8 +42,7 @@ in
         settings = {
           server = {
             DOMAIN = cfg.domain;
-            ROOT_URL = "https://${cfg.domain}";
-            HTTP_PORT = 3000;
+            ROOT_URL = "http://${cfg.domain}:3000";
             SSH_PORT = cfg.sshPort;
           };
 
@@ -78,14 +77,7 @@ in
         };
       };
 
-      # Nginx reverse proxy
-      nginx.virtualHosts.${cfg.domain} = {
-        forceSSL = true;
-        enableACME = true;
-        locations."/" = {
-          proxyPass = "http://localhost:3000";
-        };
-      };
+      # No nginx - direct access only
     };
 
     # System services for admin password setup

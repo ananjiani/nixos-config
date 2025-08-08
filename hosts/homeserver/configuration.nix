@@ -13,7 +13,6 @@
     ./hardware-configuration.nix
     ./disk-config.nix
     inputs.home-manager-unstable.nixosModules.home-manager
-    ../../modules/nixos/services/reverse-proxy.nix
     ../../modules/nixos/services/forgejo.nix
     # Replaced by nixarr:
     # ../../modules/nixos/services/media.nix
@@ -60,32 +59,15 @@
       };
     };
 
-    # Service configurations using SOPS secrets
-    homeserver-proxy = {
-      enable = true;
-      baseDomain = "example.com"; # Use real domain in secrets/homeserver.yaml
-      acmeEmail = "admin@example.com"; # Use real email in secrets/homeserver.yaml
-    };
-
     homeserver-forgejo = {
       enable = true;
-      domain = "git.example.com"; # Use real domain in secrets/homeserver.yaml
+      domain = "localhost"; # Local access only
     };
 
     homeserver-home-assistant = {
       enable = true;
-      domain = "homeassistant.local"; # Use real domain in secrets/homeserver.yaml
+      domain = "homeassistant.local"; # Local access only
       # Voice assistant, ESPHome, Matter, and Signal CLI are enabled by default
-    };
-
-    # Nginx reverse proxy for Jellyfin (nixarr doesn't handle this)
-    nginx.virtualHosts."media.example.com" = {
-      forceSSL = true;
-      enableACME = true;
-      locations."/" = {
-        proxyPass = "http://localhost:8096";
-        proxyWebsockets = true;
-      };
     };
   };
 
@@ -134,48 +116,23 @@
       generateKey = false;
     };
     secrets = {
-      # Forgejo secrets
+      # Optional: Forgejo admin password (can set via web UI instead)
       "forgejo/admin_password" = {
         owner = "forgejo";
         restartUnits = [ "forgejo.service" ];
       };
-      "forgejo/runner_token" = {
-        owner = "root";
-      };
-      "forgejo/lfs_jwt_secret" = {
-        owner = "forgejo";
-      };
 
-      # Mullvad VPN configuration
+      # Mullvad VPN configuration (required if using VPN)
       "mullvad/wireguard_private_key" = { };
       "mullvad/wireguard_address" = { };
       "mullvad/server_public_key" = { };
       "mullvad/server_endpoint" = { };
 
-      # Home Assistant secrets
-      "homeassistant/mqtt_password" = {
-        owner = "homeassistant";
-        group = "homeassistant";
-      };
-      "homeassistant/signal_api_key" = {
-        owner = "homeassistant";
-        group = "homeassistant";
-      };
-
-      # Arr stack secrets
-      "arr_stack/radarr_api_key" = { };
-      "arr_stack/sonarr_api_key" = { };
-      "arr_stack/prowlarr_api_key" = { };
-      "arr_stack/transmission_password" = { };
-
-      # Domain configuration
-      "domains/base_domain" = { };
-      "domains/forgejo" = { };
-      "domains/jellyfin" = { };
-      "domains/homeassistant" = { };
-
-      # ACME email
-      "acme/email" = { };
+      # Optional: Home Assistant MQTT password (anonymous MQTT enabled by default)
+      # "homeassistant/mqtt_password" = {
+      #   owner = "homeassistant";
+      #   group = "homeassistant";
+      # };
     };
   };
 
