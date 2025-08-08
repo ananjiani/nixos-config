@@ -65,7 +65,7 @@
       };
 
       # Special arguments passed to all configurations
-      specialArgs = { inherit pkgs-stable; };
+      specialArgs = { inherit inputs pkgs-stable; };
       extraSpecialArgs = { inherit inputs std pkgs-stable; };
     in
     {

@@ -3,6 +3,8 @@
   config,
   pkgs,
   lib,
+  inputs,
+  pkgs-stable,
   ...
 }:
 
@@ -10,6 +12,7 @@
   imports = [
     ./hardware-configuration.nix
     ./disk-config.nix
+    inputs.home-manager-unstable.nixosModules.home-manager
     ../../modules/nixos/services/reverse-proxy.nix
     ../../modules/nixos/services/forgejo.nix
     # Replaced by nixarr:
@@ -21,6 +24,14 @@
   # Set hostname
   networking.hostName = "homeserver";
 
+  # Home Manager integration
+  home-manager = {
+    useGlobalPkgs = true;
+    useUserPackages = true;
+    extraSpecialArgs = { inherit inputs pkgs-stable; };
+    users.ammar = import ./home.nix;
+  };
+
   # Boot loader configuration (adjust for your system)
   boot.loader.grub = {
     enable = true;
@@ -31,6 +42,9 @@
 
   # System state version
   system.stateVersion = "24.05";
+
+  # Allow unfree packages
+  nixpkgs.config.allowUnfree = true;
 
   # Enable Docker as fallback for any services that might need it
   virtualisation.docker.enable = true;

@@ -22,7 +22,7 @@
       "usbhid"
       "sd_mod"
     ];
-    initrd.kernelModules = [ ];
+    initrd.kernelModules = [ "dm-snapshot" ];
     kernelModules = [ "kvm-intel" ];
     extraModulePackages = [ ];
   };
