@@ -2,7 +2,6 @@
 {
   config,
   pkgs,
-  lib,
   inputs,
   pkgs-stable,
   ...
@@ -44,6 +43,33 @@
 
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
+
+  # Nix configuration for trusted keys and caches
+  nix = {
+    settings = {
+      experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
+      trusted-users = [
+        "root"
+        "ammar"
+      ];
+      substituters = [
+        "https://hyprland.cachix.org"
+        "https://claude-code.cachix.org"
+      ];
+      trusted-public-keys = [
+        "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+        "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
+      ];
+    };
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 30d";
+    };
+  };
 
   # Enable Docker as fallback for any services that might need it
   virtualisation.docker.enable = true;
@@ -137,32 +163,30 @@
   };
 
   # Create WireGuard config from SOPS secrets if available
-  systemd.services.nixarr-wireguard-config =
-    lib.mkIf (config.sops ? secrets && config.sops.secrets ? "mullvad/wireguard_private_key")
-      {
-        description = "Generate WireGuard config for nixarr";
-        before = [ "nixarr.service" ];
-        wantedBy = [ "multi-user.target" ];
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-        };
-        script = ''
-          mkdir -p /var/lib/nixarr
-          cat > /var/lib/nixarr/wg0.conf <<EOF
-          [Interface]
-          PrivateKey = $(cat ${config.sops.secrets."mullvad/wireguard_private_key".path})
-          Address = $(cat ${config.sops.secrets."mullvad/wireguard_address".path})
-          DNS = 1.1.1.1
+  systemd.services.nixarr-wireguard-config = {
+    description = "Generate WireGuard config for nixarr";
+    before = [ "nixarr.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      mkdir -p /var/lib/nixarr
+      cat > /var/lib/nixarr/wg0.conf <<EOF
+      [Interface]
+      PrivateKey = $(cat ${config.sops.secrets."mullvad/wireguard_private_key".path})
+      Address = $(cat ${config.sops.secrets."mullvad/wireguard_address".path})
+      DNS = 1.1.1.1
 
-          [Peer]
-          PublicKey = $(cat ${config.sops.secrets."mullvad/server_public_key".path})
-          AllowedIPs = 0.0.0.0/0, ::/0
-          Endpoint = $(cat ${config.sops.secrets."mullvad/server_endpoint".path})
-          EOF
-          chmod 600 /var/lib/nixarr/wg0.conf
-        '';
-      };
+      [Peer]
+      PublicKey = $(cat ${config.sops.secrets."mullvad/server_public_key".path})
+      AllowedIPs = 0.0.0.0/0, ::/0
+      Endpoint = $(cat ${config.sops.secrets."mullvad/server_endpoint".path})
+      EOF
+      chmod 600 /var/lib/nixarr/wg0.conf
+    '';
+  };
 
   # Nixarr configuration for media services
   nixarr = {
@@ -175,24 +199,7 @@
     # VPN configuration for torrents
     vpn = {
       enable = true;
-      wgConf =
-        if config.sops ? secrets && config.sops.secrets ? "mullvad/wireguard_private_key" then
-          "/var/lib/nixarr/wg0.conf"
-        else if builtins.pathExists ./secrets/mullvad.conf then
-          ./secrets/mullvad.conf
-        else
-          builtins.toFile "mullvad.conf" ''
-            # Example WireGuard config - replace with actual config
-            [Interface]
-            PrivateKey = CHANGE_ME
-            Address = 10.0.0.1/32
-            DNS = 1.1.1.1
-
-            [Peer]
-            PublicKey = CHANGE_ME
-            AllowedIPs = 0.0.0.0/0, ::/0
-            Endpoint = 1.2.3.4:51820
-          '';
+      wgConf = "/var/lib/nixarr/wg0.conf";
     };
 
     # Enable services (matching your current setup)
@@ -216,7 +223,6 @@
       openFirewall = true;
     };
 
-    # Use Transmission instead of qBittorrent
     transmission = {
       enable = true;
       vpn.enable = true;
