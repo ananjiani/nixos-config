@@ -68,10 +68,13 @@
     };
   };
 
-  # Define a user account. Don't forget to set a password with ‘passwd’.
+  # Define a user account. Don't forget to set a password with 'passwd'.
   users.users.ammar = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
+    extraGroups = [ "wheel" ]; # Enable 'sudo' for the user.
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMoo8KQiLBJ6WrWmG0/6O8lww/v6ggPaLfv70/ksMZbD ammar.nanjiani@gmail.com"
+    ];
   };
 
   nixpkgs.config.allowUnfree = true;
@@ -97,6 +100,9 @@
   users.users.root = {
     initialHashedPassword = lib.mkForce null;
     initialPassword = "nixos";
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMoo8KQiLBJ6WrWmG0/6O8lww/v6ggPaLfv70/ksMZbD ammar.nanjiani@gmail.com"
+    ];
   };
 
 }
