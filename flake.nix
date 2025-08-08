@@ -32,6 +32,10 @@
       url = "github:rasmus-kirk/nixarr";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
   };
 
   outputs =
@@ -110,6 +114,7 @@
             ./hosts/homeserver/configuration.nix
             inputs.nixarr.nixosModules.default
             inputs.sops-nix.nixosModules.sops
+            inputs.disko.nixosModules.disko
           ];
         };
       };
