@@ -10,8 +10,8 @@
     # System monitoring tools
     ../../modules/home/terminal/monitoring.nix
 
-    # SOPS for secrets management
-    ../../modules/home/config/sops.nix
+    # SOPS disabled for initial deployment
+    # ../../modules/home/config/sops.nix
   ];
 
   # Basic home-manager configuration for server
