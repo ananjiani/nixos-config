@@ -101,6 +101,9 @@
       "docker"
     ];
     initialPassword = "test";
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMoo8KQiLBJ6WrWmG0/6O8lww/v6ggPaLfv70/ksMZbD ammar.nanjiani@gmail.com"
+    ];
   };
 
   # Enable automatic updates
