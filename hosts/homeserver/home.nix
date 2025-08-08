@@ -5,6 +5,8 @@
 {
   imports = [
     # Core terminal configuration (shells, CLI tools, etc.)
+    #
+    ../../hosts/profiles/essentials/home.nix
     ../../modules/home/terminal/core.nix
 
     # ../../modules/home/terminal/programs/atuin.nix
@@ -16,18 +18,4 @@
     # ../../modules/home/config/sops.nix
   ];
 
-  # Basic home-manager configuration for server
-  home = {
-    username = "ammar";
-    homeDirectory = "/home/ammar";
-    stateVersion = "24.05";
-  };
-
-  programs = {
-    home-manager.enable = true;
-  };
-
-  home.sessionVariables = {
-    EDITOR = "vim";
-  };
 }

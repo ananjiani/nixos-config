@@ -22,10 +22,10 @@
     fish.enable = true;
 
     # Enable ydotool for input automation
-    ydotool = {
-      enable = true;
-      group = "ydotool";
-    };
+    # ydotool = {
+    #   enable = true;
+    #   group = "ydotool";
+    # };
 
     gnupg.agent = {
       enable = true;
@@ -39,7 +39,8 @@
     isNormalUser = true;
     extraGroups = [
       "wheel"
-      "ydotool"
+      "docker"
+      # "ydotool"
     ]; # Enable 'sudo' for the user and ydotool access.
   };
 
@@ -56,11 +57,9 @@
         "ammar"
       ];
       substituters = [
-        "https://hyprland.cachix.org"
         "https://claude-code.cachix.org"
       ];
       trusted-public-keys = [
-        "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
         "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
       ];
     };
@@ -89,6 +88,7 @@
     firewall = {
       enable = true;
       allowPing = true;
+      allowedTCPPorts = [ 22 ];
     };
   };
 
