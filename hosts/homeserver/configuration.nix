@@ -9,6 +9,7 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./disk-config.nix
     ../../modules/nixos/services/reverse-proxy.nix
     ../../modules/nixos/services/forgejo.nix
     # Replaced by nixarr:
@@ -48,52 +49,30 @@
     # Service configurations using SOPS secrets
     homeserver-proxy = {
       enable = true;
-      baseDomain =
-        if config.sops.secrets ? "domains/base_domain" then
-          config.sops.placeholder."domains/base_domain"
-        else
-          "example.com";
-      acmeEmail =
-        if config.sops.secrets ? "acme/email" then
-          config.sops.placeholder."acme/email"
-        else
-          "admin@example.com";
+      baseDomain = "example.com"; # Use real domain in secrets/homeserver.yaml
+      acmeEmail = "admin@example.com"; # Use real email in secrets/homeserver.yaml
     };
 
     homeserver-forgejo = {
       enable = true;
-      domain =
-        if config.sops.secrets ? "domains/forgejo" then
-          config.sops.placeholder."domains/forgejo"
-        else
-          "git.example.com";
+      domain = "git.example.com"; # Use real domain in secrets/homeserver.yaml
     };
 
     homeserver-home-assistant = {
       enable = true;
-      domain =
-        if config.sops.secrets ? "domains/homeassistant" then
-          config.sops.placeholder."domains/homeassistant"
-        else
-          "homeassistant.local";
+      domain = "homeassistant.local"; # Use real domain in secrets/homeserver.yaml
       # Voice assistant, ESPHome, Matter, and Signal CLI are enabled by default
     };
 
     # Nginx reverse proxy for Jellyfin (nixarr doesn't handle this)
-    nginx.virtualHosts.${
-      if config.sops.secrets ? "domains/jellyfin" then
-        config.sops.placeholder."domains/jellyfin"
-      else
-        "media.example.com"
-    } =
-      {
-        forceSSL = true;
-        enableACME = true;
-        locations."/" = {
-          proxyPass = "http://localhost:8096";
-          proxyWebsockets = true;
-        };
+    nginx.virtualHosts."media.example.com" = {
+      forceSSL = true;
+      enableACME = true;
+      locations."/" = {
+        proxyPass = "http://localhost:8096";
+        proxyWebsockets = true;
       };
+    };
   };
 
   # Firewall configuration
@@ -131,7 +110,7 @@
   };
 
   # SOPS configuration for secrets management
-  sops = lib.mkIf (builtins.pathExists ../../secrets/homeserver.yaml) {
+  sops = {
     defaultSopsFile = ../../secrets/homeserver.yaml;
     age = {
       keyFile = "/var/lib/sops-nix/key.txt";
