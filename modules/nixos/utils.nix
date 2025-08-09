@@ -58,9 +58,11 @@
       ];
       substituters = [
         "https://claude-code.cachix.org"
+        "https://nix-community.cachix.org"
       ];
       trusted-public-keys = [
         "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
+        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       ];
     };
     gc = {

@@ -13,7 +13,7 @@
     ../../../modules/home/config/defaults.nix
 
     # SOPS for secrets management
-    ../../../modules/home/config/sops.nix
+    # ../../../modules/home/config/sops.nix
   ];
 
   # Basic home-manager configuration
