@@ -27,6 +27,34 @@
     extraModulePackages = [ ];
   };
 
+  fileSystems = {
+    "/" = lib.mkForce {
+      device = "/dev/mapper/pool-root";
+      fsType = "ext4";
+    };
+
+    "/boot" = lib.mkForce {
+      device = "/dev/disk/by-uuid/8941-A207";
+      fsType = "vfat";
+      options = [
+        "fmask=0022"
+        "dmask=0022"
+      ];
+    };
+
+    "/mnt/storage1" = {
+      device = "/dev/disk/by-uuid/EAC2AAC7C2AA96FB";
+      fsType = "ntfs";
+    };
+
+    "/mnt/storage2" = {
+      device = "/dev/disk/by-uuid/dc5e54fd-6474-4b88-a757-c31f62c37138";
+      fsType = "ext4";
+    };
+  };
+
+  swapDevices = [ ];
+
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 }

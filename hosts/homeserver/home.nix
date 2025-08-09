@@ -7,7 +7,6 @@
     # Core terminal configuration (shells, CLI tools, etc.)
     #
     ../../hosts/profiles/essentials/home.nix
-    ../../modules/home/terminal/core.nix
 
     # ../../modules/home/terminal/programs/atuin.nix
 
