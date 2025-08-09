@@ -1,6 +1,7 @@
 # Homeserver configuration
 {
   inputs,
+  pkgs,
   pkgs-stable,
   ...
 }:
@@ -8,18 +9,23 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ./disk-config.nix
     inputs.home-manager-unstable.nixosModules.home-manager
     # ../../modules/nixos/services/forgejo.nix
     ../../modules/nixos/utils.nix
+    ../../modules/nixos/nvidia.nix # NVIDIA GPU support for WhisperX
     # Replaced by nixarr:
     # ../../modules/nixos/services/media.nix
     # ../../modules/nixos/services/vpn-torrents.nix
-    ../../modules/nixos/services/home-assistant.nix
+    # ../../modules/nixos/services/home-assistant.nix
   ];
 
   # Set hostname
   networking.hostName = "homeserver";
+
+  # Enable CUDA support for packages (needed for WhisperX with GPU acceleration)
+  nixpkgs.config.cudaSupport = true;
+
+  # No overlays needed - using faster-whisper with CTranslate2 instead
 
   # Home Manager integration
   home-manager = {
@@ -32,6 +38,36 @@
   # Enable Docker as fallback for any services that might need it
   virtualisation.docker.enable = true;
 
+  # System packages (with CUDA support enabled)
+  environment.systemPackages =
+    with pkgs;
+    let
+      # Python environment with transcription tools
+      transcribePython = python3.withPackages (
+        ps: with ps; [
+          faster-whisper
+          pyannote-audio
+          pydub
+          numpy
+          scipy
+          tqdm
+        ]
+      );
+
+      # Transcription wrapper script
+      transcribeScript = writeScriptBin "transcribe" ''
+        #!${transcribePython}/bin/python3
+        ${builtins.readFile ./transcribe.py}
+      '';
+    in
+    [
+      # Audio processing tools
+      ffmpeg
+
+      # Transcription script with all dependencies
+      transcribeScript
+    ];
+
   # Services configuration
   services = {
     # Enable SSH for remote management
@@ -42,7 +78,6 @@
         PermitRootLogin = "no";
       };
     };
-
     # homeserver-forgejo = {
     #   enable = true;
     #   domain = "localhost"; # Local access only
@@ -54,6 +89,14 @@
     #   # Voice assistant, ESPHome, Matter, and Signal CLI are enabled by default
     # };
   };
+
+  # nixarr = {
+  #   enable = true;
+  #   mediaDir = "/mnt/storage2/arr-data/media";
+  #   jellyfin = {
+  #     enable = true;
+  #   };
+  # };
 
   # Firewall configuration
   networking.firewall = {
@@ -69,6 +112,9 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMoo8KQiLBJ6WrWmG0/6O8lww/v6ggPaLfv70/ksMZbD ammar.nanjiani@gmail.com"
     ];
   };
+
+  # Allow wheel group to use sudo without password (optional)
+  security.sudo.wheelNeedsPassword = false;
 
   # Enable automatic updates
   # system.autoUpgrade = {
