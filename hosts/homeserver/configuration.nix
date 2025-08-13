@@ -1,7 +1,6 @@
 # Homeserver configuration
 {
   inputs,
-  pkgs,
   pkgs-stable,
   ...
 }:
@@ -9,10 +8,11 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./disk-config.nix
     inputs.home-manager-unstable.nixosModules.home-manager
     # ../../modules/nixos/services/forgejo.nix
     ../../modules/nixos/utils.nix
-    ../../modules/nixos/nvidia.nix # NVIDIA GPU support for WhisperX
+    # ../../modules/nixos/nvidia.nix # NVIDIA GPU support for WhisperX
     # Replaced by nixarr:
     # ../../modules/nixos/services/media.nix
     # ../../modules/nixos/services/vpn-torrents.nix
@@ -39,34 +39,34 @@
   virtualisation.docker.enable = true;
 
   # System packages (with CUDA support enabled)
-  environment.systemPackages =
-    with pkgs;
-    let
-      # Python environment with transcription tools
-      transcribePython = python3.withPackages (
-        ps: with ps; [
-          faster-whisper
-          pyannote-audio
-          pydub
-          numpy
-          scipy
-          tqdm
-        ]
-      );
+  # environment.systemPackages =
+  #   with pkgs;
+  #   let
+  #     # Python environment with transcription tools
+  #     transcribePython = python3.withPackages (
+  #       ps: with ps; [
+  #         faster-whisper
+  #         pyannote-audio
+  #         pydub
+  #         numpy
+  #         scipy
+  #         tqdm
+  #       ]
+  #     );
 
-      # Transcription wrapper script
-      transcribeScript = writeScriptBin "transcribe" ''
-        #!${transcribePython}/bin/python3
-        ${builtins.readFile ./transcribe.py}
-      '';
-    in
-    [
-      # Audio processing tools
-      ffmpeg
+  #     # Transcription wrapper script
+  #     transcribeScript = writeScriptBin "transcribe" ''
+  #       #!${transcribePython}/bin/python3
+  #       ${builtins.readFile ./transcribe.py}
+  #     '';
+  #   in
+  #   [
+  #     # Audio processing tools
+  #     ffmpeg
 
-      # Transcription script with all dependencies
-      transcribeScript
-    ];
+  #     # Transcription script with all dependencies
+  #     transcribeScript
+  #   ];
 
   # Services configuration
   services = {
@@ -90,13 +90,13 @@
     # };
   };
 
-  # nixarr = {
-  #   enable = true;
-  #   mediaDir = "/mnt/storage2/arr-data/media";
-  #   jellyfin = {
-  #     enable = true;
-  #   };
-  # };
+  nixarr = {
+    enable = true;
+    mediaDir = "/mnt/storage2/arr-data/media";
+    jellyfin = {
+      enable = true;
+    };
+  };
 
   # Firewall configuration
   networking.firewall = {
