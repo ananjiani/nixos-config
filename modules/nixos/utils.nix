@@ -20,7 +20,7 @@
 
   programs = {
     fish.enable = true;
-
+    nix-ld.enable = true;
     # Enable ydotool for input automation
     # ydotool = {
     #   enable = true;
@@ -42,6 +42,7 @@
       "docker"
       # "ydotool"
     ]; # Enable 'sudo' for the user and ydotool access.
+    shell = pkgs.fish;
   };
 
   nixpkgs.config.allowUnfree = true;

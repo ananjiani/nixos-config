@@ -8,6 +8,7 @@
     ../profiles/workstation/home.nix
     ../../modules/home/gaming.nix
     ../../modules/home/config/wallpaper.nix
+    ../../modules/home/config/sops.nix
   ];
 
   wallpaper = {

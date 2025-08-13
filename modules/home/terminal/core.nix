@@ -90,7 +90,24 @@
       settings = {
         add_newline = false;
         line_break.disabled = true;
-      };
+      }
+      // (
+        if builtins.getEnv "INSIDE_EMACS" != "" then
+          {
+            # Override symbols only when inside Emacs
+            git_branch.symbol = " ";
+            directory.read_only = " [RO]";
+            git_status = {
+              modified = "M";
+              staged = "S";
+              untracked = "U";
+              ahead = "↑";
+              behind = "↓";
+            };
+          }
+        else
+          { }
+      );
       package = pkgs-stable.starship;
     };
 
