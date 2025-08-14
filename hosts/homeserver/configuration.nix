@@ -79,6 +79,11 @@
         PermitRootLogin = "no";
       };
     };
+    forgejo = {
+      enable = true;
+      stateDir = "/mnt/storage/forgejo";
+      useWizard = false; # Use existing app.ini configuration
+    };
     # homeserver-forgejo = {
     #   enable = true;
     #   domain = "localhost"; # Local access only
@@ -97,13 +102,21 @@
     jellyfin = {
       enable = true;
     };
+    # prowlarr = {
+    #   enable = true;
+    #   stateDir = "/mnt/storage/arr-data/config/prowlarr";
+    # };
+
   };
 
   # Firewall configuration
   networking.firewall = {
     enable = true;
     # These will be managed by individual services
-    allowedTCPPorts = [ 22 ]; # SSH
+    allowedTCPPorts = [
+      22
+      3000
+    ]; # SSH, Forgejo HTTP
   };
 
   # User configuration for VM testing
