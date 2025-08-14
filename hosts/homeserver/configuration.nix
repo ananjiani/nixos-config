@@ -79,10 +79,86 @@
         PermitRootLogin = "no";
       };
     };
+
+    # Nginx reverse proxy with Let's Encrypt
+    nginx = {
+      enable = true;
+      recommendedTlsSettings = true;
+      recommendedOptimisation = true;
+      recommendedGzipSettings = true;
+      recommendedProxySettings = true;
+
+      # Fix proxy headers hash warning
+      appendHttpConfig = ''
+        proxy_headers_hash_max_size 512;
+        proxy_headers_hash_bucket_size 128;
+      '';
+
+      virtualHosts."git.dimensiondoor.xyz" = {
+        enableACME = true;
+        forceSSL = true;
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:3000";
+          proxyWebsockets = true;
+          extraConfig = ''
+            # Connection header is handled by proxyWebsockets
+            # Other headers are included via recommendedProxySettings
+          '';
+        };
+      };
+    };
+
     forgejo = {
       enable = true;
-      stateDir = "/mnt/storage/forgejo";
-      useWizard = false; # Use existing app.ini configuration
+
+      # Database configuration
+      database = {
+        type = "sqlite3";
+        createDatabase = true;
+      };
+
+      # Comprehensive settings matching your app.ini
+      settings = {
+        server = {
+          DOMAIN = "git.dimensiondoor.xyz";
+          ROOT_URL = "https://git.dimensiondoor.xyz/";
+          HTTP_ADDR = "0.0.0.0";
+          HTTP_PORT = 3000;
+          SSH_DOMAIN = "git.dimensiondoor.xyz";
+          SSH_PORT = 22;
+          DISABLE_SSH = false;
+          LFS_START_SERVER = false;
+          LOCAL_ROOT_URL = "http://127.0.0.1:3000/";
+        };
+
+        service = {
+          DISABLE_REGISTRATION = true;
+          REQUIRE_SIGNIN_VIEW = false;
+        };
+
+        repository = {
+          ENABLE_PUSH_CREATE_USER = true;
+          DEFAULT_PUSH_CREATE_PRIVATE = true;
+          DEFAULT_REPO_UNITS = "repo.code,repo.actions";
+        };
+
+        security = {
+          INSTALL_LOCK = true;
+        };
+
+        log = {
+          MODE = "console";
+          LEVEL = "Info";
+        };
+
+        webhook = {
+          ALLOWED_HOST_LIST = "external,loopback,10.27.27.11";
+        };
+
+        actions = {
+          ENABLED = true;
+        };
+      };
     };
     # homeserver-forgejo = {
     #   enable = true;
@@ -109,14 +185,22 @@
 
   };
 
+  # ACME/Let's Encrypt configuration
+  security.acme = {
+    acceptTerms = true;
+    defaults.email = "ammar.nanjiani@gmail.com";
+  };
+
   # Firewall configuration
   networking.firewall = {
     enable = true;
     # These will be managed by individual services
     allowedTCPPorts = [
-      22
-      3000
-    ]; # SSH, Forgejo HTTP
+      22 # SSH
+      80 # HTTP (for ACME challenge)
+      443 # HTTPS
+      3000 # Forgejo HTTP (local only)
+    ];
   };
 
   # User configuration for VM testing
