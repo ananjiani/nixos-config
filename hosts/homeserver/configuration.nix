@@ -111,55 +111,30 @@
     forgejo = {
       enable = true;
 
-      # Database configuration
+      # Minimal configuration for testing
       database = {
         type = "sqlite3";
         createDatabase = true;
       };
 
-      # Comprehensive settings matching your app.ini
       settings = {
         server = {
           DOMAIN = "git.dimensiondoor.xyz";
           ROOT_URL = "https://git.dimensiondoor.xyz/";
           HTTP_ADDR = "0.0.0.0";
           HTTP_PORT = 3000;
-          SSH_DOMAIN = "git.dimensiondoor.xyz";
-          SSH_PORT = 22;
-          DISABLE_SSH = false;
-          LFS_START_SERVER = false;
-          LOCAL_ROOT_URL = "http://127.0.0.1:3000/";
         };
 
         service = {
           DISABLE_REGISTRATION = true;
-          REQUIRE_SIGNIN_VIEW = false;
-        };
-
-        repository = {
-          ENABLE_PUSH_CREATE_USER = true;
-          DEFAULT_PUSH_CREATE_PRIVATE = true;
-          DEFAULT_REPO_UNITS = "repo.code,repo.actions";
         };
 
         security = {
           INSTALL_LOCK = true;
         };
-
-        log = {
-          MODE = "console";
-          LEVEL = "Info";
-        };
-
-        webhook = {
-          ALLOWED_HOST_LIST = "external,loopback,10.27.27.11";
-        };
-
-        actions = {
-          ENABLED = true;
-        };
       };
     };
+
     # homeserver-forgejo = {
     #   enable = true;
     #   domain = "localhost"; # Local access only
@@ -316,4 +291,5 @@
   #     peerPort = 51413;
   #   };
   # };
+
 }
