@@ -9,6 +9,7 @@
   imports = [
     ./hardware-configuration.nix
     ./disk-config.nix
+    ./storage.nix
     inputs.home-manager-unstable.nixosModules.home-manager
     # ../../modules/nixos/services/forgejo.nix
     ../../modules/nixos/utils.nix
@@ -92,7 +93,7 @@
 
   nixarr = {
     enable = true;
-    mediaDir = "/mnt/storage2/arr-data/media";
+    mediaDir = "/mnt/storage/arr-data/media";
     jellyfin = {
       enable = true;
     };

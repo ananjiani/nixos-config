@@ -21,7 +21,7 @@
       # Modesetting is required for most Wayland compositors
       modesetting.enable = true;
 
-      # Use proprietary drivers (better for GTX 1070 Ti)
+      # Use proprietary drivers (better for RTX 3060)
       open = false;
 
       # Enable nvidia-persistenced for headless operation
@@ -34,9 +34,8 @@
       # Optional: Fine-grained power management (not needed for desktop GPUs)
       powerManagement.finegrained = false;
 
-      # Use legacy_535 driver for GTX 1070 Ti (Pascal) - better CUDA compatibility
-      # legacy_535 causes "unsupported display driver / cuda driver combination" errors
-      package = config.boot.kernelPackages.nvidiaPackages.legacy_535;
+      # Use stable driver for RTX 3060 (Ampere architecture)
+      package = config.boot.kernelPackages.nvidiaPackages.stable;
       nvidiaSettings = true;
     };
 
