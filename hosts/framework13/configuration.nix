@@ -17,6 +17,7 @@
     ../../modules/nixos/utils.nix
     # ../../modules/nixos/openconnect.nix
     ../../modules/nixos/docker.nix
+    ../../modules/nixos/ssh.nix
   ];
 
   programs.nm-applet.enable = true;
