@@ -153,6 +153,7 @@
     # Git tools
     git = {
       enable = true;
+      lfs.enable = true;
       userName = "Ammar Nanjiani";
       userEmail = "ammar.nanjiani@gmail.com";
       extraConfig = {
