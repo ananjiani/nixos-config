@@ -103,6 +103,9 @@
           extraConfig = ''
             # Connection header is handled by proxyWebsockets
             # Other headers are included via recommendedProxySettings
+
+            # Increase client body size for Git LFS
+            client_max_body_size 500M;
           '';
         };
       };
@@ -142,6 +145,8 @@
           ROOT_URL = "https://git.dimensiondoor.xyz/";
           HTTP_ADDR = "0.0.0.0";
           HTTP_PORT = 3000;
+          # Increase LFS file size limit to 500MB
+          LFS_MAX_FILE_SIZE = 524288000;
         };
 
         service = {
