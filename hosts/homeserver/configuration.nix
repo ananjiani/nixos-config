@@ -106,6 +106,24 @@
           '';
         };
       };
+
+      virtualHosts."media.dimensiondoor.xyz" = {
+        enableACME = true;
+        forceSSL = true;
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:8096";
+          proxyWebsockets = true;
+          extraConfig = ''
+            # Jellyfin specific headers
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+            # Disable buffering when the nginx proxy gets very resource heavy upon streaming
+            proxy_buffering off;
+          '';
+        };
+      };
     };
 
     forgejo = {
