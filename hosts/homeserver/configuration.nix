@@ -128,6 +128,7 @@
 
     forgejo = {
       enable = true;
+      lfs.enable = true;
 
       # Minimal configuration for testing
       database = {
