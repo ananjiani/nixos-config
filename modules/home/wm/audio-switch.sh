@@ -5,7 +5,7 @@ wpctl status | sed -n '/Sinks:/,/Sources:/p' | grep -E '^\s*│.*[0-9]+\.' | whi
     # Extract sink ID and name
     id=$(echo "$line" | sed -E 's/^[^0-9]*([0-9]+)\..*/\1/')
     name=$(echo "$line" | sed -E 's/^[^0-9]*[0-9]+\.\s*([^[]+)\[.*/\1/' | sed 's/\s*$//')
-    
+
     # Mark current default sink
     if [[ "$line" =~ \*[[:space:]]*[0-9]+ ]]; then
         echo "[Current] $name|$id"

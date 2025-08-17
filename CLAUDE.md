@@ -132,3 +132,4 @@ nix flake check --all-systems
 - **Context and MCP Best Practices**:
   - Use context7 for modular and context-aware Nix configurations
   - Leverage NixOS MCP (Master Control Program) for advanced system management and deployment strategies
+- Do not bypass the precommit hooks

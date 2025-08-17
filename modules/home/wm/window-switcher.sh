@@ -12,7 +12,7 @@ while IFS= read -r window; do
     title=$(echo "$window" | jq -r '.title // "Untitled"')
     workspace=$(echo "$window" | jq -r '.workspace.id // "?"')
     workspace_name=$(echo "$window" | jq -r '.workspace.name // "?"')
-    
+
     # Skip empty entries
     if [[ -n "$address" && "$address" != "null" ]]; then
         # Format: [Workspace] Class: Title
@@ -44,7 +44,7 @@ if [[ -n "$selected" ]]; then
             break
         fi
     done)
-    
+
     if [[ -n "$address" ]]; then
         hyprctl dispatch focuswindow "address:$address"
     fi

@@ -11,7 +11,7 @@
   imports = [
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
-    ../default/configuration.nix
+    ../profiles/workstation/configuration.nix
     ../../modules/nixos/bluetooth.nix
     ../../modules/nixos/wm.nix
     ../../modules/nixos/utils.nix
