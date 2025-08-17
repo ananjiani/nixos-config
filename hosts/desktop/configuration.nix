@@ -10,7 +10,7 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ../default/configuration.nix
+    ../profiles/workstation/configuration.nix
     ./samba.nix
     ../../modules/nixos/gaming.nix
     ../../modules/nixos/amd.nix

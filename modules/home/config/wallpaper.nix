@@ -15,7 +15,7 @@ in
 
     path = mkOption {
       type = types.path;
-      default = ../../hosts/default/wallpapers/revachol.jpg;
+      default = ../../../hosts/profiles/workstation/wallpapers/revachol.jpg;
       description = "Path to the wallpaper image";
     };
 

@@ -1,30 +1,37 @@
+# Desktop-only terminal additions
 {
   pkgs,
-  pkgs-stable,
   ...
 }:
 
 {
-  home.sessionPath = [ "$HOME/.local/bin" ];
+  # Desktop-specific aliases
+  home.shellAliases = {
+    rd = "ripdrag";
+    frd = "ripdrag $(fzf)";
+    fo = "open $(fzf)"; # Open with desktop app
+    fc = "emacsclient $(fzf)"; # Emacs client
+  };
+
   programs = {
-    fish = {
+    # Additional shell for desktop experimentation
+    nushell = {
       enable = true;
+      package = pkgs.nushell;
+    };
+
+    # Desktop-specific fish configuration for Emacs vterm
+    fish = {
       interactiveShellInit = ''
-        set fish_greeting # Disable greeting
+        # Emacs vterm integration
         if set -q INSIDE_EMACS
             # Use default (emacs-style) keybindings when inside Emacs
             set -g fish_key_bindings fish_default_key_bindings
-        else
-            # Use vi keybindings in regular terminals
-            set -g fish_key_bindings fish_vi_key_bindings
-            bind -M insert \cf forward-char
         end
-        set -g fish_key_bindings fish_vi_key_bindings
-        bind -M insert \cf forward-char
         functions --copy fish_prompt vterm_old_fish_prompt
       '';
-      # plugins = with pkgs.fishPlugins; [ ];
       functions = {
+        # Emacs vterm specific functions
         vterm_printf = ''
           if begin; [  -n "$TMUX" ]  ; and  string match -q -r "screen|tmux" "$TERM"; end
               # tell tmux to pass the escape sequences through
@@ -44,38 +51,13 @@
               printf "%b" (string join "\n" (vterm_old_fish_prompt))
               vterm_prompt_end
         '';
-        fish_title = ''
-          hostname
-          echo ":"
-          prompt_pwd
-        '';
       };
     };
-
-    bash.enable = true;
-
-    nushell = {
-      enable = true;
-      package = pkgs.nushell;
-    };
-
-    starship = {
-      enable = true;
-      settings = {
-        add_newline = false;
-        line_break.disabled = true;
-      };
-      package = pkgs-stable.starship;
-    };
-    zellij = {
-      enable = true;
-      settings = {
-        theme = "gruvbox-dark";
-        default_shell = "fish";
-        pane_frames = false;
-        on_force_close = "quit";
-      };
-    };
-
   };
+
+  # Desktop-only packages
+  home.packages = with pkgs; [
+    ripdrag # GUI drag & drop
+    chafa # Terminal image viewer
+  ];
 }

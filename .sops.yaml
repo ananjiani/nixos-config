@@ -25,3 +25,7 @@ creation_rules:
           - *surface-go
           - *framework13
           - *router
+  - path_regex: secrets/homeserver.yaml$
+    key_groups:
+      - age:
+          - *desktop
