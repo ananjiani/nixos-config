@@ -1,6 +1,6 @@
 {
-  config,
   pkgs,
+  lib,
   modulesPath,
   ...
 }:
@@ -20,8 +20,13 @@
   # Set your time zone.
   time.timeZone = "America/Chicago";
 
-  networking.firewall.enable = true;
-  networking.firewall.allowPing = true;
+  networking = {
+    firewall = {
+      enable = true;
+      allowPing = true;
+    };
+    networkmanager.enable = true;
+  };
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
@@ -62,10 +67,13 @@
     };
   };
 
-  # Define a user account. Don't forget to set a password with ‘passwd’.
+  # Define a user account. Don't forget to set a password with 'passwd'.
   users.users.ammar = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
+    extraGroups = [ "wheel" ]; # Enable 'sudo' for the user.
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMoo8KQiLBJ6WrWmG0/6O8lww/v6ggPaLfv70/ksMZbD ammar.nanjiani@gmail.com"
+    ];
   };
 
   nixpkgs.config.allowUnfree = true;
@@ -73,5 +81,27 @@
   environment.systemPackages = with pkgs; [
     vim
     git
+    # Tools for nixos-anywhere compatibility
+    rsync
+    curl
   ];
+
+  # Enable SSH for remote installation via nixos-anywhere
+  services.openssh = {
+    enable = true;
+    settings = {
+      PermitRootLogin = "yes";
+      PasswordAuthentication = true;
+    };
+  };
+
+  # Override the empty password from installation-cd-minimal.nix
+  users.users.root = {
+    initialHashedPassword = lib.mkForce null;
+    initialPassword = "nixos";
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMoo8KQiLBJ6WrWmG0/6O8lww/v6ggPaLfv70/ksMZbD ammar.nanjiani@gmail.com"
+    ];
+  };
+
 }

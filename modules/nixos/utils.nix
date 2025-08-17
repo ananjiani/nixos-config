@@ -20,12 +20,12 @@
 
   programs = {
     fish.enable = true;
-
+    nix-ld.enable = true;
     # Enable ydotool for input automation
-    ydotool = {
-      enable = true;
-      group = "ydotool";
-    };
+    # ydotool = {
+    #   enable = true;
+    #   group = "ydotool";
+    # };
 
     gnupg.agent = {
       enable = true;
@@ -39,8 +39,10 @@
     isNormalUser = true;
     extraGroups = [
       "wheel"
-      "ydotool"
+      "docker"
+      # "ydotool"
     ]; # Enable 'sudo' for the user and ydotool access.
+    shell = pkgs.fish;
   };
 
   nixpkgs.config.allowUnfree = true;
@@ -56,12 +58,12 @@
         "ammar"
       ];
       substituters = [
-        "https://hyprland.cachix.org"
         "https://claude-code.cachix.org"
+        "https://nix-community.cachix.org"
       ];
       trusted-public-keys = [
-        "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
         "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
+        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       ];
     };
     gc = {
@@ -89,6 +91,7 @@
     firewall = {
       enable = true;
       allowPing = true;
+      allowedTCPPorts = [ 22 ];
     };
   };
 

@@ -24,12 +24,16 @@
     };
     claude-code.url = "github:sadjow/claude-code-nix";
     whisper-dictation.url = "github:ananjiani/whisper-dictation";
-    opencode = {
-      url = "github:ananjiani/opencode-flake";
-      inputs.nixpkgs.follows = "nixpkgs-unstable";
-    };
     git-hooks = {
       url = "github:cachix/git-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
+    nixarr = {
+      url = "github:rasmus-kirk/nixarr";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
+    disko = {
+      url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
   };
@@ -61,7 +65,7 @@
       };
 
       # Special arguments passed to all configurations
-      specialArgs = { inherit pkgs-stable; };
+      specialArgs = { inherit inputs pkgs-stable; };
       extraSpecialArgs = { inherit inputs std pkgs-stable; };
     in
     {
@@ -102,6 +106,17 @@
           inherit system specialArgs;
           modules = [ ./hosts/iso/configuration.nix ];
         };
+
+        # Homeserver
+        homeserver = lib.nixosSystem {
+          inherit system specialArgs;
+          modules = [
+            ./hosts/homeserver/configuration.nix
+            inputs.nixarr.nixosModules.default
+            inputs.sops-nix.nixosModules.sops
+            inputs.disko.nixosModules.disko
+          ];
+        };
       };
 
       # Home Manager configurations with automatic hostname detection
@@ -133,9 +148,10 @@
           "ammar@work-laptop" = mkHomeConfig ./hosts/work-laptop/home.nix;
           "ammar@framework13" = mkHomeConfig ./hosts/framework13/home.nix;
           "ammar@surface-go" = mkHomeConfig ./hosts/surface-go/home.nix;
+          "ammar@homeserver" = mkHomeConfig ./hosts/homeserver/home.nix;
 
           # Fallback configuration (if hostname doesn't match)
-          "ammar" = mkHomeConfig ./hosts/default/home.nix;
+          "ammar" = mkHomeConfig ./hosts/profiles/workstation/home.nix;
         };
 
       # Pre-commit hooks configuration
@@ -161,15 +177,15 @@
           # Security scanning
           ripsecrets.enable = true;
 
-          # Custom vulnix hook for vulnerability scanning
-          vulnix = {
-            enable = true;
-            name = "vulnix";
-            description = "Scan for security vulnerabilities in Nix dependencies";
-            entry = "${pkgs.vulnix}/bin/vulnix";
-            pass_filenames = false;
-            files = "flake\\.lock$";
-          };
+          # # Custom vulnix hook for vulnerability scanning
+          # vulnix = {
+          #   enable = true;
+          #   name = "vulnix";
+          #   description = "Scan for security vulnerabilities in Nix dependencies";
+          #   entry = "${pkgs.vulnix}/bin/vulnix --system";
+          #   pass_filenames = false;
+          #   files = "flake\\.lock$";
+          # };
 
           # Git hygiene
           check-merge-conflicts.enable = true;
