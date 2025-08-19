@@ -201,7 +201,20 @@
       vpn.enable = true; # Routes through VPN
       openFirewall = true;
       peerPort = 51413;
-      privateTrackers.disableDhtPex = true;
+
+      # Private tracker optimizations and cross-seed
+      privateTrackers = {
+        disableDhtPex = true; # Disable DHT/PEX for private trackers
+        cross-seed = {
+          enable = true;
+          indexIds = [ ]; # Will be populated with your Prowlarr indexer IDs after setup
+          extraSettings = {
+            delay = 20; # Wait 20 seconds before cross-seeding
+            port = 2468; # Cross-seed web UI port (http://10.27.27.11:2468)
+          };
+        };
+      };
+
       extraSettings = {
         # Use your existing download directories
         download-dir = "/mnt/storage/arr-data/torrents/downloads"; # Your existing complete dir
