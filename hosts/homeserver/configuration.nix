@@ -168,14 +168,179 @@
   nixarr = {
     enable = true;
     mediaDir = "/mnt/storage/arr-data/media";
+    stateDir = "/data/.state/nixarr"; # Fresh state directory
+
+    # VPN configuration for Transmission
+    vpn = {
+      enable = true;
+      wgConf = "/mnt/storage/arr-data/torrents/wireguard/wg0.conf"; # Your existing path
+    };
+
     jellyfin = {
       enable = true;
+      openFirewall = true;
     };
-    # prowlarr = {
-    #   enable = true;
-    #   stateDir = "/mnt/storage/arr-data/config/prowlarr";
-    # };
 
+    prowlarr = {
+      enable = true;
+      openFirewall = true;
+    };
+
+    radarr = {
+      enable = true;
+      openFirewall = true;
+    };
+
+    sonarr = {
+      enable = true;
+      openFirewall = true;
+    };
+
+    transmission = {
+      enable = true;
+      vpn.enable = true; # Routes through VPN
+      openFirewall = true;
+      peerPort = 51413;
+      privateTrackers.disableDhtPex = true;
+      extraSettings = {
+        # Use your existing download directories
+        download-dir = "/mnt/storage/arr-data/torrents/downloads"; # Your existing complete dir
+        incomplete-dir = "/mnt/storage/arr-data/torrents/temp"; # Your existing incomplete dir
+        incomplete-dir-enabled = true;
+        watch-dir-enabled = false;
+
+        # Seed settings for private tracker ratio
+        ratio-limit = 2;
+        ratio-limit-enabled = true;
+        idle-seeding-limit = 10080;
+        idle-seeding-limit-enabled = true;
+
+        # Performance settings
+        download-queue-size = 10;
+        peer-limit-global = 500;
+        peer-limit-per-torrent = 100;
+      };
+    };
+
+    # Autobrr for racing and ratio building
+    autobrr = {
+      enable = true;
+      openFirewall = true;
+
+      settings = {
+        checkForUpdates = false;
+        host = "0.0.0.0";
+        port = 7474;
+        logLevel = "INFO";
+      };
+    };
+
+    # Recyclarr for automatic quality configuration
+    recyclarr = {
+      enable = true;
+      schedule = "daily"; # Updates daily with latest TRaSH guides
+
+      configuration = {
+        sonarr = {
+          "sonarr" = {
+            base_url = "http://localhost:8989";
+            api_key = "!secret sonarr"; # Will be auto-generated
+
+            quality_definition = {
+              type = "series";
+            };
+
+            custom_formats = [
+              {
+                trash_ids = [
+                  # Unwanted formats
+                  "85c61753df5da1fb2aab6f2a47426b09" # BR-DISK
+                  "9c11cd3f07101cdba90a2d81cf0e56b4" # LQ
+                  "90cedc1fea7ea5d11298bebd3d1d3223" # EVO except WEB-DL
+                  "b17886cb4158d9fea189859409975758" # HDR10+ Boost
+                ];
+                quality_profiles = [
+                  { name = "HD-1080p"; }
+                  { name = "Ultra-HD"; }
+                ];
+              }
+            ];
+
+            release_profiles = [
+              {
+                trash_ids = [
+                  "76e060895c5b8a765c310933da0a5357" # Optionals
+                ];
+                filter = {
+                  include = [
+                    { name = "HD-1080p"; }
+                    { name = "Ultra-HD"; }
+                  ];
+                };
+              }
+            ];
+          };
+        };
+
+        radarr = {
+          "radarr" = {
+            base_url = "http://localhost:7878";
+            api_key = "!secret radarr"; # Will be auto-generated
+
+            quality_definition = {
+              type = "movie";
+            };
+
+            custom_formats = [
+              {
+                trash_ids = [
+                  # Audio formats
+                  "496f355514737f7d83bf7aa4d24f8169" # TrueHD Atmos
+                  "2f22d89048b01681dde8afe203bf2e95" # DTS X
+                  "417804f7f2c4308c1f4c5d380d4c4475" # ATMOS (undefined)
+                  "1af239278386be2919e1bcee0bde047e" # DD+ Atmos
+
+                  # HDR formats
+                  "e23edd2482476e595fb990b12e7c609c" # DV HDR10
+                  "58d6a88f13e2db7f5059c41047876f00" # DV
+                  "55d53828b9d81cbe20b02efd00aa0efd" # DV HLG
+                  "a3e19f8f627608af0211acd02bf89735" # DV SDR
+                  "e61e28db95d22bedcadf030b8f156d96" # HDR
+                  "2a4d9069cc1fe3242ff9bdaebed239bb" # HDR (undefined)
+                  "dfb86d5941bc9075d6af23b09c2aeecd" # HDR10
+                  "b974a6cd08c1066250f1f177d7aa1225" # HDR10+
+                  "9364dd386c9b4a1100dde8264690add7" # HLG
+                ];
+                quality_profiles = [
+                  {
+                    name = "Ultra-HD";
+                    score = 100;
+                  }
+                ];
+              }
+              {
+                trash_ids = [
+                  # Unwanted
+                  "ed38b889b31be83fda192888e2286d83" # BR-DISK
+                  "90a6f9a284dff5103f6346090e6280c8" # LQ
+                  "b8cd450cbfa689c0259a01d9e29ba3d6" # 3D
+                ];
+                quality_profiles = [
+                  {
+                    name = "HD-1080p";
+                    score = -10000;
+                  }
+                  {
+                    name = "Ultra-HD";
+                    score = -10000;
+                  }
+                ];
+              }
+            ];
+          };
+        };
+      };
+    };
   };
 
   # ACME/Let's Encrypt configuration
@@ -208,103 +373,6 @@
   # system.autoUpgrade = {
   #   enable = true;
   #   allowReboot = false; # Manual reboots for servers
-  # };
-
-  # SOPS configuration for secrets management
-  # sops = {
-  #   defaultSopsFile = ../../secrets/homeserver.yaml;
-  #   age = {
-  #     keyFile = "/var/lib/sops-nix/key.txt";
-  #     generateKey = false;
-  #   };
-  #   secrets = {
-  #     # Optional: Forgejo admin password (can set via web UI instead)
-  #     "forgejo/admin_password" = {
-  #       owner = "forgejo";
-  #       restartUnits = [ "forgejo.service" ];
-  #     };
-
-  #     # Mullvad VPN configuration (required if using VPN)
-  #     "mullvad/wireguard_private_key" = { };
-  #     "mullvad/wireguard_address" = { };
-  #     "mullvad/server_public_key" = { };
-  #     "mullvad/server_endpoint" = { };
-
-  #     # Optional: Home Assistant MQTT password (anonymous MQTT enabled by default)
-  #     # "homeassistant/mqtt_password" = {
-  #     #   owner = "homeassistant";
-  #     #   group = "homeassistant";
-  #     # };
-  #   };
-  # };
-
-  # Create WireGuard config from SOPS secrets if available
-  # systemd.services.nixarr-wireguard-config = {
-  #   description = "Generate WireGuard config for nixarr";
-  #   before = [ "nixarr.service" ];
-  #   wantedBy = [ "multi-user.target" ];
-  #   serviceConfig = {
-  #     Type = "oneshot";
-  #     RemainAfterExit = true;
-  #   };
-  #   script = ''
-  #     mkdir -p /var/lib/nixarr
-  #     cat > /var/lib/nixarr/wg0.conf <<EOF
-  #     [Interface]
-  #     PrivateKey = $(cat ${config.sops.secrets."mullvad/wireguard_private_key".path})
-  #     Address = $(cat ${config.sops.secrets."mullvad/wireguard_address".path})
-  #     DNS = 1.1.1.1
-
-  #     [Peer]
-  #     PublicKey = $(cat ${config.sops.secrets."mullvad/server_public_key".path})
-  #     AllowedIPs = 0.0.0.0/0, ::/0
-  #     Endpoint = $(cat ${config.sops.secrets."mullvad/server_endpoint".path})
-  #     EOF
-  #     chmod 600 /var/lib/nixarr/wg0.conf
-  #   '';
-  # };
-
-  # Nixarr configuration for media services
-  # nixarr = {
-  #   enable = true;
-
-  #   # Set media and state directories
-  #   mediaDir = "/mnt/storage2/arr-data/media";
-  #   stateDir = "/data/.state/nixarr"; # nixarr's default state location
-
-  #   # VPN configuration for torrents
-  #   vpn = {
-  #     enable = true;
-  #     wgConf = "/var/lib/nixarr/wg0.conf";
-  #   };
-
-  #   # Enable services (matching your current setup)
-  #   jellyfin = {
-  #     enable = true;
-  #     openFirewall = true;
-  #   };
-
-  #   radarr = {
-  #     enable = true;
-  #     openFirewall = true;
-  #   };
-
-  #   sonarr = {
-  #     enable = true;
-  #     openFirewall = true;
-  #   };
-
-  #   prowlarr = {
-  #     enable = true;
-  #     openFirewall = true;
-  #   };
-
-  #   transmission = {
-  #     enable = true;
-  #     vpn.enable = true;
-  #     openFirewall = true;
-  #     peerPort = 51413;
-  #   };
   # };
 
 }
