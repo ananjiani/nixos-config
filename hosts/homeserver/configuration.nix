@@ -13,6 +13,7 @@
     inputs.home-manager-unstable.nixosModules.home-manager
     # ../../modules/nixos/services/forgejo.nix
     ../../modules/nixos/utils.nix
+    ../../modules/nixos/ssh.nix
     # ../../modules/nixos/nvidia.nix # NVIDIA GPU support for WhisperX
     # Replaced by nixarr:
     # ../../modules/nixos/services/media.nix
@@ -71,14 +72,7 @@
 
   # Services configuration
   services = {
-    # Enable SSH for remote management
-    openssh = {
-      enable = true;
-      settings = {
-        PasswordAuthentication = false;
-        PermitRootLogin = "no";
-      };
-    };
+    # SSH is now configured via the ssh.nix module
 
     # Nginx reverse proxy with Let's Encrypt
     nginx = {
@@ -204,11 +198,8 @@
 
   # User configuration for VM testing
   users.users.root.initialPassword = "test";
-  users.users.ammar = {
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMoo8KQiLBJ6WrWmG0/6O8lww/v6ggPaLfv70/ksMZbD ammar.nanjiani@gmail.com"
-    ];
-  };
+  # SSH keys are now managed via the ssh.nix module
+  users.users.ammar = { };
 
   # Allow wheel group to use sudo without password (optional)
   security.sudo.wheelNeedsPassword = false;
