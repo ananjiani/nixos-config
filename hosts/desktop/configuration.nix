@@ -14,7 +14,9 @@
     ./samba.nix
     ../../modules/nixos/gaming.nix
     ../../modules/nixos/amd.nix
+    ../../modules/nixos/ssh.nix
   ];
+
   networking.hostName = "ammars-pc";
   environment.systemPackages = with pkgs; [ signal-desktop ];
 
