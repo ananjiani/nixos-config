@@ -13,6 +13,7 @@
     inputs.home-manager-unstable.nixosModules.home-manager
     # ../../modules/nixos/services/forgejo.nix
     ../../modules/nixos/utils.nix
+    ../../modules/nixos/ssh.nix
     # ../../modules/nixos/nvidia.nix # NVIDIA GPU support for WhisperX
     # Replaced by nixarr:
     # ../../modules/nixos/services/media.nix

@@ -21,7 +21,7 @@ _:
     # framework13 laptop
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP1SNOPjx46qrONmD552cAcRg5zgcs9gRwClv7ayZoY1 framework13"
 
-    # Your general key (possibly from desktop or older setup)
+    # desktop key
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMoo8KQiLBJ6WrWmG0/6O8lww/v6ggPaLfv70/ksMZbD ammar.nanjiani@gmail.com"
 
     # Desktop key will be added here after generation
