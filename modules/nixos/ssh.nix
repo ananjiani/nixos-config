@@ -24,6 +24,7 @@ _:
     # desktop key
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMoo8KQiLBJ6WrWmG0/6O8lww/v6ggPaLfv70/ksMZbD ammar.nanjiani@gmail.com"
 
-    # Desktop key will be added here after generation
+    # homeserver
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIASRuEYfCfFwqqIe3ef32mFK7kWMRgzZoTZrxg7B/0uL ammar@homeserver"
   ];
 }
