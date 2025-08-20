@@ -202,6 +202,11 @@
       openFirewall = true;
       peerPort = 51413;
 
+      # Allow access from local network
+      extraAllowedIps = [
+        "10.27.27.0/24" # Your local network subnet
+      ];
+
       # Private tracker optimizations and cross-seed
       privateTrackers = {
         disableDhtPex = true; # Disable DHT/PEX for private trackers
