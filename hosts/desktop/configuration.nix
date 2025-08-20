@@ -26,4 +26,10 @@
     packages = with pkgs; [ android-udev-rules ];
   };
 
+  services.sunshine = {
+    enable = true;
+    autoStart = true;
+    capSysAdmin = true;
+  };
+
 }
