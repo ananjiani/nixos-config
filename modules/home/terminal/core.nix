@@ -24,6 +24,9 @@
 
     packages =
       (with pkgs; [
+        # Terminal images
+        lsix
+        timg
         # Archive tools
         atool
         unrar
@@ -50,6 +53,7 @@
         ripgrep-all
         fd
         sshfs
+        lsof
       ])
       ++ (with pkgs-stable; [
         sops
