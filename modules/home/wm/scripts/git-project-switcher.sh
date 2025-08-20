@@ -70,13 +70,28 @@ get_session_name() {
 # Function to check if zellij session exists
 session_exists() {
     local session_name="$1"
-    zellij list-sessions 2>/dev/null | grep -q "^$session_name"
+    echo "DEBUG: Checking if session exists: $session_name" >&2
+    local sessions=$(zellij list-sessions 2>/dev/null)
+    echo "DEBUG: Available sessions:" >&2
+    echo "$sessions" >&2
+
+    # Check if session name exists at the start of a line (followed by space)
+    if echo "$sessions" | grep -q "^${session_name} "; then
+        echo "DEBUG: Session '$session_name' found!" >&2
+        return 0
+    else
+        echo "DEBUG: Session '$session_name' not found!" >&2
+        return 1
+    fi
 }
 
 # Function to create or attach to zellij session
 open_project() {
     local project_path="$1"
     local session_name=$(get_session_name "$project_path")
+
+    echo "DEBUG: Project path: $project_path" >&2
+    echo "DEBUG: Session name: $session_name" >&2
 
     # Check if directory exists
     if [[ ! -d "$project_path" ]]; then
@@ -88,11 +103,18 @@ open_project() {
     if session_exists "$session_name"; then
         # Attach to existing session
         echo -e "${GREEN}Attaching to existing session: $session_name${NC}"
-        exec foot -e zellij attach "$session_name"
+        echo "DEBUG: Running command: foot -e bash -c \"cd '$project_path' && zellij attach '$session_name'\"" >&2
+        # Log to a file for debugging
+        echo "$(date): Attempting to attach to session $session_name at path $project_path" >> /tmp/git-project-switcher.log
+        exec foot -e bash -c "cd '$project_path' && echo 'DEBUG: In foot terminal, pwd:' && pwd && echo 'DEBUG: Attempting zellij attach $session_name' && zellij attach '$session_name' || (echo 'DEBUG: Attach failed with exit code:' \$? && sleep 5)"
     else
         # Create new session
         echo -e "${GREEN}Creating new session: $session_name${NC}"
-        exec foot -e bash -c "cd '$project_path' && zellij -s '$session_name'"
+        echo "DEBUG: Running command: foot -e bash -c \"cd '$project_path' && zellij attach -c '$session_name'\"" >&2
+        # Log to a file for debugging
+        echo "$(date): Creating new session $session_name at path $project_path" >> /tmp/git-project-switcher.log
+        # Use 'attach -c' which creates if not exists, or attaches if it does
+        exec foot -e bash -c "cd '$project_path' && echo 'DEBUG: In foot terminal, pwd:' && pwd && echo 'DEBUG: Creating/attaching zellij session $session_name' && zellij attach -c '$session_name'"
     fi
 }
 
