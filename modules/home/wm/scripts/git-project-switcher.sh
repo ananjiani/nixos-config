@@ -12,11 +12,69 @@ SEARCH_PATHS=(
     "$HOME/dev"
 )
 
+# Cache configuration
+CACHE_DIR="$HOME/.cache/git-project-switcher"
+CACHE_FILE="$CACHE_DIR/repos.cache"
+CACHE_TTL=300  # 5 minutes in seconds
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+
+# Parse command line arguments
+FORCE_REFRESH=false
+USE_CACHE=true
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --refresh)
+            FORCE_REFRESH=true
+            shift
+            ;;
+        --no-cache)
+            USE_CACHE=false
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [--refresh] [--no-cache]"
+            exit 1
+            ;;
+    esac
+done
+
+# Cache management functions
+create_cache_dir() {
+    if [[ ! -d "$CACHE_DIR" ]]; then
+        mkdir -p "$CACHE_DIR"
+    fi
+}
+
+is_cache_valid() {
+    if [[ ! -f "$CACHE_FILE" ]]; then
+        return 1
+    fi
+
+    local cache_time=$(stat -c %Y "$CACHE_FILE" 2>/dev/null || echo "0")
+    local current_time=$(date +%s)
+    local age=$((current_time - cache_time))
+
+    [[ $age -lt $CACHE_TTL ]]
+}
+
+read_cache() {
+    if [[ -f "$CACHE_FILE" ]]; then
+        cat "$CACHE_FILE"
+    fi
+}
+
+write_cache() {
+    local repos="$1"
+    create_cache_dir
+    echo "$repos" > "$CACHE_FILE"
+}
 
 # Function to find all git repositories
 find_git_repos() {
@@ -57,6 +115,129 @@ find_git_repos() {
 
     # Sort by modification time (newest first), remove timestamps, and remove duplicates
     echo "$repos" | sort -t'|' -k1 -rn | cut -d'|' -f2- | awk '!seen[$0]++' | grep -v '^$'
+}
+
+# Function to find all git repositories (optimized version with mod time)
+find_git_repos_fresh() {
+    local all_repos=""
+    local pids=()
+    local temp_files=()
+
+    # Create temporary files for parallel processing
+    for i in "${!SEARCH_PATHS[@]}"; do
+        temp_files[i]=$(mktemp)
+    done
+
+    # Start parallel fd processes for each search path
+    for i in "${!SEARCH_PATHS[@]}"; do
+        search_path="${SEARCH_PATHS[i]}"
+        temp_file="${temp_files[i]}"
+
+        if [[ -d "$search_path" ]]; then
+            (
+                # Use fd with better exclusion patterns
+                fd -H -t d '^\.git$' "$search_path" \
+                    --exclude '*/.cache/*' \
+                    --exclude '*/.npm/*' \
+                    --exclude '*/.yarn/*' \
+                    --exclude '*/node_modules/*' \
+                    --exclude '*/.vscode/*' \
+                    --exclude '*/.idea/*' \
+                    2>/dev/null | \
+                while IFS= read -r git_dir; do
+                    project_dir=$(dirname "$git_dir")
+                    project_name=$(basename "$project_dir")
+
+                    # Check if any part of the path contains a dot directory we want to exclude
+                    skip=false
+                    IFS='/' read -ra PATH_PARTS <<< "$project_dir"
+                    for part in "${PATH_PARTS[@]}"; do
+                        # If it's a dot directory and NOT .dotfiles or .claude, skip it
+                        if [[ "$part" == .* ]] && [[ "$part" != ".dotfiles" ]] && [[ "$part" != ".claude" ]]; then
+                            skip=true
+                            break
+                        fi
+                    done
+
+                    if [[ "$skip" == false && -n "$project_dir" && "$project_dir" != "." ]]; then
+                        # Keep modification time for sorting
+                        last_modified=$(stat -c %Y "$project_dir" 2>/dev/null || echo "0")
+                        echo "$last_modified|$project_name|$project_dir"
+                    fi
+                done > "$temp_file"
+            ) &
+            pids[i]=$!
+        else
+            # Create empty temp file for non-existent paths
+            touch "${temp_files[i]}"
+        fi
+    done
+
+    # Wait for all background processes and collect results
+    for i in "${!pids[@]}"; do
+        wait "${pids[i]}"
+        if [[ -f "${temp_files[i]}" ]]; then
+            all_repos+=$(cat "${temp_files[i]}")$'\n'
+        fi
+        rm -f "${temp_files[i]}"
+    done
+
+    # Sort by modification time (newest first), remove timestamps, remove duplicates, limit to 200
+    echo "$all_repos" | grep -v '^$' | sort -t'|' -k1 -rn | cut -d'|' -f2- | awk '!seen[$0]++' | head -200
+}
+
+# Background cache refresh function
+refresh_cache_background() {
+    # Run in background to avoid blocking UI
+    (
+        local repos
+        if command -v mktemp >/dev/null 2>&1; then
+            repos=$(find_git_repos_fresh)
+        else
+            repos=$(find_git_repos)
+        fi
+        write_cache "$repos"
+    ) &
+}
+
+# Function to get repositories (with caching and background refresh)
+get_git_repos() {
+    # Check if cache exists and is valid
+    if [[ "$USE_CACHE" == true && "$FORCE_REFRESH" == false ]] && is_cache_valid; then
+        read_cache
+        return 0
+    fi
+
+    # Check if cache exists but is stale (between 5-15 minutes old)
+    if [[ "$USE_CACHE" == true && "$FORCE_REFRESH" == false && -f "$CACHE_FILE" ]]; then
+        local cache_time=$(stat -c %Y "$CACHE_FILE" 2>/dev/null || echo "0")
+        local current_time=$(date +%s)
+        local age=$((current_time - cache_time))
+
+        # If cache is stale but not too old (5-15 minutes), use it but refresh in background
+        if [[ $age -ge $CACHE_TTL && $age -lt $((CACHE_TTL * 3)) ]]; then
+            # Start background refresh
+            refresh_cache_background
+            # Return stale cache immediately
+            read_cache
+            return 0
+        fi
+    fi
+
+    # Refresh repositories synchronously (cache is too old or doesn't exist)
+    local repos
+    if command -v mktemp >/dev/null 2>&1; then
+        repos=$(find_git_repos_fresh)
+    else
+        repos=$(find_git_repos)
+    fi
+
+    # Write to cache if caching is enabled
+    if [[ "$USE_CACHE" == true ]]; then
+        write_cache "$repos"
+    fi
+
+    echo "$repos"
 }
 
 # Function to get zellij session name from project path
@@ -120,10 +301,15 @@ open_project() {
 
 # Main function
 main() {
-    echo "Finding git repositories..."
+    # Show status message based on caching
+    if [[ "$USE_CACHE" == true && "$FORCE_REFRESH" == false ]] && is_cache_valid; then
+        echo "Loading git repositories from cache..."
+    else
+        echo "Finding git repositories..."
+    fi
 
-    # Find all git repositories
-    repos=$(find_git_repos)
+    # Get all git repositories (with caching)
+    repos=$(get_git_repos)
 
     # Check if any repositories were found
     if [[ -z "$repos" ]]; then
