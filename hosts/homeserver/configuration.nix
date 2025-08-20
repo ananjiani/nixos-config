@@ -204,7 +204,7 @@
 
     transmission = {
       enable = true;
-      vpn.enable = false; # Temporarily disabled due to networking issue
+      vpn.enable = true;
       openFirewall = true;
       peerPort = 51413;
 
