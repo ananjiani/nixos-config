@@ -2,6 +2,7 @@
 
 # Launch Microsoft Edge with Outlook and Teams on weekdays only, before 5pm
 # Uses Mullvad split tunneling and opens in workspace 4
+# Also launches work project switcher for workspace 6
 
 # Check if today is a weekday (Monday=1, Sunday=7)
 day_of_week=$(date +%u)
@@ -13,4 +14,9 @@ current_hour=$(date +%H)
 if [ "$day_of_week" -le 5 ] && [ "$current_hour" -lt 17 ]; then
     # Launch Edge with Outlook and Teams in workspace 4 using Mullvad exclude
     hyprctl dispatch exec "[workspace 4 silent] mullvad-exclude flatpak run com.microsoft.Edge https://outlook.office365.com https://teams.microsoft.com"
+
+    # Launch work project switcher (will open in workspace 6)
+    # Get the directory of this script to find the work-project-switcher.sh
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    "$SCRIPT_DIR/work-project-switcher.sh"
 fi
