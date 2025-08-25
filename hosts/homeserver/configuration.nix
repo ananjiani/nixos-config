@@ -11,14 +11,9 @@
     ./disk-config.nix
     ./storage.nix
     inputs.home-manager-unstable.nixosModules.home-manager
-    # ../../modules/nixos/services/forgejo.nix
     ../../modules/nixos/utils.nix
     ../../modules/nixos/ssh.nix
-    # ../../modules/nixos/nvidia.nix # NVIDIA GPU support for WhisperX
-    # Replaced by nixarr:
-    # ../../modules/nixos/services/media.nix
-    # ../../modules/nixos/services/vpn-torrents.nix
-    # ../../modules/nixos/services/home-assistant.nix
+    ../../modules/nixos/nvidia.nix # NVIDIA GPU support for WhisperX
   ];
 
   # Set hostname
@@ -41,6 +36,7 @@
   virtualisation.docker.enable = true;
 
   # System packages (with CUDA support enabled)
+  environment.systemPackages = with pkgs-stable; [ whisperx ];
   # environment.systemPackages =
   #   with pkgs;
   #   let
