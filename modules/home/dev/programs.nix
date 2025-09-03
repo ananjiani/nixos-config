@@ -12,4 +12,8 @@
     pgadmin4-desktopmode
     inputs.claude-desktop.packages.${pkgs.system}.claude-desktop-with-fhs
   ];
+
+  programs.codex = {
+    enable = true;
+  };
 }
