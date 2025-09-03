@@ -17,8 +17,11 @@
   };
 
   wayland.windowManager.hyprland.settings = {
+    # experimental = {
+    #   xx_color_management_v4 = true;
+    # };
     monitor = [
-      "DP-2,5120x1440@240,0x1440,1,vrr,2"
+      "DP-2,5120x1440@240,0x1440,1,vrr,2," # bitdepth, 10, cm, hdr, sdrbrightness, 1.2, sdrsaturation, 1.1"
       "DP-1,3840x2160@60,2560x0,1.5"
       "HDMI-A-1,2560x1440@60,0x0,1"
     ];
