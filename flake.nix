@@ -198,9 +198,37 @@
       };
 
       # Development shell with pre-commit hooks
-      devShells.${system}.default = pkgs.mkShell {
-        inherit (self.checks.${system}.pre-commit-check) shellHook;
-        buildInputs = self.checks.${system}.pre-commit-check.enabledPackages;
-      };
+      devShells.${system}.default =
+        let
+          # Build ruler CLI tool
+          ruler = pkgs.buildNpmPackage rec {
+            pname = "ruler";
+            version = "0.3.6";
+
+            src = pkgs.fetchFromGitHub {
+              owner = "intellectronica";
+              repo = "ruler";
+              rev = "v${version}";
+              hash = "sha256-yNzxQ1KeBNeMwqSVbbtolXev920KbsZ0DVWSUjqlfj8=";
+            };
+
+            npmDepsHash = "sha256-XRcVHK45qBUVXsrHSGS88aJ8XMRR+5eQ+jgwBEmgnc8=";
+
+            # The package has a prepare script that runs the build
+            npmBuildScript = "build";
+
+            meta = {
+              description = "Centralise Your AI Coding Assistant Instructions";
+              homepage = "https://github.com/intellectronica/ruler";
+              license = lib.licenses.mit;
+            };
+          };
+        in
+        pkgs.mkShell {
+          inherit (self.checks.${system}.pre-commit-check) shellHook;
+          buildInputs = self.checks.${system}.pre-commit-check.enabledPackages ++ [
+            ruler
+          ];
+        };
     };
 }
