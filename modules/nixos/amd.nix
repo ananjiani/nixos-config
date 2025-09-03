@@ -16,12 +16,12 @@
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
-    extraPackages = with pkgs-stable; [
-      rocm-opencl-icd
-      rocm-opencl-runtime
-      #amdvlk
-      #driversi686Linux.amdvlk
-    ];
+    # extraPackages = with pkgs-stable; [
+    #   rocm-opencl-icd
+    #   rocm-opencl-runtime
+    #   #amdvlk
+    #   #driversi686Linux.amdvlk
+    # ];
   };
 
   environment.systemPackages = with pkgs; [ corectrl ];
