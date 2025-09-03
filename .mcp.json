@@ -1,12 +1,31 @@
 {
-    "mcpServers": {
-        "context7": {
-            "command": "npx",
-            "args": ["-y", "@upstash/context7-mcp"]
-        },
-        "nixos": {
-            "command": "uvx",
-            "args": ["mcp-nixos"]
-        }
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@context7/mcp-server"
+      ],
+      "type": "stdio"
+    },
+    "nixos": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-nixos"
+      ],
+      "env": {
+        "NIXOS_CHANNEL": "unstable"
+      },
+      "type": "stdio"
+    },
+    "sequential_thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "type": "stdio"
     }
+  }
 }

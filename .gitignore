@@ -14,3 +14,28 @@ hosts/homeserver/secrets.json
 # Backups
 portainer-backup*
 backups/
+
+# Ruler generated agent-specific files (managed by .ruler/)
+# These are auto-generated from .ruler/AGENTS.md
+# CLAUDE.md and AGENTS.md are tracked as they're output targets
+.github/copilot-instructions.md
+.cursorrules
+.aider/
+.windsurf/
+.cline/
+.codeium/
+.continue/
+
+
+# START Ruler Generated Files
+/.codex/config.json
+/.codex/config.json.bak
+/.codex/config.toml
+/.codex/config.toml.bak
+/.mcp.json
+/.mcp.json.bak
+/AGENTS.md
+/AGENTS.md.bak
+/CLAUDE.md
+/CLAUDE.md.bak
+# END Ruler Generated Files

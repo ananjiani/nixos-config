@@ -1,0 +1,48 @@
+# Ruler Configuration for NixOS Dotfiles Repository
+# See https://ai.intellectronica.net/ruler for documentation.
+
+# Default agents to run when --agents is not specified
+default_agents = ["claude", "codex"]
+
+# Enable nested rule loading from nested .ruler directories
+# When enabled, ruler will search for and process .ruler directories throughout the project hierarchy
+nested = false
+
+# --- Global MCP Server Configuration ---
+[mcp]
+# Enable/disable MCP propagation globally
+enabled = true
+# Global merge strategy: 'merge' or 'overwrite'
+merge_strategy = "merge"
+
+# --- Global .gitignore Configuration ---
+[gitignore]
+# Enable/disable automatic .gitignore updates
+enabled = true
+
+# --- Agent Specific Configurations ---
+
+[agents.claude]
+enabled = true
+output_path = "CLAUDE.md"
+
+[agents.codex]
+enabled = true
+output_path = "AGENTS.md"
+
+# --- MCP Servers ---
+# NixOS MCP server for package and option search
+[mcp_servers.nixos]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-nixos"]
+env = { NIXOS_CHANNEL = "unstable" }
+
+# Sequential thinking MCP for complex analysis
+[mcp_servers.sequential_thinking]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+
+# Context7 for library documentation
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@context7/mcp-server"]
