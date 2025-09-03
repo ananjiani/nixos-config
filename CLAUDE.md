@@ -1,6 +1,10 @@
-# CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+<!-- Source: .ruler/AGENTS.md -->
+
+# NixOS Dotfiles Repository - AI Agent Instructions
+
+This file provides guidance to AI coding assistants when working with code in this repository.
 
 ## Repository Overview
 
@@ -131,5 +135,11 @@ nix flake check --all-systems
 - Document module options and their purpose
 - **Context and MCP Best Practices**:
   - Use context7 for modular and context-aware Nix configurations
-  - Leverage NixOS MCP (Master Control Program) for advanced system management and deployment strategies
+  - Leverage NixOS MCP for advanced system management and deployment strategies
 - Do not bypass the precommit hooks
+
+## Important Instructions
+- Do what has been asked; nothing more, nothing less
+- NEVER create files unless they're absolutely necessary for achieving your goal
+- ALWAYS prefer editing an existing file to creating a new one
+- NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested
