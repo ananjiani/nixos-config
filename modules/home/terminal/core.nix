@@ -164,6 +164,7 @@
         init.defaultBranch = "main";
         credential.helper = "store";
         pull.rebase = false;
+        push.autoSetupRemote = true;
       };
     };
     lazygit.enable = true;
