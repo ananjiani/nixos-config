@@ -167,16 +167,16 @@
     stateDir = "/data/.state/nixarr"; # Fresh state directory
 
     # VPN configuration for Transmission
-    vpn = {
-      enable = true;
-      wgConf = "/mnt/storage/arr-data/torrents/wireguard/wg0.conf"; # Your existing path
-      accessibleFrom = [
-        "10.27.27.0/24" # Allow access from your local network
-        "192.168.1.0/24" # Default ranges
-        "192.168.0.0/24"
-        "127.0.0.1"
-      ];
-    };
+    # vpn = {
+    #   enable = true;
+    #   wgConf = "/mnt/storage/arr-data/torrents/wireguard/wg0.conf"; # Your existing path
+    #   accessibleFrom = [
+    #     "10.27.27.0/24" # Allow access from your local network
+    #     "192.168.1.0/24" # Default ranges
+    #     "192.168.0.0/24"
+    #     "127.0.0.1"
+    #   ];
+    # };
 
     jellyfin = {
       enable = true;
