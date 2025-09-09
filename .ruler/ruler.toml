@@ -31,18 +31,3 @@ enabled = true
 output_path = "AGENTS.md"
 
 # --- MCP Servers ---
-# NixOS MCP server for package and option search
-[mcp_servers.nixos]
-command = "npx"
-args = ["-y", "@modelcontextprotocol/server-nixos"]
-env = { NIXOS_CHANNEL = "unstable" }
-
-# Sequential thinking MCP for complex analysis
-[mcp_servers.sequential_thinking]
-command = "npx"
-args = ["-y", "@modelcontextprotocol/server-sequential-thinking"]
-
-# Context7 for library documentation
-[mcp_servers.context7]
-command = "npx"
-args = ["-y", "@context7/mcp-server"]
