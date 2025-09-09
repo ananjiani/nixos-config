@@ -200,7 +200,7 @@
 
     transmission = {
       enable = true;
-      vpn.enable = true;
+      # vpn.enable = true;
       openFirewall = true;
       peerPort = 51413;
 
