@@ -2,6 +2,7 @@
 {
   inputs,
   pkgs-stable,
+  pkgs,
   ...
 }:
 
@@ -36,7 +37,9 @@
   virtualisation.docker.enable = true;
 
   # System packages (with CUDA support enabled)
-  environment.systemPackages = with pkgs-stable; [ whisperx ];
+  environment.systemPackages = with pkgs; [
+    whisperx
+  ];
   # environment.systemPackages =
   #   with pkgs;
   #   let
