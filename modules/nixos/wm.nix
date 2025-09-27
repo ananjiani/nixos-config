@@ -53,7 +53,6 @@
   environment.systemPackages = with pkgs; [
     libreoffice
     imagemagick
-    firefox
     remmina
     wl-clipboard
     pavucontrol
