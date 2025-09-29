@@ -14,6 +14,7 @@
     ../../../modules/home/editors/emacs.nix
     # ../../../modules/home/editors/lvim.nix
     #../../../modules/home/editors/vscode.nix
+    ../../../modules/home/firefox.nix
     ../../../modules/home/wm/wm.nix
     ../../../modules/home/writing.nix
     ../../../modules/home/programs.nix
