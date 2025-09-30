@@ -19,7 +19,7 @@
     nix-std.url = "github:chessai/nix-std";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     claude-desktop = {
-      url = "github:k3d3/claude-desktop-linux-flake";
+      url = "github:k3d3/claude-desktop-linux-flake/276188d7200d2840d75729524b4950eadcfcdd7d";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     claude-code.url = "github:sadjow/claude-code-nix";
