@@ -1,6 +1,5 @@
 {
   pkgs,
-  inputs,
   ...
 }:
 
@@ -10,10 +9,16 @@
     aider-chat
     gh
     pgadmin4-desktopmode
-    inputs.claude-desktop.packages.${pkgs.system}.claude-desktop-with-fhs
+    warp-terminal
+    # inputs.claude-desktop.packages.${pkgs.system}.claude-desktop-with-fhs # Temporarily disabled - hash mismatch
   ];
 
-  programs.codex = {
-    enable = true;
+  programs = {
+    codex = {
+      enable = true;
+    };
+    opencode = {
+      enable = true;
+    };
   };
 }
