@@ -9,7 +9,6 @@
     aider-chat
     gh
     pgadmin4-desktopmode
-    warp-terminal
     # inputs.claude-desktop.packages.${pkgs.system}.claude-desktop-with-fhs # Temporarily disabled - hash mismatch
   ];
 
