@@ -24,10 +24,10 @@
     fish = {
       interactiveShellInit = ''
         # Emacs vterm integration
-        if set -q INSIDE_EMACS
-            # Use default (emacs-style) keybindings when inside Emacs
-            set -g fish_key_bindings fish_default_key_bindings
-        end
+        # if set -q INSIDE_EMACS
+        #     # Use default (emacs-style) keybindings when inside Emacs
+        #     set -g fish_key_bindings fish_default_key_bindings
+        # end
         functions --copy fish_prompt vterm_old_fish_prompt
       '';
       functions = {

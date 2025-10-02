@@ -15,6 +15,8 @@
     ../../modules/nixos/gaming.nix
     ../../modules/nixos/amd.nix
     ../../modules/nixos/ssh.nix
+    ../../modules/nixos/bluetooth.nix
+    ../../modules/nixos/android.nix
   ];
 
   networking.hostName = "ammars-pc";
