@@ -16,8 +16,8 @@
     codex = {
       enable = true;
     };
-    opencode = {
-      enable = true;
-    };
+    # opencode = {
+    #   enable = true;
+    # };
   };
 }

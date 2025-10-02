@@ -13,10 +13,10 @@ let
       owner = "zed-industries";
       repo = "claude-code-acp";
       rev = "refs/heads/main";
-      hash = "sha256-m6DLqPMCzOj7/D3dkc+XFOy3iqZq4wRm8M200RKjfSA=";
+      hash = "sha256-4nPaBtz25fzWE8vmsdJnKpQBFSkaII/wUQnYuL1Bpow=";
     };
 
-    npmDepsHash = "sha256-OX/LukdQFqltWmBO5Ta6N33yT2fuc66cE1cWMkq/8p0=";
+    npmDepsHash = "sha256-bynVJfx/BZ+BvjUl1hFzcJW1uA6x2eXZlXtaGWzHOl8=";
 
     npmBuildScript = "build";
   };

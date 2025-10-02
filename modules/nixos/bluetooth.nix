@@ -10,6 +10,25 @@
     bluetooth = {
       enable = true;
       powerOnBoot = true;
+      settings = {
+        General = {
+          Enable = "Source,Sink,Media,Socket";
+          Experimental = true;
+          FastConnectable = true;
+        };
+        Policy = {
+          AutoEnable = true;
+        };
+        LE = {
+          MinConnectionInterval = 6;
+          MaxConnectionInterval = 12;
+        };
+      };
+      input = {
+        General = {
+          ClassicBondedOnly = false;
+        };
+      };
     };
   };
 
