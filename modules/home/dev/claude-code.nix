@@ -4,9 +4,29 @@
   ...
 }:
 
+let
+  claude-code-acp = pkgs.buildNpmPackage rec {
+    pname = "claude-code-acp";
+    version = "0.1.0";
+
+    src = pkgs.fetchFromGitHub {
+      owner = "zed-industries";
+      repo = "claude-code-acp";
+      rev = "refs/heads/main";
+      hash = "sha256-m6DLqPMCzOj7/D3dkc+XFOy3iqZq4wRm8M200RKjfSA=";
+    };
+
+    npmDepsHash = "sha256-OX/LukdQFqltWmBO5Ta6N33yT2fuc66cE1cWMkq/8p0=";
+
+    npmBuildScript = "build";
+  };
+in
 {
   home = {
-    packages = with pkgs; [ claude-code ];
+    packages = with pkgs; [
+      claude-code
+      claude-code-acp
+    ];
 
     sessionPath = [ "$HOME/.local/bin" ];
 
