@@ -16,6 +16,8 @@
     neofetch
     git
     vim
+    openssl
+    tree
   ];
 
   programs = {
