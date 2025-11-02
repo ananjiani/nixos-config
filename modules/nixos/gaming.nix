@@ -35,6 +35,6 @@
   environment.systemPackages = with pkgs; [
     steamtinkerlaunch
     yad
-    lutris
+    #lutris
   ];
 }

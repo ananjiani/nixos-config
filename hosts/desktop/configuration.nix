@@ -25,7 +25,6 @@
   virtualisation.docker.enable = true;
   services.udev = {
     enable = true;
-    packages = with pkgs; [ android-udev-rules ];
   };
 
   services.sunshine = {
