@@ -142,9 +142,9 @@
     git = {
       enable = true;
       lfs.enable = true;
-      userName = "Ammar Nanjiani";
-      userEmail = "ammar.nanjiani@gmail.com";
-      extraConfig = {
+      settings = {
+        user.name = "Ammar Nanjiani";
+        user.email = "ammar.nanjiani@gmail.com";
         init.defaultBranch = "main";
         credential.helper = "store";
         pull.rebase = false;
