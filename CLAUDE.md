@@ -1,7 +1,3 @@
-
-
-<!-- Source: .ruler/AGENTS.md -->
-
 # NixOS Dotfiles Repository - AI Agent Instructions
 
 This file provides guidance to AI coding assistants when working with code in this repository.
