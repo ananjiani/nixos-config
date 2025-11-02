@@ -39,17 +39,17 @@
 
         # Security tools
         gnupg
-        pinentry
+        pinentry-curses
         rage
 
         # Text processing
         jq
         pandoc
-        poppler_utils
+        poppler-utils
 
         # System tools
         tealdeer
-        du-dust
+        dust
         duf
         ripgrep-all
         fd
