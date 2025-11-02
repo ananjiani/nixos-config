@@ -33,6 +33,8 @@ _:
     ];
   };
 
+  programs.mosh.enable = true;
+
   # Centralized authorized keys management
   # These keys can SSH INTO any machine that imports this module
   users.users.ammar.openssh.authorizedKeys.keys = [
