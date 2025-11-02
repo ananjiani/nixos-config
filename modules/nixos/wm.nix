@@ -1,5 +1,6 @@
 {
   pkgs,
+  pkgs-stable,
   ...
 }:
 
@@ -50,7 +51,7 @@
 
   # Enable touchpad support (enabled default in most desktopManager).
 
-  environment.systemPackages = with pkgs; [
+  environment.systemPackages = with pkgs-stable; [
     libreoffice
     imagemagick
     remmina
