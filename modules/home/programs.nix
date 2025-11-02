@@ -1,5 +1,6 @@
 {
   pkgs,
+  pkgs-stable,
   inputs,
   ...
 }:
@@ -24,7 +25,7 @@
     element-desktop
     xournalpp
     openai-whisper
-    whisperx
+    pkgs-stable.whisperx
     uv
     inputs.whisper-dictation.packages.${pkgs.system}.default
     youtube-music

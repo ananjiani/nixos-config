@@ -1,0 +1,14 @@
+[mcp_servers.nixos]
+command = "npx"
+args = [ "-y", "@modelcontextprotocol/server-nixos" ]
+
+  [mcp_servers.nixos.env]
+  NIXOS_CHANNEL = "unstable"
+
+[mcp_servers.sequential_thinking]
+command = "npx"
+args = [ "-y", "@modelcontextprotocol/server-sequential-thinking" ]
+
+[mcp_servers.context7]
+command = "npx"
+args = [ "-y", "@context7/mcp-server" ]
