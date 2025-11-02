@@ -4,28 +4,27 @@
   ...
 }:
 
-let
-  claude-code-acp = pkgs.buildNpmPackage rec {
-    pname = "claude-code-acp";
-    version = "0.1.0";
+# let
+#   claude-code-acp = pkgs.buildNpmPackage rec {
+#     pname = "claude-code-acp";
+#     version = "0.1.0";
 
-    src = pkgs.fetchFromGitHub {
-      owner = "zed-industries";
-      repo = "claude-code-acp";
-      rev = "refs/heads/main";
-      hash = "sha256-4nPaBtz25fzWE8vmsdJnKpQBFSkaII/wUQnYuL1Bpow=";
-    };
+#     src = pkgs.fetchFromGitHub {
+#       owner = "zed-industries";
+#       repo = "claude-code-acp";
+#       rev = "refs/heads/main";
+#       hash = "sha256-4nPaBtz25fzWE8vmsdJnKpQBFSkaII/wUQnYuL1Bpow=";
+#     };
 
-    npmDepsHash = "sha256-bynVJfx/BZ+BvjUl1hFzcJW1uA6x2eXZlXtaGWzHOl8=";
+#     npmDepsHash = "sha256-bynVJfx/BZ+BvjUl1hFzcJW1uA6x2eXZlXtaGWzHOl8=";
 
-    npmBuildScript = "build";
-  };
-in
+#     npmBuildScript = "build";
+#   };
+# in
 {
   home = {
     packages = with pkgs; [
       claude-code
-      claude-code-acp
     ];
 
     sessionPath = [ "$HOME/.local/bin" ];
