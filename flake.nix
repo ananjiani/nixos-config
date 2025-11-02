@@ -36,10 +36,6 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
-    ruler = {
-      url = "github:intellectronica/ruler";
-      flake = false;
-    };
   };
 
   outputs =
@@ -202,32 +198,9 @@
       };
 
       # Development shell with pre-commit hooks
-      devShells.${system}.default =
-        let
-          # Build ruler CLI tool (auto-updating from flake input)
-          ruler-pkg = pkgs.buildNpmPackage {
-            pname = "ruler";
-            version = "latest";
-
-            src = inputs.ruler;
-
-            npmDepsHash = "sha256-XRcVHK45qBUVXsrHSGS88aJ8XMRR+5eQ+jgwBEmgnc8=";
-
-            # The package has a prepare script that runs the build
-            npmBuildScript = "build";
-
-            meta = {
-              description = "Centralise Your AI Coding Assistant Instructions";
-              homepage = "https://github.com/intellectronica/ruler";
-              license = lib.licenses.mit;
-            };
-          };
-        in
-        pkgs.mkShell {
-          inherit (self.checks.${system}.pre-commit-check) shellHook;
-          buildInputs = self.checks.${system}.pre-commit-check.enabledPackages ++ [
-            ruler-pkg
-          ];
-        };
+      devShells.${system}.default = pkgs.mkShell {
+        inherit (self.checks.${system}.pre-commit-check) shellHook;
+        buildInputs = self.checks.${system}.pre-commit-check.enabledPackages;
+      };
     };
 }
