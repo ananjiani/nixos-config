@@ -19,6 +19,12 @@ output "dns_records" {
       proxied = cloudflare_record.media.proxied
       id      = cloudflare_record.media.id
     }
+    sji_api = {
+      name    = cloudflare_record.sji_api.hostname
+      content = cloudflare_record.sji_api.content
+      proxied = cloudflare_record.sji_api.proxied
+      id      = cloudflare_record.sji_api.id
+    }
   }
 }
 
