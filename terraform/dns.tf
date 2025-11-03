@@ -35,3 +35,14 @@ resource "cloudflare_record" "media" {
   ttl     = 1 # Auto when proxied
   comment = "Jellyfin media server - managed by Terraform"
 }
+
+# Spatial Jobs Index API subdomain A record (VPS)
+resource "cloudflare_record" "sji_api" {
+  zone_id = local.zone_id
+  name    = "sji-api"
+  content = "159.223.139.52"
+  type    = "A"
+  proxied = false
+  ttl     = 300
+  comment = "Spatial Jobs Index API (VPS) - managed by Terraform"
+}
