@@ -1,0 +1,17 @@
+{
+    "cakewallet": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "cakewallet",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-86G4t4EfZzAFxhCAGmcjGnp4A0N/ZpR71LKkKk+qZUc=",
+            "type": "url",
+            "url": "https://github.com/cake-tech/cake_wallet/releases/download/v5.5.2/Cake_Wallet_v5.5.2_Linux.tar.xz"
+        },
+        "version": "v5.5.2"
+    }
+}

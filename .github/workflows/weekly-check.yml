@@ -127,11 +127,84 @@ jobs:
               });
             }
 
+  update-sources:
+    name: Update Package Sources
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: [check-flake, build-hosts]  # Only run if builds pass
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update package sources with nvfetcher
+        id: update-sources
+        run: |
+          echo "📦 Checking for package source updates..."
+          
+          # Store current generated file
+          if [ -f "_sources/generated.nix" ]; then
+            cp _sources/generated.nix _sources/generated.nix.old
+          fi
+          
+          # Run nvfetcher to update sources
+          nix develop --command nvfetcher
+          
+          # Check if there were changes
+          if [ -f "_sources/generated.nix.old" ]; then
+            if git diff --quiet _sources/generated.nix; then
+              echo "✅ All package sources are up to date!"
+              echo "has_updates=false" >> $GITHUB_OUTPUT
+            else
+              echo "📝 Package source updates found!"
+              echo "has_updates=true" >> $GITHUB_OUTPUT
+              
+              # Generate changelog
+              echo "## Package Source Updates" > sources_update_message.md
+              echo "" >> sources_update_message.md
+              echo "nvfetcher has detected updates for the following packages:" >> sources_update_message.md
+              echo "" >> sources_update_message.md
+              
+              # Show what changed
+              git diff _sources/generated.nix | head -50 >> sources_update_message.md
+              echo "" >> sources_update_message.md
+              echo "This is an automated update of package sources. Please review the changes and ensure all systems still build correctly." >> sources_update_message.md
+            fi
+          else
+            echo "📝 Initial package sources generated"
+            echo "has_updates=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and create PR for source updates
+        if: steps.update-sources.outputs.has_updates == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "sources: Update package sources via nvfetcher"
+          title: "Package sources update"
+          body-path: sources_update_message.md
+          branch: sources-update-${{ github.run_number }}
+          delete-branch: true
+          labels: |
+            dependencies
+            automated
+            package-sources
+          assignees: ananjiani
+
   update-flakes:
     name: Check and Update Flakes
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    needs: [check-flake, build-hosts]  # Only run if builds pass
+    needs: [check-flake, build-hosts, update-sources]  # Only run if builds pass
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
