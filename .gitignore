@@ -14,3 +14,6 @@ hosts/homeserver/secrets.json
 # Backups
 portainer-backup*
 backups/
+
+# Generated sources (managed by nvfetcher)
+_sources/generated.nix

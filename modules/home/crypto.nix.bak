@@ -1,0 +1,122 @@
+{ pkgs, lib, config, ... }:
+
+let
+  sources = import ../../_sources/generated.nix {
+    inherit (pkgs) fetchgit fetchurl fetchFromGitHub dockerTools;
+  };
+  
+  cakewallet = pkgs.stdenv.mkDerivation rec {
+    pname = "cakewallet";
+    version = lib.strings.removePrefix "v" sources.cakewallet.version;
+    src = sources.cakewallet.src;
+    
+    # Build from source using Flutter
+    nativeBuildInputs = with pkgs; [
+      flutter
+      cmake
+      ninja
+      pkg-config
+      makeWrapper
+    ];
+    
+    buildInputs = with pkgs; [
+      gtk3
+      gdk-pixbuf
+      pango
+      cairo
+      freetype
+      fontconfig
+      xorg.libX11
+      xorg.libXcursor
+      xorg.libXext
+      xorg.libXinerama
+      xorg.libXi
+      xorg.libXrandr
+      xorg.libXrender
+      xorg.libXtst
+      xorg.libXxf86vm
+      libGL
+      openssl
+    ];
+    
+    # Flutter build configuration
+    configurePhase = ''
+      runHook preConfigure
+      
+      # Get Flutter dependencies
+      flutter pub get
+      
+      # Set up Linux desktop build
+      flutter config --enable-linux-desktop
+      
+      runHook postConfigure
+    '';
+    
+    buildPhase = ''
+      runHook preBuild
+      
+      # Build Linux desktop application
+      flutter build linux --release
+      
+      runHook postBuild
+    '';
+    
+    installPhase = ''
+      runHook preInstall
+      
+      # Find the build output directory
+      build_dir=$(find build -type d -name "linux" -o -name "x64" | head -n1)
+      if [ -z "$build_dir" ]; then
+        build_dir="build/linux/x64/release/bundle"
+      fi
+      
+      # Install the application
+      if [ -f "$build_dir/cake_wallet" ]; then
+        mkdir -p $out/bin
+        install -Dm755 "$build_dir/cake_wallet" $out/bin/cakewallet
+        
+        # Create wrapper for proper environment
+        makeWrapper $out/bin/cakewallet $out/bin/cakewallet-wrapped \
+          --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath buildInputs}"
+      else
+        echo "Error: Could not find built executable"
+        exit 1
+      fi
+      
+      # Install desktop file if it exists
+      if [ -f "$build_dir/cake_wallet.desktop" ]; then
+        mkdir -p $out/share/applications
+        install -Dm644 "$build_dir/cake_wallet.desktop" $out/share/applications/cakewallet.desktop
+      fi
+      
+      # Install icons if they exist
+      for icon_path in $(find "$build_dir" -name "*.png" -o -name "*.svg" 2>/dev/null); do
+        icon_name=$(basename "$icon_path")
+        install -Dm644 "$icon_path" "$out/share/icons/hicolor/256x256/apps/$icon_name"
+      done
+      
+      runHook postInstall
+    '';
+    
+    meta = with lib; {
+      description = "Cake Wallet - A secure and user-friendly cryptocurrency wallet";
+      homepage = "https://cakewallet.com/";
+      license = licenses.mit;
+      platforms = platforms.linux;
+      maintainers = with maintainers; [ ];
+    };
+  };
+in
+{
+  options.crypto = {
+    enable = lib.mkEnableOption "crypto applications";
+    
+    cakewallet = {
+      enable = lib.mkEnableOption "Cake Wallet";
+    };
+  };
+  
+  config = lib.mkIf config.crypto.enable {
+    home.packages = lib.optionals config.crypto.cakewallet.enable [ cakewallet ];
+  };
+}
