@@ -131,6 +131,12 @@ _:
                   description = "Command to retrieve password (e.g., pass show email/proton-bridge)";
                   example = "pass show email/proton-bridge";
                 };
+
+                primary = lib.mkOption {
+                  type = lib.types.bool;
+                  default = false;
+                  description = "Whether this is the primary email account";
+                };
               };
             }
           );
@@ -197,7 +203,7 @@ _:
 
             # Configure email accounts
             accounts.email.accounts = lib.mapAttrs (_name: accountCfg: {
-              inherit (accountCfg) address realName;
+              inherit (accountCfg) address realName primary;
               userName = accountCfg.address;
 
               passwordCommand = lib.mkIf (accountCfg.passwordCommand != null) accountCfg.passwordCommand;
