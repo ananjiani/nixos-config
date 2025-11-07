@@ -124,6 +124,13 @@ _:
                   default = [ "default" ];
                   description = "Thunderbird profiles to add this account to";
                 };
+
+                passwordCommand = lib.mkOption {
+                  type = lib.types.nullOr lib.types.str;
+                  default = null;
+                  description = "Command to retrieve password (e.g., pass show email/proton-bridge)";
+                  example = "pass show email/proton-bridge";
+                };
               };
             }
           );
@@ -138,6 +145,7 @@ _:
                 imap.port = 1143;
                 smtp.host = "127.0.0.1";
                 smtp.port = 1025;
+                passwordCommand = "pass show email/proton-bridge";
               };
             }
           '';
@@ -191,6 +199,8 @@ _:
             accounts.email.accounts = lib.mapAttrs (_name: accountCfg: {
               inherit (accountCfg) address realName;
               userName = accountCfg.address;
+
+              passwordCommand = lib.mkIf (accountCfg.passwordCommand != null) accountCfg.passwordCommand;
 
               imap = {
                 inherit (accountCfg.imap) host port;
