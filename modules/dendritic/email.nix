@@ -226,6 +226,12 @@ _:
           (lib.mkIf config.email.protonBridge.enable {
             home.packages = [ pkgs.protonmail-bridge ];
 
+            # Bridge uses pass for vault encryption (not for Thunderbird passwords)
+            programs.password-store = {
+              enable = true;
+              package = pkgs.pass;
+            };
+
             # Auto-start Proton Mail Bridge via systemd user service
             systemd.user.services.protonmail-bridge = lib.mkIf config.email.protonBridge.autostart {
               Unit = {
