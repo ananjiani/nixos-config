@@ -166,6 +166,21 @@
         "type": "github"
       }
     },
+    "flake-aspects": {
+      "locked": {
+        "lastModified": 1762465224,
+        "narHash": "sha256-jfXLTwngKXwFOCVfCupHGcCw/OIpgy5lMYIF8KPfMN8=",
+        "owner": "vic",
+        "repo": "flake-aspects",
+        "rev": "4cbae79bc642311f45c211f9c20d20226544b6f9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "vic",
+        "repo": "flake-aspects",
+        "type": "github"
+      }
+    },
     "flake-compat": {
       "flake": false,
       "locked": {
@@ -729,6 +744,21 @@
         "type": "github"
       }
     },
+    "import-tree": {
+      "locked": {
+        "lastModified": 1762327901,
+        "narHash": "sha256-AJ96FNj50DU0bTyIzAPkPOjCZTHqjURVjok8qoXvmqM=",
+        "owner": "vic",
+        "repo": "import-tree",
+        "rev": "90fa129798be99cde036b78658e89475710966a1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "vic",
+        "repo": "import-tree",
+        "type": "github"
+      }
+    },
     "nix-colors": {
       "inputs": {
         "base16-schemes": "base16-schemes",
@@ -1123,10 +1153,12 @@
         "claude-desktop": "claude-desktop",
         "disko": "disko",
         "emacs-overlay": "emacs-overlay",
+        "flake-aspects": "flake-aspects",
         "flake-parts": "flake-parts",
         "git-hooks": "git-hooks",
         "home-manager": "home-manager",
         "home-manager-unstable": "home-manager-unstable",
+        "import-tree": "import-tree",
         "nix-colors": "nix-colors",
         "nix-std": "nix-std",
         "nix-vscode-extensions": "nix-vscode-extensions",
