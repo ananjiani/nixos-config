@@ -125,13 +125,6 @@ _:
                   description = "Thunderbird profiles to add this account to";
                 };
 
-                passwordCommand = lib.mkOption {
-                  type = lib.types.nullOr lib.types.str;
-                  default = null;
-                  description = "Command to retrieve password (e.g., pass show email/proton-bridge)";
-                  example = "pass show email/proton-bridge";
-                };
-
                 primary = lib.mkOption {
                   type = lib.types.bool;
                   default = false;
@@ -147,11 +140,11 @@ _:
               proton = {
                 address = "user@proton.me";
                 realName = "John Doe";
+                primary = true;
                 imap.host = "127.0.0.1";
                 imap.port = 1143;
                 smtp.host = "127.0.0.1";
                 smtp.port = 1025;
-                passwordCommand = "pass show email/proton-bridge";
               };
             }
           '';
@@ -206,8 +199,6 @@ _:
               inherit (accountCfg) address realName primary;
               userName = accountCfg.address;
 
-              passwordCommand = lib.mkIf (accountCfg.passwordCommand != null) accountCfg.passwordCommand;
-
               imap = {
                 inherit (accountCfg.imap) host port;
                 tls = {
@@ -235,13 +226,7 @@ _:
           (lib.mkIf config.email.protonBridge.enable {
             home.packages = [ pkgs.protonmail-bridge ];
 
-            # Enable pass for password management (better for non-GNOME environments)
-            programs.password-store = {
-              enable = true;
-              package = pkgs.pass;
-            };
-
-            # Optional: Auto-start Proton Mail Bridge via systemd user service
+            # Auto-start Proton Mail Bridge via systemd user service
             systemd.user.services.protonmail-bridge = lib.mkIf config.email.protonBridge.autostart {
               Unit = {
                 Description = "Proton Mail Bridge";
