@@ -164,6 +164,14 @@
                     { }
                 )
 
+                # Import dendritic email module
+                (
+                  if self.modules ? homeManager && self.modules.homeManager ? email then
+                    self.modules.homeManager.email
+                  else
+                    { }
+                )
+
                 # Load host-specific home configuration
                 hostPath
               ];
