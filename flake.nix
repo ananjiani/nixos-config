@@ -44,6 +44,8 @@
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs-unstable";
     };
+    import-tree.url = "github:vic/import-tree";
+    flake-aspects.url = "github:vic/flake-aspects";
   };
 
   outputs =
@@ -77,11 +79,12 @@
       specialArgs = { inherit inputs pkgs-stable; };
       extraSpecialArgs = { inherit inputs std pkgs-stable; };
 
-      # Dendritic modules using flake-parts
+      # Dendritic modules using flake-parts with import-tree and flake-aspects
       dendriticFlake = flake-parts.lib.mkFlake { inherit inputs; } {
         systems = [ system ];
         imports = [
-          ./modules/dendritic/crypto.nix
+          inputs.flake-aspects.flakeModule
+          (inputs.import-tree ./modules/dendritic)
         ];
       };
     in
