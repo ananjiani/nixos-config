@@ -40,6 +40,10 @@
       url = "github:berberman/nvfetcher";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+      inputs.nixpkgs-lib.follows = "nixpkgs-unstable";
+    };
   };
 
   outputs =
@@ -49,6 +53,7 @@
       nixpkgs-unstable,
       home-manager-unstable,
       nix-std,
+      flake-parts,
       ...
     }@inputs:
     let
@@ -71,8 +76,18 @@
       # Special arguments passed to all configurations
       specialArgs = { inherit inputs pkgs-stable; };
       extraSpecialArgs = { inherit inputs std pkgs-stable; };
+
+      # Dendritic modules using flake-parts
+      dendriticFlake = flake-parts.lib.mkFlake { inherit inputs; } {
+        systems = [ system ];
+        imports = [
+          ./modules/dendritic/crypto.nix
+        ];
+      };
     in
     {
+      # Expose dendritic modules for consumption
+      modules = dendriticFlake.modules or { };
       # Set nixPath for compatibility
       nix.nixPath = [ "nixpkgs=${nixpkgs-unstable}" ];
 
@@ -140,6 +155,14 @@
                     inputs.claude-code.overlays.default
                   ];
                 }
+
+                # Import dendritic crypto module
+                (
+                  if self.modules ? homeManager && self.modules.homeManager ? crypto then
+                    self.modules.homeManager.crypto
+                  else
+                    { }
+                )
 
                 # Load host-specific home configuration
                 hostPath

@@ -232,6 +232,26 @@
     },
     "flake-parts": {
       "inputs": {
+        "nixpkgs-lib": [
+          "nixpkgs-unstable"
+        ]
+      },
+      "locked": {
+        "lastModified": 1762440070,
+        "narHash": "sha256-xxdepIcb39UJ94+YydGP221rjnpkDZUlykKuF54PsqI=",
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "rev": "26d05891e14c88eb4a5d5bee659c0db5afb609d8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "type": "github"
+      }
+    },
+    "flake-parts_2": {
+      "inputs": {
         "nixpkgs-lib": "nixpkgs-lib_2"
       },
       "locked": {
@@ -1103,6 +1123,7 @@
         "claude-desktop": "claude-desktop",
         "disko": "disko",
         "emacs-overlay": "emacs-overlay",
+        "flake-parts": "flake-parts",
         "git-hooks": "git-hooks",
         "home-manager": "home-manager",
         "home-manager-unstable": "home-manager-unstable",
@@ -1340,7 +1361,7 @@
       "inputs": {
         "crane": "crane",
         "devshell": "devshell",
-        "flake-parts": "flake-parts",
+        "flake-parts": "flake-parts_2",
         "home-manager": "home-manager_2",
         "hyprland": "hyprland",
         "nixpkgs": "nixpkgs_11",
