@@ -1,7 +1,7 @@
 # Dendritic Crypto Module
 # This module follows the dendritic pattern - aspect-oriented configuration
 # that can span multiple configuration classes (homeManager, nixos, darwin, etc.)
-{ inputs, ... }:
+_:
 
 let
   # Source information (updated by nvfetcher via CI)
@@ -18,7 +18,7 @@ let
     pkgs:
     pkgs.stdenv.mkDerivation {
       pname = "cakewallet";
-      version = sources.cakewallet.version;
+      inherit (sources.cakewallet) version;
 
       src = pkgs.fetchurl {
         inherit (sources.cakewallet) url sha256;
@@ -60,17 +60,17 @@ let
 
       installPhase = ''
         runHook preInstall
-        
+
         # Find the extracted directory (it has version in name)
         CAKE_DIR=$(find . -maxdepth 1 -type d -name "Cake_Wallet_*" | head -n1)
-        
+
         # Install application files
         mkdir -p $out/opt/cakewallet
         cp -r "$CAKE_DIR"/* $out/opt/cakewallet/
-        
+
         # Make binary executable
         chmod +x $out/opt/cakewallet/cake_wallet
-        
+
         # Create wrapper script
         mkdir -p $out/bin
         makeWrapper $out/opt/cakewallet/cake_wallet $out/bin/cake-wallet \
@@ -103,7 +103,7 @@ let
             )
           }" \
           --set GDK_BACKEND x11
-        
+
         # Create desktop entry
         mkdir -p $out/share/applications
         cat > $out/share/applications/cake-wallet.desktop <<EOF
@@ -116,14 +116,14 @@ let
         Type=Application
         Categories=Office;Finance;
         EOF
-        
+
         # Extract and install icon if available
         mkdir -p $out/share/icons/hicolor/256x256/apps
         if [ -f "$out/opt/cakewallet/data/flutter_assets/assets/images/app_logo.png" ]; then
           cp "$out/opt/cakewallet/data/flutter_assets/assets/images/app_logo.png" \
              $out/share/icons/hicolor/256x256/apps/cake-wallet.png
         fi
-        
+
         runHook postInstall
       '';
 
