@@ -33,6 +33,7 @@
       proton = {
         address = "ammar.nanjiani@pm.me";
         realName = "Ammar Nanjiani";
+        primary = true;
         passwordCommand = "pass show email/proton-bridge";
         imap = {
           host = "127.0.0.1";
