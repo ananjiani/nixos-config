@@ -29,6 +29,22 @@
       enable = true;
       autostart = true;
     };
+    accounts = {
+      proton = {
+        address = "ammar.nanjiani@pm.me";
+        realName = "Ammar Nanjiani";
+        passwordCommand = "pass show email/proton-bridge";
+        imap = {
+          host = "127.0.0.1";
+          port = 1143;
+        };
+        smtp = {
+          host = "127.0.0.1";
+          port = 1025;
+        };
+        thunderbirdProfiles = [ "default" ];
+      };
+    };
   };
 
   wayland.windowManager.hyprland.settings = {
