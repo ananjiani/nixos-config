@@ -7,7 +7,7 @@
   imports = [
     ../profiles/workstation/home.nix
     ../../modules/home/gaming.nix
-    ../../modules/home/crypto.nix
+    # crypto.nix is now imported via dendritic pattern in flake.nix
     ../../modules/home/config/wallpaper.nix
     ../../modules/home/config/sops.nix
   ];
