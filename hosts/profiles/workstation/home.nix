@@ -21,6 +21,7 @@
     ../../../modules/home/config/wallpaper.nix
     ../../../modules/home/terminal/gui-integration.nix
     ../../../modules/home/terminal/emulator/foot.nix
+    ../../../modules/home/terminal/emulator/ghostty.nix
     ../../../modules/home/terminal/programs/lf.nix
     ../../../modules/home/terminal/programs/atuin.nix
     # ../../../modules/home/terminal/programs/iamb.nix
