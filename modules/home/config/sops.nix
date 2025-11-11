@@ -15,6 +15,10 @@
     defaultSecretsMountPoint = "/run/user/1000/secrets.d";
     secrets.atuin_key.sopsFile = ../../../secrets/secrets.yaml;
     secrets.hf_token.sopsFile = ../../../secrets/secrets.yaml;
+    secrets.proton_bridge_password = {
+      sopsFile = ../../../secrets/secrets.yaml;
+      mode = "0400";
+    };
   };
 
   home.activation.setupEtc = config.lib.dag.entryAfter [ "writeBoundary" ] ''
