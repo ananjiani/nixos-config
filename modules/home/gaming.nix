@@ -5,7 +5,7 @@
 
 {
   home.packages = with pkgs; [
-    webcord
+    vesktop
     r2modman
     gpu-screen-recorder
     gpu-screen-recorder-gtk
