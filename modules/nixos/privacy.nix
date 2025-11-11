@@ -7,8 +7,9 @@
 
   environment.systemPackages = with pkgs; [
     tor-browser
+    mullvad-browser
     nitrokey-app2
-    bitwarden
+    bitwarden-desktop
     bitwarden-cli
   ];
   services.mullvad-vpn = {
