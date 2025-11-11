@@ -46,6 +46,10 @@
     };
     import-tree.url = "github:vic/import-tree";
     flake-aspects.url = "github:vic/flake-aspects";
+    thunderbird-user-js = {
+      url = "github:HorlogeSkynet/thunderbird-user.js";
+      flake = false;
+    };
   };
 
   outputs =

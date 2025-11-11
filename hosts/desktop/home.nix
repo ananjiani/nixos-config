@@ -1,5 +1,6 @@
 {
   lib,
+  config,
   ...
 }:
 
@@ -24,7 +25,25 @@
 
   email = {
     enable = true;
-    thunderbird.enable = true;
+    thunderbird = {
+      enable = true;
+      
+      # Enable ALL hardened settings from thunderbird-user.js
+      useHardenedUserJs = true;
+      
+      # Auto-start and minimize to tray (handled by birdtray)
+      autostart = true;
+      
+      # Enable Birdtray for system tray integration on Linux
+      birdtray.enable = true;
+      
+      userPrefs = {
+        # ProtonMail Bridge certificate was accepted during setup
+        # Can now use strict pinning (2) for better security
+        # Note: If you have issues, temporarily set to 1
+        "security.cert_pinning.enforcement_level" = 2;
+      };
+    };
     protonBridge = {
       enable = true;
       autostart = true;
@@ -43,6 +62,8 @@
           port = 1025;
         };
         thunderbirdProfiles = [ "default" ];
+        # Password from SOPS - the ProtonMail Bridge generated password
+        passwordFile = config.sops.secrets.proton_bridge_password.path;
       };
     };
   };

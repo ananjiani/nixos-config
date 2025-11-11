@@ -1,7 +1,7 @@
 # Dendritic Email Module
 # This module follows the dendritic pattern - aspect-oriented configuration
 # that can span multiple configuration classes (homeManager, nixos, darwin, etc.)
-_:
+{ inputs, ... }:
 
 {
   # Home Manager configuration (user-level email applications)
@@ -51,6 +51,70 @@ _:
             );
             default = { };
             description = "Thunderbird profiles configuration";
+          };
+
+          useHardenedUserJs = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = ''
+              Apply hardened privacy and security settings from thunderbird-user.js.
+              
+              This applies ALL ~260 settings from:
+              https://github.com/HorlogeSkynet/thunderbird-user.js
+              
+              These settings are very strict and disable many features for
+              maximum privacy and security. You can override specific settings
+              via userPrefs.
+              
+              Note: This disables JavaScript, remote content, and many other
+              features. Review the settings before enabling.
+            '';
+          };
+
+          userPrefs = lib.mkOption {
+            type = lib.types.attrs;
+            default = { };
+            description = ''
+              User preferences to apply to Thunderbird default profile.
+              These settings override both the default configuration and
+              the hardened user.js settings (if enabled).
+              
+              For hardening options, see:
+              https://github.com/HorlogeSkynet/thunderbird-user.js
+            '';
+            example = lib.literalExpression ''
+              {
+                # Privacy hardening
+                "privacy.donottrackheader.enabled" = true;
+                "mailnews.message_display.disable_remote_image" = true;
+                
+                # ProtonMail Bridge (relax cert pinning)
+                "security.cert_pinning.enforcement_level" = 1;
+              }
+            '';
+          };
+
+          autostart = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "Auto-start Thunderbird on login (minimized to system tray)";
+          };
+
+          birdtray = {
+            enable = lib.mkEnableOption "Birdtray system tray integration for Thunderbird" // {
+              description = ''
+                Enable Birdtray to add system tray functionality to Thunderbird on Linux.
+                
+                Birdtray provides:
+                - System tray icon that shows unread email count
+                - Minimize to tray functionality (window doesn't close on X)
+                - New email notifications
+                - Click tray icon to restore Thunderbird window
+                
+                Note: This automatically enables thunderbird.autostart since Birdtray
+                requires Thunderbird to be running.
+              '';
+            };
           };
         };
 
@@ -130,6 +194,24 @@ _:
                   default = false;
                   description = "Whether this is the primary email account";
                 };
+
+                passwordFile = lib.mkOption {
+                  type = lib.types.nullOr lib.types.path;
+                  default = null;
+                  description = ''
+                    Path to a file containing the email account password.
+                    
+                    This is typically used with SOPS or other secret management systems.
+                    The file should contain only the password (no newlines).
+                    
+                    For ProtonMail Bridge, this is the Bridge-generated password,
+                    NOT your ProtonMail account password.
+                    
+                    Example with SOPS:
+                      passwordFile = config.sops.secrets."email/proton-bridge-password".path;
+                  '';
+                  example = "/run/secrets/email-password";
+                };
               };
             }
           );
@@ -162,64 +244,150 @@ _:
       config = lib.mkIf config.email.enable (
         lib.mkMerge [
           # Thunderbird configuration
-          (lib.mkIf config.email.thunderbird.enable {
-            programs.thunderbird = {
-              enable = true;
+          (lib.mkIf config.email.thunderbird.enable (
+            let
+              # Parse thunderbird-user.js if hardening is enabled
+              hardenedSettings = 
+                if config.email.thunderbird.useHardenedUserJs then
+                  let
+                    userJsContent = builtins.readFile "${inputs.thunderbird-user-js}/user.js";
+                  in
+                  import ../../lib/parse-thunderbird-userjs.nix {
+                    inherit lib userJsContent;
+                  }
+                else
+                  {};
+              
+              # Default base settings
+              baseSettings = {
+                # Privacy settings
+                "privacy.donottrackheader.enabled" = true;
 
-              inherit (config.email.thunderbird) settings;
+                # Disable auto-update (managed by Nix)
+                "app.update.auto" = false;
 
-              profiles = lib.mkMerge [
-                # User-defined profiles
-                config.email.thunderbird.profiles
+                # Enable inline spell check
+                "mail.spellcheck.inline" = true;
 
-                # Default profile if none specified
-                (lib.mkIf (config.email.thunderbird.profiles == { }) {
-                  default = {
-                    isDefault = true;
-                    settings = {
-                      # Privacy settings
-                      "privacy.donottrackheader.enabled" = true;
-
-                      # Disable auto-update (managed by Nix)
-                      "app.update.auto" = false;
-
-                      # Enable inline spell check
-                      "mail.spellcheck.inline" = true;
-
-                      # Auto-enable extensions
-                      "extensions.autoDisableScopes" = 0;
-                    };
-                  };
-                })
-              ];
-            };
-
-            # Configure email accounts
-            accounts.email.accounts = lib.mapAttrs (_name: accountCfg: {
-              inherit (accountCfg) address realName primary;
-              userName = accountCfg.address;
-
-              imap = {
-                inherit (accountCfg.imap) host port;
-                tls = {
-                  enable = true;
-                  useStartTls = true;
-                };
+                # Auto-enable extensions
+                "extensions.autoDisableScopes" = 0;
               };
-
-              smtp = {
-                inherit (accountCfg.smtp) host port;
-                tls = {
-                  enable = true;
-                  useStartTls = true;
-                };
-              };
-
-              thunderbird = {
+              
+              # Merge: base settings < hardened settings < user overrides
+              finalSettings = baseSettings // hardenedSettings // config.email.thunderbird.userPrefs;
+            in
+            {
+              programs.thunderbird = {
                 enable = true;
-                profiles = accountCfg.thunderbirdProfiles;
+
+                inherit (config.email.thunderbird) settings;
+
+                profiles = lib.mkMerge [
+                  # User-defined profiles
+                  config.email.thunderbird.profiles
+
+                  # Default profile if none specified
+                  (lib.mkIf (config.email.thunderbird.profiles == { }) {
+                    default = {
+                      isDefault = true;
+                      settings = finalSettings;
+                    };
+                  })
+                ];
               };
-            }) config.email.accounts;
+
+              # Configure email accounts
+              accounts.email.accounts = lib.mapAttrs (_name: accountCfg: {
+                inherit (accountCfg) address realName primary;
+                userName = accountCfg.address;
+
+                # Add passwordFile if specified
+                passwordCommand = lib.mkIf (accountCfg.passwordFile != null) 
+                  "cat ${accountCfg.passwordFile}";
+
+                imap = {
+                  inherit (accountCfg.imap) host port;
+                  tls = {
+                    enable = true;
+                    useStartTls = true;
+                  };
+                };
+
+                smtp = {
+                  inherit (accountCfg.smtp) host port;
+                  tls = {
+                    enable = true;
+                    useStartTls = true;
+                  };
+                };
+
+                thunderbird = {
+                  enable = true;
+                  profiles = accountCfg.thunderbirdProfiles;
+                };
+              }) config.email.accounts;
+            }
+          ))
+
+          # Thunderbird autostart configuration
+          (lib.mkIf config.email.thunderbird.autostart {
+            systemd.user.services.thunderbird = {
+              Unit = {
+                Description = "Thunderbird Email Client";
+                After = [ "graphical-session.target" ];
+                PartOf = [ "graphical-session.target" ];
+              };
+
+              Service = {
+                Type = "exec";
+                ExecStart = "${pkgs.thunderbird}/bin/thunderbird";
+                Restart = "on-failure";
+                RestartSec = "5s";
+                # Don't restart if user closes Thunderbird normally
+                RestartPreventExitStatus = "0";
+              };
+
+              Install = {
+                WantedBy = [ "graphical-session.target" ];
+              };
+            };
+          })
+
+          # Birdtray system tray integration
+          (lib.mkIf config.email.thunderbird.birdtray.enable {
+            # Install Birdtray package
+            home.packages = [ pkgs.birdtray ];
+
+            # Birdtray requires Thunderbird to be running
+            # Force enable autostart if not already enabled
+            email.thunderbird.autostart = lib.mkForce true;
+
+            # Birdtray systemd service
+            systemd.user.services.birdtray = {
+              Unit = {
+                Description = "Birdtray - Thunderbird System Tray Integration";
+                Documentation = "https://github.com/gyunaev/birdtray";
+                After = [ 
+                  "graphical-session.target" 
+                  "thunderbird.service" 
+                ];
+                Requires = [ "thunderbird.service" ];
+                PartOf = [ "graphical-session.target" ];
+              };
+
+              Service = {
+                Type = "exec";
+                ExecStart = "${pkgs.birdtray}/bin/birdtray";
+                Restart = "on-failure";
+                RestartSec = "5s";
+                # Don't restart if user closes Birdtray normally
+                RestartPreventExitStatus = "0";
+              };
+
+              Install = {
+                WantedBy = [ "graphical-session.target" ];
+              };
+            };
           })
 
           # Proton Mail Bridge configuration
