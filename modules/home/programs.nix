@@ -22,7 +22,6 @@
     cmatrix
     ungoogled-chromium
     google-chrome
-    element-desktop
     xournalpp
     openai-whisper
     pkgs-stable.whisperx
@@ -31,5 +30,14 @@
     youtube-music
     playerctl
   ];
+
+  services = {
+    kdeconnect = {
+      enable = true;
+      indicator = true;
+    };
+    etesync-dav.enable = true;
+  };
+  # programs.element-desktop.enable = true;
 
 }

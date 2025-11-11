@@ -23,6 +23,7 @@
   programs = {
     fish.enable = true;
     nix-ld.enable = true;
+    kdeconnect.enable = true;
     # Enable ydotool for input automation
     # ydotool = {
     #   enable = true;
