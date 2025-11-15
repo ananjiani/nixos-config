@@ -23,20 +23,22 @@
     cakewallet.enable = true;
   };
 
+  droid.enable = true;
+
   email = {
     enable = true;
     thunderbird = {
       enable = true;
-      
+
       # Enable ALL hardened settings from thunderbird-user.js
       useHardenedUserJs = true;
-      
+
       # Auto-start and minimize to tray (handled by birdtray)
       autostart = true;
-      
+
       # Enable Birdtray for system tray integration on Linux
       birdtray.enable = true;
-      
+
       userPrefs = {
         # ProtonMail Bridge certificate was accepted during setup
         # Can now use strict pinning (2) for better security
