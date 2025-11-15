@@ -23,8 +23,6 @@
     cakewallet.enable = true;
   };
 
-  droid.enable = true;
-
   email = {
     enable = true;
     thunderbird = {
