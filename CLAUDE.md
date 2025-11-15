@@ -13,6 +13,11 @@ This is a NixOS and Home Manager dotfiles repository that manages system configu
 - **Unified Theming**: Consistent colors and styles across applications
 - **CI/CD Automation**: GitHub Actions for validation and automated updates
 - **Pre-commit Hooks**: Automatic formatting and linting with git-hooks.nix
+- **Dendritic Modules**: Aspect-oriented configuration using flake-parts and import-tree in `modules/dendritic/`
+
+## ⚠️ CRITICAL: New Files Must Be Git-Staged
+
+**Nix flakes only see git-tracked files.** Always run `git add <file>` immediately after creating any new `.nix` file, otherwise Nix will not see it and you'll get "option does not exist" or "module not found" errors.
 
 ## Common Commands
 

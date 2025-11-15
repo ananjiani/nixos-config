@@ -20,7 +20,7 @@
     obs-studio-plugins.obs-vkcapture
     libva-utils
     cmatrix
-    ungoogled-chromium
+    # ungoogled-chromium Commented out because it takes one million years to build
     google-chrome
     xournalpp
     openai-whisper

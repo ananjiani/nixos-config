@@ -50,6 +50,7 @@
       url = "github:HorlogeSkynet/thunderbird-user.js";
       flake = false;
     };
+    wrappers.url = "github:Lassulus/wrappers";
   };
 
   outputs =
@@ -175,6 +176,14 @@
                 (
                   if self.modules ? homeManager && self.modules.homeManager ? email then
                     self.modules.homeManager.email
+                  else
+                    { }
+                )
+
+                # Import dendritic droid module
+                (
+                  if self.modules ? homeManager && self.modules.homeManager ? droid then
+                    self.modules.homeManager.droid
                   else
                     { }
                 )
