@@ -4,8 +4,11 @@
 }:
 
 {
+  home.sessionVariables = {
+    DXVK_HDR = "1";
+  };
+
   home.packages = with pkgs; [
-    vesktop
     # r2modman takes forever to build and i'm not using it anyway
     gpu-screen-recorder
     gpu-screen-recorder-gtk
@@ -15,5 +18,29 @@
 
   programs = {
     mangohud.enable = true;
+    vesktop = {
+      enable = true;
+      settings = {
+        discordBranch = "stable";
+        transparencyOption = "none";
+        tray = true;
+        autoStartMinimized = true;
+        hardwareAcceleration = true;
+        minimizeToTray = true;
+      };
+      vencord.settings = {
+        useQuickCss = true;
+        plugins = {
+          ClearURLs.enable = true;
+          SilentTyping.enable = true;
+          VoiceChatDoubleClick.enable = true;
+          WebKeybinds.enable = true;
+          QuickReply.enable = true;
+          NoTypingAnimation.enable = true;
+          MessageLogger.enable = true;
+          BetterFolders.enable = true;
+        };
+      };
+    };
   };
 }

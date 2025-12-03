@@ -29,6 +29,7 @@
     inputs.whisper-dictation.packages.${pkgs.system}.default
     youtube-music
     playerctl
+    qbittorrent
   ];
 
   services = {
