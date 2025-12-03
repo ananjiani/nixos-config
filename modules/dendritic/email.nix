@@ -58,14 +58,14 @@
             default = false;
             description = ''
               Apply hardened privacy and security settings from thunderbird-user.js.
-              
+
               This applies ALL ~260 settings from:
               https://github.com/HorlogeSkynet/thunderbird-user.js
-              
+
               These settings are very strict and disable many features for
               maximum privacy and security. You can override specific settings
               via userPrefs.
-              
+
               Note: This disables JavaScript, remote content, and many other
               features. Review the settings before enabling.
             '';
@@ -78,7 +78,7 @@
               User preferences to apply to Thunderbird default profile.
               These settings override both the default configuration and
               the hardened user.js settings (if enabled).
-              
+
               For hardening options, see:
               https://github.com/HorlogeSkynet/thunderbird-user.js
             '';
@@ -87,7 +87,7 @@
                 # Privacy hardening
                 "privacy.donottrackheader.enabled" = true;
                 "mailnews.message_display.disable_remote_image" = true;
-                
+
                 # ProtonMail Bridge (relax cert pinning)
                 "security.cert_pinning.enforcement_level" = 1;
               }
@@ -104,13 +104,13 @@
             enable = lib.mkEnableOption "Birdtray system tray integration for Thunderbird" // {
               description = ''
                 Enable Birdtray to add system tray functionality to Thunderbird on Linux.
-                
+
                 Birdtray provides:
                 - System tray icon that shows unread email count
                 - Minimize to tray functionality (window doesn't close on X)
                 - New email notifications
                 - Click tray icon to restore Thunderbird window
-                
+
                 Note: This automatically enables thunderbird.autostart since Birdtray
                 requires Thunderbird to be running.
               '';
@@ -200,13 +200,13 @@
                   default = null;
                   description = ''
                     Path to a file containing the email account password.
-                    
+
                     This is typically used with SOPS or other secret management systems.
                     The file should contain only the password (no newlines).
-                    
+
                     For ProtonMail Bridge, this is the Bridge-generated password,
                     NOT your ProtonMail account password.
-                    
+
                     Example with SOPS:
                       passwordFile = config.sops.secrets."email/proton-bridge-password".path;
                   '';
@@ -247,7 +247,7 @@
           (lib.mkIf config.email.thunderbird.enable (
             let
               # Parse thunderbird-user.js if hardening is enabled
-              hardenedSettings = 
+              hardenedSettings =
                 if config.email.thunderbird.useHardenedUserJs then
                   let
                     userJsContent = builtins.readFile "${inputs.thunderbird-user-js}/user.js";
@@ -256,8 +256,8 @@
                     inherit lib userJsContent;
                   }
                 else
-                  {};
-              
+                  { };
+
               # Default base settings
               baseSettings = {
                 # Privacy settings
@@ -272,7 +272,7 @@
                 # Auto-enable extensions
                 "extensions.autoDisableScopes" = 0;
               };
-              
+
               # Merge: base settings < hardened settings < user overrides
               finalSettings = baseSettings // hardenedSettings // config.email.thunderbird.userPrefs;
             in
@@ -302,8 +302,7 @@
                 userName = accountCfg.address;
 
                 # Add passwordFile if specified
-                passwordCommand = lib.mkIf (accountCfg.passwordFile != null) 
-                  "cat ${accountCfg.passwordFile}";
+                passwordCommand = lib.mkIf (accountCfg.passwordFile != null) "cat ${accountCfg.passwordFile}";
 
                 imap = {
                   inherit (accountCfg.imap) host port;
@@ -367,9 +366,9 @@
               Unit = {
                 Description = "Birdtray - Thunderbird System Tray Integration";
                 Documentation = "https://github.com/gyunaev/birdtray";
-                After = [ 
-                  "graphical-session.target" 
-                  "thunderbird.service" 
+                After = [
+                  "graphical-session.target"
+                  "thunderbird.service"
                 ];
                 Requires = [ "thunderbird.service" ];
                 PartOf = [ "graphical-session.target" ];

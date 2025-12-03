@@ -8,10 +8,25 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-86G4t4EfZzAFxhCAGmcjGnp4A0N/ZpR71LKkKk+qZUc=",
+            "sha256": "sha256-ST23UulcaAZXbqOU7plVdh6VkEs1fAwveXoNnIdHID4=",
             "type": "url",
-            "url": "https://github.com/cake-tech/cake_wallet/releases/download/v5.5.2/Cake_Wallet_v5.5.2_Linux.tar.xz"
+            "url": "https://github.com/cake-tech/cake_wallet/releases/download/v5.6.0/Cake_Wallet_v5.6.0_Linux.tar.xz"
         },
-        "version": "v5.5.2"
+        "version": "v5.6.0"
+    },
+    "moondeck-buddy": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "moondeck-buddy",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-XHVQ3rWg5AFNO3A8OgK5BOecj0DwI6RkhRWEdk2ZXPw=",
+            "type": "url",
+            "url": "https://github.com/FrogTheFrog/moondeck-buddy/releases/download/v1.9.1/MoonDeckBuddy-1.9.1-x86_64.AppImage"
+        },
+        "version": "1.9.1"
     }
 }

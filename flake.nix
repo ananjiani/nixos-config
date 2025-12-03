@@ -1,9 +1,9 @@
 {
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-25.05";
+    nixpkgs.url = "nixpkgs/nixos-25.11";
     nixpkgs-unstable.url = "nixpkgs/nixpkgs-unstable";
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.05";
+      url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     home-manager-unstable = {
@@ -103,7 +103,11 @@
         # Desktop system
         ammars-pc = lib.nixosSystem {
           inherit system specialArgs;
-          modules = [ ./hosts/desktop/configuration.nix ];
+          modules = [
+            ./hosts/desktop/configuration.nix
+            # Import dendritic moondeck NixOS module
+            (if self.modules ? nixos && self.modules.nixos ? moondeck then self.modules.nixos.moondeck else { })
+          ];
         };
 
         # Work laptop
@@ -175,6 +179,14 @@
                 (
                   if self.modules ? homeManager && self.modules.homeManager ? email then
                     self.modules.homeManager.email
+                  else
+                    { }
+                )
+
+                # Import dendritic moondeck module
+                (
+                  if self.modules ? homeManager && self.modules.homeManager ? moondeck then
+                    self.modules.homeManager.moondeck
                   else
                     { }
                 )

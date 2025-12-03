@@ -31,6 +31,12 @@
     enable = true;
     autoStart = true;
     capSysAdmin = true;
+    openFirewall = true;
+  };
+
+  moondeck = {
+    enable = true;
+    sunshine.enable = true;
   };
 
 }

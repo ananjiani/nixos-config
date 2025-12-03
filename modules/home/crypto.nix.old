@@ -9,21 +9,21 @@ let
       sha256 = "sha256-86G4t4EfZzAFxhCAGmcjGnp4A0N/ZpR71LKkKk+qZUc=";
     };
   };
-  
+
   # Cakewallet package derivation
   cakewallet = pkgs.stdenv.mkDerivation {
     pname = "cakewallet";
     version = sources.cakewallet.version;
-    
+
     src = pkgs.fetchurl {
       inherit (sources.cakewallet) url sha256;
     };
-    
+
     nativeBuildInputs = with pkgs; [
       makeWrapper
       autoPatchelfHook
     ];
-    
+
     buildInputs = with pkgs; [
       # System dependencies for Flutter/GTK app
       gtk3
@@ -50,22 +50,22 @@ let
       lz4
       libgpg-error
     ];
-    
+
     sourceRoot = ".";
-    
+
     installPhase = ''
       runHook preInstall
-      
+
       # Find the extracted directory (it has version in name)
       CAKE_DIR=$(find . -maxdepth 1 -type d -name "Cake_Wallet_*" | head -n1)
-      
+
       # Install application files
       mkdir -p $out/opt/cakewallet
       cp -r "$CAKE_DIR"/* $out/opt/cakewallet/
-      
+
       # Make binary executable
       chmod +x $out/opt/cakewallet/cake_wallet
-      
+
       # Create wrapper script
       mkdir -p $out/bin
       makeWrapper $out/opt/cakewallet/cake_wallet $out/bin/cake-wallet \
@@ -93,7 +93,7 @@ let
           libgpg-error
         ])}" \
         --set GDK_BACKEND x11
-      
+
       # Create desktop entry
       mkdir -p $out/share/applications
       cat > $out/share/applications/cake-wallet.desktop <<EOF
@@ -106,17 +106,17 @@ Terminal=false
 Type=Application
 Categories=Office;Finance;
 EOF
-      
+
       # Extract and install icon if available
       mkdir -p $out/share/icons/hicolor/256x256/apps
       if [ -f "$out/opt/cakewallet/data/flutter_assets/assets/images/app_logo.png" ]; then
         cp "$out/opt/cakewallet/data/flutter_assets/assets/images/app_logo.png" \
            $out/share/icons/hicolor/256x256/apps/cake-wallet.png
       fi
-      
+
       runHook postInstall
     '';
-    
+
     meta = with lib; {
       description = "Cake Wallet - Open-source cryptocurrency wallet";
       homepage = "https://cakewallet.com/";
@@ -129,14 +129,14 @@ EOF
 in {
   options.crypto = {
     enable = lib.mkEnableOption "crypto applications";
-    
+
     cakewallet = {
       enable = lib.mkEnableOption "Cake Wallet";
     };
   };
-  
+
   config = lib.mkIf config.crypto.enable {
-    home.packages = lib.optionals config.crypto.cakewallet.enable [ 
+    home.packages = lib.optionals config.crypto.cakewallet.enable [
       cakewallet
     ];
   };

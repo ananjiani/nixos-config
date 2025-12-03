@@ -129,9 +129,9 @@ All dendritic files are loaded automatically using `import-tree`:
     flake-parts.url = "github:hercules-ci/flake-parts";
     import-tree.url = "github:vic/import-tree";
   };
-  
-  outputs = inputs: 
-    inputs.flake-parts.lib.mkFlake { inherit inputs; } 
+
+  outputs = inputs:
+    inputs.flake-parts.lib.mkFlake { inherit inputs; }
       (inputs.import-tree ./modules);
 }
 ```
@@ -158,8 +158,8 @@ In the `crypto.nix` example, we tried to define TWO aspects in ONE file:
 {
   # First aspect: crypto
   flake.modules.homeManager.crypto = { /* ... */ };
-  
-  # Second aspect: email  
+
+  # Second aspect: email
   flake.modules.homeManager.email = { /* ... */ };  # ❌ This works!
 }
 ```
@@ -171,7 +171,7 @@ In the `crypto.nix` example, we tried to define TWO aspects in ONE file:
   flake.modules.homeManager = {
     crypto = { /* ... */ };
   };
-  
+
   flake.modules.homeManager = {  # ❌ ERROR: Defining flake.modules.homeManager twice!
     email = { /* ... */ };
   };
@@ -220,11 +220,11 @@ If aspects are tightly related, you CAN define multiple aspects in one file:
   # Email aspect
   flake.modules.homeManager.email = { /* ... */ };
   flake.modules.nixos.email = { /* ... */ };
-  
+
   # Chat aspect
   flake.modules.homeManager.chat = { /* ... */ };
   flake.modules.nixos.chat = { /* ... */ };
-  
+
   # Video conferencing aspect
   flake.modules.homeManager.video-calls = { /* ... */ };
 }
@@ -250,14 +250,14 @@ For complex setups with aspect dependencies, use [`flake-aspects`](https://githu
 { inputs, ... }:
 {
   imports = [ inputs.flake-aspects.flakeModule ];
-  
+
   flake.aspects = { aspects, ... }: {
     # Define aspect with the transposed structure
     workspace = {
       nixos = { /* ... */ };
       darwin = { /* ... */ };
       homeManager = { /* ... */ };
-      
+
       # This aspect includes other aspects
       includes = with aspects; [ vim ssh git ];
     };
@@ -302,7 +302,7 @@ in
   flake.modules.nixos.${userName} = {
     users.users.${userName}.isNormalUser = true;
   };
-  
+
   flake.modules.homeManager.${userName} = {
     home.username = userName;
     programs.git.userEmail = userEmail;
@@ -331,7 +331,7 @@ Create options at the module level:
       enable = lib.mkEnableOption "crypto applications";
       cakewallet.enable = lib.mkEnableOption "Cake Wallet";
     };
-    
+
     config = lib.mkIf config.crypto.enable {
       home.packages = lib.optionals config.crypto.cakewallet.enable [ /* ... */ ];
     };
@@ -390,11 +390,11 @@ All contribute to the same `flake.modules.<class>.vim` aspect, but each file foc
     dev-server = {
       # This aspect depends on other aspects
       includes = with aspects; [ docker git vim ssh ];
-      
+
       nixos = {
         # Dev server specific NixOS config
       };
-      
+
       homeManager = {
         # Dev environment for users
       };
@@ -411,14 +411,14 @@ All contribute to the same `flake.modules.<class>.vim` aspect, but each file foc
   flake.aspects = { aspects, ... }: {
     system = {
       nixos.system.stateVersion = "24.05";
-      
+
       # Provider: Create user aspect with parameter
       _.user = userName: {
         nixos.users.users.${userName}.isNormalUser = true;
         homeManager.home.username = userName;
       };
     };
-    
+
     # Use the parameterized provider
     my-host.includes = [
       aspects.system
@@ -442,7 +442,7 @@ in
     programs.niri.enable = true;
     programs.niri.config.scrollSpeed = scrollSpeed;
   };
-  
+
   # macOS: use paneru
   flake.modules.darwin.scrolling-desktop = {
     services.paneru.enable = true;
@@ -467,7 +467,7 @@ in
   flake.modules.homeManager.custom-tools = { pkgs, ... }: {
     home.packages = [ (myTool pkgs) ];
   };
-  
+
   # Also expose as flake package
   perSystem = { pkgs, ... }: {
     packages.my-tool = myTool pkgs;
@@ -498,15 +498,15 @@ in
       settings.Port = sshPort;
       settings.PasswordAuthentication = false;
     };
-    
+
     users.users.root.openssh.authorizedKeys.keys = authorizedKeys;
   };
-  
+
   # macOS: Enable SSH server
   flake.modules.darwin.ssh = {
     services.sshd.enable = true;
   };
-  
+
   # Home Manager: Client configuration
   flake.modules.homeManager.ssh = { config, ... }: {
     programs.ssh = {
@@ -532,14 +532,14 @@ in
   flake.modules.nixos.gaming = { pkgs, ... }: {
     programs.steam.enable = true;
     programs.gamemode.enable = true;
-    
+
     hardware.opengl = {
       enable = true;
       driSupport = true;
       driSupport32Bit = true;
     };
   };
-  
+
   # Home Manager: Gaming tools and configs
   flake.modules.homeManager.gaming = { pkgs, ... }: {
     home.packages = with pkgs; [
@@ -568,14 +568,14 @@ in
       enable = lib.mkEnableOption "crypto applications";
       cakewallet.enable = lib.mkEnableOption "Cake Wallet";
     };
-    
+
     config = lib.mkIf config.crypto.enable {
       home.packages = lib.optionals config.crypto.cakewallet.enable [
         (mkCakewallet pkgs)
       ];
     };
   };
-  
+
   # NixOS: System-level crypto services (future)
   # flake.modules.nixos.crypto = { /* ... */ };
 }
@@ -593,15 +593,15 @@ in
       thunderbird.enable = lib.mkEnableOption "Thunderbird";
       protonBridge.enable = lib.mkEnableOption "Proton Mail Bridge";
     };
-    
+
     config = lib.mkIf config.email.enable (lib.mkMerge [
       (lib.mkIf config.email.thunderbird.enable {
         home.packages = [ pkgs.thunderbird ];
       })
-      
+
       (lib.mkIf config.email.protonBridge.enable {
         home.packages = [ pkgs.protonmail-bridge ];
-        
+
         systemd.user.services.protonmail-bridge = {
           Unit.Description = "Proton Mail Bridge";
           Service = {
@@ -632,7 +632,7 @@ in
       crypto
     ];
   };
-  
+
   flake.darwinConfigurations.my-macbook = inputs.nix-darwin.lib.darwinSystem {
     system = "aarch64-darwin";
     modules = with inputs.self.modules.darwin; [
@@ -657,7 +657,7 @@ in
   flake.modules.homeManager = {
     crypto = { /* ... */ };
   };
-  
+
   flake.modules.homeManager = {  # ❌ Redefinition!
     email = { /* ... */ };
   };

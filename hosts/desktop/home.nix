@@ -1,6 +1,5 @@
 {
   lib,
-  config,
   ...
 }:
 
@@ -21,6 +20,11 @@
   crypto = {
     enable = true;
     cakewallet.enable = true;
+  };
+
+  moondeck = {
+    enable = true;
+    autostart = true; # headless mode via systemd
   };
 
   # email = {
