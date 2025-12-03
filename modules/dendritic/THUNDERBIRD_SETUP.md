@@ -333,10 +333,10 @@ In your `home.nix`:
 ```nix
 email.thunderbird = {
   enable = true;
-  
+
   # Apply ALL hardened settings from thunderbird-user.js
   useHardenedUserJs = true;
-  
+
   # Override specific settings as needed
   userPrefs = {
     # ProtonMail Bridge requires this
@@ -369,7 +369,7 @@ email = {
     userPrefs = {
       # Required for ProtonMail Bridge (relaxes cert pinning for local MITM)
       "security.cert_pinning.enforcement_level" = 1;
-      
+
       # Privacy hardening examples:
       "mailnews.message_display.disable_remote_image" = true;  # Block remote content
       "privacy.donottrackheader.enabled" = true;               # Send Do Not Track header
@@ -421,10 +421,10 @@ email = {
   enable = true;
   thunderbird = {
     enable = true;
-    
+
     # Enable system tray integration
     birdtray.enable = true;
-    
+
     # This automatically enables autostart since Birdtray requires Thunderbird to run
   };
 };

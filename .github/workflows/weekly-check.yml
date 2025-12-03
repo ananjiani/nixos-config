@@ -150,15 +150,15 @@ jobs:
         id: update-sources
         run: |
           echo "📦 Checking for package source updates..."
-          
+
           # Store current generated file
           if [ -f "_sources/generated.nix" ]; then
             cp _sources/generated.nix _sources/generated.nix.old
           fi
-          
+
           # Run nvfetcher to update sources
           nix develop --command nvfetcher
-          
+
           # Check if there were changes
           if [ -f "_sources/generated.nix.old" ]; then
             if git diff --quiet _sources/generated.nix; then
@@ -167,13 +167,13 @@ jobs:
             else
               echo "📝 Package source updates found!"
               echo "has_updates=true" >> $GITHUB_OUTPUT
-              
+
               # Generate changelog
               echo "## Package Source Updates" > sources_update_message.md
               echo "" >> sources_update_message.md
               echo "nvfetcher has detected updates for the following packages:" >> sources_update_message.md
               echo "" >> sources_update_message.md
-              
+
               # Show what changed
               git diff _sources/generated.nix | head -50 >> sources_update_message.md
               echo "" >> sources_update_message.md

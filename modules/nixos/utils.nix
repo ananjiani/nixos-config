@@ -1,7 +1,6 @@
 # Stuff that will be universally useful.
 
 {
-  config,
   pkgs,
   ...
 }:
