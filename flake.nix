@@ -50,6 +50,15 @@
       url = "github:HorlogeSkynet/thunderbird-user.js";
       flake = false;
     };
+    chaotic = {
+      url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
+    play-nix = {
+      url = "github:TophC7/play.nix";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+      inputs.chaotic.follows = "chaotic";
+    };
   };
 
   outputs =
@@ -107,6 +116,8 @@
             ./hosts/desktop/configuration.nix
             # Import dendritic moondeck NixOS module
             (if self.modules ? nixos && self.modules.nixos ? moondeck then self.modules.nixos.moondeck else { })
+            # Import dendritic opendeck NixOS module
+            (if self.modules ? nixos && self.modules.nixos ? opendeck then self.modules.nixos.opendeck else { })
           ];
         };
 
@@ -190,6 +201,17 @@
                   else
                     { }
                 )
+
+                # Import dendritic opendeck module
+                (
+                  if self.modules ? homeManager && self.modules.homeManager ? opendeck then
+                    self.modules.homeManager.opendeck
+                  else
+                    { }
+                )
+
+                # Import play.nix for gamescope integration
+                inputs.play-nix.homeManagerModules.play
 
                 # Load host-specific home configuration
                 hostPath

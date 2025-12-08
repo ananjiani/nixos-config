@@ -4,6 +4,7 @@
 
 {
   pkgs,
+  inputs,
   ...
 }:
 
@@ -17,6 +18,7 @@
     ../../modules/nixos/ssh.nix
     ../../modules/nixos/bluetooth.nix
     ../../modules/nixos/android.nix
+    inputs.play-nix.nixosModules.play
   ];
 
   networking.hostName = "ammars-pc";
@@ -38,5 +40,7 @@
     enable = true;
     sunshine.enable = true;
   };
+
+  opendeck.enable = true;
 
 }

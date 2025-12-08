@@ -30,6 +30,7 @@
     youtube-music
     playerctl
     qbittorrent
+    sparrow # bitcoin client
   ];
 
   services = {

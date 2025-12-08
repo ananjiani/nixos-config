@@ -17,7 +17,20 @@
   ];
 
   programs = {
-    mangohud.enable = true;
+    mangohud = {
+      enable = true;
+      settings = {
+        cpu_stats = true;
+        cpu_temp = true;
+        core_load = true;
+        gpu_stats = true;
+        gpu_temp = true;
+        fps = true;
+        frametime = true;
+        frame_timing = true;
+        hdr = true;
+      };
+    };
     vesktop = {
       enable = true;
       settings = {

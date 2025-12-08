@@ -27,6 +27,45 @@
     autostart = true; # headless mode via systemd
   };
 
+  opendeck = {
+    enable = true;
+    # plugins = [ ]; # Add plugins later
+    # seedProfiles = { }; # Add starter profiles later
+  };
+
+  # Monitor configuration for play.nix (mix.nix namespace)
+  monitors = [
+    {
+      name = "DP-2"; # Main gaming monitor
+      primary = true;
+      width = 5120;
+      height = 1440;
+      refreshRate = 240;
+      hdr = true;
+      vrr = true;
+    }
+  ];
+
+  # play.nix - gamescope integration for HDR/VRR gaming
+  play = {
+    gamescoperun = {
+      enable = true;
+      defaultHDR = true;
+      defaultSystemd = true; # Isolate gaming sessions with systemd-run
+    };
+    wrappers.steam-gamescope = {
+      enable = true;
+      useHDR = true;
+      command = "steam";
+      environment = {
+        MANGOHUD = "1";
+      };
+      extraOptions = {
+        force-windows-fullscreen = true;
+      };
+    };
+  };
+
   # email = {
   #   enable = true;
   #   thunderbird = {
