@@ -6,3 +6,8 @@ fetch.url = "https://github.com/cake-tech/cake_wallet/releases/download/$ver/Cak
 src.github = "FrogTheFrog/moondeck-buddy"
 src.prefix = "v"
 fetch.url = "https://github.com/FrogTheFrog/moondeck-buddy/releases/download/v$ver/MoonDeckBuddy-$ver-x86_64.AppImage"
+
+[opendeck]
+src.github = "nekename/OpenDeck"
+src.prefix = "v"
+fetch.url = "https://github.com/nekename/OpenDeck/releases/download/v$ver/opendeck_$ver_amd64.AppImage"

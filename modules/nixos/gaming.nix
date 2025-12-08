@@ -7,6 +7,7 @@
   programs = {
     steam = {
       enable = true;
+      extraCompatPackages = with pkgs; [ proton-ge-bin ];
       package = pkgs.steam.override {
         extraEnv = { };
         extraLibraries =
@@ -34,6 +35,7 @@
   environment.systemPackages = with pkgs; [
     steamtinkerlaunch
     yad
+    gamescope-wsi
     #lutris
   ];
 }

@@ -28,5 +28,20 @@
             "url": "https://github.com/FrogTheFrog/moondeck-buddy/releases/download/v1.9.1/MoonDeckBuddy-1.9.1-x86_64.AppImage"
         },
         "version": "1.9.1"
+    },
+    "opendeck": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "opendeck",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-DkVjoIwp1/tJJzlUkaJwEYagT7BkEMlnBf7ViPJety0=",
+            "type": "url",
+            "url": "https://github.com/nekename/OpenDeck/releases/download/v2.7.0/opendeck_2.7.0_amd64.AppImage"
+        },
+        "version": "2.7.0"
     }
 }
