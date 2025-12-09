@@ -389,6 +389,8 @@
   # SSH keys are now managed via the ssh.nix module
   users.users.ammar = { };
 
+  modules.ssh.enable = true;
+
   # Allow wheel group to use sudo without password (optional)
   security.sudo.wheelNeedsPassword = false;
 

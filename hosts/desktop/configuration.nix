@@ -43,4 +43,5 @@
 
   opendeck.enable = true;
 
+  modules.ssh.enable = true;
 }

@@ -1,4 +1,5 @@
-# Stuff that will be universally useful.
+# Workstation-specific utilities and configuration
+# Imports base.nix for universal foundation
 
 {
   pkgs,
@@ -6,22 +7,23 @@
 }:
 
 {
+  imports = [ ./base.nix ];
 
   environment.systemPackages = with pkgs; [
-    wget
-    zip
-    unzip
-    killall
     neofetch
-    git
-    vim
-    openssl
-    tree
   ];
 
+  # Add claude-code cache (nix-community is in base.nix)
+  nix.settings = {
+    substituters = [
+      "https://claude-code.cachix.org"
+    ];
+    trusted-public-keys = [
+      "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
+    ];
+  };
+
   programs = {
-    fish.enable = true;
-    nix-ld.enable = true;
     kdeconnect.enable = true;
     # Enable ydotool for input automation
     # ydotool = {
@@ -36,85 +38,20 @@
     };
   };
 
-  # Define a user account. Don't forget to set a password with ‘passwd’.
+  # Add workstation-specific groups
   users.users.ammar = {
-    isNormalUser = true;
     extraGroups = [
-      "wheel"
       "docker"
       # "ydotool"
-    ]; # Enable 'sudo' for the user and ydotool access.
-    shell = pkgs.fish;
+    ];
   };
-
-  nixpkgs.config.allowUnfree = true;
-
-  nix = {
-    settings = {
-      experimental-features = [
-        "nix-command"
-        "flakes"
-      ];
-      trusted-users = [
-        "root"
-        "ammar"
-      ];
-      substituters = [
-        "https://claude-code.cachix.org"
-        "https://nix-community.cachix.org"
-      ];
-      trusted-public-keys = [
-        "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
-        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-      ];
-    };
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 30d";
-    };
-  };
-
-  #   # Auto upgrade
-  #   system.autoUpgrade.enable = true;
-  #   system.autoUpgrade.allowReboot = true;
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  # Set your time zone.
-  time.timeZone = "America/Chicago";
-
-  # Pick only one of the below networking options.
-  #networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
-  networking = {
-    networkmanager.enable = true; # Easiest to use and most distros use this by default.
-    firewall = {
-      enable = true;
-      allowPing = true;
-      allowedTCPPorts = [ 22 ];
-    };
-  };
-
-  # Configure network proxy if necessary
-  # networking.proxy.default = "http://user:password@proxy:port/";
-  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
-
-  # Select internationalisation properties.
-  i18n.defaultLocale = "en_US.UTF-8";
-
-  i18n.extraLocaleSettings = {
-    LC_ADDRESS = "en_US.UTF-8";
-    LC_IDENTIFICATION = "en_US.UTF-8";
-    LC_MEASUREMENT = "en_US.UTF-8";
-    LC_MONETARY = "en_US.UTF-8";
-    LC_NAME = "en_US.UTF-8";
-    LC_NUMERIC = "en_US.UTF-8";
-    LC_PAPER = "en_US.UTF-8";
-    LC_TELEPHONE = "en_US.UTF-8";
-    LC_TIME = "en_US.UTF-8";
-  };
+  # Open SSH port
+  networking.firewall.allowedTCPPorts = [ 22 ];
 
   security = {
     polkit = {
@@ -124,25 +61,6 @@
   };
 
   services.pcscd.enable = true;
-
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
-  # };
-
-  # List services that you want to enable:
-
-  # Enable the OpenSSH daemon.
-  # services.openssh.enable = true;
-
-  # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [ ... ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
-  # Or disable the firewall altogether.
-  # networking.firewall.enable = false;
 
   # Copy the NixOS configuration file and link it from the resulting system
   # (/run/current-system/configuration.nix). This is useful in case you
