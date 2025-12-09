@@ -66,6 +66,14 @@ nix develop --command pre-commit run --all-files
 nix develop
 ```
 
+### ISO Build
+```bash
+# Build the live USB / installation ISO
+nix build .#nixosConfigurations.iso.config.system.build.isoImage
+
+# The ISO will be at result/iso/nixos-*.iso
+```
+
 ### CI/CD Commands
 ```bash
 # Test what CI will run locally

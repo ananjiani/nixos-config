@@ -22,7 +22,7 @@
       settings = {
         cpu_stats = true;
         cpu_temp = true;
-        core_load = true;
+        # core_load = true;
         gpu_stats = true;
         gpu_temp = true;
         fps = true;
