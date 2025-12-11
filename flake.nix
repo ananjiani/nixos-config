@@ -118,6 +118,8 @@
             (if self.modules ? nixos && self.modules.nixos ? moondeck then self.modules.nixos.moondeck else { })
             # Import dendritic opendeck NixOS module
             (if self.modules ? nixos && self.modules.nixos ? opendeck then self.modules.nixos.opendeck else { })
+            # Import dendritic brave NixOS module
+            (if self.modules ? nixos && self.modules.nixos ? brave then self.modules.nixos.brave else { })
           ];
         };
 
