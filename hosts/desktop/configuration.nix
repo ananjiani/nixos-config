@@ -44,4 +44,12 @@
   opendeck.enable = true;
 
   modules.ssh.enable = true;
+
+  # Brave browser with Privacy Guides recommended settings
+  programs.brave = {
+    enable = true;
+    features.sync = true;
+    features.aiChat = true;
+    doh.provider = "quad9";
+  };
 }
