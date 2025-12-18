@@ -31,6 +31,7 @@
     playerctl
     qbittorrent
     sparrow # bitcoin client
+    kdePackages.kdenlive
   ];
 
   services = {
