@@ -64,7 +64,9 @@ in
         environment.systemPackages = [ (mkMoondeckBuddy pkgs) ];
 
         # Open firewall for MoonDeck Buddy
-        networking.firewall.allowedTCPPorts = lib.mkIf config.moondeck.openFirewall [ config.moondeck.port ];
+        networking.firewall.allowedTCPPorts = lib.mkIf config.moondeck.openFirewall [
+          config.moondeck.port
+        ];
 
         # Configure Sunshine to include MoonDeckStream
         services.sunshine.applications = lib.mkIf config.moondeck.sunshine.enable {

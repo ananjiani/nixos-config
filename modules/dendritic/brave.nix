@@ -4,7 +4,7 @@
 #
 # NOTE: Brave on Linux only reads policies from /etc/brave/policies/managed/
 # This is a NixOS-only module - no Home Manager needed.
-{ inputs, ... }:
+{ ... }:
 
 {
   # NixOS module - installs Brave and writes policies to /etc/brave/policies/managed/
@@ -44,51 +44,50 @@
           3; # "ask"
 
       # Generate policy attrset
-      policies =
-        {
-          # === Feature Toggles (Debloat) ===
-          BraveRewardsDisabled = !cfg.features.rewards;
-          BraveWalletDisabled = !cfg.features.wallet;
-          BraveVPNDisabled = !cfg.features.vpn;
-          BraveAIChatEnabled = cfg.features.aiChat;
-          BraveNewsDisabled = !cfg.features.news;
-          BraveTalkDisabled = !cfg.features.talk;
-          TorDisabled = !cfg.features.tor;
-          SyncDisabled = !cfg.features.sync;
-          BraveSpeedreaderEnabled = cfg.features.speedreader;
-          BraveWaybackMachineEnabled = cfg.features.waybackMachine;
-          BravePlaylistEnabled = cfg.features.playlist;
+      policies = {
+        # === Feature Toggles (Debloat) ===
+        BraveRewardsDisabled = !cfg.features.rewards;
+        BraveWalletDisabled = !cfg.features.wallet;
+        BraveVPNDisabled = !cfg.features.vpn;
+        BraveAIChatEnabled = cfg.features.aiChat;
+        BraveNewsDisabled = !cfg.features.news;
+        BraveTalkDisabled = !cfg.features.talk;
+        TorDisabled = !cfg.features.tor;
+        SyncDisabled = !cfg.features.sync;
+        BraveSpeedreaderEnabled = cfg.features.speedreader;
+        BraveWaybackMachineEnabled = cfg.features.waybackMachine;
+        BravePlaylistEnabled = cfg.features.playlist;
 
-          # === Telemetry (Privacy Guides: all disabled) ===
-          BraveP3AEnabled = cfg.telemetry.p3a;
-          BraveStatsPingEnabled = cfg.telemetry.dailyPing;
-          BraveWebDiscoveryEnabled = cfg.telemetry.webDiscovery;
-          MetricsReportingEnabled = cfg.telemetry.diagnostics;
+        # === Telemetry (Privacy Guides: all disabled) ===
+        BraveP3AEnabled = cfg.telemetry.p3a;
+        BraveStatsPingEnabled = cfg.telemetry.dailyPing;
+        BraveWebDiscoveryEnabled = cfg.telemetry.webDiscovery;
+        MetricsReportingEnabled = cfg.telemetry.diagnostics;
 
-          # === Autofill ===
-          PasswordManagerEnabled = cfg.autofill.passwords;
-          AutofillAddressEnabled = cfg.autofill.addresses;
-          AutofillCreditCardEnabled = cfg.autofill.creditCards;
+        # === Autofill ===
+        PasswordManagerEnabled = cfg.autofill.passwords;
+        AutofillAddressEnabled = cfg.autofill.addresses;
+        AutofillCreditCardEnabled = cfg.autofill.creditCards;
 
-          # === Permissions (Privacy Guides: restrict by default) ===
-          DefaultGeolocationSetting = permissionValue cfg.permissions.geolocation;
-          DefaultNotificationsSetting = permissionValue cfg.permissions.notifications;
+        # === Permissions (Privacy Guides: restrict by default) ===
+        DefaultGeolocationSetting = permissionValue cfg.permissions.geolocation;
+        DefaultNotificationsSetting = permissionValue cfg.permissions.notifications;
 
-          # === Misc Privacy Settings ===
-          TranslateEnabled = cfg.misc.translate;
-          BackgroundModeEnabled = cfg.misc.backgroundMode;
-        }
-        # DNS over HTTPS (conditional)
-        // lib.optionalAttrs cfg.doh.enable {
-          DnsOverHttpsMode = cfg.doh.mode;
-          DnsOverHttpsTemplates = dohUrl;
-        }
-        # WebRTC IP leak protection
-        // lib.optionalAttrs cfg.webrtc.disableNonProxiedUdp {
-          WebRtcIPHandling = "disable_non_proxied_udp";
-        }
-        # Additional policies from extraPolicies
-        // cfg.extraPolicies;
+        # === Misc Privacy Settings ===
+        TranslateEnabled = cfg.misc.translate;
+        BackgroundModeEnabled = cfg.misc.backgroundMode;
+      }
+      # DNS over HTTPS (conditional)
+      // lib.optionalAttrs cfg.doh.enable {
+        DnsOverHttpsMode = cfg.doh.mode;
+        DnsOverHttpsTemplates = dohUrl;
+      }
+      # WebRTC IP leak protection
+      // lib.optionalAttrs cfg.webrtc.disableNonProxiedUdp {
+        WebRtcIPHandling = "disable_non_proxied_udp";
+      }
+      # Additional policies from extraPolicies
+      // cfg.extraPolicies;
 
       policiesJson = builtins.toJSON policies;
     in
