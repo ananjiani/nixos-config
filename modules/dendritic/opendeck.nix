@@ -19,10 +19,11 @@ let
       unwrapped = pkgs.appimageTools.wrapType2 {
         pname = "opendeck";
         inherit (sources.opendeck) version src;
-        extraPkgs = _pkgs: with _pkgs; [
-          wine
-          winetricks
-        ];
+        extraPkgs =
+          _pkgs: with _pkgs; [
+            wine
+            winetricks
+          ];
       };
     in
     # Wrap with environment variable to fix EGL/WebKitGTK issue on Wayland
@@ -63,7 +64,6 @@ in
   # Uses COPY semantics with "seed only if missing" for profiles
   flake.aspects.opendeck.homeManager =
     {
-      pkgs,
       lib,
       config,
       ...
@@ -142,12 +142,12 @@ in
               + "\n"
               + lib.concatStringsSep "\n" (
                 lib.mapAttrsToList (profileId: profileData: ''
-                  if [ ! -f "${dataDir}/profiles/${device}/${profileId}.json" ]; then
-                    echo "Seeding OpenDeck profile: ${device}/${profileId}"
-                    cat > "${dataDir}/profiles/${device}/${profileId}.json" << 'PROFILE_EOF'
-          ${builtins.toJSON profileData}
-          PROFILE_EOF
-                  fi
+                          if [ ! -f "${dataDir}/profiles/${device}/${profileId}.json" ]; then
+                            echo "Seeding OpenDeck profile: ${device}/${profileId}"
+                            cat > "${dataDir}/profiles/${device}/${profileId}.json" << 'PROFILE_EOF'
+                  ${builtins.toJSON profileData}
+                  PROFILE_EOF
+                          fi
                 '') profiles
               )
             ) cfg.seedProfiles

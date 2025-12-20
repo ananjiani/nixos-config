@@ -11,7 +11,6 @@
     # Workstation-specific additions
     ../../../modules/home/config/defaults-workstation.nix
     ../../../modules/home/gaming.nix
-    ../../../modules/home/editors/emacs.nix
     # ../../../modules/home/editors/lvim.nix
     #../../../modules/home/editors/vscode.nix
     ../../../modules/home/firefox.nix
@@ -31,6 +30,14 @@
     ../../../modules/home/dev/programs.nix
     ../../../modules/home/dev/claude-code.nix
   ];
+
+  # Doom Emacs via dendritic module
+  doom-emacs = {
+    enable = lib.mkDefault true;
+    variant = "pgtk";
+    service.enable = true;
+    secrets.enable = true;
+  };
 
   # Default wallpaper configuration
   wallpaper = {

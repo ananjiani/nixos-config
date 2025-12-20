@@ -14,4 +14,3 @@ hosts/homeserver/secrets.json
 # Backups
 portainer-backup*
 backups/
-

@@ -59,6 +59,10 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
       inputs.chaotic.follows = "chaotic";
     };
+    nixos-avf = {
+      url = "github:nix-community/nixos-avf";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
   };
 
   outputs =
@@ -94,7 +98,10 @@
 
       # Dendritic modules using flake-parts with import-tree and flake-aspects
       dendriticFlake = flake-parts.lib.mkFlake { inherit inputs; } {
-        systems = [ system ];
+        systems = [
+          system
+          "aarch64-linux"
+        ];
         imports = [
           inputs.flake-aspects.flakeModule
           (inputs.import-tree ./modules/dendritic)
@@ -160,6 +167,7 @@
             inputs.disko.nixosModules.disko
           ];
         };
+
       };
 
       # Home Manager configurations with automatic hostname detection
@@ -212,6 +220,14 @@
                     { }
                 )
 
+                # Import dendritic doom-emacs module
+                (
+                  if self.modules ? homeManager && self.modules.homeManager ? doom-emacs then
+                    self.modules.homeManager.doom-emacs
+                  else
+                    { }
+                )
+
                 # Import play.nix for gamescope integration
                 inputs.play-nix.homeManagerModules.play
 
@@ -227,6 +243,36 @@
           "ammar@framework13" = mkHomeConfig ./hosts/framework13/home.nix;
           "ammar@surface-go" = mkHomeConfig ./hosts/surface-go/home.nix;
           "ammar@homeserver" = mkHomeConfig ./hosts/homeserver/home.nix;
+
+          # Pixel 9 (Debian AVF with Nix) - aarch64-linux
+          "ammar@pixel9" =
+            let
+              pkgs-aarch64 = import nixpkgs-unstable {
+                system = "aarch64-linux";
+                config.allowUnfree = true;
+              };
+              pkgs-stable-aarch64 = import nixpkgs {
+                system = "aarch64-linux";
+                config.allowUnfree = true;
+              };
+            in
+            home-manager-unstable.lib.homeManagerConfiguration {
+              pkgs = pkgs-aarch64;
+              extraSpecialArgs = {
+                inherit inputs std;
+                pkgs-stable = pkgs-stable-aarch64;
+              };
+              modules = [
+                { nixpkgs.overlays = [ inputs.emacs-overlay.overlay ]; }
+                (
+                  if self.modules ? homeManager && self.modules.homeManager ? doom-emacs then
+                    self.modules.homeManager.doom-emacs
+                  else
+                    { }
+                )
+                ./hosts/pixel9/home.nix
+              ];
+            };
 
           # Fallback configuration (if hostname doesn't match)
           "ammar" = mkHomeConfig ./hosts/profiles/workstation/home.nix;

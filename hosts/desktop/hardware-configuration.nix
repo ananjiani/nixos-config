@@ -39,7 +39,10 @@
     "/boot" = {
       device = "/dev/disk/by-uuid/BF40-B447";
       fsType = "vfat";
-      options = [ "fmask=0022" "dmask=0022" ];
+      options = [
+        "fmask=0022"
+        "dmask=0022"
+      ];
     };
 
     "/mnt/nvme" = {
