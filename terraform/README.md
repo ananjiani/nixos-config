@@ -1,11 +1,14 @@
-# Cloudflare DNS Management with OpenTofu
+# Infrastructure Management with OpenTofu
 
-This directory contains OpenTofu (Terraform) configuration for managing Cloudflare DNS records for `dimensiondoor.xyz`.
+This directory contains OpenTofu (Terraform) configuration for managing:
+- **Cloudflare DNS** records for `dimensiondoor.xyz`
+- **OPNsense firewall** configuration at `192.168.1.1`
 
 ## Prerequisites
 
 - OpenTofu (available in the nix dev shell)
 - Cloudflare API token with DNS edit permissions
+- OPNsense API key and secret
 - SOPS age key for encrypting secrets
 
 ## Initial Setup
@@ -24,7 +27,16 @@ This directory contains OpenTofu (Terraform) configuration for managing Cloudfla
    - Scroll down to find **Zone ID** on the right sidebar
    - Copy the Zone ID
 
-### 2. Add Secrets to SOPS
+### 2. Get OPNsense API Credentials
+
+1. Log into your OPNsense router (https://192.168.1.1)
+2. Go to **System → Access → Users**
+3. Edit your user (or create a dedicated `terraform` user)
+4. Under **API keys**, click **+** to generate a key pair
+5. **Save the key and secret immediately** - the secret is only shown once
+6. Ensure the user has admin group membership for full API access
+
+### 3. Add Secrets to SOPS
 
 Edit the encrypted secrets file:
 
@@ -32,16 +44,18 @@ Edit the encrypted secrets file:
 sops ../secrets/secrets.yaml
 ```
 
-Add these two lines (SOPS will encrypt them automatically when you save):
+Add these lines (SOPS will encrypt them automatically when you save):
 
 ```yaml
 cloudflare_api_token: your-api-token-here
 cloudflare_zone_id: your-zone-id-here
+opnsense_api_key: your-opnsense-key-here
+opnsense_api_secret: your-opnsense-secret-here
 ```
 
 Save and exit. SOPS will encrypt the values.
 
-### 3. Enter Development Shell
+### 4. Enter Development Shell
 
 ```bash
 # From the repo root
@@ -50,16 +64,16 @@ nix develop
 
 This gives you access to the `tofu` command.
 
-### 4. Initialize OpenTofu
+### 5. Initialize OpenTofu
 
 ```bash
 cd terraform
 tofu init
 ```
 
-This downloads the Cloudflare and SOPS providers.
+This downloads the Cloudflare, OPNsense, and SOPS providers.
 
-### 5. Import Existing DNS Records
+### 6. Import Existing DNS Records
 
 Your existing DNS records need to be imported into Terraform state. First, find the record IDs:
 
@@ -93,7 +107,7 @@ tofu import cloudflare_record.git <record-id-for-git.dimensiondoor.xyz>
 tofu import cloudflare_record.media <record-id-for-media.dimensiondoor.xyz>
 ```
 
-### 6. Verify Import
+### 7. Verify Import
 
 After importing, verify that Terraform recognizes the existing state:
 
@@ -181,9 +195,10 @@ cloudflare_proxied = false  # or true
 
 ## File Structure
 
-- `providers.tf` - Provider configuration (Cloudflare + SOPS)
+- `providers.tf` - Provider configuration (Cloudflare, OPNsense, SOPS)
 - `variables.tf` - Input variables with defaults
-- `dns.tf` - DNS record definitions
+- `dns.tf` - Cloudflare DNS record definitions
+- `opnsense.tf` - OPNsense firewall aliases and rules
 - `outputs.tf` - Output values after apply
 - `terraform.tfvars.example` - Example variables file
 - `.gitignore` - Excludes state files and sensitive data
@@ -211,13 +226,25 @@ tofu plan  # Will show the drift
 tofu apply # Will restore to desired state
 ```
 
-## Current DNS Records
+## Current Configuration
+
+### Cloudflare DNS Records
 
 - `dimensiondoor.xyz` → 76.201.4.6 (proxied)
 - `git.dimensiondoor.xyz` → 76.201.4.6 (proxied)
 - `media.dimensiondoor.xyz` → 76.201.4.6 (proxied)
 
 All records point to your homeserver and are proxied through Cloudflare for DDoS protection.
+
+### OPNsense Firewall
+
+**Aliases:**
+- `rfc1918` - Private network ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
+- `lan_network` - Local LAN subnet (192.168.1.0/24)
+
+**Rules:**
+- Anti-lockout rule (sequence 1) - Ensures LAN can always access router HTTPS
+- LAN to any (sequence 10) - Allows all outbound traffic from LAN
 
 ## Security Notes
 
@@ -230,4 +257,5 @@ All records point to your homeserver and are proxied through Cloudflare for DDoS
 
 - [OpenTofu Documentation](https://opentofu.org/docs/)
 - [Cloudflare Provider Docs](https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs)
+- [OPNsense Provider Docs](https://registry.terraform.io/providers/browningluke/opnsense/latest/docs)
 - [SOPS Provider Docs](https://registry.terraform.io/providers/carlpett/sops/latest/docs)
