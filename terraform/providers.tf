@@ -6,6 +6,10 @@ terraform {
       source  = "cloudflare/cloudflare"
       version = "~> 4.0"
     }
+    opnsense = {
+      source  = "browningluke/opnsense"
+      version = "~> 0.16"
+    }
     sops = {
       source  = "carlpett/sops"
       version = "~> 1.0"
@@ -24,4 +28,12 @@ data "sops_file" "secrets" {
 # Cloudflare provider configuration
 provider "cloudflare" {
   api_token = data.sops_file.secrets.data["cloudflare_api_token"]
+}
+
+# OPNsense provider configuration
+provider "opnsense" {
+  uri            = "https://${var.opnsense_host}"
+  api_key        = data.sops_file.secrets.data["opnsense_api_key"]
+  api_secret     = data.sops_file.secrets.data["opnsense_api_secret"]
+  allow_insecure = true # Self-signed cert on fresh install
 }

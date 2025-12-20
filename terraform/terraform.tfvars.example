@@ -2,6 +2,10 @@
 # Copy this to terraform.tfvars and customize as needed
 # (terraform.tfvars is gitignored and won't be committed)
 
+# =============================================================================
+# Cloudflare Configuration
+# =============================================================================
+
 # Primary domain name
 domain = "dimensiondoor.xyz"
 
@@ -12,3 +16,13 @@ homeserver_ip = "76.201.4.6"
 # true = proxied (recommended for DDoS protection and CDN)
 # false = DNS only (grey cloud)
 cloudflare_proxied = true
+
+# =============================================================================
+# OPNsense Configuration
+# =============================================================================
+
+# OPNsense router IP address or hostname
+opnsense_host = "192.168.1.1"
+
+# LAN network CIDR
+lan_subnet = "192.168.1.0/24"

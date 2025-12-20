@@ -91,6 +91,7 @@ nix flake check --all-systems
   - `home/`: User-level modules (editors, shell, desktop environment)
   - `nixos/`: System-level modules (hardware, services, gaming)
 - **`secrets/`**: SOPS-encrypted secrets (keys, tokens)
+- **`terraform/`**: OpenTofu/Terraform configs for external infrastructure (Cloudflare DNS, OPNsense firewall)
 - **`.github/workflows/`**: CI/CD automation
   - `ci.yml`: Quick validation on every push
   - `weekly-check.yml`: Comprehensive weekly validation with auto-updates
