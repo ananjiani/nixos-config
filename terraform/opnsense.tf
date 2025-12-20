@@ -71,3 +71,26 @@ resource "opnsense_firewall_filter" "lan_to_any" {
     protocol  = "any"
   }
 }
+
+# =============================================================================
+# Kea DHCP Configuration
+# =============================================================================
+# Kea is the modern DHCP server (successor to ISC DHCP).
+# Prerequisites: Enable Kea DHCPv4 in OPNsense UI before applying.
+
+resource "opnsense_kea_subnet" "lan" {
+  subnet      = var.lan_subnet
+  description = "LAN DHCP subnet"
+
+  pools       = ["192.168.1.100-192.168.1.254"]
+  routers     = [var.opnsense_host]
+  dns_servers = [var.opnsense_host]
+}
+
+resource "opnsense_kea_reservation" "access_point" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.2"
+  mac_address = data.sops_file.secrets.data["kuwfi_mac_address"]
+  hostname    = "ap"
+  description = "KuWFi AX835 Wireless Access Point"
+}
