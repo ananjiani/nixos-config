@@ -7,6 +7,12 @@
 #    - Guest: 10.10.10.1/24
 #    - IoT: 10.20.20.1/24
 # 2. Services > Kea DHCPv4 > Settings: Add Guest/IoT to "Active Interfaces"
+# 3. Services > Avahi (for Chromecast discovery):
+#    - Install os-avahi plugin if not present
+#    - Services > Avahi > Settings:
+#      - Enable: checked
+#      - Interfaces: select LAN, Guest, and IoT
+#      - Enable reflection: checked (relays mDNS between interfaces)
 
 # =============================================================================
 # VLAN Interfaces
@@ -49,17 +55,25 @@ resource "opnsense_firewall_alias" "iot_network" {
   content     = [var.iot_subnet]
 }
 
+resource "opnsense_firewall_alias" "chromecast_ports" {
+  count       = var.vlan_interfaces_configured ? 1 : 0
+  name        = "chromecast_ports"
+  type        = "port"
+  description = "Chromecast casting ports"
+  content     = ["8008", "8009", "8443"]
+}
+
 # =============================================================================
 # Guest VLAN Firewall Rules (Sequence 100-199)
 # =============================================================================
-# Rule order: Allow router access, block private networks, then allow internet
+# Rule order: Allow router access, allow Chromecast, block private networks, then allow internet
 
-# Allow Guest to access router for DHCP/DNS
-resource "opnsense_firewall_filter" "guest_to_router" {
+# Allow Guest to access router for DHCP
+resource "opnsense_firewall_filter" "guest_to_router_dhcp" {
   count       = var.vlan_interfaces_configured ? 1 : 0
   enabled     = true
   sequence    = 100
-  description = "Allow Guest to router for DHCP/DNS"
+  description = "Allow Guest DHCP"
 
   interface = {
     interface = [var.guest_interface]
@@ -68,10 +82,57 @@ resource "opnsense_firewall_filter" "guest_to_router" {
   filter = {
     action    = "pass"
     direction = "in"
-    protocol  = "any"
+    protocol  = "UDP"
 
     destination = {
-      net = "(self)"
+      net  = "(self)"
+      port = "67-68"
+    }
+  }
+}
+
+# Allow Guest to access router for DNS
+resource "opnsense_firewall_filter" "guest_to_router_dns" {
+  count       = var.vlan_interfaces_configured ? 1 : 0
+  enabled     = true
+  sequence    = 101
+  description = "Allow Guest DNS"
+
+  interface = {
+    interface = [var.guest_interface]
+  }
+
+  filter = {
+    action    = "pass"
+    direction = "in"
+    protocol  = "UDP"
+
+    destination = {
+      net  = "(self)"
+      port = "53"
+    }
+  }
+}
+
+# Allow Guest -> Chromecast on IoT (before block rules)
+resource "opnsense_firewall_filter" "guest_to_chromecast" {
+  count       = var.vlan_interfaces_configured ? 1 : 0
+  enabled     = true
+  sequence    = 105
+  description = "Allow Guest to Chromecast"
+
+  interface = {
+    interface = [var.guest_interface]
+  }
+
+  filter = {
+    action    = "pass"
+    direction = "in"
+    protocol  = "TCP"
+
+    destination = {
+      net  = "10.20.20.10"
+      port = opnsense_firewall_alias.chromecast_ports[0].name
     }
   }
 }
@@ -142,12 +203,12 @@ resource "opnsense_firewall_filter" "guest_to_internet" {
 # IoT VLAN Firewall Rules (Sequence 200-299)
 # =============================================================================
 
-# Allow IoT to access router for DHCP/DNS
-resource "opnsense_firewall_filter" "iot_to_router" {
+# Allow IoT to access router for DHCP
+resource "opnsense_firewall_filter" "iot_to_router_dhcp" {
   count       = var.vlan_interfaces_configured ? 1 : 0
   enabled     = true
   sequence    = 200
-  description = "Allow IoT to router for DHCP/DNS"
+  description = "Allow IoT DHCP"
 
   interface = {
     interface = [var.iot_interface]
@@ -156,10 +217,61 @@ resource "opnsense_firewall_filter" "iot_to_router" {
   filter = {
     action    = "pass"
     direction = "in"
-    protocol  = "any"
+    protocol  = "UDP"
 
     destination = {
-      net = "(self)"
+      net  = "(self)"
+      port = "67-68"
+    }
+  }
+}
+
+# Allow IoT to access router for DNS
+resource "opnsense_firewall_filter" "iot_to_router_dns" {
+  count       = var.vlan_interfaces_configured ? 1 : 0
+  enabled     = true
+  sequence    = 201
+  description = "Allow IoT DNS"
+
+  interface = {
+    interface = [var.iot_interface]
+  }
+
+  filter = {
+    action    = "pass"
+    direction = "in"
+    protocol  = "UDP"
+
+    destination = {
+      net  = "(self)"
+      port = "53"
+    }
+  }
+}
+
+# Allow Chromecast -> Jellyfin on LAN (for Jellyfin app)
+resource "opnsense_firewall_filter" "chromecast_to_jellyfin" {
+  count       = var.vlan_interfaces_configured ? 1 : 0
+  enabled     = true
+  sequence    = 205
+  description = "Allow Chromecast to Jellyfin"
+
+  interface = {
+    interface = [var.iot_interface]
+  }
+
+  filter = {
+    action    = "pass"
+    direction = "in"
+    protocol  = "TCP"
+
+    source = {
+      net = "10.20.20.10"
+    }
+
+    destination = {
+      net  = "192.168.1.10"
+      port = "8096"
     }
   }
 }
@@ -246,4 +358,13 @@ resource "opnsense_kea_subnet" "iot" {
   pools       = [var.iot_dhcp_pool]
   routers     = [var.iot_gateway]
   dns_servers = [var.iot_gateway]
+}
+
+resource "opnsense_kea_reservation" "chromecast" {
+  count       = var.vlan_interfaces_configured ? 1 : 0
+  subnet_id   = opnsense_kea_subnet.iot[0].id
+  ip_address  = "10.20.20.10"
+  mac_address = local.mac_addresses.chromecast
+  hostname    = "chromecast"
+  description = "Google Chromecast"
 }
