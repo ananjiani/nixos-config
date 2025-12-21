@@ -7,11 +7,11 @@
 #    - Guest: 10.10.10.1/24
 #    - IoT: 10.20.20.1/24
 # 2. Services > Kea DHCPv4 > Settings: Add Guest/IoT to "Active Interfaces"
-# 3. Services > Avahi (for Chromecast discovery):
+# 3. Services > Avahi (for Chromecast discovery from Guest network):
 #    - Install os-avahi plugin if not present
 #    - Services > Avahi > Settings:
 #      - Enable: checked
-#      - Interfaces: select LAN, Guest, and IoT
+#      - Interfaces: select LAN and Guest
 #      - Enable reflection: checked (relays mDNS between interfaces)
 
 # =============================================================================
@@ -114,7 +114,7 @@ resource "opnsense_firewall_filter" "guest_to_router_dns" {
   }
 }
 
-# Allow Guest -> Chromecast on IoT (before block rules)
+# Allow Guest -> Chromecast on LAN (before block rules)
 resource "opnsense_firewall_filter" "guest_to_chromecast" {
   count       = var.vlan_interfaces_configured ? 1 : 0
   enabled     = true
@@ -131,7 +131,7 @@ resource "opnsense_firewall_filter" "guest_to_chromecast" {
     protocol  = "TCP"
 
     destination = {
-      net  = "10.20.20.10"
+      net  = "192.168.1.10"
       port = opnsense_firewall_alias.chromecast_ports[0].name
     }
   }
@@ -249,33 +249,6 @@ resource "opnsense_firewall_filter" "iot_to_router_dns" {
   }
 }
 
-# Allow Chromecast -> Jellyfin on LAN (for Jellyfin app)
-resource "opnsense_firewall_filter" "chromecast_to_jellyfin" {
-  count       = var.vlan_interfaces_configured ? 1 : 0
-  enabled     = true
-  sequence    = 205
-  description = "Allow Chromecast to Jellyfin"
-
-  interface = {
-    interface = [var.iot_interface]
-  }
-
-  filter = {
-    action    = "pass"
-    direction = "in"
-    protocol  = "TCP"
-
-    source = {
-      net = "10.20.20.10"
-    }
-
-    destination = {
-      net  = "192.168.1.10"
-      port = "8096"
-    }
-  }
-}
-
 # Block IoT -> LAN
 resource "opnsense_firewall_filter" "iot_block_lan" {
   count       = var.vlan_interfaces_configured ? 1 : 0
@@ -358,13 +331,4 @@ resource "opnsense_kea_subnet" "iot" {
   pools       = [var.iot_dhcp_pool]
   routers     = [var.iot_gateway]
   dns_servers = [var.iot_gateway]
-}
-
-resource "opnsense_kea_reservation" "chromecast" {
-  count       = var.vlan_interfaces_configured ? 1 : 0
-  subnet_id   = opnsense_kea_subnet.iot[0].id
-  ip_address  = "10.20.20.10"
-  mac_address = local.mac_addresses.chromecast
-  hostname    = "chromecast"
-  description = "Google Chromecast"
 }
