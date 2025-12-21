@@ -5,9 +5,9 @@
 
 locals {
   mac_addresses = {
-    access_point = "XX:XX:XX:XX:XX:XX" # KuWFi AX835 Wireless Access Point
-    switch       = "XX:XX:XX:XX:XX:XX" # TP-Link TL-SG108E Managed Switch
-    chromecast   = "XX:XX:XX:XX:XX:XX" # Google Chromecast (IoT VLAN)
-    jellyfin     = "XX:XX:XX:XX:XX:XX" # Jellyfin homeserver (future)
+    kuwfi_ap  = "9c:e5:49:60:3c:1b" # KuWFi AX835 Wireless Access Point
+    tl_sg108e = "60:83:e7:71:f2:18" # TP-Link TL-SG108E Managed Switch
+    chromecast   = "1c:53:f9:04:40:9d" # Google Chromecast
+    # jellyfin     = "XX:XX:XX:XX:XX:XX" # Jellyfin homeserver (future)
   }
 }

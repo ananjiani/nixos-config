@@ -7,12 +7,9 @@
 #    - Guest: 10.10.10.1/24
 #    - IoT: 10.20.20.1/24
 # 2. Services > Kea DHCPv4 > Settings: Add Guest/IoT to "Active Interfaces"
-# 3. Services > Avahi (for Chromecast discovery from Guest network):
-#    - Install os-avahi plugin if not present
-#    - Services > Avahi > Settings:
-#      - Enable: checked
-#      - Interfaces: select LAN and Guest
-#      - Enable reflection: checked (relays mDNS between interfaces)
+# 3. Services > mDNS Repeater (for Chromecast discovery from Guest network):
+#    - Enable: checked
+#    - Interfaces: select LAN and Guest
 
 # =============================================================================
 # VLAN Interfaces
@@ -55,12 +52,20 @@ resource "opnsense_firewall_alias" "iot_network" {
   content     = [var.iot_subnet]
 }
 
-resource "opnsense_firewall_alias" "chromecast_ports" {
+resource "opnsense_firewall_alias" "chromecast_tcp_ports" {
   count       = var.vlan_interfaces_configured ? 1 : 0
-  name        = "chromecast_ports"
+  name        = "chromecast_tcp_ports"
   type        = "port"
-  description = "Chromecast casting ports"
+  description = "Chromecast TCP ports (control, mirroring)"
   content     = ["8008", "8009", "8443"]
+}
+
+resource "opnsense_firewall_alias" "chromecast_udp_ports" {
+  count       = var.vlan_interfaces_configured ? 1 : 0
+  name        = "chromecast_udp_ports"
+  type        = "port"
+  description = "Chromecast UDP ports (RTP/RTCP streaming)"
+  content     = ["32768:61000"]
 }
 
 # =============================================================================
@@ -114,12 +119,35 @@ resource "opnsense_firewall_filter" "guest_to_router_dns" {
   }
 }
 
-# Allow Guest -> Chromecast on LAN (before block rules)
-resource "opnsense_firewall_filter" "guest_to_chromecast" {
+# Allow Guest mDNS for Chromecast discovery
+resource "opnsense_firewall_filter" "guest_mdns" {
+  count       = var.vlan_interfaces_configured ? 1 : 0
+  enabled     = true
+  sequence    = 102
+  description = "Allow Guest mDNS"
+
+  interface = {
+    interface = [var.guest_interface]
+  }
+
+  filter = {
+    action    = "pass"
+    direction = "in"
+    protocol  = "UDP"
+
+    destination = {
+      net  = "224.0.0.251"
+      port = "5353"
+    }
+  }
+}
+
+# Allow Guest -> Chromecast TCP (control, mirroring)
+resource "opnsense_firewall_filter" "guest_to_chromecast_tcp" {
   count       = var.vlan_interfaces_configured ? 1 : 0
   enabled     = true
   sequence    = 105
-  description = "Allow Guest to Chromecast"
+  description = "Allow Guest to Chromecast TCP"
 
   interface = {
     interface = [var.guest_interface]
@@ -132,7 +160,30 @@ resource "opnsense_firewall_filter" "guest_to_chromecast" {
 
     destination = {
       net  = "192.168.1.10"
-      port = opnsense_firewall_alias.chromecast_ports[0].name
+      port = opnsense_firewall_alias.chromecast_tcp_ports[0].name
+    }
+  }
+}
+
+# Allow Guest -> Chromecast UDP (RTP/RTCP streaming)
+resource "opnsense_firewall_filter" "guest_to_chromecast_udp" {
+  count       = var.vlan_interfaces_configured ? 1 : 0
+  enabled     = true
+  sequence    = 106
+  description = "Allow Guest to Chromecast UDP"
+
+  interface = {
+    interface = [var.guest_interface]
+  }
+
+  filter = {
+    action    = "pass"
+    direction = "in"
+    protocol  = "UDP"
+
+    destination = {
+      net  = "192.168.1.10"
+      port = opnsense_firewall_alias.chromecast_udp_ports[0].name
     }
   }
 }
