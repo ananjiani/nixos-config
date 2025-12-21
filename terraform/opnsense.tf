@@ -54,29 +54,6 @@ resource "opnsense_firewall_filter" "anti_lockout" {
   }
 }
 
-# Allow LAN -> Chromecast on IoT for casting
-resource "opnsense_firewall_filter" "lan_to_chromecast" {
-  count       = var.vlan_interfaces_configured ? 1 : 0
-  enabled     = true
-  sequence    = 5
-  description = "Allow LAN to Chromecast"
-
-  interface = {
-    interface = ["lan"]
-  }
-
-  filter = {
-    action    = "pass"
-    direction = "in"
-    protocol  = "TCP"
-
-    destination = {
-      net  = "10.20.20.10"
-      port = opnsense_firewall_alias.chromecast_ports[0].name
-    }
-  }
-}
-
 # Allow all outbound traffic from LAN
 # This is the basic "allow LAN to internet" rule
 resource "opnsense_firewall_filter" "lan_to_any" {
@@ -126,9 +103,17 @@ resource "opnsense_kea_reservation" "switch" {
   description = "TP-Link TL-SG108E Managed Switch"
 }
 
-resource "opnsense_kea_reservation" "jellyfin" {
+resource "opnsense_kea_reservation" "chromecast" {
   subnet_id   = opnsense_kea_subnet.lan.id
   ip_address  = "192.168.1.10"
+  mac_address = local.mac_addresses.chromecast
+  hostname    = "chromecast"
+  description = "Google Chromecast"
+}
+
+resource "opnsense_kea_reservation" "jellyfin" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.11"
   mac_address = local.mac_addresses.jellyfin
   hostname    = "jellyfin"
   description = "Jellyfin homeserver (future)"
