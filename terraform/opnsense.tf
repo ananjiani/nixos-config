@@ -94,3 +94,11 @@ resource "opnsense_kea_reservation" "access_point" {
   hostname    = "ap"
   description = "KuWFi AX835 Wireless Access Point"
 }
+
+resource "opnsense_kea_reservation" "switch" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.3"
+  mac_address = data.sops_file.secrets.data["tl-sg108e_mac_address"]
+  hostname    = "switch"
+  description = "TP-Link TL-SG108E Managed Switch"
+}
