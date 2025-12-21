@@ -87,19 +87,19 @@ resource "opnsense_kea_subnet" "lan" {
   dns_servers = [var.opnsense_host]
 }
 
-resource "opnsense_kea_reservation" "access_point" {
+resource "opnsense_kea_reservation" "kuwfi_ap" {
   subnet_id   = opnsense_kea_subnet.lan.id
   ip_address  = "192.168.1.2"
-  mac_address = local.mac_addresses.access_point
-  hostname    = "ap"
+  mac_address = local.mac_addresses.kuwfi_ap
+  hostname    = "kuwfi-ap"
   description = "KuWFi AX835 Wireless Access Point"
 }
 
-resource "opnsense_kea_reservation" "switch" {
+resource "opnsense_kea_reservation" "tl_sg108e" {
   subnet_id   = opnsense_kea_subnet.lan.id
   ip_address  = "192.168.1.3"
-  mac_address = local.mac_addresses.switch
-  hostname    = "switch"
+  mac_address = local.mac_addresses.tl_sg108e
+  hostname    = "tl-sg108e"
   description = "TP-Link TL-SG108E Managed Switch"
 }
 
@@ -111,10 +111,10 @@ resource "opnsense_kea_reservation" "chromecast" {
   description = "Google Chromecast"
 }
 
-resource "opnsense_kea_reservation" "jellyfin" {
-  subnet_id   = opnsense_kea_subnet.lan.id
-  ip_address  = "192.168.1.11"
-  mac_address = local.mac_addresses.jellyfin
-  hostname    = "jellyfin"
-  description = "Jellyfin homeserver (future)"
-}
+# resource "opnsense_kea_reservation" "jellyfin" {
+#   subnet_id   = opnsense_kea_subnet.lan.id
+#   ip_address  = "192.168.1.11"
+#   mac_address = local.mac_addresses.jellyfin
+#   hostname    = "jellyfin"
+#   description = "Jellyfin homeserver (future)"
+# }

@@ -67,7 +67,7 @@ variable "guest_dhcp_pool" {
 variable "guest_interface" {
   description = "OPNsense interface name for Guest VLAN (set after manual assignment)"
   type        = string
-  default     = "opt1"
+  default     = "opt2"
 }
 
 # IoT VLAN (VLAN 20)
@@ -98,7 +98,7 @@ variable "iot_dhcp_pool" {
 variable "iot_interface" {
   description = "OPNsense interface name for IoT VLAN (set after manual assignment)"
   type        = string
-  default     = "opt2"
+  default     = "opt1"
 }
 
 # Deployment control - set to true after manually configuring VLAN interfaces in OPNsense UI
