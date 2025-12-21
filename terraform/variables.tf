@@ -28,3 +28,82 @@ variable "lan_subnet" {
   type        = string
   default     = "192.168.1.0/24"
 }
+
+# =============================================================================
+# VLAN Configuration
+# =============================================================================
+
+variable "vlan_parent_interface" {
+  description = "Parent interface for VLANs (e.g., igb1)"
+  type        = string
+  default     = "igb1"
+}
+
+# Guest VLAN (VLAN 10)
+variable "guest_vlan_tag" {
+  description = "VLAN tag for Guest network"
+  type        = number
+  default     = 10
+}
+
+variable "guest_subnet" {
+  description = "Guest network CIDR"
+  type        = string
+  default     = "10.10.10.0/24"
+}
+
+variable "guest_gateway" {
+  description = "Guest network gateway IP"
+  type        = string
+  default     = "10.10.10.1"
+}
+
+variable "guest_dhcp_pool" {
+  description = "Guest DHCP pool range"
+  type        = string
+  default     = "10.10.10.100-10.10.10.254"
+}
+
+variable "guest_interface" {
+  description = "OPNsense interface name for Guest VLAN (set after manual assignment)"
+  type        = string
+  default     = "opt1"
+}
+
+# IoT VLAN (VLAN 20)
+variable "iot_vlan_tag" {
+  description = "VLAN tag for IoT network"
+  type        = number
+  default     = 20
+}
+
+variable "iot_subnet" {
+  description = "IoT network CIDR"
+  type        = string
+  default     = "10.20.20.0/24"
+}
+
+variable "iot_gateway" {
+  description = "IoT network gateway IP"
+  type        = string
+  default     = "10.20.20.1"
+}
+
+variable "iot_dhcp_pool" {
+  description = "IoT DHCP pool range"
+  type        = string
+  default     = "10.20.20.100-10.20.20.254"
+}
+
+variable "iot_interface" {
+  description = "OPNsense interface name for IoT VLAN (set after manual assignment)"
+  type        = string
+  default     = "opt2"
+}
+
+# Deployment control - set to true after manually configuring VLAN interfaces in OPNsense UI
+variable "vlan_interfaces_configured" {
+  description = "Set to true after manually assigning VLAN interfaces in OPNsense UI"
+  type        = bool
+  default     = true
+}
