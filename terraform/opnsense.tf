@@ -111,6 +111,14 @@ resource "opnsense_kea_reservation" "chromecast" {
   description = "Google Chromecast"
 }
 
+resource "opnsense_kea_reservation" "gondor" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.20"
+  mac_address = local.mac_addresses.gondor
+  hostname    = "gondor"
+  description = "Proxmox VE Server"
+}
+
 # resource "opnsense_kea_reservation" "jellyfin" {
 #   subnet_id   = opnsense_kea_subnet.lan.id
 #   ip_address  = "192.168.1.11"
