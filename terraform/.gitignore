@@ -32,5 +32,5 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-# Lock file (some prefer to commit this, but we'll gitignore for now)
-.terraform.lock.hcl
+# Lock file - committed for reproducibility and security checksums
+# Run `terraform providers lock -platform=linux_amd64` if adding new platforms
