@@ -7,7 +7,7 @@ variable "domain" {
 variable "homeserver_ip" {
   description = "Public IP address of the homeserver"
   type        = string
-  default     = "76.201.4.6"
+  default     = "72.182.230.42"
 }
 
 variable "cloudflare_proxied" {

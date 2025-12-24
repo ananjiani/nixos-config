@@ -12,11 +12,13 @@
     defaultSopsFile = ../../../secrets/secrets.yaml;
     defaultSymlinkPath = "/run/user/1000/secrets";
     defaultSecretsMountPoint = "/run/user/1000/secrets.d";
-    secrets.atuin_key.sopsFile = ../../../secrets/secrets.yaml;
-    secrets.hf_token.sopsFile = ../../../secrets/secrets.yaml;
-    secrets.proton_bridge_password = {
-      sopsFile = ../../../secrets/secrets.yaml;
-      mode = "0400";
+    secrets = {
+      atuin_key.sopsFile = ../../../secrets/secrets.yaml;
+      hf_token.sopsFile = ../../../secrets/secrets.yaml;
+      proton_bridge_password = {
+        sopsFile = ../../../secrets/secrets.yaml;
+        mode = "0400";
+      };
     };
   };
 

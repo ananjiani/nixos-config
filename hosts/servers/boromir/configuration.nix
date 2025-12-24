@@ -1,7 +1,6 @@
 # Boromir - Proxmox VM (minimal base)
 {
   inputs,
-  pkgs,
   pkgs-stable,
   ...
 }:
@@ -13,17 +12,48 @@
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/ssh.nix
     ../../../modules/nixos/nfs-client.nix
-    # ../../../modules/nixos/networking.nix
+    ../../../modules/nixos/networking.nix
+    ../../../modules/nixos/caddy.nix
+    ../../../modules/nixos/headscale.nix
+    ../../../modules/nixos/tailscale.nix
   ];
 
-  environment.systemPackages = with pkgs-stable; [
-    nftables
-    dig
-  ];
-  # Mount NFS share from faramir (use IP since we ARE the DNS server)
-  modules.nfs-client = {
-    enable = true;
-    server = "192.168.1.22";
+  modules = {
+    # Mount NFS share from faramir (use IP since we ARE the DNS server)
+    nfs-client = {
+      enable = true;
+      server = "192.168.1.22";
+    };
+
+    # Caddy reverse proxy (handles TLS via Let's Encrypt)
+    caddy = {
+      enable = true;
+      email = "ammar@dimensiondoor.xyz"; # For Let's Encrypt
+      virtualHosts = {
+        "ts.dimensiondoor.xyz" = "localhost:8080";
+        # Add more services here as needed
+      };
+    };
+
+    # Headscale - self-hosted Tailscale control server
+    headscale = {
+      enable = true;
+      domain = "ts.dimensiondoor.xyz";
+      baseDomain = "tail.dimensiondoor.xyz";
+    };
+
+    # Tailscale client - this node is an exit node
+    tailscale = {
+      enable = true;
+      loginServer = "https://ts.dimensiondoor.xyz";
+      exitNode = true;
+    };
+
+    # SSH server
+    ssh = {
+      enable = true;
+      permitRootLogin = "prohibit-password";
+    };
   };
 
   networking = {
@@ -57,10 +87,32 @@
       };
       filtering = {
         rewrites = [
-          { domain = "faramir.lan"; answer = "192.168.1.22"; enabled = true; }
-          { domain = "boromir.lan"; answer = "192.168.1.21"; enabled = true; }
-          { domain = "gondor.lan"; answer = "192.168.1.20"; enabled = true; }
-          { domain = "router.lan"; answer = "192.168.1.1"; enabled = true; }
+          {
+            domain = "faramir.lan";
+            answer = "192.168.1.22";
+            enabled = true;
+          }
+          {
+            domain = "boromir.lan";
+            answer = "192.168.1.21";
+            enabled = true;
+          }
+          {
+            domain = "gondor.lan";
+            answer = "192.168.1.20";
+            enabled = true;
+          }
+          {
+            domain = "router.lan";
+            answer = "192.168.1.1";
+            enabled = true;
+          }
+          # Headscale - local resolution to avoid hairpin NAT
+          {
+            domain = "ts.dimensiondoor.xyz";
+            answer = "192.168.1.21";
+            enabled = true;
+          }
         ];
       };
     };
@@ -89,12 +141,6 @@
       "virtio_net"
       "sd_mod"
     ];
-  };
-
-  # Enable SSH module (permitRootLogin for nixos-anywhere deployment)
-  modules.ssh = {
-    enable = true;
-    permitRootLogin = "prohibit-password";
   };
 
   system.stateVersion = "25.11";

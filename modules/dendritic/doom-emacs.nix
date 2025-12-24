@@ -1,7 +1,7 @@
 # Dendritic Doom Emacs Module
 # Platform-aware Doom Emacs configuration supporting both GUI (pgtk) and terminal (nox) variants
 # This module follows the dendritic pattern - aspect-oriented configuration
-{ ... }:
+_:
 let
   doomDir = "$HOME/.dotfiles/modules/home/editors/doom-emacs";
 in
@@ -49,36 +49,38 @@ in
         lib.mkMerge [
           # Common config (all variants)
           {
-            home.shellAliases = {
-              ec = "emacsclient";
-              ecn = "emacsclient -nw";
+            home = {
+              shellAliases = {
+                ec = "emacsclient";
+                ecn = "emacsclient -nw";
+              };
+
+              packages = with pkgs; [
+                # Doom dependencies
+                fd
+                ripgrep
+                nodejs
+                nodePackages.prettier
+                (aspellWithDicts (
+                  d: with d; [
+                    en
+                    en-computers
+                    en-science
+                  ]
+                ))
+              ];
+
+              sessionVariables.DOOMDIR = doomDir;
+              sessionPath = [ "$HOME/.emacs.d/bin" ];
+
+              # Clone Doom Emacs
+              activation.installDoomEmacs = lib.hm.dag.entryAfter [ "installPackages" ] ''
+                if [ ! -d "$HOME/.emacs.d" ]; then
+                  PATH="${config.home.path}/bin:$PATH"
+                  git clone --depth=1 --single-branch https://github.com/doomemacs/doomemacs $HOME/.emacs.d
+                fi
+              '';
             };
-
-            home.packages = with pkgs; [
-              # Doom dependencies
-              fd
-              ripgrep
-              nodejs
-              nodePackages.prettier
-              (aspellWithDicts (
-                d: with d; [
-                  en
-                  en-computers
-                  en-science
-                ]
-              ))
-            ];
-
-            home.sessionVariables.DOOMDIR = doomDir;
-            home.sessionPath = [ "$HOME/.emacs.d/bin" ];
-
-            # Clone Doom Emacs
-            home.activation.installDoomEmacs = lib.hm.dag.entryAfter [ "installPackages" ] ''
-              if [ ! -d "$HOME/.emacs.d" ]; then
-                PATH="${config.home.path}/bin:$PATH"
-                git clone --depth=1 --single-branch https://github.com/doomemacs/doomemacs $HOME/.emacs.d
-              fi
-            '';
           }
 
           # pgtk variant (GUI Emacs)
