@@ -4,7 +4,7 @@
 #
 # NOTE: Brave on Linux only reads policies from /etc/brave/policies/managed/
 # This is a NixOS-only module - no Home Manager needed.
-{ ... }:
+_:
 
 {
   # NixOS module - installs Brave and writes policies to /etc/brave/policies/managed/

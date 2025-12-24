@@ -64,6 +64,7 @@ resource "opnsense_firewall_alias" "vpn_exempt_devices" {
   type        = "host"
   description = "Devices that bypass VPN and use WAN directly"
   content = [
+    "192.168.1.10", # chromecast
     "192.168.1.50", # ammars-pc
     "192.168.1.51", # phone
   ]
@@ -224,6 +225,33 @@ resource "opnsense_kea_reservation" "phone" {
   hostname    = "ammars-phone"
   description = "Phone (VPN exempt)"
 }
+
+# =============================================================================
+# Port Forwarding for Headscale/Caddy
+# =============================================================================
+# These port forwards allow external access to Caddy (reverse proxy) on boromir.
+# Caddy handles TLS termination for Headscale and future services.
+#
+# MANUAL STEPS REQUIRED in OPNsense UI (Firewall → NAT → Port Forward → Add):
+#
+# Rule 1 - HTTPS (443):
+#   Interface: WAN
+#   Protocol: TCP
+#   Destination: WAN address, port 443
+#   Redirect target IP: 192.168.1.21 (boromir)
+#   Redirect target port: 443
+#   Description: HTTPS to boromir (Caddy)
+#
+# Rule 2 - HTTP (80) for ACME challenges:
+#   Interface: WAN
+#   Protocol: TCP
+#   Destination: WAN address, port 80
+#   Redirect target IP: 192.168.1.21 (boromir)
+#   Redirect target port: 80
+#   Description: HTTP to boromir (ACME challenge)
+#
+# Note: NAT rules via Terraform API have known issues with interface loading.
+# See: https://github.com/opnsense/core/issues/2171
 
 # =============================================================================
 # DNS Configuration

@@ -46,3 +46,14 @@ resource "cloudflare_record" "sji_api" {
   ttl     = 300
   comment = "Spatial Jobs Index API (VPS) - managed by Terraform"
 }
+
+# Tailscale/Headscale control server
+resource "cloudflare_record" "tailscale" {
+  zone_id = local.zone_id
+  name    = "ts"
+  content = var.homeserver_ip
+  type    = "A"
+  proxied = false # Must be false for Tailscale coordination
+  ttl     = 300
+  comment = "Headscale control server (boromir) - managed by Terraform"
+}

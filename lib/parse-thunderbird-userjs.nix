@@ -43,7 +43,7 @@ let
       in
       {
         name = key;
-        value = value;
+        inherit value;
       }
     else
       null;
