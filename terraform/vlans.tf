@@ -233,11 +233,12 @@ resource "opnsense_firewall_filter" "guest_block_iot" {
 }
 
 # Allow Guest -> Internet
+# When VPN gateway is configured, routes through Mullvad VPN
 resource "opnsense_firewall_filter" "guest_to_internet" {
   count       = var.vlan_interfaces_configured ? 1 : 0
   enabled     = true
   sequence    = 190
-  description = "Allow Guest to Internet"
+  description = var.vpn_gateway_configured ? "Allow Guest to Internet (via VPN)" : "Allow Guest to Internet"
 
   interface = {
     interface = [var.guest_interface]
@@ -247,6 +248,10 @@ resource "opnsense_firewall_filter" "guest_to_internet" {
     action    = "pass"
     direction = "in"
     protocol  = "any"
+  }
+
+  source_routing = {
+    gateway = var.vpn_gateway_configured ? var.vpn_gateway_name : ""
   }
 }
 

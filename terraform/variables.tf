@@ -109,6 +109,34 @@ variable "vlan_interfaces_configured" {
 }
 
 # =============================================================================
+# WireGuard VPN (Mullvad)
+# =============================================================================
+# Mullvad credentials are loaded from SOPS secrets:
+#   - mullvad_private_key
+#   - mullvad_public_key
+#   - mullvad_address
+#   - mullvad_server
+#   - mullvad_server_pubkey
+
+variable "vpn_gateway_configured" {
+  description = "Set to true after manually creating VPN gateway in OPNsense UI"
+  type        = bool
+  default     = true
+}
+
+variable "vpn_gateway_name" {
+  description = "Name of the VPN gateway in OPNsense (created manually after interface assignment)"
+  type        = string
+  default     = "Mullvad_VPNV4"
+}
+
+variable "wan_gateway_name" {
+  description = "Name of the WAN gateway in OPNsense"
+  type        = string
+  default     = "WAN_DHCP"
+}
+
+# =============================================================================
 # Proxmox Configuration
 # =============================================================================
 
