@@ -4,6 +4,39 @@
 # Changes here will be applied to your OPNsense router.
 
 # =============================================================================
+# WireGuard VPN (Mullvad)
+# =============================================================================
+# WireGuard client configuration for Mullvad VPN.
+# Note: WireGuard is built into OPNsense 24.1.2+ (no plugin needed).
+#
+# MANUAL STEPS REQUIRED after terraform apply:
+# 1. Interfaces > Assignments: Add wg0 as WAN_MULLVAD
+# 2. Enable the interface with IP from Mullvad (e.g., 10.x.x.x/32)
+# 3. System > Gateways > Add: Create Mullvad_VPNV4 gateway pointing to WAN_MULLVAD
+
+resource "opnsense_wireguard_client" "mullvad_peer" {
+  name           = "mullvad-server"
+  enabled        = true
+  public_key     = data.sops_file.secrets.data["mullvad_server_pubkey"]
+  tunnel_address = ["0.0.0.0/0"] # Route all traffic
+  server_address = data.sops_file.secrets.data["mullvad_server"]
+  server_port    = 51820
+  keep_alive     = 25
+}
+
+resource "opnsense_wireguard_server" "mullvad" {
+  name           = "mullvad"
+  enabled        = true
+  private_key    = data.sops_file.secrets.data["mullvad_private_key"]
+  public_key     = data.sops_file.secrets.data["mullvad_public_key"]
+  tunnel_address = [data.sops_file.secrets.data["mullvad_address"]]
+  peers          = [opnsense_wireguard_client.mullvad_peer.id]
+  port           = 51820
+  mtu            = 1280          # Lower MTU for WireGuard overhead
+  disable_routes = true          # Required for policy-based routing
+}
+
+# =============================================================================
 # Firewall Aliases
 # =============================================================================
 # Aliases are named groups of IPs, networks, or ports that can be referenced
@@ -23,6 +56,17 @@ resource "opnsense_firewall_alias" "lan_network" {
   type        = "network"
   description = "Local LAN subnet"
   content     = [var.lan_subnet]
+}
+
+# VPN exempt devices - these bypass the VPN and use WAN directly
+resource "opnsense_firewall_alias" "vpn_exempt_devices" {
+  name        = "VPN_Exempt"
+  type        = "host"
+  description = "Devices that bypass VPN and use WAN directly"
+  content = [
+    "192.168.1.50", # ammars-pc
+    "192.168.1.51", # phone
+  ]
 }
 
 # =============================================================================
@@ -54,12 +98,12 @@ resource "opnsense_firewall_filter" "anti_lockout" {
   }
 }
 
-# Allow all outbound traffic from LAN
-# This is the basic "allow LAN to internet" rule
-resource "opnsense_firewall_filter" "lan_to_any" {
+# VPN-exempt devices bypass VPN and use WAN directly
+resource "opnsense_firewall_filter" "vpn_exempt_lan" {
+  count       = var.vpn_gateway_configured ? 1 : 0
   enabled     = true
-  sequence    = 10
-  description = "Allow LAN to any destination"
+  sequence    = 5
+  description = "VPN exempt: LAN devices bypass VPN"
 
   interface = {
     interface = ["lan"]
@@ -69,6 +113,36 @@ resource "opnsense_firewall_filter" "lan_to_any" {
     action    = "pass"
     direction = "in"
     protocol  = "any"
+
+    source = {
+      net = opnsense_firewall_alias.vpn_exempt_devices.name
+    }
+  }
+
+  source_routing = {
+    gateway = var.wan_gateway_name
+  }
+}
+
+# Allow all outbound traffic from LAN
+# When VPN gateway is configured, routes through Mullvad VPN
+resource "opnsense_firewall_filter" "lan_to_any" {
+  enabled     = true
+  sequence    = 10
+  description = var.vpn_gateway_configured ? "Allow LAN to any destination (via VPN)" : "Allow LAN to any destination"
+
+  interface = {
+    interface = ["lan"]
+  }
+
+  filter = {
+    action    = "pass"
+    direction = "in"
+    protocol  = "any"
+  }
+
+  source_routing = {
+    gateway = var.vpn_gateway_configured ? var.vpn_gateway_name : ""
   }
 }
 
@@ -135,6 +209,22 @@ resource "opnsense_kea_reservation" "faramir" {
   description = "NFS Server VM"
 }
 
+resource "opnsense_kea_reservation" "ammars_pc" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.50"
+  mac_address = local.mac_addresses.ammars_pc
+  hostname    = "ammars-pc"
+  description = "Desktop PC (VPN exempt)"
+}
+
+resource "opnsense_kea_reservation" "phone" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.51"
+  mac_address = local.mac_addresses.phone
+  hostname    = "ammars-phone"
+  description = "Phone (VPN exempt)"
+}
+
 # =============================================================================
 # Unbound DNS Host Overrides
 # =============================================================================
@@ -175,4 +265,74 @@ resource "opnsense_unbound_host_override" "router" {
 #   mac_address = local.mac_addresses.jellyfin
 #   hostname    = "jellyfin"
 #   description = "Jellyfin homeserver (future)"
+# }
+
+# =============================================================================
+# VPN Interface Firewall Rules
+# =============================================================================
+# Allow return traffic on the VPN interface
+
+resource "opnsense_firewall_filter" "vpn_allow_inbound" {
+  count       = var.vpn_gateway_configured ? 1 : 0
+  enabled     = true
+  sequence    = 1
+  description = "Allow VPN inbound traffic"
+
+  interface = {
+    interface = ["opt3"]
+  }
+
+  filter = {
+    action    = "pass"
+    direction = "in"
+    protocol  = "any"
+  }
+}
+
+# =============================================================================
+# Outbound NAT for VPN
+# =============================================================================
+# NAT rules must be created MANUALLY in OPNsense UI due to a known bug where
+# rules created via API fail to load with "no IP address found for opt3".
+# See: https://github.com/opnsense/core/issues/2171
+#
+# Manual NAT rule settings (Firewall → NAT → Outbound → Add):
+#   Interface: VPN
+#   Source: 192.168.1.0/24 (LAN) or 10.10.10.0/24 (Guest)
+#   Translation/target: 10.72.129.112 (Mullvad tunnel IP)
+#
+# resource "opnsense_firewall_nat" "lan_to_vpn" {
+#   count       = var.vpn_gateway_configured ? 1 : 0
+#   enabled     = true
+#   sequence    = 100
+#   description = "NAT LAN to WireGuard VPN"
+#   interface   = "opt3"
+#   protocol    = "any"
+#   ip_protocol = "inet"
+#
+#   source = {
+#     net = var.lan_subnet
+#   }
+#
+#   target = {
+#     ip = split("/", data.sops_file.secrets.data["mullvad_address"])[0]
+#   }
+# }
+#
+# resource "opnsense_firewall_nat" "guest_to_vpn" {
+#   count       = var.vpn_gateway_configured ? 1 : 0
+#   enabled     = true
+#   sequence    = 101
+#   description = "NAT Guest to WireGuard VPN"
+#   interface   = "opt3"
+#   protocol    = "any"
+#   ip_protocol = "inet"
+#
+#   source = {
+#     net = var.guest_subnet
+#   }
+#
+#   target = {
+#     ip = split("/", data.sops_file.secrets.data["mullvad_address"])[0]
+#   }
 # }
