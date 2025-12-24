@@ -18,8 +18,12 @@
     ../../modules/nixos/ssh.nix
     ../../modules/nixos/bluetooth.nix
     ../../modules/nixos/android.nix
+    ../../modules/nixos/nfs-client.nix
     inputs.play-nix.nixosModules.play
   ];
+
+  # Mount NFS share from faramir
+  modules.nfs-client.enable = true;
 
   networking.hostName = "ammars-pc";
   environment.systemPackages = with pkgs; [ signal-desktop ];
@@ -45,11 +49,11 @@
 
   modules.ssh.enable = true;
 
-  # Brave browser with Privacy Guides recommended settings
+  # Brave browser - disable DoH since OPNsense handles DNS with Mullvad DoT
   programs.brave = {
     enable = true;
     features.sync = true;
     features.aiChat = true;
-    doh.provider = "quad9";
+    doh.enable = false; # Use system DNS (router-level encryption)
   };
 }

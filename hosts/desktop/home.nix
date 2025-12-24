@@ -1,9 +1,17 @@
 {
   lib,
+  pkgs,
   ...
 }:
 
 {
+  # Enable SSH agent for SSH key management
+  services.ssh-agent.enable = true;
+
+  # SSH askpass for passphrase prompts
+  home.packages = [ pkgs.lxqt.lxqt-openssh-askpass ];
+  home.sessionVariables.SSH_ASKPASS = "${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass";
+
   imports = [
     ../profiles/workstation/home.nix
     ../../modules/home/gaming.nix

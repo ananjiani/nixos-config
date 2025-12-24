@@ -9,6 +9,7 @@ locals {
     tl_sg108e  = "60:83:e7:71:f2:18" # TP-Link TL-SG108E Managed Switch
     chromecast = "1c:53:f9:04:40:9d" # Google Chromecast
     gondor     = "b4:2e:99:39:df:9e" # Proxmox VE Server
-    # jellyfin     = "XX:XX:XX:XX:XX:XX" # Jellyfin homeserver (future)
+    boromir    = "bc:24:11:f9:37:2e" # NixOS VM (main server)
+    faramir    = "BC:24:11:55:6A:3F" # NFS Server VM
   }
 }

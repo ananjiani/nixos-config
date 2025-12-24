@@ -107,3 +107,44 @@ variable "vlan_interfaces_configured" {
   type        = bool
   default     = true
 }
+
+# =============================================================================
+# Proxmox Configuration
+# =============================================================================
+
+variable "proxmox_host" {
+  description = "Proxmox VE host IP address or hostname"
+  type        = string
+  default     = "192.168.1.20"
+}
+
+variable "proxmox_node" {
+  description = "Proxmox node name"
+  type        = string
+  default     = "gondor"
+}
+
+variable "proxmox_datastore" {
+  description = "Default datastore for VM disks"
+  type        = string
+  default     = "local-lvm"
+}
+
+# Disk IDs for faramir passthrough (get from: ls -la /dev/disk/by-id/ on Proxmox host)
+variable "faramir_disk1_id" {
+  description = "Disk ID for faramir data disk 1 (UUID: dc5e54fd-6474-4b88-a757-c31f62c37138)"
+  type        = string
+  default     = "ata-ST2000DM008-2FR102_ZFL4ERX1"
+}
+
+variable "faramir_disk2_id" {
+  description = "Disk ID for faramir data disk 2 (UUID: 18cee265-e408-43bc-b6fe-c5edde8cb354)"
+  type        = string
+  default     = "ata-ST8000DM004-2U9188_ZR15RMQZ"
+}
+
+variable "faramir_parity_id" {
+  description = "Disk ID for faramir parity disk (UUID: 15bc428e-291e-4380-a234-a2df4b4b0297)"
+  type        = string
+  default     = "ata-WDC_WD1002FAEX-00Z3A0_WD-WCATRA312386"
+}

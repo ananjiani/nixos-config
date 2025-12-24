@@ -9,6 +9,19 @@
 {
   imports = [ ./base.nix ];
 
+  # Workstation networking (servers use systemd-networkd or DHCP)
+  networking.networkmanager = {
+    enable = true;
+    dns = "systemd-resolved"; # Use systemd-resolved for split DNS
+  };
+
+  # Split DNS: route .lan queries to OPNsense, everything else through VPN
+  services.resolved = {
+    enable = true;
+    domains = [ "~lan" ]; # Route .lan to fallback DNS
+    fallbackDns = [ "192.168.1.1" ]; # OPNsense for .lan resolution
+  };
+
   environment.systemPackages = with pkgs; [
     neofetch
   ];

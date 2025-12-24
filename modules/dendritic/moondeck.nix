@@ -9,12 +9,7 @@ let
     pkgs:
     let
       sources = import ../../_sources/generated.nix {
-        inherit (pkgs)
-          fetchurl
-          fetchgit
-          fetchFromGitHub
-          dockerTools
-          ;
+        inherit (pkgs) fetchurl;
       };
     in
     pkgs.appimageTools.wrapType2 {
