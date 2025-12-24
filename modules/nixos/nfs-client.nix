@@ -38,13 +38,16 @@ in
       device = "${cfg.server}:${cfg.export}";
       fsType = "nfs";
       options =
-        if cfg.automount then [
-          "x-systemd.automount"
-          "noauto"
-          "x-systemd.idle-timeout=600"
-        ] else [
-          "_netdev"
-        ];
+        if cfg.automount then
+          [
+            "x-systemd.automount"
+            "noauto"
+            "x-systemd.idle-timeout=600"
+          ]
+        else
+          [
+            "_netdev"
+          ];
     };
   };
 }

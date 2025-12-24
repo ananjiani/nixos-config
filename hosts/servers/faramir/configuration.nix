@@ -4,7 +4,6 @@
 # Storage: 3 passthrough disks with mergerfs + SnapRAID
 {
   inputs,
-  pkgs,
   pkgs-stable,
   ...
 }:
@@ -59,14 +58,14 @@
 
   # Firewall: Allow NFS
   networking.firewall.allowedTCPPorts = [
-    111    # rpcbind/portmapper
-    2049   # nfs
-    20048  # mountd
+    111 # rpcbind/portmapper
+    2049 # nfs
+    20048 # mountd
   ];
   networking.firewall.allowedUDPPorts = [
-    111    # rpcbind/portmapper
-    2049   # nfs
-    20048  # mountd
+    111 # rpcbind/portmapper
+    2049 # nfs
+    20048 # mountd
   ];
 
   # Set initial password for ammar user (change after first login)
