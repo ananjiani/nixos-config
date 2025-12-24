@@ -19,6 +19,7 @@
     ../../modules/nixos/bluetooth.nix
     ../../modules/nixos/android.nix
     ../../modules/nixos/nfs-client.nix
+    ../../modules/nixos/networking.nix
     inputs.play-nix.nixosModules.play
   ];
 

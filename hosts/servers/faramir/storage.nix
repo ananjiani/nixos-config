@@ -71,5 +71,12 @@
         "func.utimens=ff"
       ];
     };
+
+    # Bind mount for NFS export (symlinks don't work with NFS exports)
+    "/srv/nfs" = {
+      device = "/mnt/storage";
+      fsType = "none";
+      options = [ "bind" ];
+    };
   };
 }

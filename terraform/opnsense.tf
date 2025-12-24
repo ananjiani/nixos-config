@@ -158,7 +158,7 @@ resource "opnsense_kea_subnet" "lan" {
 
   pools       = ["192.168.1.100-192.168.1.254"]
   routers     = [var.opnsense_host]
-  dns_servers = [var.opnsense_host]
+  dns_servers = ["192.168.1.21"] # boromir - AdGuard Home
 }
 
 resource "opnsense_kea_reservation" "kuwfi_ap" {
@@ -226,38 +226,15 @@ resource "opnsense_kea_reservation" "phone" {
 }
 
 # =============================================================================
-# Unbound DNS Host Overrides
+# DNS Configuration
 # =============================================================================
-# These provide local DNS resolution for LAN hosts.
-# Note: Kea DHCP doesn't auto-register with Unbound (only ISC DHCP does).
-
-resource "opnsense_unbound_host_override" "gondor" {
-  hostname    = "gondor"
-  domain      = "lan"
-  server      = "192.168.1.20"
-  description = "Proxmox VE Server"
-}
-
-resource "opnsense_unbound_host_override" "boromir" {
-  hostname    = "boromir"
-  domain      = "lan"
-  server      = "192.168.1.21"
-  description = "NixOS VM (main server)"
-}
-
-resource "opnsense_unbound_host_override" "faramir" {
-  hostname    = "faramir"
-  domain      = "lan"
-  server      = "192.168.1.22"
-  description = "NFS Server VM"
-}
-
-resource "opnsense_unbound_host_override" "router" {
-  hostname    = "router"
-  domain      = "lan"
-  server      = var.opnsense_host
-  description = "OPNsense Router"
-}
+# DNS is handled by AdGuard Home on boromir (192.168.1.21).
+# DHCP hands out boromir as the DNS server (see dns_servers in kea_subnet).
+#
+# MANUAL STEPS REQUIRED:
+# 1. Disable Unbound: Services → Unbound DNS → Uncheck "Enable"
+# 2. Set OPNsense DNS: System → Settings → General → DNS servers: 192.168.1.21
+#    Uncheck "Allow DNS server list to be overridden by DHCP/PPP on WAN"
 
 # resource "opnsense_kea_reservation" "jellyfin" {
 #   subnet_id   = opnsense_kea_subnet.lan.id
