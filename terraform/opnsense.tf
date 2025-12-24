@@ -119,6 +119,56 @@ resource "opnsense_kea_reservation" "gondor" {
   description = "Proxmox VE Server"
 }
 
+resource "opnsense_kea_reservation" "boromir" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.21"
+  mac_address = local.mac_addresses.boromir
+  hostname    = "boromir"
+  description = "NixOS VM (main server)"
+}
+
+resource "opnsense_kea_reservation" "faramir" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.22"
+  mac_address = local.mac_addresses.faramir
+  hostname    = "faramir"
+  description = "NFS Server VM"
+}
+
+# =============================================================================
+# Unbound DNS Host Overrides
+# =============================================================================
+# These provide local DNS resolution for LAN hosts.
+# Note: Kea DHCP doesn't auto-register with Unbound (only ISC DHCP does).
+
+resource "opnsense_unbound_host_override" "gondor" {
+  hostname    = "gondor"
+  domain      = "lan"
+  server      = "192.168.1.20"
+  description = "Proxmox VE Server"
+}
+
+resource "opnsense_unbound_host_override" "boromir" {
+  hostname    = "boromir"
+  domain      = "lan"
+  server      = "192.168.1.21"
+  description = "NixOS VM (main server)"
+}
+
+resource "opnsense_unbound_host_override" "faramir" {
+  hostname    = "faramir"
+  domain      = "lan"
+  server      = "192.168.1.22"
+  description = "NFS Server VM"
+}
+
+resource "opnsense_unbound_host_override" "router" {
+  hostname    = "router"
+  domain      = "lan"
+  server      = var.opnsense_host
+  description = "OPNsense Router"
+}
+
 # resource "opnsense_kea_reservation" "jellyfin" {
 #   subnet_id   = opnsense_kea_subnet.lan.id
 #   ip_address  = "192.168.1.11"

@@ -60,12 +60,9 @@
     LC_TIME = "en_US.UTF-8";
   };
 
-  networking = {
-    networkmanager.enable = true;
-    firewall = {
-      enable = true;
-      allowPing = true;
-    };
+  networking.firewall = {
+    enable = true;
+    allowPing = true;
   };
 
   users.users.ammar = {

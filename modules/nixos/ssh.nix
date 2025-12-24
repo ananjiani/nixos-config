@@ -80,5 +80,9 @@ in
     # Centralized authorized keys management
     # These keys can SSH INTO any machine that imports this module
     users.users.ammar.openssh.authorizedKeys.keys = authorizedKeys;
+
+    # Allow same keys for root when root login is permitted
+    users.users.root.openssh.authorizedKeys.keys =
+      lib.mkIf (cfg.permitRootLogin != "no") authorizedKeys;
   };
 }

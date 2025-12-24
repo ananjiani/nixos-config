@@ -10,6 +10,10 @@ terraform {
       source  = "browningluke/opnsense"
       version = "~> 0.16"
     }
+    proxmox = {
+      source  = "bpg/proxmox"
+      version = "~> 0.89"
+    }
     sops = {
       source  = "carlpett/sops"
       version = "~> 1.0"
@@ -36,4 +40,16 @@ provider "opnsense" {
   api_key        = data.sops_file.secrets.data["opnsense_api_key"]
   api_secret     = data.sops_file.secrets.data["opnsense_api_secret"]
   allow_insecure = true # Self-signed cert on fresh install
+}
+
+# Proxmox provider configuration
+provider "proxmox" {
+  endpoint  = "https://${var.proxmox_host}:8006/"
+  api_token = data.sops_file.secrets.data["proxmox_api_token"]
+  insecure  = true # Self-signed cert
+
+  ssh {
+    agent    = true
+    username = "root"
+  }
 }

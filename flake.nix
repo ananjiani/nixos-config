@@ -168,6 +168,26 @@
           ];
         };
 
+        # Boromir - Proxmox VM
+        boromir = lib.nixosSystem {
+          inherit system specialArgs;
+          modules = [
+            ./hosts/servers/boromir/configuration.nix
+            inputs.sops-nix.nixosModules.sops
+            inputs.disko.nixosModules.disko
+          ];
+        };
+
+        # Faramir - NFS Server (Proxmox VM)
+        faramir = lib.nixosSystem {
+          inherit system specialArgs;
+          modules = [
+            ./hosts/servers/faramir/configuration.nix
+            inputs.sops-nix.nixosModules.sops
+            inputs.disko.nixosModules.disko
+          ];
+        };
+
       };
 
       # Home Manager configurations with automatic hostname detection
@@ -243,6 +263,8 @@
           "ammar@framework13" = mkHomeConfig ./hosts/framework13/home.nix;
           "ammar@surface-go" = mkHomeConfig ./hosts/surface-go/home.nix;
           "ammar@homeserver" = mkHomeConfig ./hosts/homeserver/home.nix;
+          "ammar@boromir" = mkHomeConfig ./hosts/servers/boromir/home.nix;
+          "ammar@faramir" = mkHomeConfig ./hosts/servers/faramir/home.nix;
 
           # Pixel 9 (Debian AVF with Nix) - aarch64-linux
           "ammar@pixel9" =
