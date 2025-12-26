@@ -158,6 +158,18 @@ variable "proxmox_datastore" {
   default     = "local-lvm"
 }
 
+variable "proxmox_nodes" {
+  description = "Proxmox cluster nodes (middle-earth)"
+  type = map(object({
+    host = string
+  }))
+  default = {
+    gondor    = { host = "192.168.1.20" }
+    the-shire = { host = "192.168.1.23" }
+    rohan     = { host = "192.168.1.24" }
+  }
+}
+
 # Disk IDs for faramir passthrough (get from: ls -la /dev/disk/by-id/ on Proxmox host)
 variable "faramir_disk1_id" {
   description = "Disk ID for faramir data disk 1 (UUID: dc5e54fd-6474-4b88-a757-c31f62c37138)"

@@ -103,6 +103,16 @@
             enabled = true;
           }
           {
+            domain = "the-shire.lan";
+            answer = "192.168.1.23";
+            enabled = true;
+          }
+          {
+            domain = "rohan.lan";
+            answer = "192.168.1.24";
+            enabled = true;
+          }
+          {
             domain = "router.lan";
             answer = "192.168.1.1";
             enabled = true;
