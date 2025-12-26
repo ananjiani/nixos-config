@@ -113,6 +113,16 @@
             enabled = true;
           }
           {
+            domain = "frodo.lan";
+            answer = "192.168.1.25";
+            enabled = true;
+          }
+          {
+            domain = "samwise.lan";
+            answer = "192.168.1.26";
+            enabled = true;
+          }
+          {
             domain = "router.lan";
             answer = "192.168.1.1";
             enabled = true;
