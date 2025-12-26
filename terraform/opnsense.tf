@@ -226,6 +226,22 @@ resource "opnsense_kea_reservation" "phone" {
   description = "Phone (VPN exempt)"
 }
 
+resource "opnsense_kea_reservation" "the_shire" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.23"
+  mac_address = local.mac_addresses.the_shire
+  hostname    = "the-shire"
+  description = "The Shire"
+}
+
+resource "opnsense_kea_reservation" "rohan" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.24"
+  mac_address = local.mac_addresses.rohan
+  hostname    = "rohan"
+  description = "Rohan"
+}
+
 # =============================================================================
 # Port Forwarding for Headscale/Caddy
 # =============================================================================

@@ -13,5 +13,7 @@ locals {
     faramir    = "BC:24:11:55:6A:3F" # NFS Server VM
     ammars_pc  = "30:c5:99:26:f4:c5" # Desktop PC (VPN exempt)
     phone      = "04:00:6e:82:70:17" # Phone (VPN exempt)
+    the_shire  = "18:60:24:27:80:40" # The Shire
+    rohan      = "bc:5f:f4:e9:25:8f" # Rohan
   }
 }
