@@ -67,7 +67,10 @@
 
   users.users.ammar = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ];
+    extraGroups = [
+      "wheel"
+      "dialout" # Serial port access (Zigbee dongles, etc.)
+    ];
     shell = pkgs.fish;
   };
 }

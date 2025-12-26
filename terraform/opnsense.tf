@@ -178,6 +178,14 @@ resource "opnsense_kea_reservation" "tl_sg108e" {
   description = "TP-Link TL-SG108E Managed Switch"
 }
 
+resource "opnsense_kea_reservation" "tl_sg108pe" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.4"
+  mac_address = local.mac_addresses.tl_sg108pe
+  hostname    = "tl-sg108pe"
+  description = "TP-Link TL-SG108PE PoE Switch"
+}
+
 resource "opnsense_kea_reservation" "chromecast" {
   subnet_id   = opnsense_kea_subnet.lan.id
   ip_address  = "192.168.1.10"
@@ -240,6 +248,22 @@ resource "opnsense_kea_reservation" "rohan" {
   mac_address = local.mac_addresses.rohan
   hostname    = "rohan"
   description = "Rohan"
+}
+
+resource "opnsense_kea_reservation" "frodo" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.25"
+  mac_address = local.mac_addresses.frodo
+  hostname    = "frodo"
+  description = "Home Assistant OS VM"
+}
+
+resource "opnsense_kea_reservation" "samwise" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.26"
+  mac_address = local.mac_addresses.samwise
+  hostname    = "samwise"
+  description = "Zigbee2MQTT and MQTT Broker VM"
 }
 
 # =============================================================================
