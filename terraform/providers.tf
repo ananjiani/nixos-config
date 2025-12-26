@@ -36,7 +36,7 @@ provider "cloudflare" {
 
 # OPNsense provider configuration
 provider "opnsense" {
-  uri            = "https://${var.opnsense_host}"
+  uri            = "https://${var.opnsense_host}:8443"
   api_key        = data.sops_file.secrets.data["opnsense_api_key"]
   api_secret     = data.sops_file.secrets.data["opnsense_api_secret"]
   allow_insecure = true # Self-signed cert on fresh install
