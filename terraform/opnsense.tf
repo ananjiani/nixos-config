@@ -266,6 +266,14 @@ resource "opnsense_kea_reservation" "samwise" {
   description = "Zigbee2MQTT and MQTT Broker VM"
 }
 
+resource "opnsense_kea_reservation" "theoden" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.27"
+  mac_address = local.mac_addresses.theoden
+  hostname    = "theoden"
+  description = "k3s server VM"
+}
+
 # =============================================================================
 # Port Forwarding for Headscale/Caddy
 # =============================================================================

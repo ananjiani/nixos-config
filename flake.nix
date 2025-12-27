@@ -198,6 +198,16 @@
           ];
         };
 
+        # Theoden - k3s Server (Proxmox VM on rohan)
+        theoden = lib.nixosSystem {
+          inherit system specialArgs;
+          modules = [
+            ./hosts/servers/theoden/configuration.nix
+            inputs.sops-nix.nixosModules.sops
+            inputs.disko.nixosModules.disko
+          ];
+        };
+
       };
 
       # Home Manager configurations with automatic hostname detection
@@ -276,6 +286,7 @@
           "ammar@boromir" = mkHomeConfig ./hosts/servers/boromir/home.nix;
           "ammar@faramir" = mkHomeConfig ./hosts/servers/faramir/home.nix;
           "ammar@samwise" = mkHomeConfig ./hosts/servers/samwise/home.nix;
+          "ammar@theoden" = mkHomeConfig ./hosts/servers/theoden/home.nix;
 
           # Pixel 9 (Debian AVF with Nix) - aarch64-linux
           "ammar@pixel9" =

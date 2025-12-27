@@ -1,0 +1,24 @@
+---
+# MetalLB IP Address Pool
+# Reserve IPs 192.168.1.52-62 for LoadBalancer services
+# (192.168.1.50-51 are used by personal devices)
+# Key IPs: .53 = DNS (port 53!), .54 = AdGuard UI
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: lan-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 192.168.1.52-192.168.1.62
+---
+# L2 Advertisement for the IP pool
+# MetalLB will respond to ARP requests for these IPs
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: lan-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - lan-pool

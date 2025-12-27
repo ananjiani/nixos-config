@@ -1,0 +1,9 @@
+---
+# Note: The flux-system namespace and core FluxCD components
+# are created automatically by `flux bootstrap`.
+# This kustomization just adds our custom resources.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - infrastructure.yaml
+  - apps.yaml

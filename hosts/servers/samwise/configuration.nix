@@ -8,6 +8,7 @@
 {
   inputs,
   pkgs-stable,
+  config,
   ...
 }:
 
@@ -19,6 +20,7 @@
     ../../../modules/nixos/ssh.nix
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/server/zigbee2mqtt.nix
+    ../../../modules/nixos/server/k3s.nix
   ];
 
   networking = {
@@ -29,14 +31,38 @@
     ];
   };
 
-  # Zigbee2MQTT configuration
-  modules.zigbee2mqtt = {
-    enable = true;
-    mqttServer = "mqtt://localhost:1883";
-    frontendPort = 8080;
-    # USB device path - verify with: ls -la /dev/serial/by-id/
-    serialPort = "/dev/serial/by-id/usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_20230605144345-if00";
-    adapter = "ember"; # For SONOFF ZBDongle-E (V2) with EFR32MG21
+  # SOPS secrets configuration
+  sops = {
+    defaultSopsFile = ../../../secrets/secrets.yaml;
+    age.keyFile = "/var/lib/sops-nix/key.txt";
+    secrets.k3s_token = { };
+  };
+
+  modules = {
+    # k3s server node (joins existing cluster)
+    k3s = {
+      enable = true;
+      role = "server";
+      clusterInit = false;
+      serverAddr = "https://192.168.1.21:6443"; # boromir
+      tokenFile = config.sops.secrets.k3s_token.path;
+    };
+
+    # Zigbee2MQTT configuration
+    zigbee2mqtt = {
+      enable = true;
+      mqttServer = "mqtt://localhost:1883";
+      frontendPort = 8080;
+      # USB device path - verify with: ls -la /dev/serial/by-id/
+      serialPort = "/dev/serial/by-id/usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_20230605144345-if00";
+      adapter = "ember"; # For SONOFF ZBDongle-E (V2) with EFR32MG21
+    };
+
+    # SSH server
+    ssh = {
+      enable = true;
+      permitRootLogin = "prohibit-password";
+    };
   };
 
   # Mosquitto MQTT broker
@@ -79,12 +105,6 @@
 
   # USB/serial access for Zigbee dongle
   users.users.ammar.extraGroups = [ "dialout" ];
-
-  # SSH server
-  modules.ssh = {
-    enable = true;
-    permitRootLogin = "prohibit-password";
-  };
 
   system.stateVersion = "25.11";
   nixpkgs.hostPlatform = "x86_64-linux";

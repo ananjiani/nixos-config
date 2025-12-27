@@ -39,5 +39,9 @@
       "samwise"
       "samwise.lan"
     ];
+    "192.168.1.27" = [
+      "theoden"
+      "theoden.lan"
+    ];
   };
 }

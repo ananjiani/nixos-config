@@ -218,3 +218,67 @@ resource "proxmox_virtual_environment_vm" "samwise" {
     ]
   }
 }
+
+# =============================================================================
+# Rohan VMs
+# =============================================================================
+
+# =============================================================================
+# Theoden - NixOS VM for k3s cluster
+# =============================================================================
+# Part of the k3s HA cluster (server node).
+
+resource "proxmox_virtual_environment_vm" "theoden" {
+  name      = "theoden"
+  node_name = "rohan"
+  vm_id     = 104
+
+  on_boot = true
+  started = true
+
+  cpu {
+    cores = 2 # Limited to avoid overheating rohan (4-core i5-3570K)
+    type  = "host"
+  }
+
+  memory {
+    dedicated = 16384 # 16GB, leaving ~8GB for Proxmox host
+  }
+
+  boot_order = ["scsi0", "ide2", "net0"]
+
+  # Root disk
+  disk {
+    datastore_id = var.proxmox_datastore
+    size         = 100
+    interface    = "scsi0"
+    file_format  = "raw"
+    iothread     = true
+  }
+
+  network_device {
+    bridge      = "vmbr0"
+    mac_address = local.mac_addresses.theoden
+  }
+
+  agent {
+    enabled = true
+  }
+
+  bios          = "seabios"
+  scsi_hardware = "virtio-scsi-single"
+
+  operating_system {
+    type = "l26"
+  }
+
+  serial_device {}
+
+  lifecycle {
+    ignore_changes = [
+      disk,
+      boot_order,
+      cdrom,
+    ]
+  }
+}

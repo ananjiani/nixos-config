@@ -19,5 +19,7 @@ locals {
     # VMs on the-shire
     frodo   = "02:33:3E:B2:81:19" # HAOS VM
     samwise = "BC:24:11:00:01:03" # NixOS VM (update after creation)
+    # VMs on rohan
+    theoden = "BC:24:11:00:01:04" # k3s server VM
   }
 }
