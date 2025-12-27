@@ -86,14 +86,13 @@ in
         10250 # Kubelet metrics
         2379 # etcd client (HA clusters)
         2380 # etcd peer (HA clusters)
+        7946 # MetalLB speaker memberlist
       ];
 
       allowedUDPPorts = [
         8472 # Flannel VXLAN
+        7946 # MetalLB speaker memberlist
       ];
-
-      # MetalLB L2 mode uses ARP, which works at layer 2
-      # No additional firewall rules needed for MetalLB L2
     };
 
     # Create kubeconfig symlink for easier access
