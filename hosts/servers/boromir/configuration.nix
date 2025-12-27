@@ -2,6 +2,7 @@
 {
   inputs,
   pkgs-stable,
+  config,
   ...
 }:
 
@@ -16,6 +17,7 @@
     ../../../modules/nixos/caddy.nix
     ../../../modules/nixos/headscale.nix
     ../../../modules/nixos/tailscale.nix
+    ../../../modules/nixos/server/k3s.nix
   ];
 
   modules = {
@@ -54,6 +56,21 @@
       enable = true;
       permitRootLogin = "prohibit-password";
     };
+
+    # k3s cluster initializer (first server node)
+    k3s = {
+      enable = true;
+      role = "server";
+      clusterInit = true; # First node initializes the cluster
+      tokenFile = config.sops.secrets.k3s_token.path;
+    };
+  };
+
+  # SOPS secrets configuration
+  sops = {
+    defaultSopsFile = ../../../secrets/secrets.yaml;
+    age.keyFile = "/var/lib/sops-nix/key.txt";
+    secrets.k3s_token = { };
   };
 
   networking = {
@@ -120,6 +137,11 @@
           {
             domain = "samwise.lan";
             answer = "192.168.1.26";
+            enabled = true;
+          }
+          {
+            domain = "theoden.lan";
+            answer = "192.168.1.27";
             enabled = true;
           }
           {

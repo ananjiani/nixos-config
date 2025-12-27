@@ -4,6 +4,10 @@ keys:
   - &surface-go age1fykldc7sk5pg4nvczf35ayrga4p3z29j7l38tncuuw48y4xvtcssj08sce
   - &framework13 age1upzxx3l4ce5e0mcje59sekkwpcnczusxs0sgn8emyuv39q8gg99s5uupkn
   - &router age132wl9vjpn58utdnenmupg6d7v0dugkxphf9qlcf3w3ysvkur3yjqzdhwv3
+  # k3s cluster servers
+  - &boromir age19yh3saqcmyyk7qr0zwgy44zz7fwrpzlrhzwx5ym7qsn0rneageuq3qdws5
+  - &samwise age1xjpmwgcs5wzak0v0hgzzuyw09re5weqxmqhsy7vhmz967wrnjuyqgezjxa
+  - &theoden age1r3mztcslxm6a60x8maclx6stwl82aka6435jz0p8vzm7nqc4uqnqqjqts3
 creation_rules:
   - path_regex: secrets/work-vpn.conf
     key_groups:
@@ -25,6 +29,9 @@ creation_rules:
           - *surface-go
           - *framework13
           - *router
+          - *boromir
+          - *samwise
+          - *theoden
   - path_regex: secrets/homeserver.yaml$
     key_groups:
       - age:
