@@ -38,10 +38,10 @@ in
         dns = {
           base_domain = cfg.baseDomain;
           magic_dns = true;
-          # Use AdGuard Home on boromir for .lan resolution
+          # Use AdGuard Home on k8s (MetalLB VIP) for .lan resolution
           # AdGuard forwards external queries to upstream DNS
           nameservers.global = [
-            "192.168.1.21"
+            "192.168.1.53"
           ];
         };
 
