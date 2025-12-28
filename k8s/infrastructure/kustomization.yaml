@@ -4,3 +4,6 @@ kind: Kustomization
 resources:
   - sources
   - controllers/metallb
+  - controllers/longhorn
+  - controllers/cert-manager
+  - controllers/traefik

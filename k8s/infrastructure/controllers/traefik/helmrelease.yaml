@@ -1,0 +1,74 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: traefik
+  namespace: traefik
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: traefik
+      version: ">=28.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: traefik
+        namespace: flux-system
+      interval: 1h
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
+  values:
+    # Service configuration - use MetalLB LoadBalancer
+    service:
+      type: LoadBalancer
+      annotations:
+        metallb.universe.tf/loadBalancerIPs: "192.168.1.52"
+      spec:
+        externalTrafficPolicy: Local
+
+    # Ports configuration
+    ports:
+      web:
+        port: 80
+        exposedPort: 80
+        protocol: TCP
+        # Redirect HTTP to HTTPS
+        redirectTo:
+          port: websecure
+      websecure:
+        port: 443
+        exposedPort: 443
+        protocol: TCP
+        tls:
+          enabled: true
+
+    # Enable Traefik dashboard (internal only)
+    ingressRoute:
+      dashboard:
+        enabled: false  # We'll create our own if needed
+
+    # Resource limits for homelab
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "500m"
+        memory: "256Mi"
+
+    # Logs
+    logs:
+      general:
+        level: INFO
+      access:
+        enabled: true
+
+    # Providers
+    providers:
+      kubernetesCRD:
+        enabled: true
+        allowCrossNamespace: true
+      kubernetesIngress:
+        enabled: true

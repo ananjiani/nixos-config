@@ -1,0 +1,56 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: headscale-config
+  namespace: headscale
+data:
+  config.yaml: |
+    # Headscale configuration
+    # Migrated from NixOS modules/nixos/headscale.nix
+
+    server_url: https://ts.dimensiondoor.xyz
+    listen_addr: 0.0.0.0:8080
+    metrics_listen_addr: 0.0.0.0:9090
+
+    # Database - SQLite in persistent volume
+    database:
+      type: sqlite
+      sqlite:
+        path: /var/lib/headscale/db.sqlite
+
+    # DERP (relay) configuration
+    derp:
+      server:
+        enabled: false
+      urls:
+        - https://controlplane.tailscale.com/derpmap/default
+
+    # DNS configuration
+    dns:
+      base_domain: tail.dimensiondoor.xyz
+      magic_dns: true
+      nameservers:
+        global:
+          # AdGuard Home on k8s (MetalLB VIP)
+          - 192.168.1.53
+
+    # IP prefixes for Tailscale network
+    prefixes:
+      v4: 100.64.0.0/10
+      v6: fd7a:115c:a1e0::/48
+
+    # Disable open registration
+    disable_check_updates: true
+
+    # Logging
+    log:
+      level: info
+
+    # Noise (WireGuard) private key will be auto-generated
+    noise:
+      private_key_path: /var/lib/headscale/noise_private.key
+
+    # Unix socket for CLI (optional in k8s)
+    unix_socket: /var/run/headscale/headscale.sock
+    unix_socket_permission: "0770"
