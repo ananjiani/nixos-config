@@ -159,7 +159,7 @@ resource "opnsense_kea_subnet" "lan" {
 
   pools       = ["192.168.1.100-192.168.1.254"]
   routers     = [var.opnsense_host]
-  dns_servers = ["192.168.1.21"] # boromir - AdGuard Home
+  dns_servers = ["192.168.1.53"] # AdGuard Home (k8s MetalLB VIP)
 }
 
 resource "opnsense_kea_reservation" "kuwfi_ap" {
