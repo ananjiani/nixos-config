@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: headscale-data
+  namespace: headscale
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      # Headscale SQLite DB is small, 1Gi is plenty
+      storage: 1Gi
+  # Use Longhorn for distributed HA storage
+  storageClassName: longhorn

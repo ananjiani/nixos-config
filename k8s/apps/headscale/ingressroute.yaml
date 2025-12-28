@@ -1,0 +1,17 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: headscale
+  namespace: headscale
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`ts.dimensiondoor.xyz`)
+      kind: Rule
+      services:
+        - name: headscale
+          port: 8080
+  tls:
+    secretName: headscale-tls

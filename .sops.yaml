@@ -36,3 +36,10 @@ creation_rules:
     key_groups:
       - age:
           - *desktop
+  # Kubernetes secrets - encrypted for k3s cluster nodes
+  - path_regex: k8s/.*/.*secret.*\.yaml$
+    key_groups:
+      - age:
+          - *boromir
+          - *samwise
+          - *theoden

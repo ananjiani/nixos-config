@@ -146,7 +146,7 @@ data:
         - domain: router.lan
           answer: 192.168.1.1
         - domain: ts.dimensiondoor.xyz
-          answer: 192.168.1.21
+          answer: 192.168.1.52
       safebrowsing_cache_size: 1048576
       safesearch_cache_size: 1048576
       parental_cache_size: 1048576
