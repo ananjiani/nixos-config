@@ -81,9 +81,10 @@
   };
 
   # AdGuard Home - Network-wide DNS with ad blocking
+  # DISABLED - now running in Kubernetes for HA
   services.adguardhome = {
-    enable = true;
-    openFirewall = true; # Opens port 53 (DNS) and 3000 (web UI)
+    enable = false;
+    openFirewall = false; # Opens port 53 (DNS) and 3000 (web UI)
     mutableSettings = false; # Fully declarative - UI changes don't persist
     settings = {
       http = {
