@@ -29,13 +29,12 @@ data:
       ratelimit_whitelist: []
       refuse_any: true
       upstream_dns:
-        - 1.1.1.1
         - 9.9.9.9
         - 194.242.2.2
       upstream_dns_file: ""
       bootstrap_dns:
-        - 1.1.1.1
         - 9.9.9.9
+        - 194.242.2.2
       fallback_dns: []
       upstream_mode: load_balance
       fastest_timeout: 1s
