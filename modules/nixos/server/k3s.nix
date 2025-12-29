@@ -63,6 +63,13 @@ in
       name = config.networking.hostName;
     };
 
+    # Longhorn expects iscsiadm in standard paths (it uses nsenter to run on host)
+    systemd.tmpfiles.rules = [
+      "L+ /usr/local/bin/iscsiadm - - - - /run/current-system/sw/bin/iscsiadm"
+      "d /usr/sbin 0755 root root -"
+      "L+ /usr/sbin/iscsiadm - - - - /run/current-system/sw/bin/iscsiadm"
+    ];
+
     # Set KUBECONFIG for all users on server nodes
     environment.sessionVariables = lib.mkIf (cfg.role == "server") {
       KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
