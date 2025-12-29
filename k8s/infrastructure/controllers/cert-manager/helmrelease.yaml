@@ -25,3 +25,8 @@ spec:
     # Prometheus metrics (optional, disable if not using)
     prometheus:
       enabled: false
+    # Use public recursive DNS servers for ACME DNS-01 validation
+    # This avoids issues with cluster DNS caching stale responses
+    extraArgs:
+      - --dns01-recursive-nameservers-only
+      - --dns01-recursive-nameservers=8.8.8.8:53,8.8.4.4:53
