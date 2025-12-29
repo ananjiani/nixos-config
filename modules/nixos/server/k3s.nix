@@ -57,6 +57,12 @@ in
       fluxcd
     ];
 
+    # Longhorn requirements
+    services.openiscsi = {
+      enable = true;
+      name = config.networking.hostName;
+    };
+
     # Set KUBECONFIG for all users on server nodes
     environment.sessionVariables = lib.mkIf (cfg.role == "server") {
       KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
