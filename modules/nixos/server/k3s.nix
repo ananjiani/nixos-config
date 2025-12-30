@@ -92,6 +92,13 @@ in
       );
     };
 
+    # Fallback DNS for cluster resilience
+    # If AdGuard (primary DNS) is down, nodes can still resolve via router
+    networking.nameservers = [
+      "192.168.1.53" # AdGuard on k8s
+      "192.168.1.1" # Router fallback
+    ];
+
     # Firewall rules for k3s cluster
     networking.firewall = {
       allowedTCPPorts = [
