@@ -1,7 +1,7 @@
-# Theoden - k3s Server Node (Proxmox VM on rohan)
+# Theoden - k3s Server Node + Storage (Proxmox VM on rohan)
 #
 # Part of the k3s HA cluster (joins via boromir).
-# Primary purpose is Kubernetes workloads.
+# Also serves as NFS storage server (migrated from faramir).
 {
   inputs,
   pkgs-stable,
@@ -12,6 +12,7 @@
 {
   imports = [
     ./disk-config.nix
+    ./storage.nix
     inputs.home-manager-unstable.nixosModules.home-manager
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/ssh.nix
@@ -68,6 +69,26 @@
     enable = true;
     permitRootLogin = "prohibit-password";
   };
+
+  # NFS Server (migrated from faramir)
+  services.nfs.server = {
+    enable = true;
+    exports = ''
+      /srv/nfs 192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,fsid=0)
+    '';
+  };
+
+  # Firewall: Allow NFS
+  networking.firewall.allowedTCPPorts = [
+    111 # rpcbind/portmapper
+    2049 # nfs
+    20048 # mountd
+  ];
+  networking.firewall.allowedUDPPorts = [
+    111 # rpcbind/portmapper
+    2049 # nfs
+    20048 # mountd
+  ];
 
   system.stateVersion = "25.11";
   nixpkgs.hostPlatform = "x86_64-linux";

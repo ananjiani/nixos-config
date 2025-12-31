@@ -19,10 +19,10 @@
   ];
 
   modules = {
-    # Mount NFS share from faramir (use IP since we ARE the DNS server)
+    # Mount NFS share from theoden (use IP since we ARE the DNS server)
     nfs-client = {
       enable = true;
-      server = "192.168.1.22";
+      server = "192.168.1.27";
     };
 
     # Tailscale client - this node is an exit node

@@ -23,7 +23,7 @@
     inputs.play-nix.nixosModules.play
   ];
 
-  # Mount NFS share from faramir
+  # Mount NFS share from theoden
   modules.nfs-client.enable = true;
 
   networking.hostName = "ammars-pc";

@@ -178,16 +178,6 @@
           ];
         };
 
-        # Faramir - NFS Server (Proxmox VM)
-        faramir = lib.nixosSystem {
-          inherit system specialArgs;
-          modules = [
-            ./hosts/servers/faramir/configuration.nix
-            inputs.sops-nix.nixosModules.sops
-            inputs.disko.nixosModules.disko
-          ];
-        };
-
         # Samwise - Zigbee2MQTT Server (Proxmox VM on the-shire)
         samwise = lib.nixosSystem {
           inherit system specialArgs;
@@ -284,7 +274,6 @@
           "ammar@surface-go" = mkHomeConfig ./hosts/surface-go/home.nix;
           "ammar@homeserver" = mkHomeConfig ./hosts/homeserver/home.nix;
           "ammar@boromir" = mkHomeConfig ./hosts/servers/boromir/home.nix;
-          "ammar@faramir" = mkHomeConfig ./hosts/servers/faramir/home.nix;
           "ammar@samwise" = mkHomeConfig ./hosts/servers/samwise/home.nix;
           "ammar@theoden" = mkHomeConfig ./hosts/servers/theoden/home.nix;
 

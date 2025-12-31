@@ -65,6 +65,7 @@ resource "opnsense_firewall_alias" "vpn_exempt_devices" {
   description = "Devices that bypass VPN and use WAN directly"
   content = [
     "192.168.1.10", # chromecast
+    "192.168.1.25", # frodo (Home Assistant - cloud integrations require non-VPN)
     "192.168.1.50", # ammars-pc
     "192.168.1.51", # phone
   ]
@@ -208,14 +209,6 @@ resource "opnsense_kea_reservation" "boromir" {
   mac_address = local.mac_addresses.boromir
   hostname    = "boromir"
   description = "NixOS VM (main server)"
-}
-
-resource "opnsense_kea_reservation" "faramir" {
-  subnet_id   = opnsense_kea_subnet.lan.id
-  ip_address  = "192.168.1.22"
-  mac_address = local.mac_addresses.faramir
-  hostname    = "faramir"
-  description = "NFS Server VM"
 }
 
 resource "opnsense_kea_reservation" "ammars_pc" {

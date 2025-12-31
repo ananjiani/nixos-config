@@ -1,4 +1,4 @@
-# NFS client - mounts faramir NFS share
+# NFS client - mounts NFS share from theoden
 { lib, config, ... }:
 
 let
@@ -6,7 +6,7 @@ let
 in
 {
   options.modules.nfs-client = {
-    enable = lib.mkEnableOption "NFS client mount from faramir";
+    enable = lib.mkEnableOption "NFS client mount from theoden";
 
     mountPoint = lib.mkOption {
       type = lib.types.str;
@@ -16,7 +16,7 @@ in
 
     server = lib.mkOption {
       type = lib.types.str;
-      default = "faramir.lan";
+      default = "192.168.1.27";
       description = "NFS server hostname or IP";
     };
 
