@@ -72,65 +72,6 @@ resource "proxmox_virtual_environment_vm" "boromir" {
 }
 
 # =============================================================================
-# Faramir - NFS Server VM
-# =============================================================================
-# NFS server with passthrough disks for storage. Created manually in Proxmox UI
-# because API tokens cannot pass arbitrary filesystem paths for disk passthrough.
-# Import with: tofu import proxmox_virtual_environment_vm.faramir 'gondor:qemu/101'
-
-resource "proxmox_virtual_environment_vm" "faramir" {
-  name      = "faramir"
-  node_name = var.proxmox_node
-  vm_id     = 101
-
-  on_boot = true
-  started = true
-
-  cpu {
-    cores = 2
-    type  = "host"
-  }
-
-  memory {
-    dedicated = 2048
-  }
-
-  boot_order = ["scsi0"]
-
-  # Root disk
-  disk {
-    datastore_id = var.proxmox_datastore
-    size         = 32
-    interface    = "scsi0"
-    file_format  = "raw"
-  }
-
-  # Network
-  network_device {
-    bridge      = "vmbr0"
-    mac_address = local.mac_addresses.faramir
-  }
-
-  bios          = "seabios"
-  scsi_hardware = "virtio-scsi-single"
-
-  operating_system {
-    type = "l26"
-  }
-
-  serial_device {}
-
-  lifecycle {
-    ignore_changes = [
-      # Ignore disk changes - passthrough disks managed outside Terraform
-      disk,
-      boot_order,
-      cdrom,
-    ]
-  }
-}
-
-# =============================================================================
 # The Shire VMs
 # =============================================================================
 
@@ -224,9 +165,10 @@ resource "proxmox_virtual_environment_vm" "samwise" {
 # =============================================================================
 
 # =============================================================================
-# Theoden - NixOS VM for k3s cluster
+# Theoden - NixOS VM for k3s cluster + NFS storage
 # =============================================================================
-# Part of the k3s HA cluster (server node).
+# Part of the k3s HA cluster (server node). Also serves as NFS storage server
+# with passthrough disks (migrated from faramir). Only VM on Rohan.
 
 resource "proxmox_virtual_environment_vm" "theoden" {
   name      = "theoden"
@@ -237,12 +179,12 @@ resource "proxmox_virtual_environment_vm" "theoden" {
   started = true
 
   cpu {
-    cores = 2 # Limited to avoid overheating rohan (4-core i5-3570K)
+    cores = 4 # All cores on rohan (i5-3570K, cleaned & repasted)
     type  = "host"
   }
 
   memory {
-    dedicated = 16384 # 16GB, leaving ~8GB for Proxmox host
+    dedicated = 22528 # 22GB, leaving ~2GB for Proxmox host
   }
 
   boot_order = ["scsi0", "ide2", "net0"]

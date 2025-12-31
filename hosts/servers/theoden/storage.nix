@@ -1,4 +1,4 @@
-# Storage configuration for Faramir NFS server
+# Storage configuration for Theoden (migrated from Faramir)
 #
 # Uses 3 physical disks passed through from Proxmox, pooled with mergerfs.
 # Storage layout:
