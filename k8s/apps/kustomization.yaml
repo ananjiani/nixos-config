@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - adguard
   - headscale
+  - homepage

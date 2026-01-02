@@ -6,6 +6,13 @@ metadata:
   namespace: headscale
   labels:
     app: headscale
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Headscale"
+    gethomepage.dev/group: "Infrastructure"
+    gethomepage.dev/icon: "headscale.png"
+    gethomepage.dev/description: "Tailscale Control Server"
+    gethomepage.dev/href: "https://ts.dimensiondoor.xyz"
 spec:
   replicas: 1
   selector:

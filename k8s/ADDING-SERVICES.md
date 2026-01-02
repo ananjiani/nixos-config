@@ -178,6 +178,30 @@ resources:
 | Databases | local-path or Longhorn |
 | General stateful apps | NFS or local-path |
 
+## Homepage Auto-Discovery
+
+Add these annotations to your Deployment to have the service appear on the Homepage dashboard (`http://home.lan`):
+
+```yaml
+metadata:
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Your App"
+    gethomepage.dev/group: "Infrastructure"
+    gethomepage.dev/icon: "your-app.png"
+    gethomepage.dev/description: "Short description"
+    gethomepage.dev/href: "http://192.168.1.55"
+```
+
+| Annotation | Required | Description |
+|------------|----------|-------------|
+| `enabled` | Yes | Set to "true" to discover |
+| `name` | Yes | Display name on dashboard |
+| `group` | Yes | Section grouping (e.g., "Infrastructure", "Media", "Tools") |
+| `icon` | No | Icon from [dashboard-icons](https://github.com/walkxcode/dashboard-icons) |
+| `description` | No | Subtitle text |
+| `href` | No | URL when clicked (auto-detected if omitted) |
+
 ## Common Gotchas
 
 1. **Labels must match** - `selector.matchLabels` must match `template.metadata.labels`
