@@ -28,15 +28,7 @@ data:
     []
 
   services.yaml: |
-    - Infrastructure:
-        - AdGuard:
-            href: http://192.168.1.54
-            icon: adguard-home.png
-            description: DNS & Ad Blocking
-        - Headscale:
-            href: https://ts.dimensiondoor.xyz
-            icon: headscale.png
-            description: Tailscale Control Server
+    # External services (not in k8s cluster)
     - Smart Home:
         - Home Assistant:
             href: http://homeassistant.local:8123
@@ -46,11 +38,6 @@ data:
             href: http://samwise.lan:8080
             icon: zigbee2mqtt.png
             description: Zigbee Device Manager
-    - Media:
-        - Immich:
-            href: https://immich.lan
-            icon: immich.png
-            description: Photo & Video Management
 
   widgets.yaml: |
     - kubernetes:
