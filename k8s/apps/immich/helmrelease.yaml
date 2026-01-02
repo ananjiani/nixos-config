@@ -17,7 +17,7 @@ spec:
       interval: 1h
   values:
     image:
-      tag: release
+      tag: v2
 
     immich:
       persistence:
