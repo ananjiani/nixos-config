@@ -22,9 +22,7 @@ data:
 
   kubernetes.yaml: |
     mode: cluster
-    # Enable discovery from Traefik IngressRoutes
-    ingress:
-      - traefik.io/v1alpha1/IngressRoute
+    traefik: true
 
   bookmarks.yaml: |
     []
