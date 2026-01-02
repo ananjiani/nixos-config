@@ -11,6 +11,9 @@ metadata:
     gethomepage.dev/icon: "headscale.png"
     gethomepage.dev/description: "Tailscale Control Server"
     gethomepage.dev/href: "https://ts.dimensiondoor.xyz"
+    gethomepage.dev/widget.type: "headscale"
+    gethomepage.dev/widget.url: "http://headscale.headscale.svc:8080"
+    gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_HEADSCALE_KEY}}"
 spec:
   entryPoints:
     - websecure

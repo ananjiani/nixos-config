@@ -6,6 +6,7 @@ resources:
   - serviceaccount.yaml
   - rbac.yaml
   - configmap.yaml
+  - secret.yaml
   - deployment.yaml
   - service.yaml
   - ingressroute.yaml
