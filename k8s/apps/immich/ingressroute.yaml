@@ -10,7 +10,7 @@ metadata:
     gethomepage.dev/group: "Media"
     gethomepage.dev/icon: "immich.png"
     gethomepage.dev/description: "Photo & Video Management"
-    gethomepage.dev/href: "http://immich.lan"
+    gethomepage.dev/href: "https://immich.lan"
 spec:
   entryPoints:
     - web
