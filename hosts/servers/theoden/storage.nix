@@ -4,9 +4,22 @@
 # Storage layout:
 #   - /mnt/disk1, /mnt/disk2, /mnt/disk3: Data drives
 #   - /mnt/storage: MergerFS unified pool (~11TB total)
+#   - /srv/nfs: Bind mount for NFS export
 { pkgs, ... }:
 
 {
+  # Shared storage group for NFS access
+  users.groups.storage = {
+    gid = 1500;
+  };
+
+  # Create NFS directories with proper group ownership
+  # Mode 2775 = setgid + rwxrwxr-x (new files inherit group)
+  systemd.tmpfiles.rules = [
+    "d /mnt/storage 2775 root storage -"
+    "d /mnt/storage/immich 2775 root storage -"
+  ];
+
   environment.systemPackages = with pkgs; [
     mergerfs
     mergerfs-tools

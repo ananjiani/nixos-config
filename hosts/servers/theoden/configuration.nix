@@ -70,6 +70,9 @@
     permitRootLogin = "prohibit-password";
   };
 
+  # Add ammar to storage group for NFS write access
+  users.users.ammar.extraGroups = [ "storage" ];
+
   # NFS Server (migrated from faramir)
   services.nfs.server = {
     enable = true;

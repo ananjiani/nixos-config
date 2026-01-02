@@ -1,0 +1,10 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - nfs-pv.yaml
+  - nfs-pvc.yaml
+  - ml-cache-pvc.yaml
+  - helmrelease.yaml
+  - ingressroute.yaml

@@ -31,9 +31,24 @@ in
       default = true;
       description = "Use automount (mount on first access, unmount after idle)";
     };
+
+    user = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = "ammar";
+      description = "User to add to the storage group for NFS write access";
+    };
   };
 
   config = lib.mkIf cfg.enable {
+    # Storage group for NFS write access (matches GID on theoden)
+    users.groups.storage = {
+      gid = 1500;
+    };
+
+    # Add user to storage group if specified
+    users.users = lib.mkIf (cfg.user != null) {
+      ${cfg.user}.extraGroups = [ "storage" ];
+    };
     fileSystems.${cfg.mountPoint} = {
       device = "${cfg.server}:${cfg.export}";
       fsType = "nfs";
