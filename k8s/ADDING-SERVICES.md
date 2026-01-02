@@ -178,9 +178,47 @@ resources:
 | Databases | local-path or Longhorn |
 | General stateful apps | NFS or local-path |
 
+## Traefik IngressRoute (Recommended for HTTP Services)
+
+Use a Traefik IngressRoute to expose services via a hostname (e.g., `your-app.lan`):
+
+```yaml
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: your-app
+  namespace: your-app
+  annotations:
+    # Homepage auto-discovery (see below)
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Your App"
+    gethomepage.dev/group: "Infrastructure"
+    gethomepage.dev/icon: "your-app.png"
+    gethomepage.dev/description: "Short description"
+    gethomepage.dev/href: "https://your-app.lan"
+spec:
+  entryPoints:
+    - web
+    - websecure  # Important: Traefik redirects HTTP→HTTPS
+  routes:
+    - match: Host(`your-app.lan`)
+      kind: Rule
+      services:
+        - name: your-app
+          port: 8080
+```
+
+**Important:** Always include both `web` and `websecure` entrypoints. Traefik redirects HTTP to HTTPS, so if you only have `web`, HTTPS requests will 404.
+
+**DNS:** Add a rewrite in AdGuard (`k8s/apps/adguard/configmap.yaml`):
+```yaml
+- domain: your-app.lan
+  answer: 192.168.1.52  # Traefik LoadBalancer IP
+```
+
 ## Homepage Auto-Discovery
 
-Add these annotations to your Deployment to have the service appear on the Homepage dashboard (`http://home.lan`):
+Homepage automatically discovers services from Traefik IngressRoutes. Add these annotations to your IngressRoute:
 
 ```yaml
 metadata:
@@ -190,17 +228,17 @@ metadata:
     gethomepage.dev/group: "Infrastructure"
     gethomepage.dev/icon: "your-app.png"
     gethomepage.dev/description: "Short description"
-    gethomepage.dev/href: "http://192.168.1.55"
+    gethomepage.dev/href: "https://your-app.lan"
 ```
 
 | Annotation | Required | Description |
 |------------|----------|-------------|
 | `enabled` | Yes | Set to "true" to discover |
 | `name` | Yes | Display name on dashboard |
-| `group` | Yes | Section grouping (e.g., "Infrastructure", "Media", "Tools") |
+| `group` | Yes | Section grouping (e.g., "Infrastructure", "Media", "Smart Home") |
 | `icon` | No | Icon from [dashboard-icons](https://github.com/walkxcode/dashboard-icons) |
 | `description` | No | Subtitle text |
-| `href` | No | URL when clicked (auto-detected if omitted) |
+| `href` | **Yes** | URL when clicked (required for IngressRoutes) |
 
 ## Common Gotchas
 
