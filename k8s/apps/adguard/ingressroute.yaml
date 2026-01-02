@@ -11,6 +11,7 @@ metadata:
     gethomepage.dev/icon: "adguard-home.png"
     gethomepage.dev/description: "DNS & Ad Blocking"
     gethomepage.dev/href: "https://adguard.lan"
+    gethomepage.dev/pod-selector: "app=adguard-home"
     gethomepage.dev/siteMonitor: "http://adguard-web.adguard.svc:80"
     gethomepage.dev/widget.type: "adguard"
     gethomepage.dev/widget.url: "http://adguard-web.adguard.svc:80"
