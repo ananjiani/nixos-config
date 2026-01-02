@@ -13,6 +13,9 @@ data:
       Infrastructure:
         style: row
         columns: 3
+      Smart Home:
+        style: row
+        columns: 2
 
   kubernetes.yaml: |
     mode: cluster
@@ -30,6 +33,15 @@ data:
             href: https://ts.dimensiondoor.xyz
             icon: headscale.png
             description: Tailscale Control Server
+    - Smart Home:
+        - Home Assistant:
+            href: http://homeassistant.local:8123
+            icon: home-assistant.png
+            description: Home Automation
+        - Zigbee2MQTT:
+            href: http://samwise.lan:8080
+            icon: zigbee2mqtt.png
+            description: Zigbee Device Manager
 
   widgets.yaml: |
     - kubernetes:
