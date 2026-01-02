@@ -14,6 +14,7 @@ metadata:
     gethomepage.dev/widget.type: "immich"
     gethomepage.dev/widget.url: "http://immich-server.immich.svc:2283"
     gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_IMMICH_KEY}}"
+    gethomepage.dev/widget.version: "2"
 spec:
   entryPoints:
     - web
