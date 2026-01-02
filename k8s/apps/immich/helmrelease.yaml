@@ -19,25 +19,6 @@ spec:
     image:
       tag: release
 
-    # Database and Redis configuration
-    controllers:
-      main:
-        containers:
-          main:
-            env:
-              DB_HOSTNAME: immich-postgres
-              DB_USERNAME:
-                valueFrom:
-                  secretKeyRef:
-                    name: immich-postgres
-                    key: POSTGRES_USER
-              DB_PASSWORD:
-                valueFrom:
-                  secretKeyRef:
-                    name: immich-postgres
-                    key: POSTGRES_PASSWORD
-              DB_DATABASE_NAME: immich
-
     immich:
       persistence:
         library:
