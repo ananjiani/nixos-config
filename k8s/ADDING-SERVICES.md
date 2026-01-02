@@ -210,11 +210,16 @@ spec:
 
 **Important:** Always include both `web` and `websecure` entrypoints. Traefik redirects HTTP to HTTPS, so if you only have `web`, HTTPS requests will 404.
 
-**DNS:** Add a rewrite in AdGuard (`k8s/apps/adguard/configmap.yaml`):
+**DNS:** Add a rewrite in `k8s/apps/adguard/configmap.yaml` under `filtering.rewrites`:
+
 ```yaml
-- domain: your-app.lan
-  answer: 192.168.1.52  # Traefik LoadBalancer IP
+rewrites:
+  # ... existing rewrites ...
+  - domain: your-app.lan
+    answer: 192.168.1.52  # Traefik LoadBalancer IP
 ```
+
+DNS config is declarative - commit changes to Git, then restart AdGuard pod to apply (the init container copies the ConfigMap on startup).
 
 ## Homepage Auto-Discovery
 
@@ -247,6 +252,9 @@ metadata:
 3. **Git add new files** - Nix flakes and FluxCD only see tracked files
 4. **MetalLB IPs** - Pick unused IPs from pool (192.168.1.50-59)
 5. **Image pull fails** - Usually DNS issues; check CoreDNS is working
+6. **Longhorn PVC rolling updates** - Longhorn PVCs are `ReadWriteOnce`, so rolling updates can get stuck with "Multi-Attach error". Fix: use `strategy: Recreate` in your Deployment, or manually delete the stuck pod
+7. **DNS cache after rewrites** - After adding AdGuard DNS rewrites, flush local cache: `resolvectl flush-caches`
+8. **Flux reverts manual changes** - Manual `kubectl apply` changes get reverted by Flux on next reconcile. Always commit to Git first, then run `flux reconcile kustomization apps --with-source`
 
 ## Useful Commands
 
