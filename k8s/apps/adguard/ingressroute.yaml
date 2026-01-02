@@ -10,10 +10,11 @@ metadata:
     gethomepage.dev/group: "Infrastructure"
     gethomepage.dev/icon: "adguard-home.png"
     gethomepage.dev/description: "DNS & Ad Blocking"
-    gethomepage.dev/href: "http://adguard.lan"
+    gethomepage.dev/href: "https://adguard.lan"
 spec:
   entryPoints:
     - web
+    - websecure
   routes:
     - match: Host(`adguard.lan`)
       kind: Rule
