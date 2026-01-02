@@ -16,9 +16,15 @@ data:
       Smart Home:
         style: row
         columns: 2
+      Media:
+        style: row
+        columns: 2
 
   kubernetes.yaml: |
     mode: cluster
+    # Enable discovery from Traefik IngressRoutes
+    ingress:
+      - traefik.io/v1alpha1/IngressRoute
 
   bookmarks.yaml: |
     []
