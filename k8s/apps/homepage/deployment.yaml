@@ -17,6 +17,20 @@ spec:
         app: homepage
     spec:
       serviceAccountName: homepage
+      initContainers:
+        - name: copy-config
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              cp /config-readonly/*.yaml /app/config/
+              mkdir -p /app/config/logs
+          volumeMounts:
+            - name: config-readonly
+              mountPath: /config-readonly
+            - name: config
+              mountPath: /app/config
       containers:
         - name: homepage
           image: ghcr.io/gethomepage/homepage:latest
@@ -49,6 +63,8 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
       volumes:
-        - name: config
+        - name: config-readonly
           configMap:
             name: homepage
+        - name: config
+          emptyDir: {}
