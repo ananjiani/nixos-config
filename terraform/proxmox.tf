@@ -24,7 +24,7 @@ resource "proxmox_virtual_environment_vm" "boromir" {
 
   cpu {
     cores = 4
-    type  = "x86-64-v2-AES"
+    type  = "host" # Required for GPU passthrough
   }
 
   memory {
@@ -53,7 +53,18 @@ resource "proxmox_virtual_environment_vm" "boromir" {
   }
 
   bios          = "seabios"
+  machine       = "q35" # Required for PCI passthrough
   scsi_hardware = "virtio-scsi-single"
+
+  # GPU Passthrough - NVIDIA RTX 3060
+  # Device ID from: lspci -nn | grep -i nvidia on gondor
+  # 01:00.0 = GPU, 01:00.1 = Audio (both passed as single device)
+  hostpci {
+    device = "hostpci0"
+    id     = "0000:01:00"
+    pcie   = true
+    rombar = true
+  }
 
   operating_system {
     type = "l26"
@@ -67,6 +78,9 @@ resource "proxmox_virtual_environment_vm" "boromir" {
       disk,
       boot_order,
       cdrom,
+      hostpci, # GPU passthrough configured via qm (API token lacks permission)
+      machine,
+      cpu,
     ]
   }
 }
@@ -209,6 +223,9 @@ resource "proxmox_virtual_environment_vm" "theoden" {
 
   bios          = "seabios"
   scsi_hardware = "virtio-scsi-single"
+
+  # NOTE: GPU passthrough not possible - rohan's motherboard (ASRock Z77 Extreme4)
+  # does not support VT-d. The 1070 Ti cannot be passed through to this VM.
 
   operating_system {
     type = "l26"
