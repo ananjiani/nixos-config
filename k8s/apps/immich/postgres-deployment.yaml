@@ -21,22 +21,10 @@ spec:
           image: tensorchord/pgvecto-rs:pg16-v0.3.0
           ports:
             - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: immich-postgres
           env:
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: immich-postgres
-                  key: POSTGRES_USER
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: immich-postgres
-                  key: POSTGRES_PASSWORD
-            - name: POSTGRES_DB
-              valueFrom:
-                secretKeyRef:
-                  name: immich-postgres
-                  key: POSTGRES_DB
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
           volumeMounts:
@@ -54,7 +42,7 @@ spec:
               command:
                 - pg_isready
                 - -U
-                - immich
+                - postgres
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
@@ -62,7 +50,7 @@ spec:
               command:
                 - pg_isready
                 - -U
-                - immich
+                - postgres
             initialDelaySeconds: 5
             periodSeconds: 5
       volumes:
