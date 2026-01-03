@@ -39,6 +39,8 @@ spec:
               DB_HOSTNAME: database
               DB_USERNAME: postgres
               DB_DATABASE_NAME: immich
+              # Disable SSL verification for self-signed cert
+              NODE_TLS_REJECT_UNAUTHORIZED: "0"
 
     immich:
       persistence:
@@ -49,7 +51,7 @@ spec:
       configuration:
         oauth:
           enabled: true
-          issuerUrl: http://authentik-server.authentik.svc/application/o/immich/
+          issuerUrl: https://auth.lan/application/o/immich/
           clientId: immich
           clientSecret: "${IMMICH_OAUTH_CLIENT_SECRET}"
           scope: "openid email profile"
