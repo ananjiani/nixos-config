@@ -23,29 +23,38 @@ spec:
     - kind: Secret
       name: immich-postgres
       valuesKey: OAUTH_CLIENT_SECRET
-      targetPath: controllers.main.containers.main.env.OAUTH_CLIENT_SECRET
+      targetPath: controllers.main.containers.main.env.IMMICH_OAUTH_CLIENT_SECRET
   values:
-    # Database and OAuth - env vars for the main controller
+    # Database env vars for the main controller
     controllers:
       main:
+        pod:
+          hostAliases:
+            - ip: "192.168.1.52"
+              hostnames:
+                - "auth.lan"
         containers:
           main:
             env:
               DB_HOSTNAME: database
               DB_USERNAME: postgres
               DB_DATABASE_NAME: immich
-              # OAuth via Authentik
-              OAUTH_ENABLED: "true"
-              OAUTH_ISSUER_URL: https://auth.lan/application/o/immich/
-              OAUTH_CLIENT_ID: immich
-              OAUTH_SCOPE: "openid email profile"
-              OAUTH_BUTTON_TEXT: "Login with Authentik"
-              OAUTH_AUTO_REGISTER: "true"
 
     immich:
       persistence:
         library:
           existingClaim: immich-library
+      # OAuth configuration (Immich v2 uses config file)
+      # clientSecret uses env var substitution
+      configuration:
+        oauth:
+          enabled: true
+          issuerUrl: https://auth.lan/application/o/immich/
+          clientId: immich
+          clientSecret: "${IMMICH_OAUTH_CLIENT_SECRET}"
+          scope: "openid email profile"
+          buttonText: "Login with Authentik"
+          autoRegister: true
 
     # Security context - run as storage group (GID 1500) for NFS access
     server:
