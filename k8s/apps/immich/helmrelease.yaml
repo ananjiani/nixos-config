@@ -19,18 +19,22 @@ spec:
     - kind: Secret
       name: immich-postgres
       valuesKey: POSTGRES_PASSWORD
-      targetPath: immich.env.DB_PASSWORD
+      targetPath: controllers.main.containers.main.env.DB_PASSWORD
   values:
+    # Database connection - env vars for the main controller
+    controllers:
+      main:
+        containers:
+          main:
+            env:
+              DB_HOSTNAME: immich-postgres
+              DB_USERNAME: postgres
+              DB_DATABASE_NAME: immich
+
     immich:
-      image:
-        tag: release
       persistence:
         library:
           existingClaim: immich-library
-      env:
-        DB_HOSTNAME: immich-postgres
-        DB_USERNAME: postgres
-        DB_DATABASE_NAME: immich
 
     # Security context - run as storage group (GID 1500) for NFS access
     server:
