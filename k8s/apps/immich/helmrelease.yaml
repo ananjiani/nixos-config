@@ -39,7 +39,7 @@ spec:
       persistence:
         library:
           existingClaim: immich-library
-      # OAuth configuration (Immich v2 uses config file)
+      # Immich configuration (managed declaratively)
       # clientSecret injected via valuesFrom
       configuration:
         oauth:
@@ -50,6 +50,9 @@ spec:
           scope: "openid email profile"
           buttonText: "Login with Authentik"
           autoRegister: true
+        storageTemplate:
+          enabled: true
+          template: "{{y}}/{{MM}}/{{dd}}/{{filename}}"
 
     # Security context - run as storage group (GID 1500) for NFS access
     server:
