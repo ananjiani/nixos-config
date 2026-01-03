@@ -228,12 +228,16 @@ Homepage automatically discovers services from Traefik IngressRoutes. Add these 
 ```yaml
 metadata:
   annotations:
+    # Basic discovery
     gethomepage.dev/enabled: "true"
     gethomepage.dev/name: "Your App"
     gethomepage.dev/group: "Infrastructure"
     gethomepage.dev/icon: "your-app.png"
     gethomepage.dev/description: "Short description"
     gethomepage.dev/href: "https://your-app.lan"
+    # Status checks (use internal URLs - .lan domains don't resolve in-cluster)
+    gethomepage.dev/pod-selector: "app=your-app"
+    gethomepage.dev/siteMonitor: "http://your-app.your-app.svc:8080"
 ```
 
 | Annotation | Required | Description |
@@ -244,6 +248,26 @@ metadata:
 | `icon` | No | Icon from [dashboard-icons](https://github.com/walkxcode/dashboard-icons) |
 | `description` | No | Subtitle text |
 | `href` | **Yes** | URL when clicked (required for IngressRoutes) |
+| `pod-selector` | Recommended | Pod label selector for status (e.g., `app=myapp`). Without this, you'll see "NOT FOUND" |
+| `siteMonitor` | Recommended | Internal service URL for ping time (e.g., `http://svc.ns.svc:port`) |
+
+### Homepage Widgets
+
+For services with Homepage widget support (AdGuard, Immich, etc.), add widget annotations:
+
+```yaml
+metadata:
+  annotations:
+    # ... basic annotations above ...
+    gethomepage.dev/widget.type: "adguard"
+    gethomepage.dev/widget.url: "http://adguard-web.adguard.svc:80"
+    gethomepage.dev/widget.username: "{{HOMEPAGE_VAR_ADGUARD_USER}}"
+    gethomepage.dev/widget.password: "{{HOMEPAGE_VAR_ADGUARD_PASS}}"
+```
+
+**Credentials:** Use `{{HOMEPAGE_VAR_*}}` syntax - these are replaced with environment variables from the Homepage deployment. Store secrets in `k8s/apps/homepage/secret.yaml` (SOPS-encrypted) and reference via `envFrom` in the deployment.
+
+**Widget versions:** Some services change their API over time. For example, Immich v1.118.0+ requires `gethomepage.dev/widget.version: "2"` to use the new API endpoint.
 
 ## Common Gotchas
 
