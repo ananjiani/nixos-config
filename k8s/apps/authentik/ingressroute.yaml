@@ -10,16 +10,17 @@ metadata:
     gethomepage.dev/group: "Infrastructure"
     gethomepage.dev/icon: "authentik.png"
     gethomepage.dev/description: "Identity Provider"
-    gethomepage.dev/href: "https://auth.lan"
+    gethomepage.dev/href: "https://auth.dimensiondoor.xyz"
     gethomepage.dev/pod-selector: "app.kubernetes.io/name=authentik"
     gethomepage.dev/siteMonitor: "http://authentik-server.authentik.svc:80/-/health/ready/"
 spec:
   entryPoints:
-    - web
     - websecure
   routes:
-    - match: Host(`auth.lan`)
+    - match: Host(`auth.dimensiondoor.xyz`)
       kind: Rule
       services:
         - name: authentik-server
           port: 80
+  tls:
+    secretName: authentik-tls

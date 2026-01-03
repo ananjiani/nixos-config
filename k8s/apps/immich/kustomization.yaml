@@ -11,4 +11,5 @@ resources:
   - postgres-deployment.yaml
   - postgres-service.yaml
   - helmrelease.yaml
+  - certificate.yaml
   - ingressroute.yaml

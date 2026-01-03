@@ -18,10 +18,6 @@ spec:
       labels:
         app: open-webui
     spec:
-      hostAliases:
-        - ip: "192.168.1.52"
-          hostnames:
-            - "auth.lan"
       containers:
         - name: open-webui
           image: ghcr.io/open-webui/open-webui:main
@@ -75,10 +71,7 @@ spec:
                   name: open-webui-secrets
                   key: oauth_client_secret
             - name: OPENID_PROVIDER_URL
-              value: "https://auth.lan/application/o/open-webui/.well-known/openid-configuration"
-            # Disable SSL verification for self-signed cert
-            - name: REQUESTS_CA_BUNDLE
-              value: ""
+              value: "https://auth.dimensiondoor.xyz/application/o/open-webui/.well-known/openid-configuration"
             - name: OAUTH_SCOPES
               value: "openid email profile"
             # ChromaDB connection for RAG

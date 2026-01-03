@@ -9,4 +9,5 @@ resources:
   - secret.yaml
   - deployment.yaml
   - service.yaml
+  - certificate.yaml
   - ingressroute.yaml
