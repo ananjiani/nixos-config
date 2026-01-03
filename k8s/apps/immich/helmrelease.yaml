@@ -15,6 +15,11 @@ spec:
         name: immich
         namespace: flux-system
       interval: 1h
+  valuesFrom:
+    - kind: Secret
+      name: immich-postgres
+      valuesKey: POSTGRES_PASSWORD
+      targetPath: immich.env.DB_PASSWORD
   values:
     immich:
       image:
@@ -22,6 +27,10 @@ spec:
       persistence:
         library:
           existingClaim: immich-library
+      env:
+        DB_HOSTNAME: immich-postgres
+        DB_USERNAME: postgres
+        DB_DATABASE_NAME: immich
 
     # Security context - run as storage group (GID 1500) for NFS access
     server:
