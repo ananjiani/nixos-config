@@ -147,6 +147,14 @@ data:
           answer: 192.168.1.1
         - domain: ts.dimensiondoor.xyz
           answer: 192.168.1.52
+        - domain: auth.dimensiondoor.xyz
+          answer: 192.168.1.52
+        - domain: immich.dimensiondoor.xyz
+          answer: 192.168.1.52
+        - domain: ai.dimensiondoor.xyz
+          answer: 192.168.1.52
+        - domain: home.dimensiondoor.xyz
+          answer: 192.168.1.52
         - domain: home.lan
           answer: 192.168.1.52
         - domain: immich.lan

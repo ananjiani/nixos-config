@@ -57,3 +57,51 @@ resource "cloudflare_record" "tailscale" {
   ttl     = 300
   comment = "Headscale control server (boromir) - managed by Terraform"
 }
+
+# =============================================================================
+# Internal Services (point to Traefik LoadBalancer IP)
+# =============================================================================
+
+# Authentik SSO
+resource "cloudflare_record" "auth" {
+  zone_id = local.zone_id
+  name    = "auth"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "Authentik SSO (internal) - managed by Terraform"
+}
+
+# Immich photo management
+resource "cloudflare_record" "immich" {
+  zone_id = local.zone_id
+  name    = "immich"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "Immich photo management (internal) - managed by Terraform"
+}
+
+# Open WebUI AI chat
+resource "cloudflare_record" "ai" {
+  zone_id = local.zone_id
+  name    = "ai"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "Open WebUI AI chat (internal) - managed by Terraform"
+}
+
+# Homepage dashboard
+resource "cloudflare_record" "home" {
+  zone_id = local.zone_id
+  name    = "home"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "Homepage dashboard (internal) - managed by Terraform"
+}

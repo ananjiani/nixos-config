@@ -6,5 +6,6 @@ resources:
   - secret.yaml
   - blueprints.yaml
   - helmrelease.yaml
+  - certificate.yaml
   - ingressroute.yaml
   - middleware.yaml

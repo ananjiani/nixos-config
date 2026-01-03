@@ -10,7 +10,7 @@ metadata:
     gethomepage.dev/group: "Media"
     gethomepage.dev/icon: "immich.png"
     gethomepage.dev/description: "Photo & Video Management"
-    gethomepage.dev/href: "https://immich.lan"
+    gethomepage.dev/href: "https://immich.dimensiondoor.xyz"
     gethomepage.dev/pod-selector: "app.kubernetes.io/name=server"
     gethomepage.dev/siteMonitor: "http://immich-server.immich.svc:2283"
     gethomepage.dev/widget.type: "immich"
@@ -19,11 +19,12 @@ metadata:
     gethomepage.dev/widget.version: "2"
 spec:
   entryPoints:
-    - web
     - websecure
   routes:
-    - match: Host(`immich.lan`)
+    - match: Host(`immich.dimensiondoor.xyz`)
       kind: Rule
       services:
         - name: immich-server
           port: 2283
+  tls:
+    secretName: immich-tls

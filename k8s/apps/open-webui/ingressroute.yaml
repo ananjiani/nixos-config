@@ -10,16 +10,17 @@ metadata:
     gethomepage.dev/group: "AI"
     gethomepage.dev/icon: "ollama.png"
     gethomepage.dev/description: "AI Chat Interface"
-    gethomepage.dev/href: "https://ai.lan"
+    gethomepage.dev/href: "https://ai.dimensiondoor.xyz"
     gethomepage.dev/pod-selector: "app=open-webui"
     gethomepage.dev/siteMonitor: "http://open-webui.open-webui.svc:8080/health"
 spec:
   entryPoints:
-    - web
     - websecure
   routes:
-    - match: Host(`ai.lan`)
+    - match: Host(`ai.dimensiondoor.xyz`)
       kind: Rule
       services:
         - name: open-webui
           port: 8080
+  tls:
+    secretName: open-webui-tls

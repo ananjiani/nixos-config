@@ -6,11 +6,12 @@ metadata:
   namespace: homepage
 spec:
   entryPoints:
-    - web
     - websecure
   routes:
-    - match: Host(`home.lan`)
+    - match: Host(`home.dimensiondoor.xyz`)
       kind: Rule
       services:
         - name: homepage
           port: 3000
+  tls:
+    secretName: homepage-tls
