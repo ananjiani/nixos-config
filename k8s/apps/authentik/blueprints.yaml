@@ -20,6 +20,7 @@ data:
           name: Immich
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+          signing_key: !Find [authentik_crypto.certificatekeypair, [managed, goauthentik.io/crypto/default-self-signed]]
           client_type: confidential
           client_id: immich
           client_secret: !Env [IMMICH_CLIENT_SECRET, changeme]
@@ -61,6 +62,7 @@ data:
           name: Open WebUI
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+          signing_key: !Find [authentik_crypto.certificatekeypair, [managed, goauthentik.io/crypto/default-self-signed]]
           client_type: confidential
           client_id: open-webui
           client_secret: !Env [OPENWEBUI_CLIENT_SECRET, changeme]
