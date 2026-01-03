@@ -42,3 +42,44 @@ spec:
           enabled: true
           storageClass: longhorn
           size: 10Gi
+
+    # Mount custom blueprints for declarative OAuth2 apps
+    server:
+      volumes:
+        - name: blueprints
+          configMap:
+            name: authentik-blueprints
+      volumeMounts:
+        - name: blueprints
+          mountPath: /blueprints/custom
+      env:
+        - name: IMMICH_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: authentik-secrets
+              key: immich-client-secret
+        - name: OPENWEBUI_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: authentik-secrets
+              key: openwebui-client-secret
+
+    worker:
+      volumes:
+        - name: blueprints
+          configMap:
+            name: authentik-blueprints
+      volumeMounts:
+        - name: blueprints
+          mountPath: /blueprints/custom
+      env:
+        - name: IMMICH_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: authentik-secrets
+              key: immich-client-secret
+        - name: OPENWEBUI_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: authentik-secrets
+              key: openwebui-client-secret

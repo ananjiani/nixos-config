@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - secret.yaml
+  - blueprints.yaml
   - helmrelease.yaml
   - ingressroute.yaml
   - middleware.yaml
