@@ -18,6 +18,10 @@ spec:
       labels:
         app: open-webui
     spec:
+      hostAliases:
+        - ip: "192.168.1.52"
+          hostnames:
+            - "auth.lan"
       containers:
         - name: open-webui
           image: ghcr.io/open-webui/open-webui:main
