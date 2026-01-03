@@ -43,6 +43,16 @@ spec:
                 secretKeyRef:
                   name: open-webui-secrets
                   key: deepseek-api-key
+            # Web search via Tavily
+            - name: ENABLE_WEB_SEARCH
+              value: "true"
+            - name: WEB_SEARCH_ENGINE
+              value: "tavily"
+            - name: TAVILY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: open-webui-secrets
+                  key: tavily-api-key
             # ChromaDB connection for RAG
             - name: CHROMA_HTTP_HOST
               value: "chromadb.chromadb.svc"
