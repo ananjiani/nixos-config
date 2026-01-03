@@ -32,6 +32,8 @@ spec:
               value: "/chroma/chroma"
             - name: ANONYMIZED_TELEMETRY
               value: "FALSE"
+            - name: CHROMA_SERVER_HOST
+              value: "0.0.0.0"
           volumeMounts:
             - name: data
               mountPath: /chroma/chroma
