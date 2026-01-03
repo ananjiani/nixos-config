@@ -27,7 +27,7 @@ spec:
         containers:
           main:
             env:
-              DB_HOSTNAME: immich-postgres
+              DB_HOSTNAME: database
               DB_USERNAME: postgres
               DB_DATABASE_NAME: immich
 
