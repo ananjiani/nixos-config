@@ -23,7 +23,7 @@ spec:
     - kind: Secret
       name: immich-postgres
       valuesKey: OAUTH_CLIENT_SECRET
-      targetPath: controllers.main.containers.main.env.IMMICH_OAUTH_CLIENT_SECRET
+      targetPath: immich.configuration.oauth.clientSecret
   values:
     # Database env vars for the main controller
     controllers:
@@ -40,13 +40,13 @@ spec:
         library:
           existingClaim: immich-library
       # OAuth configuration (Immich v2 uses config file)
-      # clientSecret uses env var substitution
+      # clientSecret injected via valuesFrom
       configuration:
         oauth:
           enabled: true
           issuerUrl: https://auth.dimensiondoor.xyz/application/o/immich/
           clientId: immich
-          clientSecret: "${IMMICH_OAUTH_CLIENT_SECRET}"
+          # clientSecret injected from immich-postgres secret via valuesFrom
           scope: "openid email profile"
           buttonText: "Login with Authentik"
           autoRegister: true
