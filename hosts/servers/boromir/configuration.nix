@@ -16,6 +16,7 @@
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/k3s.nix
+    ../../../modules/nixos/nvidia.nix # GPU support for Ollama
   ];
 
   modules = {
@@ -54,9 +55,19 @@
     secrets.k3s_token = { };
   };
 
+  # Ollama LLM service with GPU acceleration
+  services.ollama = {
+    enable = true;
+    host = "0.0.0.0"; # Allow access from k8s pods
+    port = 11434;
+    package = pkgs-stable.ollama-cuda; # CUDA-accelerated package (stable for cache hits)
+    loadModels = [ "qwen3:8b" ];
+  };
+
   networking = {
     hostName = "boromir";
     useDHCP = true;
+    firewall.allowedTCPPorts = [ 11434 ]; # Ollama API
   };
 
   # Home Manager integration

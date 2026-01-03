@@ -1,0 +1,66 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open-webui
+  namespace: open-webui
+  labels:
+    app: open-webui
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # Longhorn PVCs are RWO
+  selector:
+    matchLabels:
+      app: open-webui
+  template:
+    metadata:
+      labels:
+        app: open-webui
+    spec:
+      containers:
+        - name: open-webui
+          image: ghcr.io/open-webui/open-webui:main
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: OLLAMA_BASE_URL
+              value: "http://ollama.open-webui.svc:11434"
+            - name: WEBUI_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: open-webui-secrets
+                  key: secret-key
+            # ChromaDB connection for RAG
+            - name: CHROMA_HTTP_HOST
+              value: "chromadb.chromadb.svc"
+            - name: CHROMA_HTTP_PORT
+              value: "8000"
+          volumeMounts:
+            - name: data
+              mountPath: /app/backend/data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: open-webui-data

@@ -21,11 +21,13 @@ spec:
     crds: CreateReplace
   values:
     defaultSettings:
-      # Replicate data across 2 nodes for HA (we have 3 nodes)
-      defaultReplicaCount: 2
+      # Replicate data across all 3 nodes for full HA
+      defaultReplicaCount: 3
       # Use less aggressive resource settings for homelab
       guaranteedInstanceManagerCPU: 5
+      # Faster failover: delete pods when node goes down (instead of waiting for k8s)
+      nodeDownPodDeletionPolicy: delete-deployment-pod
     persistence:
       # Make Longhorn the default storage class
       defaultClass: true
-      defaultClassReplicaCount: 2
+      defaultClassReplicaCount: 3
