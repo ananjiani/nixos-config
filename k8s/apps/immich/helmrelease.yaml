@@ -20,8 +20,12 @@ spec:
       name: immich-postgres
       valuesKey: POSTGRES_PASSWORD
       targetPath: controllers.main.containers.main.env.DB_PASSWORD
+    - kind: Secret
+      name: immich-postgres
+      valuesKey: OAUTH_CLIENT_SECRET
+      targetPath: controllers.main.containers.main.env.OAUTH_CLIENT_SECRET
   values:
-    # Database connection - env vars for the main controller
+    # Database and OAuth - env vars for the main controller
     controllers:
       main:
         containers:
@@ -30,6 +34,13 @@ spec:
               DB_HOSTNAME: database
               DB_USERNAME: postgres
               DB_DATABASE_NAME: immich
+              # OAuth via Authentik
+              OAUTH_ENABLED: "true"
+              OAUTH_ISSUER_URL: https://auth.lan/application/o/immich/
+              OAUTH_CLIENT_ID: immich
+              OAUTH_SCOPE: "openid email profile"
+              OAUTH_BUTTON_TEXT: "Login with Authentik"
+              OAUTH_AUTO_REGISTER: "true"
 
     immich:
       persistence:
