@@ -12,7 +12,7 @@ metadata:
     gethomepage.dev/description: "Tailscale Control Server"
     gethomepage.dev/href: "https://ts.dimensiondoor.xyz"
     gethomepage.dev/pod-selector: "app=headscale"
-    gethomepage.dev/siteMonitor: "http://headscale.headscale.svc:8080"
+    gethomepage.dev/siteMonitor: "http://headscale.headscale.svc:8080/health"
     # Widget disabled - Homepage incompatible with Headscale v0.24.0+ API
     # gethomepage.dev/widget.type: "headscale"
     # gethomepage.dev/widget.url: "http://headscale.headscale.svc:8080"
