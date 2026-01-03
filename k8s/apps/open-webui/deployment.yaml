@@ -43,16 +43,16 @@ spec:
               mountPath: /app/backend/data
           resources:
             requests:
-              memory: "256Mi"
+              memory: "512Mi"
               cpu: "100m"
             limits:
-              memory: "1Gi"
-              cpu: "1000m"
+              memory: "4Gi"
+              cpu: "2000m"
           livenessProbe:
             httpGet:
               path: /health
               port: http
-            initialDelaySeconds: 30
+            initialDelaySeconds: 120
             periodSeconds: 10
           readinessProbe:
             httpGet:
