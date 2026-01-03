@@ -1,0 +1,25 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: open-webui
+  namespace: open-webui
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Open WebUI"
+    gethomepage.dev/group: "AI"
+    gethomepage.dev/icon: "ollama.png"
+    gethomepage.dev/description: "AI Chat Interface"
+    gethomepage.dev/href: "https://ai.lan"
+    gethomepage.dev/pod-selector: "app=open-webui"
+    gethomepage.dev/siteMonitor: "http://open-webui.open-webui.svc:8080/health"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`ai.lan`)
+      kind: Rule
+      services:
+        - name: open-webui
+          port: 8080

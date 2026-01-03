@@ -5,6 +5,12 @@
 }:
 
 {
+  # Add CUDA binary cache to speed up builds
+  # See: https://wiki.nixos.org/wiki/CUDA
+  nix.settings = {
+    substituters = [ "https://cache.nixos-cuda.org" ];
+    trusted-public-keys = [ "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M=" ];
+  };
   # Enable NVIDIA proprietary drivers
   services.xserver.videoDrivers = [ "nvidia" ];
 
@@ -26,7 +32,7 @@
 
       # Enable nvidia-persistenced for headless operation
       # Keeps GPUs initialized when no display is connected
-      # nvidiaPersistenced = true;
+      nvidiaPersistenced = true;
 
       # Optional: Enable power management (useful for servers)
       powerManagement.enable = false;

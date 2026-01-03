@@ -1,0 +1,26 @@
+---
+# Endpoints pointing to Ollama on boromir
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: ollama
+  namespace: open-webui
+subsets:
+  - addresses:
+      - ip: 192.168.1.21 # boromir
+    ports:
+      - port: 11434
+        name: http
+---
+# Service for the external Ollama endpoint
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: open-webui
+spec:
+  ports:
+    - port: 11434
+      targetPort: 11434
+      name: http
+  # No selector - uses Endpoints above
