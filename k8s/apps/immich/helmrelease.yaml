@@ -49,7 +49,7 @@ spec:
       configuration:
         oauth:
           enabled: true
-          issuerUrl: https://auth.lan/application/o/immich/
+          issuerUrl: http://authentik-server.authentik.svc/application/o/immich/
           clientId: immich
           clientSecret: "${IMMICH_OAUTH_CLIENT_SECRET}"
           scope: "openid email profile"

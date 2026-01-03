@@ -75,7 +75,7 @@ spec:
                   name: open-webui-secrets
                   key: oauth_client_secret
             - name: OPENID_PROVIDER_URL
-              value: "https://auth.lan/application/o/open-webui/.well-known/openid-configuration"
+              value: "http://authentik-server.authentik.svc/application/o/open-webui/.well-known/openid-configuration"
             - name: OAUTH_SCOPES
               value: "openid email profile"
             # ChromaDB connection for RAG
