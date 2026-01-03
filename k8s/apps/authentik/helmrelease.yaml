@@ -42,12 +42,3 @@ spec:
           enabled: true
           storageClass: longhorn
           size: 10Gi
-
-    # Disable built-in ingress (we use Traefik IngressRoute)
-    server:
-      ingress:
-        enabled: false
-
-    # Disable embedded outpost ingress
-    ingress:
-      enabled: false
