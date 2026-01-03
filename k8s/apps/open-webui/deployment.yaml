@@ -48,6 +48,8 @@ spec:
               value: "true"
             - name: WEB_SEARCH_ENGINE
               value: "tavily"
+            - name: WEB_LOADER_ENGINE
+              value: "tavily"
             - name: TAVILY_API_KEY
               valueFrom:
                 secretKeyRef:
