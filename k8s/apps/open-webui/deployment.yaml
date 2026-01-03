@@ -53,6 +53,9 @@ spec:
                 secretKeyRef:
                   name: open-webui-secrets
                   key: tavily-api-key
+            # Disable external sharing
+            - name: ENABLE_COMMUNITY_SHARING
+              value: "false"
             # ChromaDB connection for RAG
             - name: CHROMA_HTTP_HOST
               value: "chromadb.chromadb.svc"
