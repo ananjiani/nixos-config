@@ -33,6 +33,16 @@ spec:
                 secretKeyRef:
                   name: open-webui-secrets
                   key: secret-key
+            # DeepSeek API (OpenAI-compatible)
+            - name: ENABLE_OPENAI_API
+              value: "true"
+            - name: OPENAI_API_BASE_URL
+              value: "https://api.deepseek.com/v1"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: open-webui-secrets
+                  key: deepseek-api-key
             # ChromaDB connection for RAG
             - name: CHROMA_HTTP_HOST
               value: "chromadb.chromadb.svc"
