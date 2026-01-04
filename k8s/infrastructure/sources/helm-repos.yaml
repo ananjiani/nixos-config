@@ -61,3 +61,48 @@ metadata:
 spec:
   interval: 1h
   url: https://charts.goauthentik.io
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: chromadb
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://amikos-tech.github.io/chromadb-chart/
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: gabe565
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://charts.gabe565.com
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: jameswynn
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://jameswynn.github.io/helm-charts
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: open-webui
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://helm.openwebui.com
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: rm3l
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://helm-charts.rm3l.org

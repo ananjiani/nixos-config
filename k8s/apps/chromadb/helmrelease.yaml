@@ -1,0 +1,37 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: chromadb
+  namespace: chromadb
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: chromadb
+      version: ">=0.1.24"
+      sourceRef:
+        kind: HelmRepository
+        name: chromadb
+        namespace: flux-system
+      interval: 1h
+  values:
+    chromadb:
+      isPersistent: true
+      anonymizedTelemetry: false
+      serverHost: "0.0.0.0"
+      serverHttpPort: 8000
+      persistDirectory: /data
+      data:
+        volumeSize: 10Gi
+        storageClass: longhorn
+        accessModes: ReadWriteOnce
+        retentionPolicyOnDelete: Retain
+
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "1Gi"
+        cpu: "500m"

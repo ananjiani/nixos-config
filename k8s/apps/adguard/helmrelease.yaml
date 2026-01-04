@@ -1,0 +1,167 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: adguard-home
+  namespace: adguard
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: adguard-home
+      version: ">=0.19.0"
+      sourceRef:
+        kind: HelmRepository
+        name: rm3l
+        namespace: flux-system
+      interval: 1h
+  values:
+    image:
+      repository: adguard/adguardhome
+      tag: latest
+
+    persistence:
+      enabled: true
+      existingClaim: adguard-data
+
+    # DNS Service - LoadBalancer with MetalLB
+    service:
+      dns:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: "192.168.1.53"
+        externalTrafficPolicy: Local
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: "192.168.1.53"
+
+      # Web UI - LoadBalancer with MetalLB
+      http:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: "192.168.1.54"
+        externalTrafficPolicy: Local
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: "192.168.1.54"
+
+    ingress:
+      enabled: false
+
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+    podAnnotations:
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "AdGuard Home"
+      gethomepage.dev/group: "Infrastructure"
+      gethomepage.dev/icon: "adguard-home.png"
+      gethomepage.dev/description: "DNS & Ad Blocking"
+      gethomepage.dev/href: "http://192.168.1.54"
+
+    # Bootstrap config matching current AdGuardHome.yaml
+    bootstrapConfig:
+      http:
+        pprof:
+          port: 6060
+          enabled: false
+        address: 0.0.0.0:80
+        session_ttl: 720h
+      users: []
+      auth_attempts: 5
+      block_auth_min: 15
+      language: en
+      theme: auto
+      dns:
+        bind_hosts:
+          - 0.0.0.0
+        port: 53
+        anonymize_client_ip: false
+        ratelimit: 0
+        refuse_any: true
+        upstream_dns:
+          - 9.9.9.9
+          - 194.242.2.2
+        bootstrap_dns:
+          - 9.9.9.9
+          - 194.242.2.2
+        upstream_mode: load_balance
+        fastest_timeout: 1s
+        cache_size: 4194304
+        enable_dnssec: false
+        max_goroutines: 300
+        handle_ddr: true
+        hostsfile_enabled: true
+        serve_plain_dns: true
+      tls:
+        enabled: false
+      querylog:
+        enabled: true
+        file_enabled: true
+        interval: 24h
+        size_memory: 1000
+      statistics:
+        enabled: true
+        interval: 24h
+      filters:
+        - enabled: true
+          url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
+          name: AdGuard DNS filter
+          id: 1
+        - enabled: true
+          url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
+          name: AdAway Default Blocklist
+          id: 2
+      dhcp:
+        enabled: false
+      filtering:
+        blocking_mode: default
+        filtering_enabled: true
+        protection_enabled: true
+        rewrites:
+          - domain: faramir.lan
+            answer: 192.168.1.22
+          - domain: boromir.lan
+            answer: 192.168.1.21
+          - domain: gondor.lan
+            answer: 192.168.1.20
+          - domain: the-shire.lan
+            answer: 192.168.1.23
+          - domain: rohan.lan
+            answer: 192.168.1.24
+          - domain: frodo.lan
+            answer: 192.168.1.25
+          - domain: samwise.lan
+            answer: 192.168.1.26
+          - domain: theoden.lan
+            answer: 192.168.1.27
+          - domain: router.lan
+            answer: 192.168.1.1
+          - domain: ts.dimensiondoor.xyz
+            answer: 192.168.1.52
+          - domain: auth.dimensiondoor.xyz
+            answer: 192.168.1.52
+          - domain: immich.dimensiondoor.xyz
+            answer: 192.168.1.52
+          - domain: ai.dimensiondoor.xyz
+            answer: 192.168.1.52
+          - domain: home.dimensiondoor.xyz
+            answer: 192.168.1.52
+          - domain: home.lan
+            answer: 192.168.1.52
+          - domain: immich.lan
+            answer: 192.168.1.52
+          - domain: adguard.lan
+            answer: 192.168.1.52
+          - domain: ai.lan
+            answer: 192.168.1.52
+          - domain: auth.lan
+            answer: 192.168.1.52
+      log:
+        enabled: true
+        max_size: 100
+        max_age: 3
+      schema_version: 29
