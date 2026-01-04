@@ -32,8 +32,8 @@ resource "opnsense_wireguard_server" "mullvad" {
   tunnel_address = [data.sops_file.secrets.data["mullvad_address"]]
   peers          = [opnsense_wireguard_client.mullvad_peer.id]
   port           = 51820
-  mtu            = 1280          # Lower MTU for WireGuard overhead
-  disable_routes = true          # Required for policy-based routing
+  mtu            = 1280 # Lower MTU for WireGuard overhead
+  disable_routes = true # Required for policy-based routing
 }
 
 # =============================================================================

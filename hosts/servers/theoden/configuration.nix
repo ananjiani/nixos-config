@@ -17,6 +17,7 @@
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/ssh.nix
     ../../../modules/nixos/networking.nix
+    ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/k3s.nix
   ];
 
@@ -30,15 +31,33 @@
     defaultSopsFile = ../../../secrets/secrets.yaml;
     age.keyFile = "/var/lib/sops-nix/key.txt";
     secrets.k3s_token = { };
+    secrets.tailscale_authkey = { };
   };
 
-  # k3s server node (joins existing cluster)
-  modules.k3s = {
-    enable = true;
-    role = "server";
-    clusterInit = false;
-    serverAddr = "https://192.168.1.21:6443"; # boromir
-    tokenFile = config.sops.secrets.k3s_token.path;
+  # Custom modules configuration
+  modules = {
+    # k3s server node (joins existing cluster)
+    k3s = {
+      enable = true;
+      role = "server";
+      clusterInit = false;
+      serverAddr = "https://192.168.1.21:6443"; # boromir
+      tokenFile = config.sops.secrets.k3s_token.path;
+    };
+
+    # Tailscale client - exit node through Mullvad
+    tailscale = {
+      enable = true;
+      loginServer = "https://ts.dimensiondoor.xyz";
+      authKeyFile = config.sops.secrets.tailscale_authkey.path;
+      exitNode = true;
+    };
+
+    # SSH server
+    ssh = {
+      enable = true;
+      permitRootLogin = "prohibit-password";
+    };
   };
 
   # Home Manager integration
@@ -62,12 +81,6 @@
       "virtio_net"
       "sd_mod"
     ];
-  };
-
-  # SSH server
-  modules.ssh = {
-    enable = true;
-    permitRootLogin = "prohibit-password";
   };
 
   # Add ammar to storage group for NFS write access

@@ -1,0 +1,21 @@
+extends: default
+
+# Ignore SOPS-encrypted files (they have long encrypted values)
+ignore:
+  - secrets/
+  - "**/secret.yaml"
+  - "**/secrets.yaml"
+  - "**/*-secret.yaml"
+
+rules:
+  line-length:
+    max: 200
+  truthy:
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+  document-start: disable

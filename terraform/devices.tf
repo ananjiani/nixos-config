@@ -6,8 +6,8 @@
 locals {
   mac_addresses = {
     kuwfi_ap   = "9c:e5:49:60:3c:1b" # KuWFi AX835 Wireless Access Point
-    tl_sg108e   = "60:83:e7:71:f2:18" # TP-Link TL-SG108E Managed Switch
-    tl_sg108pe  = "dc:62:79:3b:00:d6" # TP-Link TL-SG108PE PoE Switch
+    tl_sg108e  = "60:83:e7:71:f2:18" # TP-Link TL-SG108E Managed Switch
+    tl_sg108pe = "dc:62:79:3b:00:d6" # TP-Link TL-SG108PE PoE Switch
     chromecast = "1c:53:f9:04:40:9d" # Google Chromecast
     gondor     = "b4:2e:99:39:df:9e" # Proxmox VE Server
     boromir    = "bc:24:11:f9:37:2e" # NixOS VM (main server)

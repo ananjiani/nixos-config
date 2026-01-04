@@ -351,6 +351,28 @@
           trim-trailing-whitespace.enable = true;
 
           flake-checker.enable = true;
+
+          # Terraform/OpenTofu
+          terraform-format.enable = true;
+          tflint.enable = true;
+
+          # YAML linting (for K8s manifests)
+          yamllint = {
+            enable = true;
+            settings.configPath = ".yamllint.yaml";
+          };
+
+          # Kubernetes manifest validation
+          # Disabled: kubeconform requires network to download schemas,
+          # which doesn't work in Nix sandbox. Run manually if needed:
+          # nix-shell -p kubeconform --run "kubeconform -ignore-missing-schemas -summary k8s/"
+          # kubeconform = {
+          #   enable = true;
+          #   name = "kubeconform";
+          #   entry = "${pkgs.kubeconform}/bin/kubeconform -ignore-missing-schemas -summary";
+          #   files = "^k8s/.*\\.yaml$";
+          #   pass_filenames = true;
+          # };
         };
       };
 
