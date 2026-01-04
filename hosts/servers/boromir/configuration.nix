@@ -30,6 +30,7 @@
     tailscale = {
       enable = true;
       loginServer = "https://ts.dimensiondoor.xyz";
+      authKeyFile = config.sops.secrets.tailscale_authkey.path;
       exitNode = true;
     };
 
@@ -53,6 +54,7 @@
     defaultSopsFile = ../../../secrets/secrets.yaml;
     age.keyFile = "/var/lib/sops-nix/key.txt";
     secrets.k3s_token = { };
+    secrets.tailscale_authkey = { };
   };
 
   # Ollama LLM service with GPU acceleration

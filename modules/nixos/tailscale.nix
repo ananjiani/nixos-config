@@ -18,6 +18,12 @@ in
       description = "Headscale server URL (e.g., https://ts.example.com)";
     };
 
+    authKeyFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Path to file containing auth key for automatic registration";
+    };
+
     exitNode = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -39,6 +45,7 @@ in
     services.tailscale = {
       enable = true;
       useRoutingFeatures = if cfg.exitNode || cfg.subnetRoutes != [ ] then "both" else "client";
+      inherit (cfg) authKeyFile;
       extraUpFlags = [
         "--login-server=${cfg.loginServer}"
       ]
