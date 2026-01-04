@@ -12,9 +12,9 @@ metadata:
     gethomepage.dev/description: "DNS & Ad Blocking"
     gethomepage.dev/href: "https://adguard.lan"
     gethomepage.dev/pod-selector: "app=adguard-home"
-    gethomepage.dev/siteMonitor: "http://adguard-web.adguard.svc:80"
+    gethomepage.dev/siteMonitor: "http://adguard-home-http.adguard.svc:80"
     gethomepage.dev/widget.type: "adguard"
-    gethomepage.dev/widget.url: "http://adguard-web.adguard.svc:80"
+    gethomepage.dev/widget.url: "http://adguard-home-http.adguard.svc:80"
     gethomepage.dev/widget.username: "{{HOMEPAGE_VAR_ADGUARD_USER}}"
     gethomepage.dev/widget.password: "{{HOMEPAGE_VAR_ADGUARD_PASS}}"
 spec:
@@ -25,5 +25,5 @@ spec:
     - match: Host(`adguard.lan`)
       kind: Rule
       services:
-        - name: adguard-web
+        - name: adguard-home-http
           port: 80
