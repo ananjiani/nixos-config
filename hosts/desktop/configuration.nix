@@ -5,6 +5,7 @@
 {
   pkgs,
   inputs,
+  config,
   ...
 }:
 
@@ -20,11 +21,32 @@
     ../../modules/nixos/android.nix
     ../../modules/nixos/nfs-client.nix
     ../../modules/nixos/networking.nix
+    ../../modules/nixos/tailscale.nix
     inputs.play-nix.nixosModules.play
   ];
 
-  # Mount NFS share from theoden
-  modules.nfs-client.enable = true;
+  # SOPS secrets configuration
+  sops = {
+    defaultSopsFile = ../../secrets/secrets.yaml;
+    age.keyFile = "/home/ammar/.config/sops/age/keys.txt";
+    secrets.tailscale_authkey = { };
+  };
+
+  # Custom modules configuration
+  modules = {
+    # Mount NFS share from theoden
+    nfs-client.enable = true;
+
+    # Tailscale client (not exit node - Mullvad handles regular traffic)
+    tailscale = {
+      enable = true;
+      loginServer = "https://ts.dimensiondoor.xyz";
+      authKeyFile = config.sops.secrets.tailscale_authkey.path;
+    };
+
+    # SSH server
+    ssh.enable = true;
+  };
 
   networking.hostName = "ammars-pc";
   environment.systemPackages = with pkgs; [ signal-desktop ];
@@ -47,8 +69,6 @@
   };
 
   opendeck.enable = true;
-
-  modules.ssh.enable = true;
 
   # Brave browser - disable DoH since OPNsense handles DNS with Mullvad DoT
   programs.brave = {

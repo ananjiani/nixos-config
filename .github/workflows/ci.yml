@@ -32,13 +32,13 @@ jobs:
           echo "⚡ Quick evaluation of all hosts..."
 
           # Check all NixOS configurations
-          for host in ammars-pc work-laptop framework13 surface-go; do
+          for host in ammars-pc boromir samwise theoden; do
             echo "  Evaluating NixOS config for $host..."
             nix eval .#nixosConfigurations.$host.config.system.build.toplevel.drvPath >/dev/null
           done
 
           # Check all Home Manager configurations
-          for config in "ammar@ammars-pc" "ammar@work-laptop" "ammar@framework13" "ammar@surface-go" "ammar"; do
+          for config in "ammar@ammars-pc" "ammar@boromir" "ammar@samwise" "ammar@theoden" "ammar"; do
             echo "  Evaluating Home Manager config for $config..."
             nix eval .#homeConfigurations.\"$config\".activationPackage.drvPath >/dev/null
           done

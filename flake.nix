@@ -121,6 +121,7 @@
           inherit system specialArgs;
           modules = [
             ./hosts/desktop/configuration.nix
+            inputs.sops-nix.nixosModules.sops
             # Import dendritic moondeck NixOS module
             (if self.modules ? nixos && self.modules.nixos ? moondeck then self.modules.nixos.moondeck else { })
             # Import dendritic opendeck NixOS module
