@@ -61,6 +61,8 @@ spec:
             # OAuth via Authentik
             - name: ENABLE_OAUTH_SIGNUP
               value: "true"
+            - name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL
+              value: "true"
             - name: OAUTH_PROVIDER_NAME
               value: "Authentik"
             - name: OAUTH_CLIENT_ID
