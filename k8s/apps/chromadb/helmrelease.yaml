@@ -25,7 +25,8 @@ spec:
       data:
         volumeSize: 10Gi
         storageClass: longhorn
-        accessModes: ReadWriteOnce
+        accessModes:
+          - ReadWriteOnce
         retentionPolicyOnDelete: Retain
 
     resources:
