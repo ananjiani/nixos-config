@@ -75,6 +75,14 @@ spec:
       block_auth_min: 15
       language: en
       theme: auto
+      clients:
+        runtime_sources:
+          whois: true
+          arp: true
+          rdns: true
+          dhcp: true
+          hosts: true
+        persistent: []
       dns:
         bind_hosts:
           - 0.0.0.0
@@ -92,6 +100,10 @@ spec:
         fastest_timeout: 1s
         cache_size: 4194304
         enable_dnssec: false
+        edns_client_subnet:
+          custom_ip: ""
+          enabled: false
+          use_custom: false
         max_goroutines: 300
         handle_ddr: true
         hostsfile_enabled: true
