@@ -1,0 +1,72 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: open-webui
+  namespace: open-webui
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: open-webui
+      version: ">=5.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: open-webui
+        namespace: flux-system
+      interval: 1h
+  valuesFrom:
+    - kind: Secret
+      name: open-webui-secrets
+      valuesKey: secret-key
+      targetPath: extraEnvVars.WEBUI_SECRET_KEY
+    - kind: Secret
+      name: open-webui-secrets
+      valuesKey: deepseek-api-key
+      targetPath: extraEnvVars.OPENAI_API_KEY
+    - kind: Secret
+      name: open-webui-secrets
+      valuesKey: tavily-api-key
+      targetPath: extraEnvVars.TAVILY_API_KEY
+    - kind: Secret
+      name: open-webui-secrets
+      valuesKey: oauth_client_secret
+      targetPath: extraEnvVars.OAUTH_CLIENT_SECRET
+  values:
+    # Disable bundled Ollama - we use external
+    ollama:
+      enabled: false
+
+    ollamaUrls:
+      - "http://ollama.open-webui.svc:11434"
+
+    persistence:
+      enabled: true
+      existingClaim: open-webui-data
+
+    extraEnvVars:
+      ENABLE_OPENAI_API: "true"
+      OPENAI_API_BASE_URL: "https://api.deepseek.com/v1"
+      ENABLE_WEB_SEARCH: "true"
+      WEB_SEARCH_ENGINE: "tavily"
+      WEB_LOADER_ENGINE: "tavily"
+      ENABLE_COMMUNITY_SHARING: "false"
+      ENABLE_OAUTH_SIGNUP: "true"
+      OAUTH_MERGE_ACCOUNTS_BY_EMAIL: "true"
+      OAUTH_PROVIDER_NAME: "Authentik"
+      OAUTH_CLIENT_ID: "open-webui"
+      OPENID_PROVIDER_URL: "https://auth.dimensiondoor.xyz/application/o/open-webui/.well-known/openid-configuration"
+      OAUTH_SCOPES: "openid email profile"
+      CHROMA_HTTP_HOST: "chromadb.chromadb.svc"
+      CHROMA_HTTP_PORT: "8000"
+
+    ingress:
+      enabled: false
+
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "100m"
+      limits:
+        memory: "4Gi"
+        cpu: "2000m"

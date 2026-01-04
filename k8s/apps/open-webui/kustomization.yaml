@@ -6,7 +6,6 @@ resources:
   - pvc.yaml
   - ollama-endpoints.yaml
   - secret.yaml
-  - deployment.yaml
-  - service.yaml
+  - helmrelease.yaml
   - certificate.yaml
   - ingressroute.yaml

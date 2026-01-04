@@ -1,0 +1,100 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: homepage
+  namespace: homepage
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: homepage
+      version: ">=2.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: jameswynn
+        namespace: flux-system
+      interval: 1h
+  values:
+    image:
+      repository: ghcr.io/gethomepage/homepage
+      tag: latest
+
+    enableRbac: true
+
+    serviceAccount:
+      create: true
+      name: homepage
+
+    env:
+      HOMEPAGE_ALLOWED_HOSTS: "home.dimensiondoor.xyz"
+
+    envFrom:
+      - secretRef:
+          name: homepage-secrets
+
+    config:
+      settings:
+        title: Homelab
+        favicon: https://gethomepage.dev/favicon.ico
+        headerStyle: boxed
+        layout:
+          Infrastructure:
+            style: row
+            columns: 3
+          Smart Home:
+            style: row
+            columns: 2
+          Media:
+            style: row
+            columns: 2
+
+      kubernetes:
+        mode: cluster
+        traefik: true
+
+      bookmarks: []
+
+      services:
+        - Smart Home:
+            - Home Assistant:
+                href: http://homeassistant.local:8123
+                icon: home-assistant.png
+                description: Home Automation
+            - Zigbee2MQTT:
+                href: http://samwise.lan:8080
+                icon: zigbee2mqtt.png
+                description: Zigbee Device Manager
+
+      widgets:
+        - kubernetes:
+            cluster:
+              show: true
+              cpu: true
+              memory: true
+              showLabel: true
+              label: "k3s"
+            nodes:
+              show: true
+              cpu: true
+              memory: true
+              showLabel: true
+        - datetime:
+            text_size: xl
+            format:
+              dateStyle: long
+              timeStyle: short
+              hourCycle: h23
+
+      docker: []
+
+    ingress:
+      main:
+        enabled: false
+
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
