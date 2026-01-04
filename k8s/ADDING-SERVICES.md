@@ -8,15 +8,38 @@ Create a new directory for your app:
 k8s/apps/your-app/
 ├── kustomization.yaml   # Lists all files to apply
 ├── namespace.yaml       # Isolated space for your app
-├── deployment.yaml      # The container(s) to run
-├── service.yaml         # How to expose it
-├── configmap.yaml       # Configuration (optional)
-└── pvc.yaml             # Persistent storage (optional)
+├── helmrelease.yaml     # Helm chart deployment (recommended)
+├── ingressroute.yaml    # Traefik routing (for HTTP services)
+└── pvc.yaml             # Persistent storage (if not managed by chart)
 ```
 
-## Core Resources
+## Using Helm Charts (Recommended)
 
-### 1. Namespace
+Prefer Helm charts over raw manifests when available. They handle deployments, services, configmaps, and often persistence automatically.
+
+### 1. Find a Helm Chart
+
+Search for charts at:
+- [ArtifactHub](https://artifacthub.io/) - Main Helm chart registry
+- GitHub repos of the project you want to deploy
+
+### 2. Add HelmRepository (if new source)
+
+Add the chart repository to `k8s/infrastructure/sources/helm-repos.yaml`:
+
+```yaml
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: chart-repo-name
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://charts.example.com
+```
+
+### 3. Create Namespace
 
 ```yaml
 apiVersion: v1
@@ -25,7 +48,309 @@ metadata:
   name: your-app
 ```
 
-### 2. Deployment
+### 4. Create HelmRelease
+
+```yaml
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: your-app
+  namespace: your-app
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: chart-name
+      version: ">=1.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: chart-repo-name
+        namespace: flux-system
+      interval: 1h
+  values:
+    # Chart-specific values go here
+    # Check the chart's values.yaml for available options
+    image:
+      tag: latest
+    persistence:
+      enabled: true
+      storageClass: longhorn
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+```
+
+### 5. Kustomization
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - helmrelease.yaml
+  - ingressroute.yaml  # if HTTP service
+  # - pvc.yaml         # if chart doesn't manage storage
+```
+
+### Real Examples
+
+**ChromaDB** (simple chart):
+```yaml
+values:
+  chromadb:
+    isPersistent: true
+    anonymizedTelemetry: false
+    serverHttpPort: 8000
+    data:
+      volumeSize: 10Gi
+      storageClass: longhorn
+      accessModes:
+        - ReadWriteOnce  # Must be array format
+```
+
+**Open WebUI** (with external services):
+```yaml
+values:
+  ollama:
+    enabled: false  # Using external Ollama
+  openai:
+    enabled: true
+    baseUrl: "http://ollama.ollama.svc:11434/v1"
+  pipelines:
+    enabled: false
+  persistence:
+    enabled: true
+    storageClass: longhorn
+```
+
+**AdGuard Home** (with MetalLB LoadBalancer):
+```yaml
+values:
+  services:
+    dns:
+      type: LoadBalancer
+      externalTrafficPolicy: Local
+      annotations:
+        metallb.universe.tf/loadBalancerIPs: "192.168.1.53"
+      tcp:
+        port: 53
+      udp:
+        port: 53
+    http:
+      type: LoadBalancer
+      annotations:
+        metallb.universe.tf/loadBalancerIPs: "192.168.1.54"
+  bootstrapConfig:
+    # Full AdGuard config here
+```
+
+### Helm Chart Gotchas
+
+1. **Check service names** - Helm charts often use different service names than you'd expect. Check with `kubectl get svc -n your-app` after deployment
+2. **accessModes must be arrays** - Use `accessModes: [ReadWriteOnce]` not `accessModes: ReadWriteOnce`
+3. **MetalLB annotation only** - Don't use both `loadBalancerIP` field AND `metallb.universe.tf/loadBalancerIPs` annotation - use only the annotation
+4. **Chart values structure** - Read the chart's `values.yaml` carefully; nested structure matters (e.g., `chromadb.data.volumeSize` not `data.volumeSize`)
+
+## Register with FluxCD
+
+Add your app to `k8s/apps/kustomization.yaml`:
+
+```yaml
+resources:
+  - adguard
+  - your-app    # Add this line
+```
+
+## Workflow
+
+1. Create files in `k8s/apps/your-app/`
+2. `git add k8s/apps/your-app/` (important - FluxCD needs tracked files)
+3. Commit and push
+4. FluxCD auto-applies, OR manually trigger:
+   ```bash
+   ssh root@boromir.lan "flux reconcile kustomization apps --with-source"
+   ```
+5. Check status:
+   ```bash
+   ssh root@boromir.lan "kubectl get helmrelease -n your-app"
+   ssh root@boromir.lan "kubectl get pods -n your-app"
+   ```
+
+## Traefik IngressRoute (for HTTP Services)
+
+Use a Traefik IngressRoute to expose services via a hostname (e.g., `your-app.lan`):
+
+```yaml
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: your-app
+  namespace: your-app
+  annotations:
+    # Homepage auto-discovery (see below)
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Your App"
+    gethomepage.dev/group: "Infrastructure"
+    gethomepage.dev/icon: "your-app.png"
+    gethomepage.dev/description: "Short description"
+    gethomepage.dev/href: "https://your-app.lan"
+    gethomepage.dev/pod-selector: "app.kubernetes.io/name=your-app"
+    gethomepage.dev/siteMonitor: "http://your-app.your-app.svc:80"
+spec:
+  entryPoints:
+    - web
+    - websecure  # Important: Traefik redirects HTTP→HTTPS
+  routes:
+    - match: Host(`your-app.lan`)
+      kind: Rule
+      services:
+        - name: your-app  # Check actual service name from Helm chart!
+          port: 80        # Check actual port from Helm chart!
+```
+
+**Important:**
+- Always include both `web` and `websecure` entrypoints. Traefik redirects HTTP to HTTPS, so if you only have `web`, HTTPS requests will 404.
+- Helm charts often create services with different names/ports than raw manifests would. Always verify with `kubectl get svc -n your-app`.
+
+**DNS:** Add a rewrite in `k8s/apps/adguard/helmrelease.yaml` under `values.bootstrapConfig.filtering.rewrites`:
+
+```yaml
+values:
+  bootstrapConfig:
+    filtering:
+      rewrites:
+        # ... existing rewrites ...
+        - domain: your-app.lan
+          answer: 192.168.1.52  # Traefik LoadBalancer IP
+```
+
+After updating DNS rewrites, the AdGuard pod needs to restart to pick up changes. Flux will handle this on reconcile, or manually:
+```bash
+ssh root@boromir.lan "kubectl rollout restart deployment -n adguard"
+```
+
+## Homepage Auto-Discovery
+
+Homepage automatically discovers services from Traefik IngressRoutes. Add these annotations to your IngressRoute:
+
+```yaml
+metadata:
+  annotations:
+    # Basic discovery
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Your App"
+    gethomepage.dev/group: "Infrastructure"
+    gethomepage.dev/icon: "your-app.png"
+    gethomepage.dev/description: "Short description"
+    gethomepage.dev/href: "https://your-app.lan"
+    # Status checks (use internal URLs - .lan domains don't resolve in-cluster)
+    gethomepage.dev/pod-selector: "app.kubernetes.io/name=your-app"
+    gethomepage.dev/siteMonitor: "http://your-app.your-app.svc:80"
+```
+
+| Annotation | Required | Description |
+|------------|----------|-------------|
+| `enabled` | Yes | Set to "true" to discover |
+| `name` | Yes | Display name on dashboard |
+| `group` | Yes | Section grouping (e.g., "Infrastructure", "Media", "AI") |
+| `icon` | No | Icon from [dashboard-icons](https://github.com/walkxcode/dashboard-icons) |
+| `description` | No | Subtitle text |
+| `href` | **Yes** | URL when clicked (required for IngressRoutes) |
+| `pod-selector` | Recommended | Pod label selector for status. Helm charts often use `app.kubernetes.io/name=...` |
+| `siteMonitor` | Recommended | Internal service URL for ping time (e.g., `http://svc.ns.svc:port`) |
+
+### Homepage Widgets
+
+For services with Homepage widget support (AdGuard, Immich, etc.), add widget annotations:
+
+```yaml
+metadata:
+  annotations:
+    # ... basic annotations above ...
+    gethomepage.dev/widget.type: "adguard"
+    gethomepage.dev/widget.url: "http://adguard-home-http.adguard.svc:80"
+    gethomepage.dev/widget.username: "{{HOMEPAGE_VAR_ADGUARD_USER}}"
+    gethomepage.dev/widget.password: "{{HOMEPAGE_VAR_ADGUARD_PASS}}"
+```
+
+**Credentials:** Use `{{HOMEPAGE_VAR_*}}` syntax - these are replaced with environment variables from the Homepage deployment. Store secrets in `k8s/apps/homepage/secret.yaml` (SOPS-encrypted) and reference via `envFrom` in the deployment.
+
+**Widget versions:** Some services change their API over time. For example, Immich v1.118.0+ requires `gethomepage.dev/widget.version: "2"` to use the new API endpoint.
+
+## Quick Reference
+
+| Want to... | Use |
+|------------|-----|
+| Deploy an app | HelmRelease (preferred) or Deployment |
+| Expose via hostname | IngressRoute |
+| Expose with dedicated IP | Service (LoadBalancer) + MetalLB |
+| Store config | Chart values or ConfigMap |
+| Store secrets | Secret (SOPS-encrypted) |
+| Persist data (replicated) | PVC with Longhorn |
+| Persist data (single node) | PVC with local-path |
+| Persist data (shared) | NFS from faramir |
+| Run one-time task | Job |
+| Run on schedule | CronJob |
+
+## Storage Recommendations
+
+| App Type | Storage |
+|----------|---------|
+| Stateless / config-driven | ConfigMap |
+| Media (Jellyfin, Plex) | NFS |
+| Databases | Longhorn or local-path |
+| General stateful apps | Longhorn (preferred) or NFS |
+
+## Common Gotchas
+
+1. **Git add new files** - Nix flakes and FluxCD only see tracked files
+2. **Namespace everywhere** - Include `namespace: your-app` in every resource
+3. **MetalLB IPs** - Pick unused IPs from pool (192.168.1.50-59)
+4. **Helm service names** - Charts create their own service names; check with `kubectl get svc`
+5. **Helm service ports** - Charts often use different ports (e.g., 80 instead of 8080)
+6. **accessModes array** - PVC accessModes must be arrays: `[ReadWriteOnce]`
+7. **Longhorn PVC rolling updates** - Longhorn PVCs are `ReadWriteOnce`, so rolling updates can get stuck with "Multi-Attach error". Fix: use `strategy: Recreate` in your Deployment, or manually delete the stuck pod
+8. **DNS cache after rewrites** - After adding AdGuard DNS rewrites, flush local cache: `resolvectl flush-caches`
+9. **Flux reverts manual changes** - Manual `kubectl apply` changes get reverted by Flux on next reconcile. Always commit to Git first, then run `flux reconcile kustomization apps --with-source`
+10. **HelmRelease not Ready** - Check events: `kubectl describe helmrelease -n your-app your-app`
+
+## Useful Commands
+
+```bash
+# Check HelmRelease status
+ssh root@boromir.lan "kubectl get helmrelease -A"
+
+# Check pod status
+ssh root@boromir.lan "kubectl get pods -n your-app"
+
+# Check logs
+ssh root@boromir.lan "kubectl logs -n your-app -l app.kubernetes.io/name=your-app"
+
+# Describe pod (see events/errors)
+ssh root@boromir.lan "kubectl describe pod -n your-app -l app.kubernetes.io/name=your-app"
+
+# Check services (important for IngressRoute!)
+ssh root@boromir.lan "kubectl get svc -n your-app"
+
+# Force Flux reconcile
+ssh root@boromir.lan "flux reconcile kustomization apps --with-source"
+
+# Check HelmRelease errors
+ssh root@boromir.lan "kubectl describe helmrelease -n your-app your-app"
+
+# Restart deployment
+ssh root@boromir.lan "kubectl rollout restart deployment -n your-app"
+```
+
+---
+
+## Alternative: Raw Manifests
+
+Use raw manifests when no Helm chart exists or for simple single-container apps.
+
+### Deployment
 
 ```yaml
 apiVersion: apps/v1
@@ -57,7 +382,7 @@ spec:
             claimName: your-app-data
 ```
 
-### 3. Service
+### Service
 
 Three types available:
 
@@ -88,7 +413,7 @@ spec:
 
 **MetalLB IP Pool:** 192.168.1.50 - 192.168.1.59
 
-### 4. Persistent Storage (Optional)
+### Persistent Storage
 
 ```yaml
 apiVersion: v1
@@ -102,12 +427,10 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: local-path
+  storageClassName: longhorn  # or local-path for node-local
 ```
 
-**Note:** `local-path` is node-local. If pod moves to another node, it loses access to the data. For shared storage, use NFS from faramir.
-
-### 5. ConfigMap (Optional)
+### ConfigMap
 
 ```yaml
 apiVersion: v1
@@ -121,7 +444,7 @@ data:
     another: setting
 ```
 
-### 6. Kustomization
+### Kustomization (Raw Manifests)
 
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -134,169 +457,7 @@ resources:
   # - configmap.yaml  # if needed
 ```
 
-## Register with FluxCD
-
-Add your app to `k8s/apps/kustomization.yaml`:
-
-```yaml
-resources:
-  - adguard
-  - your-app    # Add this line
-```
-
-## Workflow
-
-1. Create files in `k8s/apps/your-app/`
-2. `git add k8s/apps/your-app/` (important - FluxCD needs tracked files)
-3. Commit and push
-4. FluxCD auto-applies, OR manually apply:
-   ```bash
-   nix-shell -p kustomize --run "kustomize build k8s/apps/your-app/" | \
-     ssh root@boromir.lan "kubectl apply -f -"
-   ```
-
-## Quick Reference
-
-| Want to... | Use |
-|------------|-----|
-| Run a container | Deployment |
-| Expose internally | Service (ClusterIP) |
-| Expose externally | Service (LoadBalancer) + MetalLB |
-| Store config | ConfigMap |
-| Store secrets | Secret (or SOPS) |
-| Persist data (single node) | PVC with local-path |
-| Persist data (shared) | NFS from faramir |
-| Run one-time task | Job |
-| Run on schedule | CronJob |
-
-## Storage Recommendations
-
-| App Type | Storage |
-|----------|---------|
-| Stateless / config-driven | ConfigMap |
-| Media (Jellyfin, Plex) | NFS |
-| Databases | local-path or Longhorn |
-| General stateful apps | NFS or local-path |
-
-## Traefik IngressRoute (Recommended for HTTP Services)
-
-Use a Traefik IngressRoute to expose services via a hostname (e.g., `your-app.lan`):
-
-```yaml
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
-metadata:
-  name: your-app
-  namespace: your-app
-  annotations:
-    # Homepage auto-discovery (see below)
-    gethomepage.dev/enabled: "true"
-    gethomepage.dev/name: "Your App"
-    gethomepage.dev/group: "Infrastructure"
-    gethomepage.dev/icon: "your-app.png"
-    gethomepage.dev/description: "Short description"
-    gethomepage.dev/href: "https://your-app.lan"
-spec:
-  entryPoints:
-    - web
-    - websecure  # Important: Traefik redirects HTTP→HTTPS
-  routes:
-    - match: Host(`your-app.lan`)
-      kind: Rule
-      services:
-        - name: your-app
-          port: 8080
-```
-
-**Important:** Always include both `web` and `websecure` entrypoints. Traefik redirects HTTP to HTTPS, so if you only have `web`, HTTPS requests will 404.
-
-**DNS:** Add a rewrite in `k8s/apps/adguard/configmap.yaml` under `filtering.rewrites`:
-
-```yaml
-rewrites:
-  # ... existing rewrites ...
-  - domain: your-app.lan
-    answer: 192.168.1.52  # Traefik LoadBalancer IP
-```
-
-DNS config is declarative - commit changes to Git, then restart AdGuard pod to apply (the init container copies the ConfigMap on startup).
-
-## Homepage Auto-Discovery
-
-Homepage automatically discovers services from Traefik IngressRoutes. Add these annotations to your IngressRoute:
-
-```yaml
-metadata:
-  annotations:
-    # Basic discovery
-    gethomepage.dev/enabled: "true"
-    gethomepage.dev/name: "Your App"
-    gethomepage.dev/group: "Infrastructure"
-    gethomepage.dev/icon: "your-app.png"
-    gethomepage.dev/description: "Short description"
-    gethomepage.dev/href: "https://your-app.lan"
-    # Status checks (use internal URLs - .lan domains don't resolve in-cluster)
-    gethomepage.dev/pod-selector: "app=your-app"
-    gethomepage.dev/siteMonitor: "http://your-app.your-app.svc:8080"
-```
-
-| Annotation | Required | Description |
-|------------|----------|-------------|
-| `enabled` | Yes | Set to "true" to discover |
-| `name` | Yes | Display name on dashboard |
-| `group` | Yes | Section grouping (e.g., "Infrastructure", "Media", "Smart Home") |
-| `icon` | No | Icon from [dashboard-icons](https://github.com/walkxcode/dashboard-icons) |
-| `description` | No | Subtitle text |
-| `href` | **Yes** | URL when clicked (required for IngressRoutes) |
-| `pod-selector` | Recommended | Pod label selector for status (e.g., `app=myapp`). Without this, you'll see "NOT FOUND" |
-| `siteMonitor` | Recommended | Internal service URL for ping time (e.g., `http://svc.ns.svc:port`) |
-
-### Homepage Widgets
-
-For services with Homepage widget support (AdGuard, Immich, etc.), add widget annotations:
-
-```yaml
-metadata:
-  annotations:
-    # ... basic annotations above ...
-    gethomepage.dev/widget.type: "adguard"
-    gethomepage.dev/widget.url: "http://adguard-web.adguard.svc:80"
-    gethomepage.dev/widget.username: "{{HOMEPAGE_VAR_ADGUARD_USER}}"
-    gethomepage.dev/widget.password: "{{HOMEPAGE_VAR_ADGUARD_PASS}}"
-```
-
-**Credentials:** Use `{{HOMEPAGE_VAR_*}}` syntax - these are replaced with environment variables from the Homepage deployment. Store secrets in `k8s/apps/homepage/secret.yaml` (SOPS-encrypted) and reference via `envFrom` in the deployment.
-
-**Widget versions:** Some services change their API over time. For example, Immich v1.118.0+ requires `gethomepage.dev/widget.version: "2"` to use the new API endpoint.
-
-## Common Gotchas
+### Raw Manifest Gotchas
 
 1. **Labels must match** - `selector.matchLabels` must match `template.metadata.labels`
-2. **Namespace everywhere** - Include `namespace: your-app` in every resource
-3. **Git add new files** - Nix flakes and FluxCD only see tracked files
-4. **MetalLB IPs** - Pick unused IPs from pool (192.168.1.50-59)
-5. **Image pull fails** - Usually DNS issues; check CoreDNS is working
-6. **Longhorn PVC rolling updates** - Longhorn PVCs are `ReadWriteOnce`, so rolling updates can get stuck with "Multi-Attach error". Fix: use `strategy: Recreate` in your Deployment, or manually delete the stuck pod
-7. **DNS cache after rewrites** - After adding AdGuard DNS rewrites, flush local cache: `resolvectl flush-caches`
-8. **Flux reverts manual changes** - Manual `kubectl apply` changes get reverted by Flux on next reconcile. Always commit to Git first, then run `flux reconcile kustomization apps --with-source`
-
-## Useful Commands
-
-```bash
-# Check pod status
-ssh root@boromir.lan "kubectl get pods -n your-app"
-
-# Check logs
-ssh root@boromir.lan "kubectl logs -n your-app -l app=your-app"
-
-# Describe pod (see events/errors)
-ssh root@boromir.lan "kubectl describe pod -n your-app -l app=your-app"
-
-# Restart deployment
-ssh root@boromir.lan "kubectl rollout restart deployment your-app -n your-app"
-
-# Delete and recreate
-ssh root@boromir.lan "kubectl delete -k k8s/apps/your-app/"
-nix-shell -p kustomize --run "kustomize build k8s/apps/your-app/" | \
-  ssh root@boromir.lan "kubectl apply -f -"
-```
+2. **Image pull fails** - Usually DNS issues; check CoreDNS is working
