@@ -24,19 +24,20 @@ spec:
       enabled: true
       existingClaim: adguard-data
 
-    # DNS Service - LoadBalancer with MetalLB
-    service:
+    # Services - LoadBalancer with MetalLB
+    services:
       dns:
-        enabled: true
         type: LoadBalancer
         loadBalancerIP: "192.168.1.53"
         externalTrafficPolicy: Local
         annotations:
           metallb.universe.tf/loadBalancerIPs: "192.168.1.53"
+        tcp:
+          port: 53
+        udp:
+          port: 53
 
-      # Web UI - LoadBalancer with MetalLB
       http:
-        enabled: true
         type: LoadBalancer
         loadBalancerIP: "192.168.1.54"
         externalTrafficPolicy: Local
