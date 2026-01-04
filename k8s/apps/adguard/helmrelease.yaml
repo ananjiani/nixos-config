@@ -28,7 +28,6 @@ spec:
     services:
       dns:
         type: LoadBalancer
-        loadBalancerIP: "192.168.1.53"
         externalTrafficPolicy: Local
         annotations:
           metallb.universe.tf/loadBalancerIPs: "192.168.1.53"
@@ -39,7 +38,6 @@ spec:
 
       http:
         type: LoadBalancer
-        loadBalancerIP: "192.168.1.54"
         externalTrafficPolicy: Local
         annotations:
           metallb.universe.tf/loadBalancerIPs: "192.168.1.54"
