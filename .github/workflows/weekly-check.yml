@@ -4,10 +4,6 @@ on:
     # Run every Sunday at 2 AM UTC
     - cron: '0 2 * * 0'
   workflow_dispatch:  # Allow manual trigger
-  push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
 
 permissions:
   contents: write
@@ -51,12 +47,12 @@ jobs:
         include:
           - host: ammars-pc
             type: desktop
-          - host: work-laptop
-            type: laptop
-          - host: framework13
-            type: laptop
-          - host: surface-go
-            type: tablet
+          - host: boromir
+            type: server
+          - host: samwise
+            type: server
+          - host: theoden
+            type: server
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -126,6 +122,25 @@ jobs:
                 labels: ['build-failure', 'automated', '${{ matrix.type }}']
               });
             }
+
+  build-iso:
+    name: Build Installation ISO
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build ISO
+        run: |
+          echo "📀 Building installation ISO..."
+          nix build .#nixosConfigurations.iso.config.system.build.isoImage --no-link
 
   update-sources:
     name: Update Package Sources
@@ -294,7 +309,7 @@ jobs:
     name: Summary Report
     runs-on: ubuntu-latest
     if: always()
-    needs: [check-flake, build-hosts, update-flakes]
+    needs: [check-flake, build-hosts, build-iso, update-sources, update-flakes]
     steps:
       - name: Generate summary
         uses: actions/github-script@v7

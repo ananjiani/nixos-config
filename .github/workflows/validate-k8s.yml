@@ -1,0 +1,38 @@
+name: Validate Kubernetes
+on:
+  push:
+    paths:
+      - 'k8s/**'
+  pull_request:
+    paths:
+      - 'k8s/**'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Kubernetes Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Validate Flux Kustomizations
+        run: |
+          nix-shell -p kustomize --run "
+            for dir in k8s/apps k8s/infrastructure k8s/flux-system; do
+              echo \"Building \$dir...\"
+              kustomize build \$dir > /dev/null
+            done
+          "
+
+      - name: Validate with kubeconform
+        run: |
+          nix-shell -p kubeconform --run "kubeconform -ignore-missing-schemas -summary k8s/"
