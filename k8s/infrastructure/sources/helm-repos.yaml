@@ -50,8 +50,9 @@ metadata:
   name: immich
   namespace: flux-system
 spec:
+  type: oci
   interval: 1h
-  url: https://immich-app.github.io/immich-charts
+  url: oci://ghcr.io/maybeanerd/immich-charts
 ---
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
