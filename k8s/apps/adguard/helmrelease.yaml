@@ -24,6 +24,32 @@ spec:
       enabled: true
       existingClaim: adguard-data
 
+    # Sync config from ConfigMap on every startup (truly declarative)
+    initContainers:
+      - name: sync-config
+        image: busybox:latest
+        command:
+          - sh
+          - -c
+          - |
+            echo "Syncing AdGuard config from ConfigMap..."
+            cp /config-source/AdGuardHome.yaml /opt/adguardhome/conf/AdGuardHome.yaml
+            echo "Config synced successfully"
+        volumeMounts:
+          - name: data
+            mountPath: /opt/adguardhome/conf
+          - name: config-source
+            mountPath: /config-source
+
+    extraVolumes:
+      - name: config-source
+        configMap:
+          name: adguard-config
+
+    extraVolumeMounts:
+      - name: config-source
+        mountPath: /config-source
+
     # Services - LoadBalancer with MetalLB
     services:
       dns:
@@ -61,120 +87,5 @@ spec:
       gethomepage.dev/description: "DNS & Ad Blocking"
       gethomepage.dev/href: "http://192.168.1.54"
 
-    # Bootstrap config matching current AdGuardHome.yaml
-    bootstrapConfig:
-      http:
-        pprof:
-          port: 6060
-          enabled: false
-        address: 0.0.0.0:80
-        session_ttl: 720h
-      users: []
-      auth_attempts: 5
-      block_auth_min: 15
-      language: en
-      theme: auto
-      clients:
-        runtime_sources:
-          whois: true
-          arp: true
-          rdns: true
-          dhcp: true
-          hosts: true
-        persistent: []
-      dns:
-        bind_hosts:
-          - 0.0.0.0
-        port: 53
-        anonymize_client_ip: false
-        ratelimit: 0
-        refuse_any: true
-        upstream_dns:
-          - 9.9.9.9
-          - 194.242.2.2
-        bootstrap_dns:
-          - 9.9.9.9
-          - 194.242.2.2
-        upstream_mode: load_balance
-        fastest_timeout: 1s
-        cache_size: 4194304
-        enable_dnssec: false
-        edns_client_subnet:
-          custom_ip: ""
-          enabled: false
-          use_custom: false
-        max_goroutines: 300
-        handle_ddr: true
-        hostsfile_enabled: true
-        serve_plain_dns: true
-      tls:
-        enabled: false
-      querylog:
-        enabled: true
-        file_enabled: true
-        interval: 24h
-        size_memory: 1000
-      statistics:
-        enabled: true
-        interval: 24h
-      filters:
-        - enabled: true
-          url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
-          name: AdGuard DNS filter
-          id: 1
-        - enabled: true
-          url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
-          name: AdAway Default Blocklist
-          id: 2
-      dhcp:
-        enabled: false
-      filtering:
-        blocking_mode: default
-        filtering_enabled: true
-        protection_enabled: true
-        rewrites:
-          - domain: faramir.lan
-            answer: 192.168.1.22
-          - domain: boromir.lan
-            answer: 192.168.1.21
-          - domain: gondor.lan
-            answer: 192.168.1.20
-          - domain: the-shire.lan
-            answer: 192.168.1.23
-          - domain: rohan.lan
-            answer: 192.168.1.24
-          - domain: frodo.lan
-            answer: 192.168.1.25
-          - domain: samwise.lan
-            answer: 192.168.1.26
-          - domain: theoden.lan
-            answer: 192.168.1.27
-          - domain: router.lan
-            answer: 192.168.1.1
-          - domain: ammars-pc.lan
-            answer: 192.168.1.50
-          - domain: ts.dimensiondoor.xyz
-            answer: 192.168.1.52
-          - domain: auth.dimensiondoor.xyz
-            answer: 192.168.1.52
-          - domain: immich.dimensiondoor.xyz
-            answer: 192.168.1.52
-          - domain: ai.dimensiondoor.xyz
-            answer: 192.168.1.52
-          - domain: home.dimensiondoor.xyz
-            answer: 192.168.1.52
-          - domain: home.lan
-            answer: 192.168.1.52
-          - domain: immich.lan
-            answer: 192.168.1.52
-          - domain: adguard.lan
-            answer: 192.168.1.52
-          - domain: ai.lan
-            answer: 192.168.1.52
-          - domain: auth.lan
-            answer: 192.168.1.52
-      log:
-        enabled: true
-        max_size: 100
-        max_age: 3
-      schema_version: 29
+    # Config is managed declaratively via config.yaml ConfigMap
+    # The init container syncs it on every pod startup
