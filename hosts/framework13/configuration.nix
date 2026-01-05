@@ -4,6 +4,7 @@
 
 {
   pkgs,
+  config,
   ...
 }:
 
@@ -17,8 +18,15 @@
     ../../modules/nixos/utils.nix
     # ../../modules/nixos/openconnect.nix
     ../../modules/nixos/docker.nix
+    ../../modules/nixos/tailscale.nix
   ];
 
+  tailscale = {
+    enable = true;
+    loginServer = "https://ts.dimensiondoor.xyz";
+    authKeyFile = config.sops.secrets.tailscale_authkey.path;
+    excludeFromMullvad = true;
+  };
   programs.nm-applet.enable = true;
   environment.systemPackages = with pkgs; [ networkmanagerapplet ];
   networking.hostName = "framework13"; # Define your hostname.
