@@ -19,28 +19,25 @@ spec:
     - kind: Secret
       name: immich-postgres
       valuesKey: POSTGRES_PASSWORD
-      targetPath: controllers.main.containers.main.env.DB_PASSWORD
+      targetPath: postgresql.auth.password
     - kind: Secret
       name: immich-postgres
       valuesKey: OAUTH_CLIENT_SECRET
       targetPath: immich.configuration.oauth.clientSecret
   values:
-    # Database env vars for the main controller
-    controllers:
-      main:
-        containers:
-          main:
-            env:
-              DB_HOSTNAME: database
-              DB_USERNAME: postgres
-              DB_DATABASE_NAME: immich
+    # Use bundled PostgreSQL
+    postgresql:
+      enabled: true
+      auth:
+        username: postgres
+        database: immich
+        # password injected via valuesFrom
 
     immich:
       persistence:
         library:
           existingClaim: immich-library
       # Immich configuration (managed declaratively)
-      # clientSecret injected via valuesFrom
       configuration:
         oauth:
           enabled: true
@@ -89,8 +86,8 @@ spec:
           enabled: true
           existingClaim: immich-ml-cache
 
-    # Use bundled Valkey (Redis replacement)
-    valkey:
+    # Use bundled Redis
+    redis:
       enabled: true
 
     ingress:

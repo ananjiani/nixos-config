@@ -18,6 +18,9 @@ let
 
     # homeserver
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIASRuEYfCfFwqqIe3ef32mFK7kWMRgzZoTZrxg7B/0uL ammar@homeserver"
+
+    # pixel9 phone
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDkUoUykJOFGBRc1ACtGi9guIMMT8Tq/S/Pos6XANJ6H pixel9"
   ];
 in
 {
