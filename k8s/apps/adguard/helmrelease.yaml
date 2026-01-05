@@ -20,19 +20,26 @@ spec:
   postRenderers:
     - kustomize:
         patches:
-          - target:
+          - patch: |
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: adguard-home
+              spec:
+                template:
+                  spec:
+                    initContainers:
+                      - name: configurator
+                        command:
+                          - /bin/sh
+                          - -c
+                          - |
+                            echo "Syncing AdGuard config (declarative mode)..."
+                            cp -v /var/adguardhome-bootstrap/AdGuardHome.yaml /opt/adguardhome/conf/AdGuardHome.yaml
+                            echo "Config synced successfully"
+            target:
               kind: Deployment
               name: adguard-home
-            patch: |
-              - op: replace
-                path: /spec/template/spec/initContainers/0/command
-                value:
-                  - /bin/sh
-                  - -c
-                  - |
-                    echo "Syncing AdGuard config (declarative mode)..."
-                    cp -v /var/adguardhome-bootstrap/AdGuardHome.yaml /opt/adguardhome/conf/AdGuardHome.yaml
-                    echo "Config synced successfully"
 
   values:
     image:
@@ -184,16 +191,8 @@ spec:
             answer: 192.168.1.52
           - domain: home.dimensiondoor.xyz
             answer: 192.168.1.52
-          # Short .lan aliases for k8s services
-          - domain: home.lan
-            answer: 192.168.1.52
-          - domain: immich.lan
-            answer: 192.168.1.52
+          # Short .lan alias for AdGuard (no public domain)
           - domain: adguard.lan
-            answer: 192.168.1.52
-          - domain: ai.lan
-            answer: 192.168.1.52
-          - domain: auth.lan
             answer: 192.168.1.52
       log:
         enabled: true
