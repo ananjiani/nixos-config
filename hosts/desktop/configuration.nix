@@ -42,7 +42,15 @@
       enable = true;
       loginServer = "https://ts.dimensiondoor.xyz";
       authKeyFile = config.sops.secrets.tailscale_authkey.path;
+      excludeFromMullvad = true;
+      acceptDns = false; # Use AdGuard directly, avoid DNS conflicts with Mullvad
     };
+
+    # Mullvad custom DNS (AdGuard + router fallback)
+    privacy.mullvadCustomDns = [
+      "192.168.1.53" # AdGuard
+      "192.168.1.1" # Router fallback
+    ];
 
     # SSH server
     ssh.enable = true;
