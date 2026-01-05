@@ -21,6 +21,12 @@
     ../../modules/nixos/tailscale.nix
   ];
 
+  sops = {
+    defaultSopsFile = ../../secrets/secrets.yaml;
+    age.keyFile = "/home/ammar/.config/sops/age/keys.txt";
+    secrets.tailscale_authkey = { };
+  };
+
   tailscale = {
     enable = true;
     loginServer = "https://ts.dimensiondoor.xyz";
