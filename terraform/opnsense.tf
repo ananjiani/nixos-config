@@ -268,31 +268,27 @@ resource "opnsense_kea_reservation" "theoden" {
 }
 
 # =============================================================================
-# Port Forwarding for Headscale/Caddy
+# Port Forwarding for Traefik (k8s ingress)
 # =============================================================================
-# These port forwards allow external access to Caddy (reverse proxy) on boromir.
-# Caddy handles TLS termination for Headscale and future services.
+# Port forwarding not supported by browningluke/opnsense provider.
 #
-# MANUAL STEPS REQUIRED in OPNsense UI (Firewall → NAT → Port Forward → Add):
+# MANUAL STEPS REQUIRED in OPNsense UI (Firewall → NAT → Port Forward):
 #
 # Rule 1 - HTTPS (443):
 #   Interface: WAN
 #   Protocol: TCP
 #   Destination: WAN address, port 443
-#   Redirect target IP: 192.168.1.21 (boromir)
+#   Redirect target IP: 192.168.1.52 (Traefik LoadBalancer)
 #   Redirect target port: 443
-#   Description: HTTPS to boromir (Caddy)
+#   Description: HTTPS to Traefik (k8s ingress)
 #
 # Rule 2 - HTTP (80) for ACME challenges:
 #   Interface: WAN
 #   Protocol: TCP
 #   Destination: WAN address, port 80
-#   Redirect target IP: 192.168.1.21 (boromir)
+#   Redirect target IP: 192.168.1.52 (Traefik LoadBalancer)
 #   Redirect target port: 80
-#   Description: HTTP to boromir (ACME challenge)
-#
-# Note: NAT rules via Terraform API have known issues with interface loading.
-# See: https://github.com/opnsense/core/issues/2171
+#   Description: HTTP to Traefik (ACME challenges)
 
 # =============================================================================
 # DNS Configuration

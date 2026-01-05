@@ -151,6 +151,8 @@ spec:
             answer: 192.168.1.27
           - domain: router.lan
             answer: 192.168.1.1
+          - domain: ammars-pc.lan
+            answer: 192.168.1.50
           - domain: ts.dimensiondoor.xyz
             answer: 192.168.1.52
           - domain: auth.dimensiondoor.xyz
