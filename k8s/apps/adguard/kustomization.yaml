@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - pvc.yaml
-  - config.yaml
   - helmrelease.yaml
   - networkpolicy.yaml
   - ingressroute.yaml
