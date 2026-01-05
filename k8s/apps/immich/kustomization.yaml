@@ -5,7 +5,6 @@ resources:
   - namespace.yaml
   - nfs-pv.yaml
   - nfs-pvc.yaml
-  - ml-cache-pvc.yaml
   - postgres-secret.yaml
   - helmrelease.yaml
   - certificate.yaml

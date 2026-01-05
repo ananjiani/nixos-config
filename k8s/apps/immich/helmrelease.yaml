@@ -85,11 +85,6 @@ spec:
       enabled: true
       podSecurityContext:
         fsGroup: 1500
-      persistence:
-        cache:
-          type: persistentVolumeClaim
-          existingClaim: immich-ml-cache
-          accessMode: ReadWriteOnce
 
     # Use bundled Redis
     redis:
