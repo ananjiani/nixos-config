@@ -39,6 +39,7 @@ spec:
       HEADSCALE_NOISE_PRIVATE_KEY_PATH: "/var/lib/headscale/noise_private.key"
       HEADSCALE_UNIX_SOCKET: "/var/run/headscale/headscale.sock"
       HEADSCALE_UNIX_SOCKET_PERMISSION: "0770"
+      HEADSCALE_POLICY_PATH: "/etc/headscale/acl.json"
 
     persistence:
       data:
@@ -49,6 +50,12 @@ spec:
         enabled: true
         type: emptyDir
         mountPath: /var/run/headscale
+      acl:
+        enabled: true
+        type: configMap
+        name: headscale-acl
+        mountPath: /etc/headscale
+        readOnly: true
 
     service:
       main:

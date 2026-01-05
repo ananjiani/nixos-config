@@ -45,12 +45,13 @@
       tokenFile = config.sops.secrets.k3s_token.path;
     };
 
-    # Tailscale client - exit node through Mullvad
+    # Tailscale client - exit node + subnet router for remote access
     tailscale = {
       enable = true;
       loginServer = "https://ts.dimensiondoor.xyz";
       authKeyFile = config.sops.secrets.tailscale_authkey.path;
       exitNode = true;
+      subnetRoutes = [ "192.168.1.0/24" ]; # Expose local network to Tailnet
     };
 
     # SSH server
