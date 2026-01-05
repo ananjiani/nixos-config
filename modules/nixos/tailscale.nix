@@ -39,6 +39,18 @@ in
         "10.0.0.0/8"
       ];
     };
+
+    excludeFromMullvad = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Run tailscaled outside Mullvad VPN tunnel using mullvad-exclude";
+    };
+
+    acceptDns = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Accept DNS configuration from Tailscale/Headscale (MagicDNS)";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -53,6 +65,9 @@ in
       ++ lib.optionals (cfg.subnetRoutes != [ ]) [
         "--advertise-routes=${lib.concatStringsSep "," cfg.subnetRoutes}"
       ];
+      extraSetFlags = [
+        "--accept-dns=${lib.boolToString cfg.acceptDns}"
+      ];
     };
 
     # Exit node and subnet routing require IP forwarding
@@ -66,6 +81,14 @@ in
       allowedUDPPorts = [ 41641 ];
       # Trust Tailscale interface
       trustedInterfaces = [ "tailscale0" ];
+    };
+
+    # Wrap tailscaled with mullvad-exclude to run outside VPN tunnel
+    systemd.services.tailscaled = lib.mkIf cfg.excludeFromMullvad {
+      serviceConfig.ExecStart = lib.mkForce [
+        ""
+        "${pkgs.mullvad}/bin/mullvad-exclude ${config.services.tailscale.package}/bin/tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/run/tailscale/tailscaled.sock --port=${toString config.services.tailscale.port}"
+      ];
     };
 
     # Optimize UDP GRO forwarding for better throughput
