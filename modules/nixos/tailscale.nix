@@ -51,6 +51,19 @@ in
       default = true;
       description = "Accept DNS configuration from Tailscale/Headscale (MagicDNS)";
     };
+
+    useExitNode = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = "boromir";
+      description = "Use specified node as exit node (hostname or IP). Set to null to disable.";
+      example = "boromir";
+    };
+
+    exitNodeAllowLanAccess = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Allow direct access to local network when using an exit node";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -67,6 +80,11 @@ in
       ];
       extraSetFlags = [
         "--accept-dns=${lib.boolToString cfg.acceptDns}"
+        "--accept-routes"
+      ]
+      ++ lib.optionals (cfg.useExitNode != null) [
+        "--exit-node=${cfg.useExitNode}"
+        "--exit-node-allow-lan-access=${lib.boolToString cfg.exitNodeAllowLanAccess}"
       ];
     };
 
