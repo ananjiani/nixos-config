@@ -149,6 +149,9 @@
           modules = [
             ./hosts/framework13/configuration.nix
             inputs.nixos-hardware.nixosModules.framework-13-7040-amd
+            inputs.sops-nix.nixosModules.sops
+            # Import dendritic brave NixOS module
+            (if self.modules ? nixos && self.modules.nixos ? brave then self.modules.nixos.brave else { })
           ];
         };
 

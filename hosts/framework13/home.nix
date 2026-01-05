@@ -8,6 +8,7 @@
     ../profiles/workstation/home.nix
     ../../modules/home/profiles/laptop.nix
     ../../modules/home/config/wallpaper.nix
+    ../../modules/home/config/sops.nix
     ../../modules/home/work.nix
   ];
 

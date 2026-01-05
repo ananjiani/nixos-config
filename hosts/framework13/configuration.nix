@@ -27,13 +27,23 @@
     secrets.tailscale_authkey = { };
   };
 
-  tailscale = {
+  modules.tailscale = {
     enable = true;
     loginServer = "https://ts.dimensiondoor.xyz";
     authKeyFile = config.sops.secrets.tailscale_authkey.path;
     excludeFromMullvad = true;
   };
-  programs.nm-applet.enable = true;
+  programs = {
+
+    nm-applet.enable = true;
+    brave = {
+      enable = true;
+      features.sync = true;
+      features.aiChat = true;
+      doh.enable = false;
+    };
+  };
+
   environment.systemPackages = with pkgs; [ networkmanagerapplet ];
   networking.hostName = "framework13"; # Define your hostname.
 }
