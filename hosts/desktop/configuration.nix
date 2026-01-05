@@ -57,6 +57,19 @@
   };
 
   networking.hostName = "ammars-pc";
+
+  # Allow Tailscale traffic (100.64.0.0/10) to bypass Mullvad VPN
+  # Mullvad's LAN sharing only covers RFC1918 ranges, not CGNAT
+  networking.nftables.tables.mullvad-tailscale-bypass = {
+    family = "inet";
+    content = ''
+      chain output {
+        type route hook output priority -150; policy accept;
+        ip daddr 100.64.0.0/10 mark set 0x6d6f6c65
+        ip6 daddr fd7a:115c:a1e0::/48 mark set 0x6d6f6c65
+      }
+    '';
+  };
   environment.systemPackages = with pkgs; [ signal-desktop ];
 
   virtualisation.docker.enable = true;
