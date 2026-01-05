@@ -33,10 +33,14 @@ spec:
         database: immich
         # password injected via valuesFrom
 
+    # Persistence - use existing NFS PVC
+    persistence:
+      library:
+        type: persistentVolumeClaim
+        existingClaim: immich-library
+        accessMode: ReadWriteMany
+
     immich:
-      persistence:
-        library:
-          existingClaim: immich-library
       # Immich configuration (managed declaratively)
       configuration:
         oauth:
@@ -83,8 +87,9 @@ spec:
         fsGroup: 1500
       persistence:
         cache:
-          enabled: true
+          type: persistentVolumeClaim
           existingClaim: immich-ml-cache
+          accessMode: ReadWriteOnce
 
     # Use bundled Redis
     redis:
