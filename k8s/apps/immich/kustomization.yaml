@@ -7,9 +7,6 @@ resources:
   - nfs-pvc.yaml
   - ml-cache-pvc.yaml
   - postgres-secret.yaml
-  - postgres-pvc.yaml
-  - postgres-deployment.yaml
-  - postgres-service.yaml
   - helmrelease.yaml
   - certificate.yaml
   - ingressroute.yaml
