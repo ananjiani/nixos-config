@@ -42,6 +42,21 @@ spec:
           SSH_DOMAIN: git.dimensiondoor.xyz
           SSH_PORT: 22
 
+        # Single-user hardening
+        repository:
+          FORCE_PRIVATE: true
+          DEFAULT_PRIVATE: private
+          DISABLED_REPO_UNITS: "repo.projects"
+
+        security:
+          INSTALL_LOCK: true
+
+        packages:
+          ENABLED: false
+
+        mirror:
+          ENABLED: true
+
         service:
           DISABLE_REGISTRATION: false
           ALLOW_ONLY_EXTERNAL_REGISTRATION: true
