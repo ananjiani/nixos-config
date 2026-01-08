@@ -98,6 +98,10 @@ spec:
     ingress:
       enabled: false
 
+    # Deployment strategy - Recreate needed for RWO volumes
+    strategy:
+      type: Recreate
+
     # Resource limits
     resources:
       requests:
