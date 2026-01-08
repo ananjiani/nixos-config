@@ -58,7 +58,7 @@ spec:
       services:
         - Smart Home:
             - Home Assistant:
-                href: http://homeassistant.local:8123
+                href: https://ha.dimensiondoor.xyz
                 icon: home-assistant.png
                 description: Home Automation
             - Zigbee2MQTT:
