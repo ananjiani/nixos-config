@@ -47,6 +47,9 @@ spec:
           FORCE_PRIVATE: true
           DEFAULT_PRIVATE: private
           DISABLED_REPO_UNITS: "repo.projects"
+          ENABLE_PUSH_CREATE_USER: true
+          ENABLE_PUSH_CREATE_ORG: true
+          DEFAULT_PUSH_CREATE_PRIVATE: true
 
         security:
           INSTALL_LOCK: true
