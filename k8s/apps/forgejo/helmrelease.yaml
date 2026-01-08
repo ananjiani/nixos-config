@@ -32,7 +32,7 @@ spec:
     # Admin user configuration
     gitea:
       admin:
-        username: admin
+        username: forgejo-admin
         email: admin@dimensiondoor.xyz
         # password injected via valuesFrom
 
