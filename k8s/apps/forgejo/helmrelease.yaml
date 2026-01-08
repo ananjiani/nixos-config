@@ -22,10 +22,6 @@ spec:
       targetPath: gitea.admin.password
     - kind: Secret
       name: forgejo-secrets
-      valuesKey: postgres-password
-      targetPath: postgresql.auth.password
-    - kind: Secret
-      name: forgejo-secrets
       valuesKey: oauth-client-secret
       targetPath: gitea.oauth[0].secret
   values:
@@ -60,18 +56,6 @@ spec:
         actions:
           ENABLED: false
 
-        cache:
-          ADAPTER: redis
-          HOST: redis://:@forgejo-redis-headless.forgejo.svc:6379/0
-
-        session:
-          PROVIDER: redis
-          PROVIDER_CONFIG: redis://:@forgejo-redis-headless.forgejo.svc:6379/1
-
-        queue:
-          TYPE: redis
-          CONN_STR: redis://:@forgejo-redis-headless.forgejo.svc:6379/2
-
       # Authentik OAuth2 provider
       oauth:
         - name: authentik
@@ -92,28 +76,8 @@ spec:
       accessModes:
         - ReadWriteOnce
 
-    # Bundled PostgreSQL
-    postgresql:
-      enabled: true
-      auth:
-        username: forgejo
-        database: forgejo
-        # password injected via valuesFrom
-      primary:
-        persistence:
-          enabled: true
-          storageClass: longhorn
-          size: 5Gi
-
-    # Bundled Redis for caching
-    redis:
-      enabled: true
-      architecture: standalone
-      master:
-        persistence:
-          enabled: true
-          storageClass: longhorn
-          size: 1Gi
+    # Use SQLite (default, simpler for homelab)
+    # PostgreSQL and Redis not bundled in this chart
 
     # Disable built-in ingress (using Traefik IngressRoute)
     ingress:
