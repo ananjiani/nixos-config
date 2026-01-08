@@ -14,15 +14,15 @@ resource "cloudflare_record" "root" {
   comment = "Root domain - managed by Terraform"
 }
 
-# Git subdomain A record
+# Forgejo git server (internal via Tailscale)
 resource "cloudflare_record" "git" {
   zone_id = local.zone_id
   name    = "git"
-  content = var.homeserver_ip
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
   type    = "A"
-  proxied = var.cloudflare_proxied
-  ttl     = 1 # Auto when proxied
-  comment = "Forgejo git server - managed by Terraform"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "Forgejo git server (internal) - managed by Terraform"
 }
 
 # Media subdomain A record

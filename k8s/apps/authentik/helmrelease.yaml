@@ -63,6 +63,11 @@ spec:
             secretKeyRef:
               name: authentik-secrets
               key: openwebui-client-secret
+        - name: FORGEJO_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: authentik-secrets
+              key: forgejo-client-secret
 
     worker:
       volumes:
@@ -83,3 +88,8 @@ spec:
             secretKeyRef:
               name: authentik-secrets
               key: openwebui-client-secret
+        - name: FORGEJO_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: authentik-secrets
+              key: forgejo-client-secret

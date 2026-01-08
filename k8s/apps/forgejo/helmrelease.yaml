@@ -1,0 +1,138 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: forgejo
+  namespace: forgejo
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: forgejo
+      version: ">=15.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: forgejo
+        namespace: flux-system
+      interval: 1h
+  valuesFrom:
+    - kind: Secret
+      name: forgejo-secrets
+      valuesKey: admin-password
+      targetPath: gitea.admin.password
+    - kind: Secret
+      name: forgejo-secrets
+      valuesKey: postgres-password
+      targetPath: postgresql.auth.password
+    - kind: Secret
+      name: forgejo-secrets
+      valuesKey: oauth-client-secret
+      targetPath: gitea.oauth[0].key
+  values:
+    # Admin user configuration
+    gitea:
+      admin:
+        username: admin
+        email: admin@dimensiondoor.xyz
+        # password injected via valuesFrom
+
+      # Forgejo app.ini configuration
+      config:
+        APP_NAME: "Forgejo: Dimension Door"
+
+        server:
+          DOMAIN: git.dimensiondoor.xyz
+          ROOT_URL: https://git.dimensiondoor.xyz
+          SSH_DOMAIN: git.dimensiondoor.xyz
+          SSH_PORT: 22
+
+        service:
+          DISABLE_REGISTRATION: false
+          ALLOW_ONLY_EXTERNAL_REGISTRATION: true
+          SHOW_REGISTRATION_BUTTON: false
+
+        oauth2_client:
+          ENABLE_AUTO_REGISTRATION: true
+          USERNAME: nickname
+          UPDATE_AVATAR: true
+          ACCOUNT_LINKING: auto
+
+        actions:
+          ENABLED: false
+
+        cache:
+          ADAPTER: redis
+          HOST: redis://:@forgejo-redis-headless.forgejo.svc:6379/0
+
+        session:
+          PROVIDER: redis
+          PROVIDER_CONFIG: redis://:@forgejo-redis-headless.forgejo.svc:6379/1
+
+        queue:
+          TYPE: redis
+          CONN_STR: redis://:@forgejo-redis-headless.forgejo.svc:6379/2
+
+      # Authentik OAuth2 provider
+      oauth:
+        - name: authentik
+          provider: openidConnect
+          existingSecret: forgejo-secrets
+          # key injected via valuesFrom
+          autoDiscoverUrl: https://auth.dimensiondoor.xyz/application/o/forgejo/.well-known/openid-configuration
+          scopes: "openid email profile"
+          iconUrl: https://auth.dimensiondoor.xyz/static/dist/assets/icons/icon.png
+          groupClaimName: groups
+          adminGroup: "forgejo-admins"
+
+    # Persistence - Longhorn storage
+    persistence:
+      enabled: true
+      storageClass: longhorn
+      size: 10Gi
+      accessModes:
+        - ReadWriteOnce
+
+    # Bundled PostgreSQL
+    postgresql:
+      enabled: true
+      auth:
+        username: forgejo
+        database: forgejo
+        # password injected via valuesFrom
+      primary:
+        persistence:
+          enabled: true
+          storageClass: longhorn
+          size: 5Gi
+
+    # Bundled Redis for caching
+    redis:
+      enabled: true
+      architecture: standalone
+      master:
+        persistence:
+          enabled: true
+          storageClass: longhorn
+          size: 1Gi
+
+    # Disable built-in ingress (using Traefik IngressRoute)
+    ingress:
+      enabled: false
+
+    # Resource limits
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "1Gi"
+        cpu: "1000m"
+
+    # Service configuration
+    service:
+      http:
+        type: ClusterIP
+        port: 3000
+      ssh:
+        type: ClusterIP
+        port: 22

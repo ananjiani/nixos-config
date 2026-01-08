@@ -1,0 +1,27 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: forgejo
+  namespace: forgejo
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Forgejo"
+    gethomepage.dev/group: "Development"
+    gethomepage.dev/icon: "forgejo.png"
+    gethomepage.dev/description: "Git Repository Hosting"
+    gethomepage.dev/href: "https://git.dimensiondoor.xyz"
+    gethomepage.dev/pod-selector: "app.kubernetes.io/name=forgejo"
+    gethomepage.dev/siteMonitor: "http://forgejo-http.forgejo.svc:3000"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`git.dimensiondoor.xyz`)
+      kind: Rule
+      services:
+        - name: forgejo-http
+          port: 3000
+  tls:
+    secretName: forgejo-tls
