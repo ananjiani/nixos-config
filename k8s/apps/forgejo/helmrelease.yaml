@@ -39,7 +39,7 @@ spec:
         server:
           DOMAIN: git.dimensiondoor.xyz
           ROOT_URL: https://git.dimensiondoor.xyz
-          SSH_DOMAIN: git.dimensiondoor.xyz
+          SSH_DOMAIN: ssh.git.dimensiondoor.xyz
           SSH_PORT: 22
 
         # Single-user hardening
@@ -113,5 +113,7 @@ spec:
         type: ClusterIP
         port: 3000
       ssh:
-        type: ClusterIP
+        type: LoadBalancer
         port: 22
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: "192.168.1.55"

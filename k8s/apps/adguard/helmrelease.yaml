@@ -195,6 +195,8 @@ spec:
             answer: 192.168.1.52
           - domain: git.dimensiondoor.xyz
             answer: 192.168.1.52
+          - domain: ssh.git.dimensiondoor.xyz
+            answer: 192.168.1.55
           # Short .lan alias for AdGuard (no public domain)
           - domain: adguard.lan
             answer: 192.168.1.52
