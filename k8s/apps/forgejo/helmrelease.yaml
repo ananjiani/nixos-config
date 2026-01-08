@@ -27,7 +27,7 @@ spec:
     - kind: Secret
       name: forgejo-secrets
       valuesKey: oauth-client-secret
-      targetPath: gitea.oauth[0].key
+      targetPath: gitea.oauth[0].secret
   values:
     # Admin user configuration
     gitea:
@@ -76,8 +76,8 @@ spec:
       oauth:
         - name: authentik
           provider: openidConnect
-          existingSecret: forgejo-secrets
-          # key injected via valuesFrom
+          key: forgejo
+          # secret injected via valuesFrom
           autoDiscoverUrl: https://auth.dimensiondoor.xyz/application/o/forgejo/.well-known/openid-configuration
           scopes: "openid email profile"
           iconUrl: https://auth.dimensiondoor.xyz/static/dist/assets/icons/icon.png
