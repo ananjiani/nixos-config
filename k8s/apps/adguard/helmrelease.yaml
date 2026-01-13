@@ -42,6 +42,11 @@ spec:
               name: adguard-home
 
   values:
+    # Pin to version that supports schema_version 29+ in bootstrapConfig
+    image:
+      repository: adguard/adguardhome
+      tag: v0.107.69
+
     persistence:
       enabled: true
       existingClaim: adguard-data
