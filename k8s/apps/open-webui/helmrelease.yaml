@@ -20,11 +20,11 @@ spec:
       name: open-webui-secrets
       valuesKey: secret-key
       targetPath: extraEnvVars.WEBUI_SECRET_KEY
-    # Keys must match URLs order: [0]=pipelines (placeholder), [1]=DeepSeek
+    # DeepSeek API key (pipelines disabled, so this is the only key)
     - kind: Secret
       name: open-webui-secrets
       valuesKey: deepseek-api-key
-      targetPath: openaiApiKeys[1]
+      targetPath: openaiApiKeys[0]
     - kind: Secret
       name: open-webui-secrets
       valuesKey: tavily-api-key
@@ -38,22 +38,18 @@ spec:
     ollama:
       enabled: false
 
-    # Keep pipelines enabled for future use
-    # It will use our openaiBaseApiUrls config below
+    # Disable pipelines - it auto-prepends its URL which complicates key ordering
+    # Re-enable when needed and configure keys properly
     pipelines:
-      enabled: true
+      enabled: false
 
     ollamaUrls:
       - "http://ollama.open-webui.svc:11434"
 
-    # Use the chart's native OpenAI configuration (not extraEnvVars)
-    # Note: Pipelines URL is auto-prepended by chart, so DeepSeek is [1]
+    # Use the chart's native OpenAI configuration
     openaiBaseApiUrls:
       - "https://api.deepseek.com/v1"
-
-    # Placeholder key for pipelines [0], DeepSeek key set via valuesFrom [1]
-    openaiApiKeys:
-      - "pipelines-placeholder"
+    # openaiApiKeys set via valuesFrom
 
     persistence:
       enabled: true
