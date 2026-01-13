@@ -127,3 +127,14 @@ resource "cloudflare_record" "prowlarr" {
   ttl     = 300
   comment = "Prowlarr indexer manager (internal) - managed by Terraform"
 }
+
+# Stremio streaming server
+resource "cloudflare_record" "stremio_server" {
+  zone_id = local.zone_id
+  name    = "stremio-server"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "Stremio streaming server (internal) - managed by Terraform"
+}

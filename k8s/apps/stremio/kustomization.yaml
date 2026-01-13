@@ -19,7 +19,11 @@ resources:
   # Comet (Stremio addon)
   - comet-deployment.yaml
   - comet-service.yaml
+  # Stremio Server (streaming server for web app)
+  - server-deployment.yaml
+  - server-service.yaml
   # Ingress
   - certificate.yaml
   - ingressroute-comet.yaml
   - ingressroute-prowlarr.yaml
+  - ingressroute-server.yaml

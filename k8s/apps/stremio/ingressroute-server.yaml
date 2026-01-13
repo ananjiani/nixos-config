@@ -1,0 +1,17 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: stremio-server
+  namespace: stremio
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`stremio-server.dimensiondoor.xyz`)
+      kind: Rule
+      services:
+        - name: stremio-server
+          port: 11470
+  tls:
+    secretName: stremio-tls

@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stremio-server
+  namespace: stremio
+  labels:
+    app: stremio-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stremio-server
+  template:
+    metadata:
+      labels:
+        app: stremio-server
+    spec:
+      containers:
+        - name: stremio-server
+          image: stremio/server:latest
+          ports:
+            - containerPort: 11470
+              name: http
+            - containerPort: 12470
+              name: https
+          env:
+            - name: NO_CORS
+              value: "1"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 11470
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 11470
+            initialDelaySeconds: 10
+            periodSeconds: 10

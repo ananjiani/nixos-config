@@ -12,3 +12,4 @@ spec:
   dnsNames:
     - stremio.dimensiondoor.xyz
     - prowlarr.dimensiondoor.xyz
+    - stremio-server.dimensiondoor.xyz

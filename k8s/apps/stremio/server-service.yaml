@@ -1,0 +1,18 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stremio-server
+  namespace: stremio
+  labels:
+    app: stremio-server
+spec:
+  selector:
+    app: stremio-server
+  ports:
+    - name: http
+      port: 11470
+      targetPort: 11470
+    - name: https
+      port: 12470
+      targetPort: 12470
