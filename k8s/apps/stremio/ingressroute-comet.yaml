@@ -1,0 +1,26 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: comet
+  namespace: stremio
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Comet"
+    gethomepage.dev/group: "Media"
+    gethomepage.dev/icon: "stremio.png"
+    gethomepage.dev/description: "Stremio Debrid Addon"
+    gethomepage.dev/href: "https://stremio.dimensiondoor.xyz"
+    gethomepage.dev/pod-selector: "app=comet"
+    gethomepage.dev/siteMonitor: "http://comet.stremio.svc:8000/health"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`stremio.dimensiondoor.xyz`)
+      kind: Rule
+      services:
+        - name: comet
+          port: 8000
+  tls:
+    secretName: stremio-tls

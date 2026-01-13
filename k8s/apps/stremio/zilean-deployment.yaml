@@ -1,0 +1,57 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zilean
+  namespace: stremio
+  labels:
+    app: zilean
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: zilean
+  template:
+    metadata:
+      labels:
+        app: zilean
+    spec:
+      containers:
+        - name: zilean
+          image: ipromknight/zilean:latest
+          ports:
+            - name: http
+              containerPort: 8181
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: stremio-secrets
+                  key: postgres-password
+            # Zilean uses .NET configuration format
+            - name: Zilean__Database__ConnectionString
+              value: "Host=postgres;Port=5432;Database=zilean;Username=postgres;Password=$(POSTGRES_PASSWORD)"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "200m"
+            # High limits for initial DMM indexing (~6-7GB for ~1hr)
+            # Reduce to 2Gi after indexing completes
+            limits:
+              memory: "8Gi"
+              cpu: "2000m"
+          livenessProbe:
+            httpGet:
+              path: /healthchecks/ping
+              port: http
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthchecks/ping
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10

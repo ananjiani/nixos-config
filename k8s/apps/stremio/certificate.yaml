@@ -1,0 +1,14 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: stremio-tls
+  namespace: stremio
+spec:
+  secretName: stremio-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - stremio.dimensiondoor.xyz
+    - prowlarr.dimensiondoor.xyz
