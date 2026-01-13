@@ -12,7 +12,7 @@ metadata:
     gethomepage.dev/description: "AI Chat Interface"
     gethomepage.dev/href: "https://ai.dimensiondoor.xyz"
     gethomepage.dev/pod-selector: "app=open-webui"
-    gethomepage.dev/siteMonitor: "http://open-webui.open-webui.svc:80/health"
+    gethomepage.dev/siteMonitor: "http://open-webui.open-webui.svc:8080/health"
 spec:
   entryPoints:
     - websecure
@@ -21,6 +21,6 @@ spec:
       kind: Rule
       services:
         - name: open-webui
-          port: 80
+          port: 8080
   tls:
     secretName: open-webui-tls
