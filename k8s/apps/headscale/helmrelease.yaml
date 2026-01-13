@@ -16,58 +16,32 @@ spec:
         namespace: flux-system
       interval: 1h
   values:
-    # Use official image (chart default)
-    # image:
-    #   repository: ghcr.io/juanfont/headscale
-    #   tag: v0.25.0
+    # Use headscale/headscale image which supports env-var configuration
+    # The official image (ghcr.io/juanfont/headscale) requires a config file
+    image:
+      repository: headscale/headscale
+      tag: latest
 
-    # Configuration via config file (required by official image)
-    configMaps:
-      config:
-        enabled: true
-        data:
-          config.yaml: |
-            server_url: https://ts.dimensiondoor.xyz
-            listen_addr: 0.0.0.0:8080
-            metrics_listen_addr: 0.0.0.0:9090
-
-            database:
-              type: sqlite
-              sqlite:
-                path: /var/lib/headscale/db.sqlite
-
-            derp:
-              server:
-                enabled: false
-              urls:
-                - https://controlplane.tailscale.com/derpmap/default
-              auto_update_enabled: true
-              update_frequency: 24h
-
-            dns:
-              base_domain: tail.dimensiondoor.xyz
-              magic_dns: true
-              nameservers:
-                global:
-                  - 192.168.1.53
-
-            prefixes:
-              v4: 100.64.0.0/10
-              v6: fd7a:115c:a1e0::/48
-
-            disable_check_updates: true
-
-            log:
-              level: info
-
-            noise:
-              private_key_path: /var/lib/headscale/noise_private.key
-
-            unix_socket: /var/run/headscale/headscale.sock
-            unix_socket_permission: "0770"
-
-            policy:
-              path: /etc/headscale/acl.json
+    # Configuration via environment variables
+    env:
+      HEADSCALE_SERVER_URL: "https://ts.dimensiondoor.xyz"
+      HEADSCALE_LISTEN_ADDR: "0.0.0.0:8080"
+      HEADSCALE_METRICS_LISTEN_ADDR: "0.0.0.0:9090"
+      HEADSCALE_DATABASE_TYPE: "sqlite"
+      HEADSCALE_DATABASE_SQLITE_PATH: "/var/lib/headscale/db.sqlite"
+      HEADSCALE_DERP_SERVER_ENABLED: "false"
+      HEADSCALE_DERP_URLS: "https://controlplane.tailscale.com/derpmap/default"
+      HEADSCALE_DNS_BASE_DOMAIN: "tail.dimensiondoor.xyz"
+      HEADSCALE_DNS_MAGIC_DNS: "true"
+      HEADSCALE_DNS_NAMESERVERS_GLOBAL: "192.168.1.53"
+      HEADSCALE_PREFIXES_V4: "100.64.0.0/10"
+      HEADSCALE_PREFIXES_V6: "fd7a:115c:a1e0::/48"
+      HEADSCALE_DISABLE_CHECK_UPDATES: "true"
+      HEADSCALE_LOG_LEVEL: "info"
+      HEADSCALE_NOISE_PRIVATE_KEY_PATH: "/var/lib/headscale/noise_private.key"
+      HEADSCALE_UNIX_SOCKET: "/var/run/headscale/headscale.sock"
+      HEADSCALE_UNIX_SOCKET_PERMISSION: "0770"
+      HEADSCALE_POLICY_PATH: "/etc/headscale/acl.json"
 
     persistence:
       data:
@@ -78,18 +52,11 @@ spec:
         enabled: true
         type: emptyDir
         mountPath: /var/run/headscale
-      config:
-        enabled: true
-        type: configMap
-        name: headscale-config
-        mountPath: /etc/headscale
-        readOnly: true
       acl:
         enabled: true
         type: configMap
         name: headscale-acl
-        subPath: acl.json
-        mountPath: /etc/headscale/acl.json
+        mountPath: /etc/headscale
         readOnly: true
 
     service:
