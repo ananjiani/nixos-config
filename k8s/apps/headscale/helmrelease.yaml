@@ -67,7 +67,7 @@ spec:
             unix_socket_permission: "0770"
 
             policy:
-              path: /etc/headscale/acl/acl.json
+              path: /etc/headscale/acl.json
 
     persistence:
       data:
@@ -78,11 +78,18 @@ spec:
         enabled: true
         type: emptyDir
         mountPath: /var/run/headscale
+      config:
+        enabled: true
+        type: configMap
+        name: headscale-config
+        mountPath: /etc/headscale
+        readOnly: true
       acl:
         enabled: true
         type: configMap
         name: headscale-acl
-        mountPath: /etc/headscale/acl
+        subPath: acl.json
+        mountPath: /etc/headscale/acl.json
         readOnly: true
 
     service:
