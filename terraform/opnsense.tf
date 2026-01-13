@@ -71,6 +71,16 @@ resource "opnsense_firewall_alias" "vpn_exempt_devices" {
   ]
 }
 
+# VPN exempt destinations - these endpoints bypass VPN for all devices
+resource "opnsense_firewall_alias" "vpn_exempt_destinations" {
+  name        = "VPN_Exempt_Dest"
+  type        = "host"
+  description = "Destinations that bypass VPN (WAF blocks Mullvad IPs)"
+  content = [
+    "api.deepseek.com",
+  ]
+}
+
 # =============================================================================
 # Firewall Rules
 # =============================================================================
@@ -97,6 +107,33 @@ resource "opnsense_firewall_filter" "anti_lockout" {
       net  = "(self)"
       port = "443"
     }
+  }
+}
+
+# VPN-exempt destinations bypass VPN (for services that block Mullvad IPs)
+resource "opnsense_firewall_filter" "vpn_exempt_destinations" {
+  count       = var.vpn_gateway_configured ? 1 : 0
+  enabled     = true
+  sequence    = 4
+  description = "VPN exempt: Route to specific destinations via WAN"
+
+  interface = {
+    interface = ["lan"]
+  }
+
+  filter = {
+    action    = "pass"
+    direction = "in"
+    protocol  = "TCP"
+
+    destination = {
+      net  = opnsense_firewall_alias.vpn_exempt_destinations.name
+      port = "443"
+    }
+  }
+
+  source_routing = {
+    gateway = var.wan_gateway_name
   }
 }
 
