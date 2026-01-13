@@ -25,6 +25,10 @@ spec:
       valuesKey: OAUTH_CLIENT_SECRET
       targetPath: immich.configuration.oauth.clientSecret
   values:
+    # Pin image to version compatible with database migrations
+    image:
+      tag: v2.4.1
+
     # Use bundled PostgreSQL
     postgresql:
       enabled: true
@@ -57,13 +61,6 @@ spec:
 
     # Security context - run as storage group (GID 1500) for NFS access
     server:
-      # Pin image to version compatible with database migrations
-      controllers:
-        main:
-          containers:
-            main:
-              image:
-                tag: v2.4.1
       podSecurityContext:
         fsGroup: 1500
       resources:
