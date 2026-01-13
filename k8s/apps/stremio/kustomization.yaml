@@ -1,0 +1,25 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - secret.yaml
+  # PostgreSQL
+  - postgres-pvc.yaml
+  - postgres-configmap.yaml
+  - postgres-statefulset.yaml
+  - postgres-service.yaml
+  # Zilean (DMM indexer)
+  - zilean-deployment.yaml
+  - zilean-service.yaml
+  # Prowlarr (indexer manager)
+  - prowlarr-pvc.yaml
+  - prowlarr-deployment.yaml
+  - prowlarr-service.yaml
+  # Comet (Stremio addon)
+  - comet-deployment.yaml
+  - comet-service.yaml
+  # Ingress
+  - certificate.yaml
+  - ingressroute-comet.yaml
+  - ingressroute-prowlarr.yaml

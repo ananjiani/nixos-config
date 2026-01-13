@@ -1,0 +1,100 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: comet
+  namespace: stremio
+  labels:
+    app: comet
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: comet
+  template:
+    metadata:
+      labels:
+        app: comet
+    spec:
+      containers:
+        - name: comet
+          image: g0ldyy/comet:latest
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            # Database configuration
+            - name: DATABASE_TYPE
+              value: "postgresql"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: stremio-secrets
+                  key: postgres-password
+            - name: DATABASE_URL
+              value: "postgres:$(POSTGRES_PASSWORD)@postgres:5432/comet"
+
+            # Proxy streaming - routes all debrid traffic through server IP
+            - name: PROXY_DEBRID_STREAM
+              value: "True"
+            - name: PROXY_DEBRID_STREAM_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: stremio-secrets
+                  key: proxy-password
+
+            # Zilean integration (DMM hash lookups)
+            - name: SCRAPE_ZILEAN
+              value: "True"
+            - name: ZILEAN_URL
+              value: "http://zilean:8181"
+
+            # Prowlarr integration (indexer searches)
+            - name: SCRAPE_PROWLARR
+              value: "True"
+            - name: PROWLARR_URL
+              value: "http://prowlarr:9696"
+            - name: PROWLARR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: stremio-secrets
+                  key: prowlarr-api-key
+
+            # Default debrid service for proxy streaming
+            - name: PROXY_DEBRID_STREAM_DEBRID_DEFAULT_SERVICE
+              value: "torbox"
+            - name: PROXY_DEBRID_STREAM_DEBRID_DEFAULT_APIKEY
+              valueFrom:
+                secretKeyRef:
+                  name: stremio-secrets
+                  key: torbox-api-key
+
+            # TorBox integration
+            - name: TORBOX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: stremio-secrets
+                  key: torbox-api-key
+            - name: SCRAPE_TORBOX
+              value: "True"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5

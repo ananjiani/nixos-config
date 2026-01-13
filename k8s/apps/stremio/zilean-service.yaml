@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zilean
+  namespace: stremio
+spec:
+  type: ClusterIP
+  selector:
+    app: zilean
+  ports:
+    - name: http
+      port: 8181
+      targetPort: 8181

@@ -1,0 +1,26 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: prowlarr
+  namespace: stremio
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Prowlarr"
+    gethomepage.dev/group: "Media"
+    gethomepage.dev/icon: "prowlarr.png"
+    gethomepage.dev/description: "Indexer Manager"
+    gethomepage.dev/href: "https://prowlarr.dimensiondoor.xyz"
+    gethomepage.dev/pod-selector: "app=prowlarr"
+    gethomepage.dev/siteMonitor: "http://prowlarr.stremio.svc:9696/ping"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`prowlarr.dimensiondoor.xyz`)
+      kind: Rule
+      services:
+        - name: prowlarr
+          port: 9696
+  tls:
+    secretName: stremio-tls

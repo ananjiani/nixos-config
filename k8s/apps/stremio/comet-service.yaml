@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: comet
+  namespace: stremio
+spec:
+  type: ClusterIP
+  selector:
+    app: comet
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000

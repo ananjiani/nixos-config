@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: stremio
+data:
+  init-databases.sh: |
+    #!/bin/bash
+    set -e
+
+    # Create databases for Comet and Zilean
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+        CREATE DATABASE comet;
+        CREATE DATABASE zilean;
+    EOSQL
