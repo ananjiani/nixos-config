@@ -215,101 +215,13 @@ jobs:
             package-sources
           assignees: ananjiani
 
-  update-flakes:
-    name: Check and Update Flakes
-    runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    needs: [check-flake, build-hosts, update-sources]  # Only run if builds pass
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
-
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Update flake inputs
-        id: update
-        run: |
-          echo "📦 Checking for flake updates..."
-
-          # Store current lock file
-          cp flake.lock flake.lock.old
-
-          # Update all inputs
-          nix flake update
-
-          # Check if there were changes
-          if git diff --quiet flake.lock; then
-            echo "✅ All inputs are up to date!"
-            echo "has_updates=false" >> $GITHUB_OUTPUT
-          else
-            echo "📝 Updates found, generating changelog..."
-            echo "has_updates=true" >> $GITHUB_OUTPUT
-
-            # Generate a nice changelog
-            echo "## Flake Input Updates" > update_message.md
-            echo "" >> update_message.md
-
-            # Parse the changes (this is a bit complex but provides nice output)
-            nix eval --json .#inputs | jq -r 'to_entries[] | .key' | while read -r input; do
-              OLD_REV=$(jq -r ".nodes[\"$input\"].locked.rev // empty" flake.lock.old 2>/dev/null || echo "")
-              NEW_REV=$(jq -r ".nodes[\"$input\"].locked.rev // empty" flake.lock 2>/dev/null || echo "")
-
-              if [ -n "$OLD_REV" ] && [ -n "$NEW_REV" ] && [ "$OLD_REV" != "$NEW_REV" ]; then
-                echo "### $input" >> update_message.md
-                echo "- Old: \`${OLD_REV:0:8}\`" >> update_message.md
-                echo "- New: \`${NEW_REV:0:8}\`" >> update_message.md
-
-                # Try to get GitHub URL for nice links
-                URL=$(jq -r ".nodes[\"$input\"].locked.url // empty" flake.lock 2>/dev/null || echo "")
-                if [[ "$URL" == *"github:"* ]]; then
-                  REPO=$(echo "$URL" | sed 's/github://' | sed 's/\/archive\/.*//')
-                  echo "- [Compare changes](https://github.com/$REPO/compare/${OLD_REV:0:8}...${NEW_REV:0:8})" >> update_message.md
-                fi
-                echo "" >> update_message.md
-              fi
-            done
-
-            # Add summary
-            echo "## Summary" >> update_message.md
-            echo "" >> update_message.md
-            echo "This is an automated update of flake inputs. Please review the changes and ensure all systems still build correctly." >> update_message.md
-            echo "" >> update_message.md
-            echo "To test locally:" >> update_message.md
-            echo "\`\`\`bash" >> update_message.md
-            echo "nix flake check" >> update_message.md
-            echo "# Or test specific hosts:" >> update_message.md
-            echo "nix build .#nixosConfigurations.ammars-pc.config.system.build.toplevel" >> update_message.md
-            echo "\`\`\`" >> update_message.md
-          fi
-
-      - name: Create Pull Request
-        if: steps.update.outputs.has_updates == 'true'
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "flake.lock: Update"
-          title: "Weekly flake update"
-          body-path: update_message.md
-          branch: flake-update-${{ github.run_number }}
-          delete-branch: true
-          labels: |
-            dependencies
-            automated
-          assignees: ananjiani
+  # NOTE: Flake updates are now handled by Renovate (see renovate.json)
 
   summary:
     name: Summary Report
     runs-on: ubuntu-latest
     if: always()
-    needs: [check-flake, build-hosts, build-iso, update-sources, update-flakes]
+    needs: [check-flake, build-hosts, build-iso, update-sources]
     steps:
       - name: Generate summary
         uses: actions/github-script@v7

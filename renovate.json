@@ -1,0 +1,37 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits"
+  ],
+  "timezone": "America/Chicago",
+  "schedule": ["before 6am on sunday"],
+  "labels": ["dependencies", "automated"],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "labels": ["dependencies", "automated", "major-update"]
+    },
+    {
+      "matchManagers": ["nix"],
+      "groupName": "nix flake inputs",
+      "description": "Group all Nix flake input updates together"
+    }
+  ],
+  "flux": {
+    "fileMatch": ["k8s/apps/.+\\.yaml$"]
+  },
+  "kubernetes": {
+    "fileMatch": ["k8s/apps/.+\\.yaml$"]
+  },
+  "terraform": {
+    "fileMatch": ["terraform/.+\\.tf$"]
+  },
+  "nix": {
+    "enabled": true
+  }
+}

@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: adguard-home
-      version: ">=0.19.0"
+      version: "0.19.0"
       sourceRef:
         kind: HelmRepository
         name: rm3l
@@ -42,10 +42,6 @@ spec:
               name: adguard-home
 
   values:
-    image:
-      repository: adguard/adguardhome
-      tag: latest
-
     persistence:
       enabled: true
       existingClaim: adguard-data
