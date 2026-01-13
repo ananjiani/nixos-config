@@ -204,9 +204,9 @@ spec:
           # Stremio stack
           - domain: stremio.dimensiondoor.xyz
             answer: 192.168.1.52
-          - domain: prowlarr.dimensiondoor.xyz
+          - domain: comet.dimensiondoor.xyz
             answer: 192.168.1.52
-          - domain: stremio-server.dimensiondoor.xyz
+          - domain: prowlarr.dimensiondoor.xyz
             answer: 192.168.1.52
       log:
         enabled: true

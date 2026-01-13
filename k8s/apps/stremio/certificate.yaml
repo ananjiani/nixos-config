@@ -11,5 +11,5 @@ spec:
     kind: ClusterIssuer
   dnsNames:
     - stremio.dimensiondoor.xyz
+    - comet.dimensiondoor.xyz
     - prowlarr.dimensiondoor.xyz
-    - stremio-server.dimensiondoor.xyz
