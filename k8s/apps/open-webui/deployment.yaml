@@ -34,6 +34,10 @@ spec:
                   name: open-webui-secrets
                   key: secret-key
             # DeepSeek API (OpenAI-compatible)
+            # Reset config on start to force re-read of env vars
+            # (database was caching stale values from Helm chart experiments)
+            - name: RESET_CONFIG_ON_START
+              value: "true"
             - name: ENABLE_OPENAI_API
               value: "true"
             - name: OPENAI_API_BASE_URL
