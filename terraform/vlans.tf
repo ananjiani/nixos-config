@@ -305,6 +305,29 @@ resource "opnsense_firewall_filter" "iot_to_router_dns" {
   }
 }
 
+# Allow IoT mDNS for device discovery (Home Assistant, thermostats, etc.)
+resource "opnsense_firewall_filter" "iot_mdns" {
+  count       = var.vlan_interfaces_configured ? 1 : 0
+  enabled     = true
+  sequence    = 202
+  description = "Allow IoT mDNS"
+
+  interface = {
+    interface = [var.iot_interface]
+  }
+
+  filter = {
+    action    = "pass"
+    direction = "in"
+    protocol  = "UDP"
+
+    destination = {
+      net  = "224.0.0.251"
+      port = "5353"
+    }
+  }
+}
+
 # Block IoT -> LAN
 resource "opnsense_firewall_filter" "iot_block_lan" {
   count       = var.vlan_interfaces_configured ? 1 : 0
