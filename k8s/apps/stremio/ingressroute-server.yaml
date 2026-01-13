@@ -8,7 +8,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`stremio-server.dimensiondoor.xyz`)
+    - match: Host(`stremio.dimensiondoor.xyz`)
       kind: Rule
       services:
         - name: stremio-server

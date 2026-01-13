@@ -10,14 +10,14 @@ metadata:
     gethomepage.dev/group: "Media"
     gethomepage.dev/icon: "stremio.png"
     gethomepage.dev/description: "Stremio Debrid Addon"
-    gethomepage.dev/href: "https://stremio.dimensiondoor.xyz"
+    gethomepage.dev/href: "https://comet.dimensiondoor.xyz"
     gethomepage.dev/pod-selector: "app=comet"
     gethomepage.dev/siteMonitor: "http://comet.stremio.svc:8000/health"
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`stremio.dimensiondoor.xyz`)
+    - match: Host(`comet.dimensiondoor.xyz`)
       kind: Rule
       services:
         - name: comet

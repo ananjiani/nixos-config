@@ -106,7 +106,7 @@ resource "cloudflare_record" "home" {
   comment = "Homepage dashboard (internal) - managed by Terraform"
 }
 
-# Stremio Comet addon
+# Stremio streaming server (for web.stremio.com)
 resource "cloudflare_record" "stremio" {
   zone_id = local.zone_id
   name    = "stremio"
@@ -114,7 +114,18 @@ resource "cloudflare_record" "stremio" {
   type    = "A"
   proxied = false # Internal IP, cannot be proxied
   ttl     = 300
-  comment = "Stremio Comet addon (internal) - managed by Terraform"
+  comment = "Stremio streaming server (internal) - managed by Terraform"
+}
+
+# Comet addon for Stremio
+resource "cloudflare_record" "comet" {
+  zone_id = local.zone_id
+  name    = "comet"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "Comet Stremio addon (internal) - managed by Terraform"
 }
 
 # Prowlarr indexer manager
@@ -126,15 +137,4 @@ resource "cloudflare_record" "prowlarr" {
   proxied = false # Internal IP, cannot be proxied
   ttl     = 300
   comment = "Prowlarr indexer manager (internal) - managed by Terraform"
-}
-
-# Stremio streaming server
-resource "cloudflare_record" "stremio_server" {
-  zone_id = local.zone_id
-  name    = "stremio-server"
-  content = "192.168.1.52" # Traefik LoadBalancer (internal)
-  type    = "A"
-  proxied = false # Internal IP, cannot be proxied
-  ttl     = 300
-  comment = "Stremio streaming server (internal) - managed by Terraform"
 }
