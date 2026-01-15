@@ -1,0 +1,74 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cliproxy
+  namespace: cliproxy
+  labels:
+    app: cliproxy
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # Longhorn PVCs are RWO
+  selector:
+    matchLabels:
+      app: cliproxy
+  template:
+    metadata:
+      labels:
+        app: cliproxy
+    spec:
+      containers:
+        - name: cliproxy
+          image: eceasy/cli-proxy-api:latest
+          ports:
+            - name: http
+              containerPort: 8317
+              protocol: TCP
+            - name: mgmt
+              containerPort: 8085
+              protocol: TCP
+          env:
+            - name: MANAGEMENT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cliproxy-secrets
+                  key: management-password
+            - name: CLI_PROXY_AUTH_DIR
+              value: "/data/auths"
+          volumeMounts:
+            - name: config
+              mountPath: /CLIProxyAPI/config.yaml
+              subPath: config.yaml
+            - name: auths
+              mountPath: /data/auths
+            - name: auths
+              mountPath: /root/.cli-proxy-api
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: cliproxy-config
+        - name: auths
+          persistentVolumeClaim:
+            claimName: cliproxy-auths

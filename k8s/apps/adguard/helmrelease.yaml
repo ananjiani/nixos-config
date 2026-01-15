@@ -235,6 +235,9 @@ spec:
           # Short .lan alias for AdGuard (no public domain)
           - domain: adguard.lan
             answer: 192.168.1.52
+          # CLI Proxy API (internal only)
+          - domain: cliproxy.lan
+            answer: 192.168.1.52
           # Stremio stack
           - domain: stremio.dimensiondoor.xyz
             answer: 192.168.1.52
