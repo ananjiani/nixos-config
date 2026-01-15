@@ -5,6 +5,7 @@ resources:
   - adguard
   - authentik
   - chromadb
+  - cliproxy
   - forgejo
   - headscale
   - home-assistant

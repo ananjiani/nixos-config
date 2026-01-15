@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cliproxy
+  namespace: cliproxy
+spec:
+  type: ClusterIP
+  selector:
+    app: cliproxy
+  ports:
+    - name: http
+      port: 8317
+      targetPort: 8317
+      protocol: TCP
+    - name: mgmt
+      port: 8085
+      targetPort: 8085
+      protocol: TCP

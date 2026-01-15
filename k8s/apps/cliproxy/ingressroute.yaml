@@ -1,0 +1,30 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: cliproxy
+  namespace: cliproxy
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "CLI Proxy API"
+    gethomepage.dev/group: "AI"
+    gethomepage.dev/icon: "openai.png"
+    gethomepage.dev/description: "OpenAI-compatible API Proxy"
+    gethomepage.dev/href: "http://cliproxy.lan:8085"
+    gethomepage.dev/pod-selector: "app=cliproxy"
+    gethomepage.dev/siteMonitor: "http://cliproxy.cliproxy.svc:8317"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`cliproxy.lan`)
+      kind: Rule
+      services:
+        - name: cliproxy
+          port: 8317
+    - match: Host(`cliproxy.lan`) && PathPrefix(`/panel`)
+      kind: Rule
+      services:
+        - name: cliproxy
+          port: 8085
