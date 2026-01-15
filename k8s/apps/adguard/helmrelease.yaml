@@ -92,13 +92,8 @@ spec:
         annotations:
           metallb.universe.tf/loadBalancerIPs: "192.168.1.54"
 
-      # DNS-over-TLS for Android Private DNS
-      dot:
-        type: LoadBalancer
-        externalTrafficPolicy: Local
-        annotations:
-          metallb.universe.tf/loadBalancerIPs: "192.168.1.56"
-        port: 853
+      # DoT service is defined separately in service-dot.yaml
+      # (helm chart doesn't support LoadBalancer for dot)
 
     ingress:
       enabled: false
