@@ -18,14 +18,7 @@ spec:
     - web
     - websecure
   routes:
-    # Management panel
     - match: Host(`cliproxy.lan`)
-      kind: Rule
-      services:
-        - name: cliproxy
-          port: 8317
-    # API endpoint
-    - match: Host(`api.cliproxy.lan`)
       kind: Rule
       services:
         - name: cliproxy

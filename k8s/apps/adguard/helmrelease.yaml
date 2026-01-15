@@ -238,8 +238,6 @@ spec:
           # CLI Proxy API (internal only)
           - domain: cliproxy.lan
             answer: 192.168.1.52
-          - domain: api.cliproxy.lan
-            answer: 192.168.1.52
           # Stremio stack
           - domain: stremio.dimensiondoor.xyz
             answer: 192.168.1.52
