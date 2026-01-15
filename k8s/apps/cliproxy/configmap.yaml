@@ -12,8 +12,9 @@ data:
     # Authentication directory for CLI tools
     auth-dir: /data/auths
 
-    # API keys loaded from environment variable
-    api-keys: []
+    # API keys - replaced by init container from secret
+    api-keys:
+      - "REPLACE_API_KEY"
 
     # Remote management panel
     remote-management:
