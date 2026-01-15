@@ -138,3 +138,14 @@ resource "cloudflare_record" "prowlarr" {
   ttl     = 300
   comment = "Prowlarr indexer manager (internal) - managed by Terraform"
 }
+
+# AdGuard DNS-over-TLS (for Android Private DNS)
+resource "cloudflare_record" "dns_dot" {
+  zone_id = local.zone_id
+  name    = "dns"
+  content = "192.168.1.56" # AdGuard DoT LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Must be false for DoT
+  ttl     = 300
+  comment = "AdGuard DNS-over-TLS (internal) - managed by Terraform"
+}
