@@ -8,3 +8,4 @@ resources:
   - networkpolicy.yaml
   - ingressroute.yaml
   - certificate.yaml
+  - service-dot.yaml
