@@ -10,9 +10,9 @@ metadata:
     gethomepage.dev/group: "AI"
     gethomepage.dev/icon: "openai.png"
     gethomepage.dev/description: "OpenAI-compatible API Proxy"
-    gethomepage.dev/href: "http://cliproxy.lan:8085"
+    gethomepage.dev/href: "https://cliproxy.lan"
     gethomepage.dev/pod-selector: "app=cliproxy"
-    gethomepage.dev/siteMonitor: "http://cliproxy.cliproxy.svc:8317"
+    gethomepage.dev/siteMonitor: "http://cliproxy.cliproxy.svc.cluster.local:8317"
 spec:
   entryPoints:
     - web
@@ -23,8 +23,3 @@ spec:
       services:
         - name: cliproxy
           port: 8317
-    - match: Host(`cliproxy.lan`) && PathPrefix(`/panel`)
-      kind: Rule
-      services:
-        - name: cliproxy
-          port: 8085
