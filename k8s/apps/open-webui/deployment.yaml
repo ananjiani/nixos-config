@@ -40,13 +40,13 @@ spec:
               value: "true"
             - name: ENABLE_OPENAI_API
               value: "true"
-            - name: OPENAI_API_BASE_URL
-              value: "https://api.deepseek.com/v1"
-            - name: OPENAI_API_KEY
+            - name: OPENAI_API_BASE_URLS
+              value: "https://api.deepseek.com/v1;https://cliproxy.lan/v1"
+            - name: OPENAI_API_KEYS
               valueFrom:
                 secretKeyRef:
                   name: open-webui-secrets
-                  key: deepseek-api-key
+                  key: openai-api-keys
             # Web search via Tavily
             - name: ENABLE_WEB_SEARCH
               value: "true"
