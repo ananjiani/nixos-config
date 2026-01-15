@@ -13,7 +13,3 @@ spec:
       port: 8317
       targetPort: 8317
       protocol: TCP
-    - name: mgmt
-      port: 8085
-      targetPort: 8085
-      protocol: TCP

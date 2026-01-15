@@ -25,9 +25,6 @@ spec:
             - name: http
               containerPort: 8317
               protocol: TCP
-            - name: mgmt
-              containerPort: 8085
-              protocol: TCP
           env:
             - name: MANAGEMENT_PASSWORD
               valueFrom:
