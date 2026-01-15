@@ -31,6 +31,11 @@ spec:
                 secretKeyRef:
                   name: cliproxy-secrets
                   key: management-password
+            - name: CLI_PROXY_API_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: cliproxy-secrets
+                  key: api-key
             - name: CLI_PROXY_AUTH_DIR
               value: "/data/auths"
           volumeMounts:
