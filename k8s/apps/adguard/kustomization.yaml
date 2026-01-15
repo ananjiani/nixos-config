@@ -7,3 +7,4 @@ resources:
   - helmrelease.yaml
   - networkpolicy.yaml
   - ingressroute.yaml
+  - certificate.yaml

@@ -1,0 +1,13 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: adguard-dot-tls
+  namespace: adguard
+spec:
+  secretName: adguard-dot-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - dns.dimensiondoor.xyz

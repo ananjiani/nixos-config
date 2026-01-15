@@ -20,6 +20,7 @@ spec:
   postRenderers:
     - kustomize:
         patches:
+          # Patch init container for declarative config
           - patch: |
               apiVersion: apps/v1
               kind: Deployment
@@ -37,6 +38,28 @@ spec:
                             echo "Syncing AdGuard config (declarative mode)..."
                             cp -v /var/adguardhome-bootstrap/AdGuardHome.yaml /opt/adguardhome/conf/AdGuardHome.yaml
                             echo "Config synced successfully"
+            target:
+              kind: Deployment
+              name: adguard-home
+          # Mount TLS certificate for DNS-over-TLS
+          - patch: |
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: adguard-home
+              spec:
+                template:
+                  spec:
+                    volumes:
+                      - name: dot-tls
+                        secret:
+                          secretName: adguard-dot-tls
+                    containers:
+                      - name: adguard-home
+                        volumeMounts:
+                          - name: dot-tls
+                            mountPath: /certs
+                            readOnly: true
             target:
               kind: Deployment
               name: adguard-home
@@ -68,6 +91,14 @@ spec:
         externalTrafficPolicy: Local
         annotations:
           metallb.universe.tf/loadBalancerIPs: "192.168.1.54"
+
+      # DNS-over-TLS for Android Private DNS
+      dot:
+        type: LoadBalancer
+        externalTrafficPolicy: Local
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: "192.168.1.56"
+        port: 853
 
     ingress:
       enabled: false
@@ -135,7 +166,11 @@ spec:
         hostsfile_enabled: true
         serve_plain_dns: true
       tls:
-        enabled: false
+        enabled: true
+        server_name: dns.dimensiondoor.xyz
+        port_dns_over_tls: 853
+        certificate_path: /certs/tls.crt
+        private_key_path: /certs/tls.key
       querylog:
         enabled: true
         file_enabled: true
