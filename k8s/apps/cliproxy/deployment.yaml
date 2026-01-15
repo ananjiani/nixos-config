@@ -18,6 +18,25 @@ spec:
       labels:
         app: cliproxy
     spec:
+      initContainers:
+        - name: config-injector
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              sed "s/REPLACE_API_KEY/$API_KEY/" /config-template/config.yaml > /config/config.yaml
+          env:
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cliproxy-secrets
+                  key: api-key
+          volumeMounts:
+            - name: config-template
+              mountPath: /config-template
+            - name: config
+              mountPath: /config
       containers:
         - name: cliproxy
           image: eceasy/cli-proxy-api:latest
@@ -31,11 +50,6 @@ spec:
                 secretKeyRef:
                   name: cliproxy-secrets
                   key: management-password
-            - name: CLI_PROXY_API_KEYS
-              valueFrom:
-                secretKeyRef:
-                  name: cliproxy-secrets
-                  key: api-key
             - name: CLI_PROXY_AUTH_DIR
               value: "/data/auths"
           volumeMounts:
@@ -68,9 +82,11 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
       volumes:
-        - name: config
+        - name: config-template
           configMap:
             name: cliproxy-config
+        - name: config
+          emptyDir: {}
         - name: auths
           persistentVolumeClaim:
             claimName: cliproxy-auths
