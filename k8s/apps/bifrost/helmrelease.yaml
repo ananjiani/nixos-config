@@ -73,6 +73,8 @@ spec:
         deepseek:
           network_config:
             base_url: "https://api.deepseek.com/v1"
+          custom_provider_config:
+            base_provider_type: openai
           keys:
             - name: "deepseek"
               value: "env.DEEPSEEK_API_KEY"
@@ -80,6 +82,8 @@ spec:
         zai:
           network_config:
             base_url: "https://api.z.ai/api/paas/v4"
+          custom_provider_config:
+            base_provider_type: openai
           keys:
             - name: "zai"
               value: "env.ZAI_API_KEY"
@@ -87,6 +91,8 @@ spec:
         cliproxy:
           network_config:
             base_url: "http://cliproxy.cliproxy.svc:8080"
+          custom_provider_config:
+            base_provider_type: openai
           keys:
             - name: "cliproxy"
               value: "env.CLIPROXY_API_KEY"
