@@ -58,13 +58,30 @@
     secrets.tailscale_authkey = { };
   };
 
+  # Model conversion tools (HuggingFace -> GGUF -> Ollama)
+  environment.systemPackages = with pkgs-stable; [
+    llama-cpp # GGUF conversion and quantization
+    (python3.withPackages (ps: [ ps.huggingface-hub ])) # Model downloads
+  ];
+
   # Ollama LLM service with GPU acceleration
   services.ollama = {
     enable = true;
     host = "0.0.0.0"; # Allow access from k8s pods
     port = 11434;
     package = pkgs-stable.ollama-cuda; # CUDA-accelerated package (stable for cache hits)
-    loadModels = [ "qwen3:8b" ];
+    loadModels = [
+      "qwen3:8b"
+      "qwen3:0.6b"
+      "mlmlml" # Marxist-Leninist educator model
+      "nomic-embed-text" # GPU-accelerated embeddings for Open WebUI
+    ];
+  };
+
+  # Docker for model conversion (bypasses NixOS library isolation)
+  virtualisation.docker = {
+    enable = true;
+    enableNvidia = true; # GPU passthrough for containers
   };
 
   networking = {
