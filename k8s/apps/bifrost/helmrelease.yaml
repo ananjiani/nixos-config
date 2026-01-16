@@ -57,20 +57,25 @@ spec:
 
       providers:
         deepseek:
+          network_config:
+            base_url: "https://api.deepseek.com/v1"
           keys:
-            - value: "env.DEEPSEEK_API_KEY"
+            - name: "deepseek"
+              value: "env.DEEPSEEK_API_KEY"
               weight: 1.0
         zai:
           network_config:
             base_url: "https://api.z.ai/api/paas/v4"
           keys:
-            - value: "env.ZAI_API_KEY"
+            - name: "zai"
+              value: "env.ZAI_API_KEY"
               weight: 1.0
         cliproxy:
           network_config:
             base_url: "http://cliproxy.cliproxy.svc:8080"
           keys:
-            - value: "env.CLIPROXY_API_KEY"
+            - name: "cliproxy"
+              value: "env.CLIPROXY_API_KEY"
               weight: 1.0
 
       providerSecrets:
