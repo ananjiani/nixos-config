@@ -63,6 +63,10 @@
       url = "github:nix-community/nixos-avf";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+    deploy-rs = {
+      url = "github:serokell/deploy-rs";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
   };
 
   outputs =
@@ -73,6 +77,7 @@
       home-manager-unstable,
       nix-std,
       flake-parts,
+      deploy-rs,
       ...
     }@inputs:
     let
@@ -204,6 +209,34 @@
 
       };
 
+      # deploy-rs deployment configuration
+      deploy.nodes = {
+        boromir = {
+          hostname = "boromir.lan";
+          profiles.system = {
+            user = "root";
+            sshUser = "ammar";
+            path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.boromir;
+          };
+        };
+        samwise = {
+          hostname = "samwise.lan";
+          profiles.system = {
+            user = "root";
+            sshUser = "ammar";
+            path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.samwise;
+          };
+        };
+        theoden = {
+          hostname = "theoden.lan";
+          profiles.system = {
+            user = "root";
+            sshUser = "ammar";
+            path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.theoden;
+          };
+        };
+      };
+
       # Home Manager configurations with automatic hostname detection
       homeConfigurations =
         let
@@ -315,77 +348,81 @@
           "ammar" = mkHomeConfig ./hosts/profiles/workstation/home.nix;
         };
 
-      # Pre-commit hooks configuration
-      checks.${system}.pre-commit-check = inputs.git-hooks.lib.${system}.run {
-        src = ./.;
-        hooks = {
-          # First run formatters
-          nixfmt-rfc-style.enable = true;
+      # Pre-commit hooks and deploy-rs checks
+      checks.${system} = {
+        pre-commit-check = inputs.git-hooks.lib.${system}.run {
+          src = ./.;
+          hooks = {
+            # First run formatters
+            nixfmt-rfc-style.enable = true;
 
-          # Then run linters/fixers
-          deadnix = {
-            enable = true;
-            # Apply fixes automatically
-            entry = "${pkgs.deadnix}/bin/deadnix --edit";
-            pass_filenames = true;
+            # Then run linters/fixers
+            deadnix = {
+              enable = true;
+              # Apply fixes automatically
+              entry = "${pkgs.deadnix}/bin/deadnix --edit";
+              pass_filenames = true;
+            };
+            statix = {
+              enable = true;
+              # Note: statix doesn't support auto-fixing well in pre-commit
+              # Consider running `statix fix` manually when needed
+            };
+
+            # Security scanning
+            ripsecrets.enable = true;
+
+            # # Custom vulnix hook for vulnerability scanning
+            # vulnix = {
+            #   enable = true;
+            #   name = "vulnix";
+            #   description = "Scan for security vulnerabilities in Nix dependencies";
+            #   entry = "${pkgs.vulnix}/bin/vulnix --system";
+            #   pass_filenames = false;
+            #   files = "flake\\.lock$";
+            # };
+
+            # Git hygiene
+            check-merge-conflicts.enable = true;
+            check-added-large-files.enable = true;
+            end-of-file-fixer.enable = true;
+            trim-trailing-whitespace.enable = true;
+
+            flake-checker.enable = true;
+
+            # Terraform/OpenTofu
+            terraform-format.enable = true;
+            tflint.enable = true;
+
+            # YAML linting (for K8s manifests)
+            yamllint = {
+              enable = true;
+              settings.configPath = ".yamllint.yaml";
+            };
+
+            # Kubernetes manifest validation
+            # Disabled: kubeconform requires network to download schemas,
+            # which doesn't work in Nix sandbox. Run manually if needed:
+            # nix-shell -p kubeconform --run "kubeconform -ignore-missing-schemas -summary k8s/"
+            # kubeconform = {
+            #   enable = true;
+            #   name = "kubeconform";
+            #   entry = "${pkgs.kubeconform}/bin/kubeconform -ignore-missing-schemas -summary";
+            #   files = "^k8s/.*\\.yaml$";
+            #   pass_filenames = true;
+            # };
           };
-          statix = {
-            enable = true;
-            # Note: statix doesn't support auto-fixing well in pre-commit
-            # Consider running `statix fix` manually when needed
-          };
-
-          # Security scanning
-          ripsecrets.enable = true;
-
-          # # Custom vulnix hook for vulnerability scanning
-          # vulnix = {
-          #   enable = true;
-          #   name = "vulnix";
-          #   description = "Scan for security vulnerabilities in Nix dependencies";
-          #   entry = "${pkgs.vulnix}/bin/vulnix --system";
-          #   pass_filenames = false;
-          #   files = "flake\\.lock$";
-          # };
-
-          # Git hygiene
-          check-merge-conflicts.enable = true;
-          check-added-large-files.enable = true;
-          end-of-file-fixer.enable = true;
-          trim-trailing-whitespace.enable = true;
-
-          flake-checker.enable = true;
-
-          # Terraform/OpenTofu
-          terraform-format.enable = true;
-          tflint.enable = true;
-
-          # YAML linting (for K8s manifests)
-          yamllint = {
-            enable = true;
-            settings.configPath = ".yamllint.yaml";
-          };
-
-          # Kubernetes manifest validation
-          # Disabled: kubeconform requires network to download schemas,
-          # which doesn't work in Nix sandbox. Run manually if needed:
-          # nix-shell -p kubeconform --run "kubeconform -ignore-missing-schemas -summary k8s/"
-          # kubeconform = {
-          #   enable = true;
-          #   name = "kubeconform";
-          #   entry = "${pkgs.kubeconform}/bin/kubeconform -ignore-missing-schemas -summary";
-          #   files = "^k8s/.*\\.yaml$";
-          #   pass_filenames = true;
-          # };
         };
-      };
+      }
+      // deploy-rs.lib.${system}.deployChecks self.deploy;
 
-      # Development shell with pre-commit hooks
+      # Development shell with pre-commit hooks and deploy-rs
       devShells.${system}.default = pkgs.mkShell {
         inherit (self.checks.${system}.pre-commit-check) shellHook;
         buildInputs = self.checks.${system}.pre-commit-check.enabledPackages ++ [
           pkgs.opentofu
           inputs.nvfetcher.packages.${system}.default
+          deploy-rs.packages.${system}.default
         ];
       };
     };
