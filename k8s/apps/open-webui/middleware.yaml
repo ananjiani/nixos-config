@@ -1,0 +1,11 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: open-webui-uploads
+  namespace: open-webui
+spec:
+  buffering:
+    maxRequestBodyBytes: 104857600  # 100MB request
+    maxResponseBodyBytes: 0         # Disable response buffering for SSE
+    retryExpression: "IsNetworkError() && Attempts() < 2"
