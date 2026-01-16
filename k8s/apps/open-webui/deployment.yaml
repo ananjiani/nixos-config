@@ -38,6 +38,9 @@ spec:
             # (database was caching stale values from Helm chart experiments)
             - name: RESET_CONFIG_ON_START
               value: "true"
+            # Use small model for auxiliary tasks (titles, tags, search queries)
+            - name: TASK_MODEL
+              value: "qwen3:0.6b"
             - name: ENABLE_OPENAI_API
               value: "true"
             - name: OPENAI_API_BASE_URLS
