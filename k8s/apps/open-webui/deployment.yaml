@@ -88,6 +88,11 @@ spec:
               value: "chromadb.chromadb.svc"
             - name: CHROMA_HTTP_PORT
               value: "8000"
+            # Use Ollama for GPU-accelerated embeddings
+            - name: RAG_EMBEDDING_ENGINE
+              value: "ollama"
+            - name: RAG_EMBEDDING_MODEL
+              value: "nomic-embed-text"
           volumeMounts:
             - name: data
               mountPath: /app/backend/data
