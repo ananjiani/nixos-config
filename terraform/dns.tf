@@ -106,6 +106,17 @@ resource "cloudflare_record" "home" {
   comment = "Homepage dashboard (internal) - managed by Terraform"
 }
 
+# Bifrost LLM Gateway
+resource "cloudflare_record" "bifrost" {
+  zone_id = local.zone_id
+  name    = "bifrost"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "Bifrost LLM Gateway (internal) - managed by Terraform"
+}
+
 # Stremio streaming server (for web.stremio.com)
 resource "cloudflare_record" "stremio" {
   zone_id = local.zone_id
