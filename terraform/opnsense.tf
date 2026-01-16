@@ -42,6 +42,15 @@ resource "opnsense_wireguard_server" "mullvad" {
 # Aliases are named groups of IPs, networks, or ports that can be referenced
 # in firewall rules. They make rules more readable and easier to maintain.
 
+# Google DNS servers - blocked to force devices to use local DNS (AdGuard)
+# Chromecast and Android TV are hardcoded to use these, ignoring DHCP DNS
+resource "opnsense_firewall_alias" "google_dns" {
+  name        = "Google_DNS"
+  type        = "host"
+  description = "Google DNS servers (blocked to enforce local DNS)"
+  content     = ["8.8.8.8", "8.8.4.4"]
+}
+
 # RFC1918 private network ranges - useful for blocking inbound from WAN
 resource "opnsense_firewall_alias" "rfc1918" {
   name        = "rfc1918"
@@ -64,7 +73,7 @@ resource "opnsense_firewall_alias" "vpn_exempt_devices" {
   type        = "host"
   description = "Devices that bypass VPN and use WAN directly"
   content = [
-    "192.168.1.10", # chromecast
+    "192.168.1.10", # chromecast (needs direct WAN for Private DNS bootstrap)
     "192.168.1.25", # frodo (Home Assistant - cloud integrations require non-VPN)
     "192.168.1.50", # ammars-pc
     "192.168.1.51", # phone
@@ -86,6 +95,50 @@ resource "opnsense_firewall_alias" "vpn_exempt_destinations" {
 # =============================================================================
 # Rules are processed in order. The 'sequence' field determines priority
 # (lower numbers = higher priority, processed first).
+
+# Block Google DNS - forces Chromecast/Android TV to use DHCP-provided DNS (AdGuard)
+# These devices are hardcoded to use 8.8.8.8/8.8.4.4, ignoring manual DNS settings
+resource "opnsense_firewall_filter" "block_google_dns_udp" {
+  enabled     = false # TEMPORARILY DISABLED - breaking cluster DNS
+  sequence    = 2
+  description = "Block Google DNS UDP (force local DNS)"
+
+  interface = {
+    interface = ["lan"]
+  }
+
+  filter = {
+    action    = "block"
+    direction = "in"
+    protocol  = "UDP"
+
+    destination = {
+      net  = opnsense_firewall_alias.google_dns.name
+      port = "53"
+    }
+  }
+}
+
+resource "opnsense_firewall_filter" "block_google_dns_tcp" {
+  enabled     = false # TEMPORARILY DISABLED - breaking cluster DNS
+  sequence    = 3
+  description = "Block Google DNS TCP (force local DNS)"
+
+  interface = {
+    interface = ["lan"]
+  }
+
+  filter = {
+    action    = "block"
+    direction = "in"
+    protocol  = "TCP"
+
+    destination = {
+      net  = opnsense_firewall_alias.google_dns.name
+      port = "53"
+    }
+  }
+}
 
 # Anti-lockout rule: Always allow access to the router's web interface
 # This prevents you from accidentally locking yourself out
@@ -161,6 +214,73 @@ resource "opnsense_firewall_filter" "vpn_exempt_lan" {
   source_routing = {
     gateway = var.wan_gateway_name
   }
+}
+
+# Block IPv6 DNS to force Chromecast to use IPv4 DNS (which gets NAT redirected to AdGuard)
+resource "opnsense_firewall_filter" "block_ipv6_dns_udp" {
+  enabled     = true
+  sequence    = 7
+  description = "Block IPv6 DNS UDP (force IPv4 DNS for Chromecast)"
+
+  interface = {
+    interface = ["lan"]
+  }
+
+  filter = {
+    action      = "block"
+    direction   = "in"
+    ip_protocol = "inet6"
+    protocol    = "UDP"
+
+    destination = {
+      port = "53"
+    }
+  }
+}
+
+resource "opnsense_firewall_filter" "block_ipv6_dns_tcp" {
+  enabled     = true
+  sequence    = 8
+  description = "Block IPv6 DNS TCP (force IPv4 DNS for Chromecast)"
+
+  interface = {
+    interface = ["lan"]
+  }
+
+  filter = {
+    action      = "block"
+    direction   = "in"
+    ip_protocol = "inet6"
+    protocol    = "TCP"
+
+    destination = {
+      port = "53"
+    }
+  }
+}
+
+# Allow LAN-to-LAN traffic without VPN (local services must be reachable)
+resource "opnsense_firewall_filter" "lan_to_lan" {
+  count       = var.vpn_gateway_configured ? 1 : 0
+  enabled     = true
+  sequence    = 6
+  description = "Allow LAN to local destinations (no VPN)"
+
+  interface = {
+    interface = ["lan"]
+  }
+
+  filter = {
+    action    = "pass"
+    direction = "in"
+    protocol  = "any"
+
+    destination = {
+      net = opnsense_firewall_alias.rfc1918.name
+    }
+  }
+
+  # No gateway = direct routing, bypasses VPN
 }
 
 # Allow all outbound traffic from LAN
