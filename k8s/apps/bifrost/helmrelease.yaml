@@ -15,6 +15,20 @@ spec:
         name: bifrost
         namespace: flux-system
       interval: 1h
+  postRenderers:
+    - kustomize:
+        patches:
+          - patch: |
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: bifrost
+              spec:
+                strategy:
+                  type: Recreate
+            target:
+              kind: Deployment
+              name: bifrost
   values:
     image:
       repository: docker.io/maximhq/bifrost
