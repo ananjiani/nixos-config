@@ -19,6 +19,8 @@ spec:
   routes:
     - match: Host(`ai.dimensiondoor.xyz`)
       kind: Rule
+      middlewares:
+        - name: open-webui-uploads
       services:
         - name: open-webui
           port: 8080
