@@ -92,6 +92,26 @@ spec:
           key: cliproxy-api-key
           envVar: CLIPROXY_API_KEY
 
+      governance:
+        virtualKeys:
+          - id: default
+            name: default
+            value: env.BIFROST_DEFAULT_VK
+            is_active: true
+        authConfig:
+          isEnabled: true
+          disableAuthOnInference: false
+          existingSecret: bifrost-secrets
+          usernameKey: admin-username
+          passwordKey: admin-password
+
+    env:
+      - name: BIFROST_DEFAULT_VK
+        valueFrom:
+          secretKeyRef:
+            name: bifrost-secrets
+            key: default-virtual-key
+
     ingress:
       main:
         enabled: false
