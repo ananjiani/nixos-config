@@ -6,7 +6,10 @@ metadata:
   namespace: stremio
   labels:
     app: stremio-server
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.1.58"
 spec:
+  type: LoadBalancer
   selector:
     app: stremio-server
   ports:
