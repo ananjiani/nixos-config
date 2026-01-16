@@ -1,0 +1,100 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: bifrost
+  namespace: bifrost
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: bifrost
+      version: ">=1.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: bifrost
+        namespace: flux-system
+      interval: 1h
+  values:
+    image:
+      repository: docker.io/maximhq/bifrost
+      pullPolicy: IfNotPresent
+      tag: "1.5.2"
+    
+    service:
+      type: ClusterIP
+      port: 8080
+    
+    storage:
+      mode: sqlite
+      persistence:
+        enabled: true
+        storageClass: longhorn
+        accessMode: ReadWriteOnce
+        size: 10Gi
+    
+    bifrost:
+      port: 8080
+      host: 0.0.0.0
+      logLevel: info
+      logStyle: json
+      encryptionKeySecret:
+        name: bifrost-secrets
+        key: encryption-key
+      
+      client:
+        dropExcessRequests: false
+        initialPoolSize: 300
+        allowedOrigins:
+          - "*"
+        enableLogging: true
+        disableContentLogging: false
+        logRetentionDays: 365
+        enableGovernance: true
+        enforceGovernanceHeader: false
+        allowDirectKeys: false
+        maxRequestBodySizeMb: 100
+      
+      providers:
+        deepseek:
+          keys:
+            - value: "env.DEEPSEEK_API_KEY"
+              weight: 1.0
+        zai:
+          network_config:
+            base_url: "https://api.z.ai/api/paas/v4"
+          keys:
+            - value: "env.ZAI_API_KEY"
+              weight: 1.0
+        cliproxy:
+          network_config:
+            base_url: "http://cliproxy.cliproxy.svc:8080"
+          keys:
+            - value: "env.CLIPROXY_API_KEY"
+              weight: 1.0
+      
+      providerSecrets:
+        deepseek:
+          existingSecret: bifrost-secrets
+          key: deepseek-api-key
+          envVar: DEEPSEEK_API_KEY
+        zai:
+          existingSecret: bifrost-secrets
+          key: zai-api-key
+          envVar: ZAI_API_KEY
+        cliproxy:
+          existingSecret: bifrost-secrets
+          key: cliproxy-api-key
+          envVar: CLIPROXY_API_KEY
+    
+    ingress:
+      main:
+        enabled: false
+    
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "1Gi"
+        cpu: "500m"
