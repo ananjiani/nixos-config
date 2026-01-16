@@ -80,13 +80,37 @@ nix build .#nixosConfigurations.iso.config.system.build.isoImage
 nix flake check --all-systems
 ```
 
+### Remote Deployment (using deploy-rs)
+```bash
+# Enter devshell to get deploy command
+nix develop
+
+# Deploy to all servers (boromir, samwise, theoden)
+deploy .
+
+# Deploy to specific server
+deploy .#boromir
+deploy .#samwise
+deploy .#theoden
+
+# Skip magic rollback (auto-confirm)
+deploy .#boromir -- --confirm
+
+# Build on remote instead of locally
+deploy .#boromir --remote-build
+```
+
+**Magic Rollback**: By default, deploy-rs waits 240 seconds for confirmation. If not confirmed (or SSH drops), the system automatically reverts to the previous configuration.
+
 ## Architecture
 
 ### Directory Structure
 - **`flake.nix`**: Main entry point defining all system configurations and dependencies
 - **`hosts/`**: Machine-specific configurations
   - Each host has: `configuration.nix`, `hardware-configuration.nix`, and `home.nix`
-  - Configured hosts: ammars-pc, work-laptop, surface-go, framework13, iso
+  - Local machines: ammars-pc, work-laptop, surface-go, framework13
+  - Servers (Proxmox VMs): boromir, samwise, theoden (deployed via deploy-rs)
+  - Special: iso, homeserver
 - **`modules/`**: Reusable configuration modules
   - `home/`: User-level modules (editors, shell, desktop environment)
   - `nixos/`: System-level modules (hardware, services, gaming)
