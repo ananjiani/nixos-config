@@ -81,7 +81,7 @@ spec:
               weight: 1.0
         zai:
           network_config:
-            base_url: "https://open.bigmodel.cn/api/paas/v4"
+            base_url: "https://api.z.ai/api/coding/paas/v4"
           custom_provider_config:
             base_provider_type: openai
             request_path_overrides:
