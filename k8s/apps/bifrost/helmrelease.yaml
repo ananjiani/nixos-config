@@ -102,7 +102,7 @@ spec:
               weight: 1.0
         ollama:
           network_config:
-            base_url: "http://ollama.open-webui.svc:11434"
+            base_url: "http://ollama.bifrost.svc:11434"
           keys:
             - name: "ollama"
               value: "ollama"
