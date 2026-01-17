@@ -12,5 +12,6 @@ resources:
   - ingressroute.yaml
 configMapGenerator:
   - name: open-webui-system-prompt
+    namespace: open-webui
     files:
       - system-prompt.md
