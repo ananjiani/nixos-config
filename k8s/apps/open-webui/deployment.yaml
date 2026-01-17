@@ -18,6 +18,49 @@ spec:
       labels:
         app: open-webui
     spec:
+      initContainers:
+        - name: ensure-zai-model
+          image: ghcr.io/open-webui/open-webui:v0.7.2
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              python - <<'PY'
+              import json
+              import sqlite3
+              import sys
+
+              db_path = "/app/backend/data/webui.db"
+              model_id = "zai/glm-4.7"
+              base_model_id = "deepseek/deepseek-chat"
+              params = json.dumps({"model": model_id})
+
+              try:
+                  con = sqlite3.connect(db_path)
+              except sqlite3.Error as exc:
+                  print(f"failed to open db: {exc}")
+                  sys.exit(1)
+
+              cur = con.cursor()
+              row = cur.execute(
+                  "select id from model where id = ?",
+                  (model_id,),
+              ).fetchone()
+              if not row:
+                  print("model not found, skipping")
+                  sys.exit(0)
+
+              cur.execute(
+                  "update model set base_model_id = ?, params = ? where id = ?",
+                  (base_model_id, params, model_id),
+              )
+              con.commit()
+              print("model updated")
+              PY
+          volumeMounts:
+            - name: data
+              mountPath: /app/backend/data
       containers:
         - name: open-webui
           image: ghcr.io/open-webui/open-webui:v0.7.2
