@@ -48,6 +48,7 @@
       clusterInit = false;
       serverAddr = "https://192.168.1.21:6443"; # boromir
       tokenFile = config.sops.secrets.k3s_token.path;
+      extraFlags = [ "--node-ip=192.168.1.26" ]; # Force IPv4 for etcd cluster consistency
     };
 
     # Tailscale client - exit node + subnet router for remote access
