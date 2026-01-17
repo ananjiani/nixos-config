@@ -135,7 +135,7 @@ spec:
             - name: RAG_EMBEDDING_ENGINE
               value: "ollama"
             - name: RAG_EMBEDDING_MODEL
-              value: "ollama/nomic-embed-text"
+              value: "nomic-embed-text"
           volumeMounts:
             - name: data
               mountPath: /app/backend/data
