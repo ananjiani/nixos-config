@@ -10,3 +10,7 @@ resources:
   - certificate.yaml
   - middleware.yaml
   - ingressroute.yaml
+configMapGenerator:
+  - name: open-webui-system-prompt
+    files:
+      - system-prompt.md
