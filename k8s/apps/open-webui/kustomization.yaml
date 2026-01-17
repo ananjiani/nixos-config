@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - pvc.yaml
-  - ollama-endpoints.yaml
   - secret.yaml
   - deployment.yaml
   - service.yaml

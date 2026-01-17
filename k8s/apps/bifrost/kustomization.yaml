@@ -5,5 +5,6 @@ resources:
   - namespace.yaml
   - secret.yaml
   - helmrelease.yaml
+  - ollama-endpoints.yaml
   - certificate.yaml
   - ingressroute.yaml
