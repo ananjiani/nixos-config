@@ -72,7 +72,7 @@ spec:
       providers:
         deepseek:
           network_config:
-            base_url: "https://api.deepseek.com/v1"
+            base_url: "https://api.deepseek.com"
           custom_provider_config:
             base_provider_type: openai
           keys:
