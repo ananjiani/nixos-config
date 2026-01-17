@@ -27,7 +27,7 @@ spec:
               protocol: TCP
           env:
             - name: OLLAMA_BASE_URL
-              value: "http://ollama.open-webui.svc:11434"
+              value: "http://ollama.bifrost.svc:11434"
             - name: WEBUI_SECRET_KEY
               valueFrom:
                 secretKeyRef:
@@ -40,7 +40,7 @@ spec:
               value: "true"
             # Use small model for auxiliary tasks (titles, tags, search queries)
             - name: TASK_MODEL
-              value: "qwen3:0.6b"
+              value: "ollama/qwen3:0.6b"
             - name: ENABLE_OPENAI_API
               value: "true"
             - name: OPENAI_API_BASE_URLS
@@ -92,7 +92,7 @@ spec:
             - name: RAG_EMBEDDING_ENGINE
               value: "ollama"
             - name: RAG_EMBEDDING_MODEL
-              value: "nomic-embed-text"
+              value: "ollama/nomic-embed-text"
           volumeMounts:
             - name: data
               mountPath: /app/backend/data
