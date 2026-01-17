@@ -84,12 +84,6 @@ spec:
             # Use small model for auxiliary tasks (titles, tags, search queries)
             - name: TASK_MODEL
               value: "ollama/qwen3:0.6b"
-            # Default system prompt for all chats
-            - name: DEFAULT_SYSTEM_PROMPT
-              valueFrom:
-                configMapKeyRef:
-                  name: open-webui-system-prompt
-                  key: system-prompt.md
             - name: ENABLE_OPENAI_API
               value: "true"
             - name: OPENAI_API_BASE_URLS
