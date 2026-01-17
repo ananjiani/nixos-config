@@ -32,6 +32,7 @@
       loginServer = "https://ts.dimensiondoor.xyz";
       authKeyFile = config.sops.secrets.tailscale_authkey.path;
       exitNode = true;
+      useExitNode = null; # Don't route through self (this IS the exit node)
       subnetRoutes = [ "192.168.1.0/24" ]; # Expose local network to Tailnet
     };
 
@@ -47,6 +48,7 @@
       role = "server";
       clusterInit = true; # First node initializes the cluster
       tokenFile = config.sops.secrets.k3s_token.path;
+      extraFlags = [ "--node-ip=192.168.1.21" ]; # Force IPv4 for etcd cluster consistency
     };
   };
 
