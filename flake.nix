@@ -67,6 +67,13 @@
       url = "github:serokell/deploy-rs";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+    attic = {
+      url = "github:zhaofengli/attic";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
+    buildbot-nix = {
+      url = "github:nix-community/buildbot-nix";
+    };
   };
 
   outputs =
@@ -197,13 +204,16 @@
           ];
         };
 
-        # Theoden - k3s Server (Proxmox VM on rohan)
+        # Theoden - k3s Server + CI/CD (Proxmox VM on rohan)
         theoden = lib.nixosSystem {
           inherit system specialArgs;
           modules = [
             ./hosts/servers/theoden/configuration.nix
             inputs.sops-nix.nixosModules.sops
             inputs.disko.nixosModules.disko
+            inputs.attic.nixosModules.atticd
+            inputs.buildbot-nix.nixosModules.buildbot-master
+            inputs.buildbot-nix.nixosModules.buildbot-worker
           ];
         };
 

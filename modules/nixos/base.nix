@@ -30,9 +30,12 @@
       ];
       substituters = [
         "https://nix-community.cachix.org"
+        "http://theoden.lan:8080/dotfiles" # Attic binary cache
       ];
       trusted-public-keys = [
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+        # TODO: Update with actual Attic public key after running: attic cache info dotfiles
+        "dotfiles:PLACEHOLDER_UPDATE_AFTER_ATTIC_INIT"
       ];
     };
     gc = {
