@@ -73,8 +73,10 @@
     loadModels = [
       "qwen3:8b"
       "qwen3:0.6b"
+      "qwen3-vl:8b" # Vision-language model for image understanding
       "mlmlml" # Marxist-Leninist educator model
       "nomic-embed-text" # GPU-accelerated embeddings for Open WebUI
+      "deepseek-r1:8b-0528-qwen3-q4_K_M" # Reasoning model with tool support
     ];
   };
 
