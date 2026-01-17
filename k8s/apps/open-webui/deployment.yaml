@@ -44,7 +44,7 @@ spec:
             - name: ENABLE_OPENAI_API
               value: "true"
             - name: OPENAI_API_BASE_URLS
-              value: "https://api.deepseek.com/v1;http://cliproxy.cliproxy.svc:8317/v1"
+              value: "https://bifrost.dimensiondoor.xyz/v1"
             - name: OPENAI_API_KEYS
               valueFrom:
                 secretKeyRef:
