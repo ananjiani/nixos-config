@@ -100,6 +100,13 @@ spec:
             - name: "cliproxy"
               value: "env.CLIPROXY_API_KEY"
               weight: 1.0
+        ollama:
+          network_config:
+            base_url: "http://ollama.open-webui.svc:11434"
+          keys:
+            - name: "ollama"
+              value: "ollama"
+              weight: 1.0
 
       providerSecrets:
         deepseek:
