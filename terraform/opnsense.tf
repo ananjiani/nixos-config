@@ -451,12 +451,13 @@ resource "opnsense_kea_reservation" "theoden" {
 # =============================================================================
 # DNS Configuration
 # =============================================================================
-# DNS is handled by AdGuard Home on boromir (192.168.1.21).
-# DHCP hands out boromir as the DNS server (see dns_servers in kea_subnet).
+# DNS is handled by AdGuard Home running in k3s with a MetalLB LoadBalancer IP.
+# DHCP hands out 192.168.1.53 as the DNS server (see dns_servers in kea_subnet).
 #
 # MANUAL STEPS REQUIRED:
 # 1. Disable Unbound: Services → Unbound DNS → Uncheck "Enable"
-# 2. Set OPNsense DNS: System → Settings → General → DNS servers: 192.168.1.21
+# 2. Set OPNsense DNS: System → Settings → General → DNS servers: 192.168.1.1
+#    (Use router IP as fallback - AdGuard may be unavailable during k3s bootstrap)
 #    Uncheck "Allow DNS server list to be overridden by DHCP/PPP on WAN"
 
 # resource "opnsense_kea_reservation" "jellyfin" {

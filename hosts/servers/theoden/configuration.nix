@@ -215,6 +215,7 @@
     buildbot-nix.master = {
       enable = true;
       domain = "ci.dimensiondoor.xyz";
+      useHTTPS = true; # Behind Cloudflare Tunnel
       authBackend = "gitea";
       workersFile = config.sops.secrets.buildbot_worker_password.path;
       buildSystems = [ "x86_64-linux" ];
