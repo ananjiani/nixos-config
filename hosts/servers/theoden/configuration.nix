@@ -27,6 +27,10 @@
   networking = {
     hostName = "theoden";
     useDHCP = true;
+    nameservers = [
+      "192.168.1.1"
+      "9.9.9.9"
+    ]; # Router + Quad9 fallback (avoid chicken-and-egg with in-cluster DNS)
     firewall = {
       allowedTCPPorts = [
         111 # rpcbind/portmapper
@@ -50,12 +54,12 @@
     secrets = {
       k3s_token = { };
       tailscale_authkey = { };
-      # Attic binary cache
-      attic_server_token_key = {
-        owner = "atticd";
-        group = "atticd";
-        mode = "0400";
-      };
+      # Attic binary cache (temporarily disabled - atticd user issue)
+      # attic_server_token_key = {
+      #   owner = "atticd";
+      #   group = "atticd";
+      #   mode = "0400";
+      # };
       # Buildbot (Codeberg/Gitea)
       codeberg_token = {
         owner = "buildbot";
@@ -73,12 +77,12 @@
         owner = "buildbot";
         mode = "0400";
       };
-      # Cloudflare Tunnel
-      cloudflared_tunnel_creds = {
-        owner = "cloudflared";
-        group = "cloudflared";
-        mode = "0400";
-      };
+      # Cloudflare Tunnel (temporarily disabled - cloudflared user issue)
+      # cloudflared_tunnel_creds = {
+      #   owner = "cloudflared";
+      #   group = "cloudflared";
+      #   mode = "0400";
+      # };
     };
   };
 
@@ -97,7 +101,10 @@
       loginServer = "https://ts.dimensiondoor.xyz";
       authKeyFile = config.sops.secrets.tailscale_authkey.path;
       exitNode = true;
+      useExitNode = null; # Can't use exit node while being one
       subnetRoutes = [ "192.168.1.0/24" ];
+      acceptDns = false; # Don't use Magic DNS (depends on in-cluster Headscale)
+      acceptRoutes = false; # Don't accept subnet routes (we're already on the LAN)
     };
     ssh = {
       enable = true;
@@ -162,30 +169,30 @@
       '';
     };
 
-    # Attic binary cache
-    atticd = {
-      enable = true;
-      environmentFile = config.sops.secrets.attic_server_token_key.path;
-      settings = {
-        listen = "[::]:8080";
-        database.url = "postgresql:///atticd?host=/run/postgresql";
-        storage = {
-          type = "local";
-          path = "/var/lib/atticd/storage";
-        };
-        chunking = {
-          nar-size-threshold = 65536;
-          min-size = 16384;
-          avg-size = 65536;
-          max-size = 262144;
-        };
-        compression.type = "zstd";
-        garbage-collection = {
-          interval = "12 hours";
-          default-retention-period = "3 months";
-        };
-      };
-    };
+    # Attic binary cache (temporarily disabled - atticd user issue)
+    # atticd = {
+    #   enable = true;
+    #   environmentFile = config.sops.secrets.attic_server_token_key.path;
+    #   settings = {
+    #     listen = "[::]:8080";
+    #     database.url = "postgresql:///atticd?host=/run/postgresql";
+    #     storage = {
+    #       type = "local";
+    #       path = "/var/lib/atticd/storage";
+    #     };
+    #     chunking = {
+    #       nar-size-threshold = 65536;
+    #       min-size = 16384;
+    #       avg-size = 65536;
+    #       max-size = 262144;
+    #     };
+    #     compression.type = "zstd";
+    #     garbage-collection = {
+    #       interval = "12 hours";
+    #       default-retention-period = "3 months";
+    #     };
+    #   };
+    # };
 
     # Buildbot-nix CI/CD (Codeberg/Gitea)
     buildbot-nix.master = {
@@ -213,19 +220,19 @@
       workerPasswordFile = config.sops.secrets.buildbot_worker_password.path;
     };
 
-    # Cloudflare Tunnel for Buildbot webhooks
-    cloudflared = {
-      enable = true;
-      tunnels = {
-        "b33ec739-7324-4c6f-b6fa-daedbe0828c8" = {
-          credentialsFile = config.sops.secrets.cloudflared_tunnel_creds.path;
-          default = "http_status:404";
-          ingress = {
-            "ci.dimensiondoor.xyz" = "http://localhost:8010";
-          };
-        };
-      };
-    };
+    # Cloudflare Tunnel for Buildbot webhooks (temporarily disabled - cloudflared user issue)
+    # cloudflared = {
+    #   enable = true;
+    #   tunnels = {
+    #     "b33ec739-7324-4c6f-b6fa-daedbe0828c8" = {
+    #       credentialsFile = config.sops.secrets.cloudflared_tunnel_creds.path;
+    #       default = "http_status:404";
+    #       ingress = {
+    #         "ci.dimensiondoor.xyz" = "http://localhost:8010";
+    #       };
+    #     };
+    #   };
+    # };
   };
 
   system.stateVersion = "25.11";
