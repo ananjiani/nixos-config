@@ -35,8 +35,7 @@
       ];
       trusted-public-keys = [
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-        # TODO: Update with actual Attic public key after running: attic cache info middle-earth
-        "middle-earth:PLACEHOLDER_UPDATE_AFTER_ATTIC_INIT"
+        "middle-earth:QJM6g097RUDyZA0OG00fXc7JxFMOXN3J5ZBX8j+QfFI="
       ];
     };
     gc = {
