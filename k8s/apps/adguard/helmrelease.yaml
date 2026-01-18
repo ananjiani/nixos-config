@@ -247,6 +247,9 @@ spec:
             answer: 192.168.1.52
           - domain: prowlarr.dimensiondoor.xyz
             answer: 192.168.1.52
+          # Attic binary cache (via Traefik)
+          - domain: attic.dimensiondoor.xyz
+            answer: 192.168.1.52
       log:
         enabled: true
         max_size: 100

@@ -30,12 +30,13 @@
       ];
       substituters = [
         "https://nix-community.cachix.org"
-        "http://theoden.lan:8080/dotfiles" # Attic binary cache
+        "https://attic.dimensiondoor.xyz/middle-earth" # Attic binary cache (via Traefik)
+        "http://theoden.lan:8080/middle-earth" # Attic fallback (direct, if k8s down)
       ];
       trusted-public-keys = [
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-        # TODO: Update with actual Attic public key after running: attic cache info dotfiles
-        "dotfiles:PLACEHOLDER_UPDATE_AFTER_ATTIC_INIT"
+        # TODO: Update with actual Attic public key after running: attic cache info middle-earth
+        "middle-earth:PLACEHOLDER_UPDATE_AFTER_ATTIC_INIT"
       ];
     };
     gc = {
