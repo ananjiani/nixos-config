@@ -1,0 +1,13 @@
+---
+# External endpoints pointing to Attic on Theoden
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: attic-external
+  namespace: attic
+subsets:
+  - addresses:
+      - ip: 192.168.1.27  # Theoden
+    ports:
+      - port: 8080
+        protocol: TCP

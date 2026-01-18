@@ -56,25 +56,27 @@
         group = "atticd";
         mode = "0400";
       };
-      # Buildbot
-      buildbot_github_app_secret_key = {
+      # Buildbot (Codeberg/Gitea)
+      codeberg_token = {
         owner = "buildbot";
         mode = "0400";
       };
-      buildbot_github_webhook_secret = {
+      codeberg_webhook_secret = {
         owner = "buildbot";
         mode = "0400";
       };
-      buildbot_github_oauth_id = {
-        owner = "buildbot";
-        mode = "0400";
-      };
-      buildbot_github_oauth_secret = {
+      codeberg_oauth_secret = {
         owner = "buildbot";
         mode = "0400";
       };
       buildbot_worker_password = {
         owner = "buildbot";
+        mode = "0400";
+      };
+      # Cloudflare Tunnel
+      cloudflared_tunnel_creds = {
+        owner = "cloudflared";
+        group = "cloudflared";
         mode = "0400";
       };
     };
@@ -185,21 +187,22 @@
       };
     };
 
-    # Buildbot-nix CI/CD
+    # Buildbot-nix CI/CD (Codeberg/Gitea)
     buildbot-nix.master = {
       enable = true;
-      domain = "ci.theoden.lan";
+      domain = "ci.dimensiondoor.xyz";
+      authBackend = "gitea";
       workersFile = config.sops.secrets.buildbot_worker_password.path;
       buildSystems = [ "x86_64-linux" ];
       evalMaxMemorySize = 4096;
       evalWorkerCount = 4;
-      github = {
-        # TODO: Replace with your GitHub App ID (integer)
-        appId = 0;
-        appSecretKeyFile = config.sops.secrets.buildbot_github_app_secret_key.path;
-        webhookSecretFile = config.sops.secrets.buildbot_github_webhook_secret.path;
-        oauthId = config.sops.secrets.buildbot_github_oauth_id.path;
-        oauthSecretFile = config.sops.secrets.buildbot_github_oauth_secret.path;
+      gitea = {
+        enable = true;
+        instanceUrl = "https://codeberg.org";
+        tokenFile = config.sops.secrets.codeberg_token.path;
+        webhookSecretFile = config.sops.secrets.codeberg_webhook_secret.path;
+        oauthId = "3c068786-8f5c-44b6-abe8-153394049c91";
+        oauthSecretFile = config.sops.secrets.codeberg_oauth_secret.path;
         topic = "buildbot-nix";
       };
       admins = [ "ananjiani" ];
@@ -210,8 +213,19 @@
       workerPasswordFile = config.sops.secrets.buildbot_worker_password.path;
     };
 
-    # Tailscale Funnel for GitHub webhooks
-    tailscale.extraUpFlags = lib.mkAfter [ "--advertise-tags=tag:funnel" ];
+    # Cloudflare Tunnel for Buildbot webhooks
+    cloudflared = {
+      enable = true;
+      tunnels = {
+        "b33ec739-7324-4c6f-b6fa-daedbe0828c8" = {
+          credentialsFile = config.sops.secrets.cloudflared_tunnel_creds.path;
+          default = "http_status:404";
+          ingress = {
+            "ci.dimensiondoor.xyz" = "http://localhost:8010";
+          };
+        };
+      };
+    };
   };
 
   system.stateVersion = "25.11";
