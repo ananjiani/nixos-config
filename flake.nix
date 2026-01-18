@@ -215,7 +215,7 @@
           hostname = "boromir.lan";
           profiles.system = {
             user = "root";
-            sshUser = "ammar";
+            sshUser = "root";
             path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.boromir;
           };
         };
@@ -223,7 +223,7 @@
           hostname = "samwise.lan";
           profiles.system = {
             user = "root";
-            sshUser = "ammar";
+            sshUser = "root";
             path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.samwise;
           };
         };
@@ -231,7 +231,7 @@
           hostname = "theoden.lan";
           profiles.system = {
             user = "root";
-            sshUser = "ammar";
+            sshUser = "root";
             path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.theoden;
           };
         };
