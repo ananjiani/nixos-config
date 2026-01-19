@@ -102,10 +102,18 @@
     enabled: true
     state: started
 
-- name: Install coolgpus for headless fan control
-  ansible.builtin.pip:
-    name: coolgpus
+- name: Install pipx for Python app isolation
+  ansible.builtin.apt:
+    name: pipx
     state: present
+
+- name: Install coolgpus for headless fan control
+  ansible.builtin.command:
+    cmd: pipx install coolgpus
+    creates: /root/.local/bin/coolgpus
+  environment:
+    PIPX_HOME: /opt/pipx
+    PIPX_BIN_DIR: /usr/local/bin
 
 - name: Create coolgpus systemd service
   ansible.builtin.copy:
