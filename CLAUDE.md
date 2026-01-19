@@ -108,6 +108,39 @@ deploy .#boromir --remote-build
 
 **Magic Rollback**: By default, deploy-rs waits 240 seconds for confirmation. If not confirmed (or SSH drops), the system automatically reverts to the previous configuration.
 
+### Ansible (Proxmox Host Management)
+```bash
+# Enter devshell to get ansible
+nix develop
+
+# Test connectivity to all Proxmox hosts
+ansible -i ansible/inventory/hosts.yml proxmox -m ping
+
+# Dry run (show what would change)
+cd ansible && ansible-playbook playbooks/site.yml --check --diff
+
+# Apply to all hosts
+cd ansible && ansible-playbook playbooks/site.yml
+
+# Apply only to specific host
+cd ansible && ansible-playbook playbooks/site.yml --limit rohan
+
+# Run only GPU fan control role (rohan only)
+cd ansible && ansible-playbook playbooks/proxmox-gpu.yml
+```
+
+**Ansible manages Proxmox hosts** (not NixOS VMs):
+- **rohan** (192.168.1.24) - Has NVIDIA 1070 Ti
+- **gondor** (192.168.1.20)
+- **the-shire** (192.168.1.23)
+
+**Roles:**
+- `proxmox-base`: SSH hardening, base packages, authorized keys
+- `proxmox-monitoring`: node_exporter (port 9100), smartd
+- `nvidia-fan-control`: NVIDIA driver + coolgpus fan control (rohan only)
+
+**Note:** The nvidia-fan-control role pins kernel 6.14 because 6.17 lacks headers for DKMS builds. Renovate monitors NVIDIA driver releases to notify when newer drivers support newer kernels.
+
 ## Architecture
 
 ### Directory Structure
@@ -123,6 +156,7 @@ deploy .#boromir --remote-build
 - **`secrets/`**: SOPS-encrypted secrets (keys, tokens)
 - **`terraform/`**: OpenTofu/Terraform configs for external infrastructure (Cloudflare DNS, OPNsense firewall)
 - **`k8s/`**: Kubernetes manifests for k3s cluster (managed by Flux)
+- **`ansible/`**: Ansible playbooks and roles for Proxmox host management
 
 ### Key Design Patterns
 1. **Modular Configuration**: Features are split into focused modules that can be enabled/disabled per host
