@@ -73,6 +73,30 @@
   register: dkms_result
   changed_when: "'Building' in dkms_result.stdout"
 
+- name: Update module dependencies
+  ansible.builtin.command:
+    cmd: depmod -a
+  changed_when: false
+
+- name: Configure NVIDIA modules to load at boot
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/nvidia.conf
+    content: |
+      # NVIDIA modules - loaded at boot for GPU support
+      nvidia-current
+      nvidia-current-modeset
+      nvidia-current-drm
+      nvidia-current-uvm
+    mode: '0644'
+
+- name: Load NVIDIA modules now
+  ansible.builtin.shell: |
+    modprobe nvidia-current
+    modprobe nvidia-current-modeset
+    modprobe nvidia-current-drm
+    modprobe nvidia-current-uvm
+  changed_when: false
+
 - name: Enable nvidia-persistenced
   ansible.builtin.systemd:
     name: nvidia-persistenced
