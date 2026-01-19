@@ -1,7 +1,40 @@
 ---
+# Kernel 6.17 has no headers yet - use 6.14 which works with nvidia 550.x
+- name: Install Proxmox kernel 6.14 with headers
+  ansible.builtin.apt:
+    name:
+      - proxmox-kernel-6.14
+      - proxmox-headers-6.14
+    state: present
+
+- name: Pin Proxmox kernel to 6.14 (prevent nvidia breakage on kernel update)
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/proxmox-kernel
+    content: |
+      # Pin to kernel 6.14 for NVIDIA driver compatibility
+      Package: proxmox-kernel-6.17* proxmox-kernel-6.18*
+      Pin: version *
+      Pin-Priority: -1
+    mode: '0644'
+
+- name: Check current kernel version
+  ansible.builtin.command: uname -r
+  register: current_kernel
+  changed_when: false
+
+- name: Notify if reboot needed for kernel 6.14
+  ansible.builtin.debug:
+    msg: "WARNING: Reboot into kernel 6.14 required! Current kernel: {{ current_kernel.stdout }}. Run 'reboot' then re-run this playbook."
+  when: "'6.14' not in current_kernel.stdout"
+
+- name: Fail if not running kernel 6.14
+  ansible.builtin.fail:
+    msg: "Must reboot into kernel 6.14 before NVIDIA driver can be built. Run 'reboot' and re-run playbook."
+  when: "'6.14' not in current_kernel.stdout"
+
 - name: Add Debian non-free repository
   ansible.builtin.apt_repository:
-    repo: "deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware"
+    repo: "deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware"
     state: present
     filename: non-free
     update_cache: false
@@ -17,6 +50,12 @@
       - libxrandr-dev
     state: present
     update_cache: true
+
+- name: Rebuild NVIDIA DKMS module
+  ansible.builtin.command:
+    cmd: dkms autoinstall
+  register: dkms_result
+  changed_when: "'Building' in dkms_result.stdout"
 
 - name: Enable nvidia-persistenced
   ansible.builtin.systemd:
