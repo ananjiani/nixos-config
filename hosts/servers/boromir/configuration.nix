@@ -9,6 +9,7 @@
 {
   imports = [
     ./disk-config.nix
+    ./scriberr.nix
     inputs.home-manager-unstable.nixosModules.home-manager
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/ssh.nix

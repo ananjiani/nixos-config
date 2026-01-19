@@ -74,6 +74,7 @@
     buildbot-nix = {
       url = "github:nix-community/buildbot-nix";
     };
+    quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
   };
 
   outputs =
@@ -191,6 +192,7 @@
             ./hosts/servers/boromir/configuration.nix
             inputs.sops-nix.nixosModules.sops
             inputs.disko.nixosModules.disko
+            inputs.quadlet-nix.nixosModules.quadlet
           ];
         };
 
@@ -436,6 +438,7 @@
         inherit (self.checks.${system}.pre-commit-check) shellHook;
         buildInputs = self.checks.${system}.pre-commit-check.enabledPackages ++ [
           pkgs.opentofu
+          pkgs.ansible
           inputs.nvfetcher.packages.${system}.default
           deploy-rs.packages.${system}.default
         ];

@@ -1,0 +1,13 @@
+---
+# External endpoints pointing to Scriberr on Boromir
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: scriberr-external
+  namespace: scriberr
+subsets:
+  - addresses:
+      - ip: 192.168.1.21  # Boromir
+    ports:
+      - port: 8080
+        protocol: TCP
