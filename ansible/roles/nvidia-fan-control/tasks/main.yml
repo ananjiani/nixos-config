@@ -4,6 +4,7 @@
     repo: "deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware"
     state: present
     filename: non-free
+    update_cache: false
 
 - name: Install NVIDIA driver and build dependencies
   ansible.builtin.apt:

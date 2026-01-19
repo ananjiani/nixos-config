@@ -1,11 +1,22 @@
 ---
 # Disable enterprise repos (require subscription)
-- name: Disable Proxmox enterprise repository
+# Note: Proxmox 8+ uses .sources (DEB822 format), older used .list
+- name: Disable Proxmox enterprise repository (.sources)
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/pve-enterprise.sources
+    state: absent
+
+- name: Disable Proxmox enterprise repository (.list)
   ansible.builtin.file:
     path: /etc/apt/sources.list.d/pve-enterprise.list
     state: absent
 
-- name: Disable Ceph enterprise repository
+- name: Disable Ceph enterprise repository (.sources)
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/ceph.sources
+    state: absent
+
+- name: Disable Ceph enterprise repository (.list)
   ansible.builtin.file:
     path: /etc/apt/sources.list.d/ceph.list
     state: absent
