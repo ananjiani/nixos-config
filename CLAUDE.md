@@ -11,7 +11,7 @@ This is a NixOS and Home Manager dotfiles repository that manages system configu
 - **Multi-Host Support**: Configurations for desktop, laptops, and Surface Go
 - **Secure Secrets**: SOPS-NIX integration for encrypted credentials
 - **Unified Theming**: Consistent colors and styles across applications
-- **CI/CD Automation**: GitHub Actions for validation and automated updates
+- **CI/CD Automation**: Buildbot-nix on Theoden with Attic binary cache
 - **Pre-commit Hooks**: Automatic formatting and linting with git-hooks.nix
 - **Dendritic Modules**: Aspect-oriented configuration using flake-parts and import-tree in `modules/dendritic/`
 
@@ -116,9 +116,7 @@ deploy .#boromir --remote-build
   - `nixos/`: System-level modules (hardware, services, gaming)
 - **`secrets/`**: SOPS-encrypted secrets (keys, tokens)
 - **`terraform/`**: OpenTofu/Terraform configs for external infrastructure (Cloudflare DNS, OPNsense firewall)
-- **`.github/workflows/`**: CI/CD automation
-  - `ci.yml`: Quick validation on every push
-  - `weekly-check.yml`: Comprehensive weekly validation with auto-updates
+- **`k8s/`**: Kubernetes manifests for k3s cluster (managed by Flux)
 
 ### Key Design Patterns
 1. **Modular Configuration**: Features are split into focused modules that can be enabled/disabled per host
@@ -134,7 +132,13 @@ deploy .#boromir --remote-build
 - **Laptop Profile**: Common laptop configurations in `modules/home/profiles/laptop.nix`
 - **Wallpaper Module**: Centralized wallpaper management in `modules/home/config/wallpaper.nix`
 - **Pre-commit Hooks**: Automatic formatting (nixfmt), linting (statix), dead code removal (deadnix), and secret scanning (ripsecrets)
-- **CI/CD**: GitHub Actions validate all configurations on push and weekly auto-update flake inputs
+- **CI/CD**: Buildbot-nix validates all configurations on push, caches builds to Attic binary cache
+
+### Repository & CI
+- **Primary**: Codeberg (https://codeberg.org/ananjiani/infra)
+- **Mirror**: GitHub (auto-synced via Codeberg push mirror)
+- **CI**: Buildbot-nix at https://ci.dimensiondoor.xyz
+- **Binary Cache**: Attic at theoden.lan:8080 (middle-earth cache)
 
 ## Working with This Repository
 
