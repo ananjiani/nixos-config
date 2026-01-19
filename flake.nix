@@ -320,9 +320,6 @@
           "ammar@framework13" = mkHomeConfig ./hosts/framework13/home.nix;
           "ammar@surface-go" = mkHomeConfig ./hosts/surface-go/home.nix;
           "ammar@homeserver" = mkHomeConfig ./hosts/homeserver/home.nix;
-          "ammar@boromir" = mkHomeConfig ./hosts/servers/boromir/home.nix;
-          "ammar@samwise" = mkHomeConfig ./hosts/servers/samwise/home.nix;
-          "ammar@theoden" = mkHomeConfig ./hosts/servers/theoden/home.nix;
 
           # Pixel 9 (Debian AVF with Nix) - aarch64-linux
           "ammar@pixel9" =
