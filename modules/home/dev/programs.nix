@@ -67,6 +67,7 @@ in
       # inputs.opencode.packages.${pkgs.system}.default
       nodejs # for npm global packages
       gh
+      codeberg-cli # berg - CLI for Codeberg/Forgejo
       pgadmin4-desktopmode
       # inputs.claude-desktop.packages.${pkgs.system}.claude-desktop-with-fhs # Temporarily disabled - hash mismatch
     ];

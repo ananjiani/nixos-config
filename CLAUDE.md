@@ -80,6 +80,21 @@ nix build .#nixosConfigurations.iso.config.system.build.isoImage
 nix flake check --all-systems
 ```
 
+### Codeberg CLI (berg)
+```bash
+# First-time setup (opens browser for auth)
+berg auth login
+
+# List issues
+berg issue list
+
+# Create a pull request
+berg pull create
+
+# List your repos
+berg repo list
+```
+
 ### Remote Deployment (using deploy-rs)
 ```bash
 # Enter devshell to get deploy command
