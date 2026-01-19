@@ -22,7 +22,10 @@
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/k3s.nix
+    ../../../modules/nixos/server/attic-watch-store.nix
   ];
+
+  services.attic-watch-store.enable = true;
 
   networking = {
     hostName = "theoden";
@@ -81,11 +84,6 @@
       cloudflared_tunnel_creds = {
         owner = "cloudflared";
         group = "cloudflared";
-        mode = "0400";
-      };
-      # Attic push token for watch-store service
-      attic_push_token = {
-        owner = "root";
         mode = "0400";
       };
     };
@@ -256,37 +254,6 @@
         };
       };
     };
-  };
-
-  # Attic watch-store: automatically push new store paths to binary cache
-  systemd.services.attic-watch-store = {
-    description = "Attic Watch Store - Push builds to binary cache";
-    after = [
-      "network.target"
-      "atticd.service"
-    ];
-    wantedBy = [ "multi-user.target" ];
-    path = [ pkgs-stable.attic-client ];
-    serviceConfig = {
-      Type = "simple";
-      Restart = "always";
-      RestartSec = "10s";
-    };
-    script = ''
-      # Configure Attic with the push token
-      mkdir -p ~/.config/attic
-      cat > ~/.config/attic/config.toml << EOF
-      default-server = "local"
-
-      [servers.local]
-      endpoint = "http://localhost:8080"
-      token = "$(cat ${config.sops.secrets.attic_push_token.path})"
-      EOF
-      chmod 600 ~/.config/attic/config.toml
-
-      # Watch store and push new paths to middle-earth cache
-      exec attic watch-store local:middle-earth
-    '';
   };
 
   system.stateVersion = "25.11";

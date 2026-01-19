@@ -22,6 +22,7 @@
     ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/zigbee2mqtt.nix
     ../../../modules/nixos/server/k3s.nix
+    ../../../modules/nixos/server/attic-watch-store.nix
   ];
 
   networking = {
@@ -107,8 +108,11 @@
     users.ammar = import ./home.nix;
   };
 
-  # Proxmox VM integration
-  services.qemuGuest.enable = true;
+  # Proxmox VM integration and Attic cache
+  services = {
+    qemuGuest.enable = true;
+    attic-watch-store.enable = true;
+  };
 
   # Boot configuration (GRUB for BIOS)
   boot = {

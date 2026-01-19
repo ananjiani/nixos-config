@@ -17,6 +17,7 @@
     ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/k3s.nix
     ../../../modules/nixos/nvidia.nix # GPU support for Ollama
+    ../../../modules/nixos/server/attic-watch-store.nix
   ];
 
   modules = {
@@ -107,8 +108,11 @@
     users.ammar = import ./home.nix;
   };
 
-  # Proxmox VM integration
-  services.qemuGuest.enable = true;
+  # Proxmox VM integration and Attic cache
+  services = {
+    qemuGuest.enable = true;
+    attic-watch-store.enable = true;
+  };
 
   # Boot configuration (GRUB for BIOS)
   # Note: disko sets grub.devices automatically from disk-config.nix

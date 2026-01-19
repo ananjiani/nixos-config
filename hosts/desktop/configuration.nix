@@ -23,6 +23,7 @@
     ../../modules/nixos/networking.nix
     ../../modules/nixos/tailscale.nix
     inputs.play-nix.nixosModules.play
+    ../../modules/nixos/server/attic-watch-store.nix
   ];
 
   # SOPS secrets configuration
@@ -73,15 +74,16 @@
   environment.systemPackages = with pkgs; [ signal-desktop ];
 
   virtualisation.docker.enable = true;
-  services.udev = {
-    enable = true;
-  };
 
-  services.sunshine = {
-    enable = true;
-    autoStart = true;
-    capSysAdmin = true;
-    openFirewall = true;
+  services = {
+    attic-watch-store.enable = true;
+    udev.enable = true;
+    sunshine = {
+      enable = true;
+      autoStart = true;
+      capSysAdmin = true;
+      openFirewall = true;
+    };
   };
 
   moondeck = {
