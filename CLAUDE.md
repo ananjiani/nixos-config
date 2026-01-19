@@ -81,18 +81,9 @@ nix flake check --all-systems
 ```
 
 ### Codeberg CLI (berg)
+Use berg instead of gh since this repo is on codeberg.
 ```bash
-# First-time setup (opens browser for auth)
-berg auth login
-
-# List issues
-berg issue list
-
-# Create a pull request
-berg pull create
-
-# List your repos
-berg repo list
+berg --help
 ```
 
 ### Remote Deployment (using deploy-rs)
