@@ -1,0 +1,24 @@
+[Unit]
+Description=Immich Machine Learning (GPU-accelerated)
+After=network-online.target nvidia-persistenced.service
+Wants=network-online.target
+
+[Container]
+Image=ghcr.io/immich-app/immich-machine-learning:{{ immich_version | default('release') }}-cuda
+PublishPort=3003:3003
+Volume=/var/lib/immich-ml/cache:/cache
+AddDevice=nvidia.com/gpu=all
+Environment=NVIDIA_VISIBLE_DEVICES=all
+Environment=NVIDIA_DRIVER_CAPABILITIES=compute,utility
+# Privileged mode needed for uvloop socket operations on Proxmox
+# (running on trusted host with root access already)
+PodmanArgs=--privileged
+
+[Service]
+Restart=always
+RestartSec=10
+# ML model loading can take several minutes on first start
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,82 @@
+---
+# Immich Machine Learning with GPU acceleration via Podman + Quadlet
+#
+# Deploys immich-machine-learning container with NVIDIA GPU support.
+# Used as a remote ML backend for Immich running on theoden.
+
+- name: Install Podman
+  ansible.builtin.apt:
+    name:
+      - podman
+    state: present
+    update_cache: true
+
+- name: Ensure apt keyrings directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Add NVIDIA GPG key
+  ansible.builtin.get_url:
+    url: https://nvidia.github.io/libnvidia-container/gpgkey
+    dest: /etc/apt/keyrings/nvidia-container-toolkit.asc
+    mode: '0644'
+
+- name: Get dpkg architecture
+  ansible.builtin.command: dpkg --print-architecture
+  register: dpkg_arch
+  changed_when: false
+
+- name: Add NVIDIA container toolkit repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/nvidia-container-toolkit.asc] https://nvidia.github.io/libnvidia-container/stable/deb/{{ dpkg_arch.stdout }} /"
+    filename: nvidia-container-toolkit
+    state: present
+
+- name: Install NVIDIA container toolkit
+  ansible.builtin.apt:
+    name: nvidia-container-toolkit
+    state: present
+    update_cache: true
+
+- name: Ensure CDI directory exists
+  ansible.builtin.file:
+    path: /etc/cdi
+    state: directory
+    mode: '0755'
+
+- name: Generate NVIDIA CDI specification
+  ansible.builtin.command:
+    cmd: nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+  register: cdi_generate
+  changed_when: cdi_generate.rc == 0
+
+- name: Ensure Quadlet directory exists
+  ansible.builtin.file:
+    path: /etc/containers/systemd
+    state: directory
+    mode: '0755'
+
+- name: Create ML cache directory
+  ansible.builtin.file:
+    path: /var/lib/immich-ml/cache
+    state: directory
+    mode: '0755'
+
+- name: Deploy Immich ML Quadlet container
+  ansible.builtin.template:
+    src: immich-ml.container.j2
+    dest: /etc/containers/systemd/immich-ml.container
+    mode: '0644'
+  notify: Reload systemd and restart immich-ml
+
+- name: Reload systemd to pick up Quadlet unit
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable and start immich-ml service
+  ansible.builtin.systemd:
+    name: immich-ml
+    enabled: true
+    state: started

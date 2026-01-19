@@ -1,0 +1,11 @@
+---
+# Headless service pointing to external Immich instance on theoden
+apiVersion: v1
+kind: Service
+metadata:
+  name: immich-external
+  namespace: immich
+spec:
+  ports:
+    - port: 2283
+      targetPort: 2283

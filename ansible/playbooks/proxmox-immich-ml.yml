@@ -1,0 +1,20 @@
+---
+# Deploy Immich Machine Learning with GPU acceleration on rohan
+#
+# This playbook sets up the immich-machine-learning container with NVIDIA GPU
+# support using Podman and Quadlet. The ML service is exposed on port 3003
+# and can be used as a remote ML backend for Immich running elsewhere.
+#
+# Usage:
+#   cd ansible && ansible-playbook playbooks/proxmox-immich-ml.yml
+#
+# Prerequisites:
+#   - NVIDIA drivers must be installed (nvidia-fan-control role handles this)
+#   - Running kernel must be compatible with NVIDIA drivers (6.14 pinned)
+
+- name: Deploy Immich ML with GPU on rohan
+  hosts: rohan
+  become: true
+  roles:
+    - nvidia-fan-control  # Ensure GPU drivers are set up first
+    - immich-ml

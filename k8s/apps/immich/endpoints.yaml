@@ -1,0 +1,12 @@
+---
+# External endpoints pointing to Immich on theoden
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: immich-external
+  namespace: immich
+subsets:
+  - addresses:
+      - ip: 192.168.1.27
+    ports:
+      - port: 2283

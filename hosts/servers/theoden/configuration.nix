@@ -1,8 +1,9 @@
-# Theoden - k3s Server Node + Storage + CI/CD (Proxmox VM on rohan)
+# Theoden - k3s Server Node + Storage + CI/CD + Immich (Proxmox VM on rohan)
 #
 # Part of the k3s HA cluster (joins via boromir).
 # Also serves as NFS storage server (migrated from faramir).
-# Runs Attic binary cache and Buildbot-nix CI/CD.
+# Runs Attic binary cache, Buildbot-nix CI/CD, and Immich photo management.
+# Immich ML offloaded to rohan (Proxmox host) with GPU acceleration.
 {
   inputs,
   pkgs-stable,
@@ -39,6 +40,7 @@
         111 # rpcbind/portmapper
         2049 # nfs
         20048 # mountd
+        2283 # Immich
         8080 # Attic binary cache
         8010 # Buildbot web UI
       ];
@@ -84,6 +86,12 @@
       cloudflared_tunnel_creds = {
         owner = "cloudflared";
         group = "cloudflared";
+        mode = "0400";
+      };
+      # Immich secrets (OAuth client secret)
+      immich_secrets = {
+        owner = "immich";
+        group = "immich";
         mode = "0400";
       };
     };
@@ -170,6 +178,7 @@
       ensureDatabases = [
         "atticd"
         "buildbot"
+        "immich"
       ];
       ensureUsers = [
         {
@@ -178,6 +187,10 @@
         }
         {
           name = "buildbot";
+          ensureDBOwnership = true;
+        }
+        {
+          name = "immich";
           ensureDBOwnership = true;
         }
       ];
@@ -254,6 +267,40 @@
         };
       };
     };
+
+    # Immich photo management
+    # ML processing offloaded to rohan (GPU-accelerated via Podman)
+    immich = {
+      enable = true;
+      port = 2283;
+      host = "0.0.0.0";
+      mediaLocation = "/srv/nfs/immich";
+      database.createDB = false; # Using ensureDBOwnership above
+      secretsFile = config.sops.secrets.immich_secrets.path;
+      settings = {
+        machineLearning = {
+          urls = [ "http://192.168.1.24:3003" ]; # rohan ML endpoint
+        };
+        oauth = {
+          enabled = true;
+          issuerUrl = "https://auth.dimensiondoor.xyz/application/o/immich/";
+          clientId = "immich";
+          clientSecret = "DB_SECRET:oauth_client_secret"; # From secretsFile
+          scope = "openid email profile";
+          buttonText = "Login with Authentik";
+          autoRegister = true;
+        };
+        storageTemplate = {
+          enabled = true;
+          template = "{{y}}/{{MM}}/{{dd}}/{{filename}}";
+        };
+      };
+    };
+  };
+
+  # Immich user needs storage group for NFS write access
+  users.users.immich = {
+    extraGroups = [ "storage" ];
   };
 
   system.stateVersion = "25.11";
