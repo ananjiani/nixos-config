@@ -1,0 +1,8 @@
+---
+# node_exporter settings
+node_exporter_version: "1.7.0"
+node_exporter_port: 9100
+
+# SMART monitoring
+smartd_enable: true
+smartd_schedule: "S/../.././02"  # Short test daily at 2am

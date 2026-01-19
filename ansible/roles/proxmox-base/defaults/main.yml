@@ -1,0 +1,21 @@
+---
+# Packages to install on all hosts
+proxmox_base_packages:
+  - htop
+  - iotop
+  - tmux
+  - ncdu
+  - vim
+  - curl
+  - wget
+  - jq
+  - tree
+
+# SSH configuration
+ssh_permit_root_login: "prohibit-password"
+ssh_password_authentication: "no"
+ssh_pubkey_authentication: "yes"
+
+# SSH authorized keys for root
+ssh_authorized_keys:
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMoo8KQiLBJ6WrWmG0/6O8lww/v6ggPaLfv70/ksMZbD ammar.nanjiani@gmail.com"

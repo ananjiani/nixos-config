@@ -1,0 +1,6 @@
+---
+- name: Restart nvfancontrol
+  ansible.builtin.systemd:
+    name: nvfancontrol
+    state: restarted
+    daemon_reload: true

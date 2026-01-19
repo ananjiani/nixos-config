@@ -1,0 +1,75 @@
+---
+- name: Add Debian non-free repository
+  ansible.builtin.apt_repository:
+    repo: "deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware"
+    state: present
+    filename: non-free
+
+- name: Install NVIDIA driver and build dependencies
+  ansible.builtin.apt:
+    name:
+      - nvidia-driver
+      - nvidia-smi
+      - cargo
+      - rustc
+      - libxext-dev
+      - libxrandr-dev
+    state: present
+    update_cache: true
+
+- name: Enable nvidia-persistenced
+  ansible.builtin.systemd:
+    name: nvidia-persistenced
+    enabled: true
+    state: started
+
+- name: Check if nvfancontrol is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/nvfancontrol
+  register: nvfancontrol_bin
+
+- name: Install nvfancontrol from crates.io
+  ansible.builtin.command:
+    cmd: cargo install nvfancontrol --root /usr/local
+  environment:
+    CARGO_HOME: /tmp/cargo
+  when: not nvfancontrol_bin.stat.exists
+
+- name: Create nvfancontrol config directory
+  ansible.builtin.file:
+    path: /etc/nvfancontrol
+    state: directory
+    mode: '0755'
+
+- name: Deploy nvfancontrol configuration
+  ansible.builtin.template:
+    src: nvfancontrol.conf.j2
+    dest: /etc/nvfancontrol/nvfancontrol.conf
+    mode: '0644'
+  notify: Restart nvfancontrol
+
+- name: Create nvfancontrol systemd service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/nvfancontrol.service
+    content: |
+      [Unit]
+      Description=NVIDIA Fan Control (nvfancontrol)
+      After=nvidia-persistenced.service
+
+      [Service]
+      Type=simple
+      ExecStart=/usr/local/bin/nvfancontrol -c /etc/nvfancontrol/nvfancontrol.conf
+      Restart=always
+      RestartSec=5
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+  notify: Restart nvfancontrol
+
+- name: Enable and start nvfancontrol
+  ansible.builtin.systemd:
+    name: nvfancontrol
+    enabled: true
+    state: started
+    daemon_reload: true

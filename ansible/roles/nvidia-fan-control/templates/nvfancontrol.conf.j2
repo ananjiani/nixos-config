@@ -1,0 +1,14 @@
+# nvfancontrol configuration - Managed by Ansible
+# https://github.com/foucault/nvfancontrol
+
+[general]
+hysteresis = {{ nvfancontrol_hysteresis }}
+interval = 2000
+
+[[gpu]]
+id = 0
+curve = [
+{% for point in nvfancontrol_curve %}
+    [{{ point[0] }}, {{ point[1] }}],
+{% endfor %}
+]

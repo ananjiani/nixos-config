@@ -1,0 +1,13 @@
+---
+- name: Configure all Proxmox hosts
+  hosts: proxmox
+  become: true
+  roles:
+    - proxmox-base
+    - proxmox-monitoring
+
+- name: Configure GPU fan control on rohan
+  hosts: rohan
+  become: true
+  roles:
+    - nvidia-fan-control

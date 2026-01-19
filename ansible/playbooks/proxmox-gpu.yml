@@ -1,0 +1,6 @@
+---
+- name: Configure NVIDIA GPU fan control
+  hosts: rohan
+  become: true
+  roles:
+    - nvidia-fan-control

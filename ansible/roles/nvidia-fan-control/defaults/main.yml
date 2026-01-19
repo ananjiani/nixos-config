@@ -1,0 +1,11 @@
+---
+# Fan curve points: [temp, speed%]
+nvfancontrol_curve:
+  - [40, 25]   # Quiet at idle
+  - [50, 35]
+  - [60, 50]
+  - [70, 70]
+  - [80, 100]  # Full speed when hot
+
+# Hysteresis prevents fan speed oscillation (degrees C)
+nvfancontrol_hysteresis: 3
