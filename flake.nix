@@ -360,6 +360,14 @@
 
       # Pre-commit hooks and deploy-rs checks
       checks.${system} = {
+        # NixOS system builds (for CI caching)
+        nixos-ammars-pc = self.nixosConfigurations.ammars-pc.config.system.build.toplevel;
+        nixos-framework13 = self.nixosConfigurations.framework13.config.system.build.toplevel;
+
+        # Home Manager builds (for CI caching)
+        home-ammars-pc = self.homeConfigurations."ammar@ammars-pc".activationPackage;
+        home-framework13 = self.homeConfigurations."ammar@framework13".activationPackage;
+
         pre-commit-check = inputs.git-hooks.lib.${system}.run {
           src = ./.;
           hooks = {
