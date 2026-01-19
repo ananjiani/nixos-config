@@ -1,6 +1,6 @@
 ---
-- name: Restart nvfancontrol
+- name: Restart coolgpus
   ansible.builtin.systemd:
-    name: nvfancontrol
+    name: coolgpus
     state: restarted
     daemon_reload: true

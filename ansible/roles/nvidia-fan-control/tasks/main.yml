@@ -55,15 +55,14 @@
     filename: non-free
     update_cache: false
 
-- name: Install NVIDIA driver and build dependencies
+- name: Install NVIDIA driver and fan control dependencies
   ansible.builtin.apt:
     name:
       - nvidia-driver
       - nvidia-smi
-      - cargo
-      - rustc
-      - libxext-dev
-      - libxrandr-dev
+      - nvidia-settings
+      - xserver-xorg
+      - python3-pip
     state: present
     update_cache: true
 
@@ -103,53 +102,34 @@
     enabled: true
     state: started
 
-- name: Check if nvfancontrol is installed
-  ansible.builtin.stat:
-    path: /usr/local/bin/nvfancontrol
-  register: nvfancontrol_bin
+- name: Install coolgpus for headless fan control
+  ansible.builtin.pip:
+    name: coolgpus
+    state: present
 
-- name: Install nvfancontrol from crates.io
-  ansible.builtin.command:
-    cmd: cargo install nvfancontrol --root /usr/local
-  environment:
-    CARGO_HOME: /tmp/cargo
-  when: not nvfancontrol_bin.stat.exists
-
-- name: Create nvfancontrol config directory
-  ansible.builtin.file:
-    path: /etc/nvfancontrol
-    state: directory
-    mode: '0755'
-
-- name: Deploy nvfancontrol configuration
-  ansible.builtin.template:
-    src: nvfancontrol.conf.j2
-    dest: /etc/nvfancontrol/nvfancontrol.conf
-    mode: '0644'
-  notify: Restart nvfancontrol
-
-- name: Create nvfancontrol systemd service
+- name: Create coolgpus systemd service
   ansible.builtin.copy:
-    dest: /etc/systemd/system/nvfancontrol.service
+    dest: /etc/systemd/system/coolgpus.service
     content: |
       [Unit]
-      Description=NVIDIA Fan Control (nvfancontrol)
+      Description=NVIDIA GPU Fan Control (coolgpus)
       After=nvidia-persistenced.service
 
       [Service]
       Type=simple
-      ExecStart=/usr/local/bin/nvfancontrol -c /etc/nvfancontrol/nvfancontrol.conf
+      # Fan curve: 25% at 40C, 35% at 50C, 50% at 60C, 70% at 70C, 100% at 80C
+      ExecStart=/usr/local/bin/coolgpus --temp 40 50 60 70 80 --speed 25 35 50 70 100
       Restart=always
-      RestartSec=5
+      RestartSec=10
 
       [Install]
       WantedBy=multi-user.target
     mode: '0644'
-  notify: Restart nvfancontrol
+  notify: Restart coolgpus
 
-- name: Enable and start nvfancontrol
+- name: Enable and start coolgpus
   ansible.builtin.systemd:
-    name: nvfancontrol
+    name: coolgpus
     enabled: true
     state: started
     daemon_reload: true
