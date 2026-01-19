@@ -1,14 +1,11 @@
 ---
-# Service for external Scriberr (no selector - uses endpoints)
+# Headless service pointing to external Scriberr instance
 apiVersion: v1
 kind: Service
 metadata:
   name: scriberr-external
   namespace: scriberr
 spec:
-  type: ClusterIP
   ports:
-    - name: http
-      port: 8080
+    - port: 8080
       targetPort: 8080
-      protocol: TCP

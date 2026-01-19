@@ -7,7 +7,6 @@ metadata:
   namespace: scriberr
 subsets:
   - addresses:
-      - ip: 192.168.1.21  # Boromir
+      - ip: 192.168.1.21
     ports:
       - port: 8080
-        protocol: TCP
