@@ -1,4 +1,8 @@
 ---
+# NVIDIA driver version - monitored by Renovate
+# renovate: datasource=github-releases depName=NVIDIA/open-gpu-kernel-modules
+nvidia_driver_version: "550.163.01"
+
 # Fan curve points: [temp, speed%]
 nvfancontrol_curve:
   - [40, 25]   # Quiet at idle

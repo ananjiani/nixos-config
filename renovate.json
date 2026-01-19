@@ -4,6 +4,16 @@
     "config:recommended",
     ":semanticCommits"
   ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["ansible/.*\\.ya?ml$"],
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=(?<datasource>.*?) depName=(?<depName>.*?)\\n.*?:\\s*\"?(?<currentValue>[^\"\\n]+)\"?"
+      ],
+      "description": "Track versions in Ansible files via renovate comments"
+    }
+  ],
   "timezone": "America/Chicago",
   "schedule": ["before 6am on sunday"],
   "labels": ["dependencies", "automated"],
