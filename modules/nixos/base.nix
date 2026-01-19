@@ -30,9 +30,18 @@
       ];
       substituters = [
         "https://nix-community.cachix.org"
+        "https://hyprland.cachix.org"
+        "https://claude-code.cachix.org"
+        "https://cache.nixos-cuda.org"
+        # "https://attic.dimensiondoor.xyz/middle-earth" # Attic via Traefik (disabled until K8s routing ready)
+        "http://theoden.lan:8080/middle-earth" # Attic direct
       ];
       trusted-public-keys = [
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+        "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+        "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
+        "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M="
+        "middle-earth:QJM6g097RUDyZA0OG00fXc7JxFMOXN3J5ZBX8j+QfFI="
       ];
     };
     gc = {

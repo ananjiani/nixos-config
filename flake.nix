@@ -67,6 +67,13 @@
       url = "github:serokell/deploy-rs";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+    attic = {
+      url = "github:zhaofengli/attic";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
+    buildbot-nix = {
+      url = "github:nix-community/buildbot-nix";
+    };
   };
 
   outputs =
@@ -197,13 +204,16 @@
           ];
         };
 
-        # Theoden - k3s Server (Proxmox VM on rohan)
+        # Theoden - k3s Server + CI/CD (Proxmox VM on rohan)
         theoden = lib.nixosSystem {
           inherit system specialArgs;
           modules = [
             ./hosts/servers/theoden/configuration.nix
             inputs.sops-nix.nixosModules.sops
             inputs.disko.nixosModules.disko
+            inputs.attic.nixosModules.atticd
+            inputs.buildbot-nix.nixosModules.buildbot-master
+            inputs.buildbot-nix.nixosModules.buildbot-worker
           ];
         };
 
@@ -310,9 +320,6 @@
           "ammar@framework13" = mkHomeConfig ./hosts/framework13/home.nix;
           "ammar@surface-go" = mkHomeConfig ./hosts/surface-go/home.nix;
           "ammar@homeserver" = mkHomeConfig ./hosts/homeserver/home.nix;
-          "ammar@boromir" = mkHomeConfig ./hosts/servers/boromir/home.nix;
-          "ammar@samwise" = mkHomeConfig ./hosts/servers/samwise/home.nix;
-          "ammar@theoden" = mkHomeConfig ./hosts/servers/theoden/home.nix;
 
           # Pixel 9 (Debian AVF with Nix) - aarch64-linux
           "ammar@pixel9" =
@@ -350,6 +357,14 @@
 
       # Pre-commit hooks and deploy-rs checks
       checks.${system} = {
+        # NixOS system builds (for CI caching)
+        nixos-ammars-pc = self.nixosConfigurations.ammars-pc.config.system.build.toplevel;
+        nixos-framework13 = self.nixosConfigurations.framework13.config.system.build.toplevel;
+
+        # Home Manager builds (for CI caching)
+        home-ammars-pc = self.homeConfigurations."ammar@ammars-pc".activationPackage;
+        home-framework13 = self.homeConfigurations."ammar@framework13".activationPackage;
+
         pre-commit-check = inputs.git-hooks.lib.${system}.run {
           src = ./.;
           hooks = {

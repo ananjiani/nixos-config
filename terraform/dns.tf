@@ -160,3 +160,18 @@ resource "cloudflare_record" "dns_dot" {
   ttl     = 300
   comment = "AdGuard DNS-over-TLS (internal) - managed by Terraform"
 }
+
+# =============================================================================
+# Cloudflare Tunnel Services
+# =============================================================================
+
+# Buildbot CI/CD (via Cloudflare Tunnel for Codeberg webhooks)
+resource "cloudflare_record" "buildbot" {
+  zone_id = local.zone_id
+  name    = "ci"
+  content = "b33ec739-7324-4c6f-b6fa-daedbe0828c8.cfargotunnel.com"
+  type    = "CNAME"
+  proxied = true # Must be proxied for Cloudflare Tunnel
+  ttl     = 1    # Auto when proxied
+  comment = "Buildbot CI/CD (Cloudflare Tunnel) - managed by Terraform"
+}

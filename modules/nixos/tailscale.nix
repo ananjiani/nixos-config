@@ -52,6 +52,12 @@ in
       description = "Accept DNS configuration from Tailscale/Headscale (MagicDNS)";
     };
 
+    acceptRoutes = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Accept subnet routes advertised by other nodes. Disable on nodes that are already on the LAN and advertise subnet routes to avoid circular routing.";
+    };
+
     useExitNode = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = "boromir";
@@ -80,7 +86,7 @@ in
       ];
       extraSetFlags = [
         "--accept-dns=${lib.boolToString cfg.acceptDns}"
-        "--accept-routes"
+        "--accept-routes=${lib.boolToString cfg.acceptRoutes}"
       ]
       ++ lib.optionals (cfg.useExitNode != null) [
         "--exit-node=${cfg.useExitNode}"
