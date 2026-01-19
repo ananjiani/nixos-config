@@ -1,0 +1,48 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: renovate
+  namespace: renovate
+spec:
+  schedule: "0 5 * * 0" # Sunday 5am (matches renovate.json schedule)
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: renovate
+              image: renovate/renovate:latest
+              env:
+                - name: RENOVATE_PLATFORM
+                  value: "forgejo"
+                - name: RENOVATE_ENDPOINT
+                  value: "https://codeberg.org"
+                - name: RENOVATE_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: renovate-credentials
+                      key: token
+                - name: RENOVATE_GIT_AUTHOR
+                  value: "Renovate <ananjiani@noreply.codeberg.org>"
+                - name: RENOVATE_REPOSITORIES
+                  value: "ananjiani/infra"
+                - name: LOG_LEVEL
+                  value: "info"
+                # GitHub token for fetching release notes from GitHub-hosted deps
+                - name: GITHUB_COM_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: renovate-credentials
+                      key: github-token
+              resources:
+                requests:
+                  memory: "512Mi"
+                  cpu: "200m"
+                limits:
+                  memory: "1Gi"
+                  cpu: "1000m"
+          restartPolicy: OnFailure
