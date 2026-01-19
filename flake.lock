@@ -1181,6 +1181,21 @@
         "type": "github"
       }
     },
+    "quadlet-nix": {
+      "locked": {
+        "lastModified": 1767469290,
+        "narHash": "sha256-VuxV4TzPXKFFvbqsaT9gCFsN30yx9dfMs5iZhL7sYrY=",
+        "owner": "SEIAROTg",
+        "repo": "quadlet-nix",
+        "rev": "f5dd07b6a491b67d4f0742e6a8f46d92ff92cdc7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "SEIAROTg",
+        "repo": "quadlet-nix",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "attic": "attic",
@@ -1207,6 +1222,7 @@
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nvfetcher": "nvfetcher",
         "play-nix": "play-nix",
+        "quadlet-nix": "quadlet-nix",
         "sops-nix": "sops-nix",
         "thunderbird-user-js": "thunderbird-user-js",
         "waybar": "waybar",
