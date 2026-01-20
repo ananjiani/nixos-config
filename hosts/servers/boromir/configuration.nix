@@ -110,5 +110,5 @@
   nixpkgs.hostPlatform = "x86_64-linux";
 
   # # Enable CUDA support for packages (needed for WhisperX with GPU acceleration)
-  # nixpkgs.config.cudaSupport = true;
+  nixpkgs.config.cudaSupport = true;
 }
