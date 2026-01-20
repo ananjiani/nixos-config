@@ -74,7 +74,6 @@
     buildbot-nix = {
       url = "github:nix-community/buildbot-nix";
     };
-    quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
   };
 
   outputs =
@@ -192,7 +191,6 @@
             ./hosts/servers/boromir/configuration.nix
             inputs.sops-nix.nixosModules.sops
             inputs.disko.nixosModules.disko
-            inputs.quadlet-nix.nixosModules.quadlet
           ];
         };
 
