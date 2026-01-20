@@ -17,12 +17,6 @@ data:
         "tag:funnel": ["ammar@"],
         "tag:github-actions": ["ammar@"]
       },
-      "nodeAttrs": [
-        {
-          "target": ["tag:funnel"],
-          "attr": ["funnel"]
-        }
-      ],
       "acls": [
         {
           "action": "accept",
