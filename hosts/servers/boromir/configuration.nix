@@ -9,7 +9,6 @@
 {
   imports = [
     ./disk-config.nix
-    ./scriberr.nix
     inputs.home-manager-unstable.nixosModules.home-manager
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/ssh.nix
@@ -19,6 +18,7 @@
     ../../../modules/nixos/server/k3s.nix
     ../../../modules/nixos/nvidia.nix # GPU support for Ollama
     ../../../modules/nixos/server/attic-watch-store.nix
+    ./ai.nix
   ];
 
   modules = {
@@ -62,27 +62,6 @@
     age.keyFile = "/var/lib/sops-nix/key.txt";
     secrets.k3s_token = { };
     secrets.tailscale_authkey = { };
-  };
-
-  # Model conversion tools (HuggingFace -> GGUF -> Ollama)
-  environment.systemPackages = with pkgs-stable; [
-    llama-cpp # GGUF conversion and quantization
-    (python3.withPackages (ps: [ ps.huggingface-hub ])) # Model downloads
-  ];
-
-  # Ollama LLM service with GPU acceleration
-  services.ollama = {
-    enable = true;
-    host = "0.0.0.0"; # Allow access from k8s pods
-    port = 11434;
-    package = pkgs-stable.ollama-cuda; # CUDA-accelerated package (stable for cache hits)
-    loadModels = [
-      "qwen3:8b"
-      "qwen3:0.6b"
-      "qwen3-vl:8b" # Vision-language model for image understanding
-      "nomic-embed-text" # GPU-accelerated embeddings for Open WebUI
-      "deepseek-r1:8b-0528-qwen3-q4_K_M" # Reasoning model with tool support
-    ];
   };
 
   # Docker for model conversion (bypasses NixOS library isolation)
@@ -131,4 +110,7 @@
 
   system.stateVersion = "25.11";
   nixpkgs.hostPlatform = "x86_64-linux";
+
+  # Enable CUDA support for packages (needed for WhisperX with GPU acceleration)
+  nixpkgs.config.cudaSupport = true;
 }
