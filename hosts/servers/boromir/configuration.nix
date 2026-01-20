@@ -36,8 +36,8 @@
       exitNode = true;
       useExitNode = null; # Don't route through self (this IS the exit node)
       subnetRoutes = [ "192.168.1.0/24" ]; # Expose local network to Tailnet
-      acceptDns = false; # Don't use Magic DNS (depends on in-cluster Headscale)
-      acceptRoutes = false; # Don't accept subnet routes (we're already on the LAN)
+      # acceptDns = false; # Don't use Magic DNS (depends on in-cluster Headscale)
+      # acceptRoutes = false; # Don't accept subnet routes (we're already on the LAN)
     };
 
     # SSH server
