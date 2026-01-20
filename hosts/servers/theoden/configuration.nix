@@ -43,11 +43,15 @@
         2283 # Immich
         8080 # Attic binary cache
         8010 # Buildbot web UI
+        445 # SMB
+        139 # NetBIOS
       ];
       allowedUDPPorts = [
         111 # rpcbind/portmapper
         2049 # nfs
         20048 # mountd
+        137 # NetBIOS name service
+        138 # NetBIOS datagram
       ];
     };
   };
@@ -173,6 +177,39 @@
       exports = ''
         /srv/nfs 192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,fsid=0)
       '';
+    };
+
+    # Samba file server (for Steam Deck and other clients)
+    samba = {
+      enable = true;
+      openFirewall = false; # Already opened above with other ports
+      settings = {
+        global = {
+          workgroup = "WORKGROUP";
+          "server string" = "theoden";
+          "netbios name" = "theoden";
+          security = "user";
+          "map to guest" = "never";
+          "hosts allow" = "192.168.1. 100.64. 127.0.0.1 localhost";
+          "hosts deny" = "0.0.0.0/0";
+          "guest account" = "nobody";
+        };
+        storage = {
+          path = "/mnt/storage";
+          browseable = "yes";
+          "read only" = "no";
+          "valid users" = "ammar";
+          "force group" = "storage";
+          "create mask" = "0664";
+          "directory mask" = "2775";
+        };
+      };
+    };
+
+    # Samba Web Services Discovery (network browsing)
+    samba-wsdd = {
+      enable = true;
+      openFirewall = true;
     };
 
     # PostgreSQL for Attic and Buildbot
