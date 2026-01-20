@@ -82,6 +82,10 @@
         owner = "buildbot";
         mode = "0400";
       };
+      buildbot_worker_password_plain = {
+        owner = "buildbot-worker";
+        mode = "0400";
+      };
       # Cloudflare Tunnel
       cloudflared_tunnel_creds = {
         owner = "cloudflared";
@@ -251,7 +255,7 @@
 
     buildbot-nix.worker = {
       enable = true;
-      workerPasswordFile = config.sops.secrets.buildbot_worker_password.path;
+      workerPasswordFile = config.sops.secrets.buildbot_worker_password_plain.path;
     };
 
     # Cloudflare Tunnel for Buildbot webhooks
