@@ -61,7 +61,7 @@ Test workflows locally before pushing:
 nix flake check --all-systems
 
 # Full validation (what weekly runs)
-for host in ammars-pc work-laptop framework13 surface-go; do
+for host in ammars-pc framework13; do
   nix build .#nixosConfigurations.$host.config.system.build.toplevel --dry-run
 done
 ```

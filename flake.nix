@@ -151,18 +151,6 @@
           ];
         };
 
-        # Work laptop
-        work-laptop = lib.nixosSystem {
-          inherit system specialArgs;
-          modules = [ ./hosts/work-laptop/configuration.nix ];
-        };
-
-        # Surface Go tablet
-        surface-go = lib.nixosSystem {
-          inherit system specialArgs;
-          modules = [ ./hosts/surface-go/configuration.nix ];
-        };
-
         # Framework 13 laptop
         framework13 = lib.nixosSystem {
           inherit system specialArgs;
@@ -179,17 +167,6 @@
         iso = lib.nixosSystem {
           inherit system specialArgs;
           modules = [ ./hosts/iso/configuration.nix ];
-        };
-
-        # Homeserver
-        homeserver = lib.nixosSystem {
-          inherit system specialArgs;
-          modules = [
-            ./hosts/homeserver/configuration.nix
-            inputs.nixarr.nixosModules.default
-            inputs.sops-nix.nixosModules.sops
-            inputs.disko.nixosModules.disko
-          ];
         };
 
         # Boromir - Proxmox VM
@@ -324,10 +301,7 @@
         {
           # Automatic hostname detection: home-manager looks for $USER@$HOSTNAME then $USER
           "ammar@ammars-pc" = mkHomeConfig ./hosts/desktop/home.nix;
-          "ammar@work-laptop" = mkHomeConfig ./hosts/work-laptop/home.nix;
           "ammar@framework13" = mkHomeConfig ./hosts/framework13/home.nix;
-          "ammar@surface-go" = mkHomeConfig ./hosts/surface-go/home.nix;
-          "ammar@homeserver" = mkHomeConfig ./hosts/homeserver/home.nix;
 
           # Pixel 9 (Debian AVF with Nix) - aarch64-linux
           "ammar@pixel9" =

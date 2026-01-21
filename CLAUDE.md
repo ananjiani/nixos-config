@@ -147,9 +147,9 @@ cd ansible && ansible-playbook playbooks/proxmox-gpu.yml
 - **`flake.nix`**: Main entry point defining all system configurations and dependencies
 - **`hosts/`**: Machine-specific configurations
   - Each host has: `configuration.nix`, `hardware-configuration.nix`, and `home.nix`
-  - Local machines: ammars-pc, work-laptop, surface-go, framework13
+  - Local machines: ammars-pc, framework13
   - Servers (Proxmox VMs): boromir, samwise, theoden (deployed via deploy-rs)
-  - Special: iso, homeserver
+  - Special: iso
 - **`modules/`**: Reusable configuration modules
   - `home/`: User-level modules (editors, shell, desktop environment)
   - `nixos/`: System-level modules (hardware, services, gaming)

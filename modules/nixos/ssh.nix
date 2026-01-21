@@ -16,9 +16,6 @@ let
     # desktop key
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMoo8KQiLBJ6WrWmG0/6O8lww/v6ggPaLfv70/ksMZbD ammar.nanjiani@gmail.com"
 
-    # homeserver
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIASRuEYfCfFwqqIe3ef32mFK7kWMRgzZoTZrxg7B/0uL ammar@homeserver"
-
     # pixel9 phone
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDkUoUykJOFGBRc1ACtGi9guIMMT8Tq/S/Pos6XANJ6H pixel9"
   ];

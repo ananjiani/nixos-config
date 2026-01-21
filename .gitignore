@@ -6,10 +6,7 @@ result
 .pre-commit-config.yaml
 
 # Unencrypted secrets for testing (NEVER commit these!)
-homeserver-secrets.yaml
 secrets/*-unencrypted.yaml
-hosts/homeserver/secrets/*.conf
-hosts/homeserver/secrets.json
 
 # Backups
 portainer-backup*

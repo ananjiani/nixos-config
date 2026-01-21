@@ -122,8 +122,8 @@
       exitNode = true;
       useExitNode = null; # Can't use exit node while being one
       subnetRoutes = [ "192.168.1.0/24" ];
-      # acceptDns = false; # Don't use Magic DNS (depends on in-cluster Headscale)
-      # acceptRoutes = false; # Don't accept subnet routes (we're already on the LAN)
+      acceptDns = false; # Don't use Magic DNS (depends on in-cluster Headscale)
+      acceptRoutes = false; # Don't accept subnet routes (we're already on the LAN)
     };
     ssh = {
       enable = true;
