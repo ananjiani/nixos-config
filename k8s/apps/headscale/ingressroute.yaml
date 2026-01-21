@@ -13,10 +13,6 @@ metadata:
     gethomepage.dev/href: "https://ts.dimensiondoor.xyz"
     gethomepage.dev/pod-selector: "app=headscale"
     gethomepage.dev/siteMonitor: "http://headscale.headscale.svc:8080/health"
-    # Widget disabled - Homepage incompatible with Headscale v0.24.0+ API
-    # gethomepage.dev/widget.type: "headscale"
-    # gethomepage.dev/widget.url: "http://headscale.headscale.svc:8080"
-    # gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_HEADSCALE_KEY}}"
 spec:
   entryPoints:
     - websecure
@@ -26,5 +22,22 @@ spec:
       services:
         - name: headscale
           port: 8080
+          serversTransport: headscale-transport
   tls:
     secretName: headscale-tls
+---
+# ServersTransport with extended timeouts for Headscale's long-lived HTTP/2 streams
+# Headscale uses HTTP/2 streaming to push network map updates to clients
+# Without extended timeouts, Traefik closes the connection prematurely
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: headscale-transport
+  namespace: headscale
+spec:
+  # Disable timeout for response headers (0 = no timeout)
+  # This allows Headscale's long-polling/streaming to work
+  forwardingTimeouts:
+    dialTimeout: 30s
+    responseHeaderTimeout: 0s
+    idleConnTimeout: 900s
