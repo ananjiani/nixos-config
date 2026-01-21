@@ -11,7 +11,19 @@
       (python3.withPackages (ps: [ ps.huggingface-hub ])) # Model downloads
     ])
     ++ [
-      pkgs.whisperx # Uses pkgs (not pkgs-stable) to get CUDA support from nixpkgs.config.cudaSupport
+      # Wrap whisperx to work around PyTorch 2.6+ weights_only=True default
+      # pyannote-audio checkpoints use omegaconf objects not in safe globals
+      # Also add omegaconf as runtime dep (missing in nixpkgs package)
+      (pkgs.whisperx.overrideAttrs (old: {
+        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.makeWrapper ];
+        propagatedBuildInputs = (old.propagatedBuildInputs or [ ]) ++ [
+          pkgs.python3Packages.omegaconf
+        ];
+        postFixup = (old.postFixup or "") + ''
+          wrapProgram $out/bin/whisperx \
+            --set TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD true
+        '';
+      }))
     ];
 
   # Ollama LLM service with GPU acceleration
