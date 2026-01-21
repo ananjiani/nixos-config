@@ -121,10 +121,8 @@
       };
     in
     {
-      # Expose dendritic modules for consumption
-      modules = dendriticFlake.modules or { };
-      # Set nixPath for compatibility
-      nix.nixPath = [ "nixpkgs=${nixpkgs-unstable}" ];
+      # Expose dendritic modules for consumption (underscore prefix hides from flake output warnings)
+      _modules = dendriticFlake.modules or { };
 
       # NixOS system configurations
       nixosConfigurations = {
@@ -135,11 +133,21 @@
             ./hosts/desktop/configuration.nix
             inputs.sops-nix.nixosModules.sops
             # Import dendritic moondeck NixOS module
-            (if self.modules ? nixos && self.modules.nixos ? moondeck then self.modules.nixos.moondeck else { })
+            (
+              if self._modules ? nixos && self._modules.nixos ? moondeck then
+                self._modules.nixos.moondeck
+              else
+                { }
+            )
             # Import dendritic opendeck NixOS module
-            (if self.modules ? nixos && self.modules.nixos ? opendeck then self.modules.nixos.opendeck else { })
+            (
+              if self._modules ? nixos && self._modules.nixos ? opendeck then
+                self._modules.nixos.opendeck
+              else
+                { }
+            )
             # Import dendritic brave NixOS module
-            (if self.modules ? nixos && self.modules.nixos ? brave then self.modules.nixos.brave else { })
+            (if self._modules ? nixos && self._modules.nixos ? brave then self._modules.nixos.brave else { })
           ];
         };
 
@@ -163,7 +171,7 @@
             inputs.nixos-hardware.nixosModules.framework-13-7040-amd
             inputs.sops-nix.nixosModules.sops
             # Import dendritic brave NixOS module
-            (if self.modules ? nixos && self.modules.nixos ? brave then self.modules.nixos.brave else { })
+            (if self._modules ? nixos && self._modules.nixos ? brave then self._modules.nixos.brave else { })
           ];
         };
 
@@ -267,40 +275,40 @@
 
                 # Import dendritic crypto module
                 (
-                  if self.modules ? homeManager && self.modules.homeManager ? crypto then
-                    self.modules.homeManager.crypto
+                  if self._modules ? homeManager && self._modules.homeManager ? crypto then
+                    self._modules.homeManager.crypto
                   else
                     { }
                 )
 
                 # Import dendritic email module
                 (
-                  if self.modules ? homeManager && self.modules.homeManager ? email then
-                    self.modules.homeManager.email
+                  if self._modules ? homeManager && self._modules.homeManager ? email then
+                    self._modules.homeManager.email
                   else
                     { }
                 )
 
                 # Import dendritic moondeck module
                 (
-                  if self.modules ? homeManager && self.modules.homeManager ? moondeck then
-                    self.modules.homeManager.moondeck
+                  if self._modules ? homeManager && self._modules.homeManager ? moondeck then
+                    self._modules.homeManager.moondeck
                   else
                     { }
                 )
 
                 # Import dendritic opendeck module
                 (
-                  if self.modules ? homeManager && self.modules.homeManager ? opendeck then
-                    self.modules.homeManager.opendeck
+                  if self._modules ? homeManager && self._modules.homeManager ? opendeck then
+                    self._modules.homeManager.opendeck
                   else
                     { }
                 )
 
                 # Import dendritic doom-emacs module
                 (
-                  if self.modules ? homeManager && self.modules.homeManager ? doom-emacs then
-                    self.modules.homeManager.doom-emacs
+                  if self._modules ? homeManager && self._modules.homeManager ? doom-emacs then
+                    self._modules.homeManager.doom-emacs
                   else
                     { }
                 )
@@ -342,8 +350,8 @@
               modules = [
                 { nixpkgs.overlays = [ inputs.emacs-overlay.overlay ]; }
                 (
-                  if self.modules ? homeManager && self.modules.homeManager ? doom-emacs then
-                    self.modules.homeManager.doom-emacs
+                  if self._modules ? homeManager && self._modules.homeManager ? doom-emacs then
+                    self._modules.homeManager.doom-emacs
                   else
                     { }
                 )
@@ -369,7 +377,7 @@
           src = ./.;
           hooks = {
             # First run formatters
-            nixfmt-rfc-style.enable = true;
+            nixfmt.enable = true;
 
             # Then run linters/fixers
             deadnix = {

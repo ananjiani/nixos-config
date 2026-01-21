@@ -65,10 +65,8 @@
   };
 
   # Docker for model conversion (bypasses NixOS library isolation)
-  virtualisation.docker = {
-    enable = true;
-    enableNvidia = true; # GPU passthrough for containers
-  };
+  virtualisation.docker.enable = true;
+  hardware.nvidia-container-toolkit.enable = true; # GPU passthrough for containers
 
   networking = {
     hostName = "boromir";
@@ -111,6 +109,6 @@
   system.stateVersion = "25.11";
   nixpkgs.hostPlatform = "x86_64-linux";
 
-  # Enable CUDA support for packages (needed for WhisperX with GPU acceleration)
+  # # Enable CUDA support for packages (needed for WhisperX with GPU acceleration)
   nixpkgs.config.cudaSupport = true;
 }

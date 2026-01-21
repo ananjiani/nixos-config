@@ -11,9 +11,9 @@
     inkscape
     pinta
     vlc
-    xfce.thunar
-    xfce.thunar-archive-plugin
-    xfce.thunar-media-tags-plugin
+    thunar
+    thunar-archive-plugin
+    thunar-media-tags-plugin
     obs-studio
     gst_all_1.gstreamer
     obs-studio-plugins.obs-gstreamer
@@ -26,8 +26,8 @@
     openai-whisper
     pkgs-stable.whisperx
     uv
-    inputs.whisper-dictation.packages.${pkgs.system}.default
-    youtube-music
+    inputs.whisper-dictation.packages.${pkgs.stdenv.hostPlatform.system}.default
+    pear-desktop
     playerctl
     qbittorrent
     sparrow # bitcoin client
