@@ -2,9 +2,6 @@
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-25.11";
     nixpkgs-unstable.url = "nixpkgs/nixpkgs-unstable";
-    # Pinned nixpkgs for whisperx (before pyannote-audio 4.0 broke compatibility)
-    # See: https://github.com/NixOS/nixpkgs/issues/460172
-    nixpkgs-whisperx.url = "github:NixOS/nixpkgs/d4a15f921b805d13826fb723b560db29178781fb";
     home-manager = {
       url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";

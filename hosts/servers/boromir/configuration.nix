@@ -1,6 +1,7 @@
 # Boromir - Proxmox VM (minimal base)
 {
   inputs,
+  pkgs,
   pkgs-stable,
   config,
   ...
@@ -67,6 +68,17 @@
   # Docker for model conversion (bypasses NixOS library isolation)
   virtualisation.docker.enable = true;
   hardware.nvidia-container-toolkit.enable = true; # GPU passthrough for containers
+
+  # nix-ld for running unpatched binaries (uvx, pip packages, etc.)
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [
+      stdenv.cc.cc.lib # libstdc++
+      zlib
+      curl
+      openssl
+    ];
+  };
 
   networking = {
     hostName = "boromir";

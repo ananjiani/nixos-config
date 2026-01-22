@@ -1,35 +1,28 @@
 {
   pkgs,
   pkgs-stable,
-  inputs,
   ...
 }:
 let
-  # Pinned nixpkgs with pyannote-audio 3.4.0 (before 4.0 broke whisperx)
-  pkgs-whisperx = import inputs.nixpkgs-whisperx {
-    inherit (pkgs) system;
-    config.allowUnfree = true;
-  };
+  # Wrapper for whisperx that sets LD_LIBRARY_PATH for PyTorch
+  # uvx downloads pre-built wheels that need system libraries + CUDA
+  # TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD: pyannote checkpoints use omegaconf objects
+  whisperx-wrapper = pkgs.writeShellScriptBin "whisperx" ''
+    export LD_LIBRARY_PATH=/run/opengl-driver/lib:/run/current-system/sw/share/nix-ld/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+    export TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1
+    exec ${pkgs.uv}/bin/uvx whisperx "$@"
+  '';
 in
 {
   # Model conversion tools (HuggingFace -> GGUF -> Ollama)
-  environment.systemPackages =
-    (with pkgs-stable; [
-      llama-cpp # GGUF conversion and quantization
-      (python3.withPackages (ps: [ ps.huggingface-hub ])) # Model downloads
-    ])
-    ++ [
-      # Use pinned whisperx from before pyannote-audio 4.0 broke compatibility
-      # See: https://github.com/NixOS/nixpkgs/issues/460172
-      # Wrap to work around PyTorch 2.6+ weights_only=True default
-      (pkgs-whisperx.whisperx.overrideAttrs (old: {
-        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.makeWrapper ];
-        postFixup = (old.postFixup or "") + ''
-          wrapProgram $out/bin/whisperx \
-            --set TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD true
-        '';
-      }))
-    ];
+  # WhisperX: use uvx with wrapper (nixpkgs broken: pyannote-audio 4.0)
+  # See: https://github.com/NixOS/nixpkgs/issues/460172
+  environment.systemPackages = with pkgs-stable; [
+    llama-cpp # GGUF conversion and quantization
+    (python3.withPackages (ps: [ ps.huggingface-hub ])) # Model downloads
+    pkgs.uv # For ad-hoc Python tools
+    whisperx-wrapper
+  ];
 
   # Ollama LLM service with GPU acceleration
   services.ollama = {
