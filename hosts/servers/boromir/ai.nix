@@ -38,4 +38,15 @@ in
       "deepseek-r1:8b-0528-qwen3-q4_K_M" # Reasoning model with tool support
     ];
   };
+
+  # ComfyUI for image generation with Flux models
+  services.comfyui = {
+    enable = true;
+    cuda = true;
+    enableManager = true;
+    port = 8188;
+    listenAddress = "0.0.0.0";
+    dataDir = "/var/lib/comfyui";
+    openFirewall = false; # Handled in main firewall config
+  };
 }

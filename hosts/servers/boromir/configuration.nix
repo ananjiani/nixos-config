@@ -11,6 +11,7 @@
   imports = [
     ./disk-config.nix
     inputs.home-manager-unstable.nixosModules.home-manager
+    inputs.comfyui-nix.nixosModules.default
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/ssh.nix
     ../../../modules/nixos/nfs-client.nix
@@ -87,7 +88,10 @@
       "192.168.1.1"
       "9.9.9.9"
     ]; # Router + Quad9 fallback (avoid chicken-and-egg with in-cluster DNS)
-    firewall.allowedTCPPorts = [ 11434 ]; # Ollama API
+    firewall.allowedTCPPorts = [
+      11434
+      8188
+    ]; # Ollama API + ComfyUI
   };
 
   # Home Manager integration

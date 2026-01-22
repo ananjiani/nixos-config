@@ -74,6 +74,10 @@
     buildbot-nix = {
       url = "github:nix-community/buildbot-nix";
     };
+    comfyui-nix = {
+      url = "github:utensils/comfyui-nix";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
   };
 
   outputs =
@@ -176,6 +180,7 @@
             ./hosts/servers/boromir/configuration.nix
             inputs.sops-nix.nixosModules.sops
             inputs.disko.nixosModules.disko
+            { nixpkgs.overlays = [ inputs.comfyui-nix.overlays.default ]; }
           ];
         };
 
