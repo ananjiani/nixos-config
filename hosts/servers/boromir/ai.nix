@@ -1,8 +1,16 @@
 {
   pkgs,
   pkgs-stable,
+  inputs,
   ...
 }:
+let
+  # Pinned nixpkgs with pyannote-audio 3.4.0 (before 4.0 broke whisperx)
+  pkgs-whisperx = import inputs.nixpkgs-whisperx {
+    inherit (pkgs) system;
+    config.allowUnfree = true;
+  };
+in
 {
   # Model conversion tools (HuggingFace -> GGUF -> Ollama)
   environment.systemPackages =
@@ -11,14 +19,11 @@
       (python3.withPackages (ps: [ ps.huggingface-hub ])) # Model downloads
     ])
     ++ [
-      # Wrap whisperx to work around PyTorch 2.6+ weights_only=True default
-      # pyannote-audio checkpoints use omegaconf objects not in safe globals
-      # Also add omegaconf as runtime dep (missing in nixpkgs package)
-      (pkgs.whisperx.overrideAttrs (old: {
+      # Use pinned whisperx from before pyannote-audio 4.0 broke compatibility
+      # See: https://github.com/NixOS/nixpkgs/issues/460172
+      # Wrap to work around PyTorch 2.6+ weights_only=True default
+      (pkgs-whisperx.whisperx.overrideAttrs (old: {
         nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.makeWrapper ];
-        propagatedBuildInputs = (old.propagatedBuildInputs or [ ]) ++ [
-          pkgs.python3Packages.omegaconf
-        ];
         postFixup = (old.postFixup or "") + ''
           wrapProgram $out/bin/whisperx \
             --set TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD true

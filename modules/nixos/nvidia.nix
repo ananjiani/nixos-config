@@ -30,9 +30,10 @@
       # Use proprietary drivers (better for RTX 3060)
       open = false;
 
-      # Enable nvidia-persistenced for headless operation
-      # Keeps GPUs initialized when no display is connected
-      nvidiaPersistenced = true;
+      # Disable nvidia-persistenced - causes deployment failures due to
+      # kernel module / userspace version mismatch during live switch.
+      # GPU initializes on first use (e.g., when Ollama starts) anyway.
+      nvidiaPersistenced = false;
 
       # Optional: Enable power management (useful for servers)
       powerManagement.enable = false;
