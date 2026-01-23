@@ -47,7 +47,7 @@ in
   # Logs: journalctl -u comfyui.service
   virtualisation.quadlet.containers.comfyui = {
     containerConfig = {
-      image = "docker.io/yanwk/comfyui-boot:cu126-cn";
+      image = "docker.io/yanwk/comfyui-boot:cu126-slim";
       publishPorts = [ "8188:8188" ];
       volumes = [
         "/var/lib/comfyui/models:/app/ComfyUI/models"
