@@ -50,10 +50,10 @@ in
       image = "docker.io/yanwk/comfyui-boot:cu126-slim";
       publishPorts = [ "8188:8188" ];
       volumes = [
-        "/var/lib/comfyui/models:/app/ComfyUI/models"
-        "/var/lib/comfyui/output:/app/ComfyUI/output"
-        "/var/lib/comfyui/input:/app/ComfyUI/input"
-        "/var/lib/comfyui/custom_nodes:/app/ComfyUI/custom_nodes"
+        "/var/lib/comfyui/models:/root/ComfyUI/models"
+        "/var/lib/comfyui/output:/root/ComfyUI/output"
+        "/var/lib/comfyui/input:/root/ComfyUI/input"
+        "/var/lib/comfyui/custom_nodes:/root/ComfyUI/custom_nodes"
       ];
       environments = {
         CLI_ARGS = "--listen 0.0.0.0";
