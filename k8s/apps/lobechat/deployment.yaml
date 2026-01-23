@@ -32,6 +32,8 @@ spec:
             # App URLs
             - name: APP_URL
               value: "https://lobe.dimensiondoor.xyz"
+            - name: NEXTAUTH_URL
+              value: "https://lobe.dimensiondoor.xyz"
             - name: NEXT_PUBLIC_BASE_PATH
               value: ""
 
