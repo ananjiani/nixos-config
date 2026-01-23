@@ -276,8 +276,8 @@
       authBackend = "gitea";
       workersFile = config.sops.secrets.buildbot_worker_password.path;
       buildSystems = [ "x86_64-linux" ];
-      evalMaxMemorySize = 4096;
-      evalWorkerCount = 4;
+      evalMaxMemorySize = 2048;
+      evalWorkerCount = 2;
       gitea = {
         enable = true;
         instanceUrl = "https://codeberg.org";
