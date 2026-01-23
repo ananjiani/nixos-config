@@ -21,6 +21,7 @@
     ../../../modules/nixos/nvidia.nix # GPU support for Ollama
     ../../../modules/nixos/server/attic-watch-store.nix
     ../../../modules/nixos/server/adguard.nix
+    ../../../modules/nixos/server/keepalived.nix
     ./ai.nix
   ];
 
@@ -47,6 +48,16 @@
     ssh = {
       enable = true;
       permitRootLogin = "prohibit-password";
+    };
+
+    # Keepalived for HA DNS - boromir is secondary
+    keepalived = {
+      enable = true;
+      priority = 90;
+      unicastPeers = [
+        "192.168.1.27" # theoden
+        "192.168.1.26" # samwise
+      ];
     };
 
     # k3s cluster initializer (first server node)

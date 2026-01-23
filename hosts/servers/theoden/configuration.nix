@@ -25,6 +25,7 @@
     ../../../modules/nixos/server/k3s.nix
     ../../../modules/nixos/server/attic-watch-store.nix
     ../../../modules/nixos/server/adguard.nix
+    ../../../modules/nixos/server/keepalived.nix
   ];
 
   services.attic-watch-store.enable = true;
@@ -129,6 +130,16 @@
     ssh = {
       enable = true;
       permitRootLogin = "prohibit-password";
+    };
+
+    # Keepalived for HA DNS - theoden is primary
+    keepalived = {
+      enable = true;
+      priority = 100;
+      unicastPeers = [
+        "192.168.1.21" # boromir
+        "192.168.1.26" # samwise
+      ];
     };
   };
 

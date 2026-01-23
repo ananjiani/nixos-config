@@ -24,6 +24,7 @@
     ../../../modules/nixos/server/k3s.nix
     ../../../modules/nixos/server/attic-watch-store.nix
     ../../../modules/nixos/server/adguard.nix
+    ../../../modules/nixos/server/keepalived.nix
   ];
 
   networking = {
@@ -83,6 +84,16 @@
     ssh = {
       enable = true;
       permitRootLogin = "prohibit-password";
+    };
+
+    # Keepalived for HA DNS - samwise is tertiary
+    keepalived = {
+      enable = true;
+      priority = 80;
+      unicastPeers = [
+        "192.168.1.27" # theoden
+        "192.168.1.21" # boromir
+      ];
     };
   };
 
