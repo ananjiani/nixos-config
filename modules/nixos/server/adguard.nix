@@ -205,6 +205,10 @@ _: {
             domain = "scriberr.dimensiondoor.xyz";
             answer = "192.168.1.52";
           }
+          {
+            domain = "lobe.dimensiondoor.xyz";
+            answer = "192.168.1.52";
+          }
 
           # Forgejo SSH
           {

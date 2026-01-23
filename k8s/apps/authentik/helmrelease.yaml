@@ -68,6 +68,11 @@ spec:
             secretKeyRef:
               name: authentik-secrets
               key: forgejo-client-secret
+        - name: LOBECHAT_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: authentik-secrets
+              key: lobechat-client-secret
 
     worker:
       volumes:
@@ -93,3 +98,8 @@ spec:
             secretKeyRef:
               name: authentik-secrets
               key: forgejo-client-secret
+        - name: LOBECHAT_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: authentik-secrets
+              key: lobechat-client-secret

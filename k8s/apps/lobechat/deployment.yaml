@@ -1,0 +1,117 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lobechat
+  namespace: lobechat
+  labels:
+    app: lobechat
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: lobechat
+  template:
+    metadata:
+      labels:
+        app: lobechat
+    spec:
+      containers:
+        - name: lobechat
+          image: lobehub/lobe-chat-database:v1.143.2
+          ports:
+            - name: http
+              containerPort: 3210
+              protocol: TCP
+          env:
+            # App URLs
+            - name: APP_URL
+              value: "https://lobe.dimensiondoor.xyz"
+            - name: NEXT_PUBLIC_BASE_PATH
+              value: ""
+
+            # Database
+            - name: DATABASE_URL
+              value: "postgresql://lobechat:$(DATABASE_PASSWORD)@postgres:5432/lobechat"
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: lobechat-secrets
+                  key: database-password
+
+            # S3/MinIO
+            - name: S3_ENDPOINT
+              value: "http://minio:9000"
+            - name: S3_BUCKET
+              value: "lobe"
+            - name: S3_ENABLE_PATH_STYLE
+              value: "1"
+            - name: S3_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: lobechat-secrets
+                  key: s3-access-key-id
+            - name: S3_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: lobechat-secrets
+                  key: s3-secret-access-key
+
+            # LLM Backends
+            # Bifrost for cloud providers (DeepSeek, Z.AI, Cliproxy)
+            - name: OPENAI_API_BASE_URL
+              value: "http://bifrost.bifrost.svc:8080/v1"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: lobechat-secrets
+                  key: bifrost-api-key
+            # Direct Ollama connection for local models
+            - name: OLLAMA_BASE_URL
+              value: "http://ollama.bifrost.svc:11434"
+
+            # LobeChat encryption key
+            - name: KEY_VAULTS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: lobechat-secrets
+                  key: key-vaults-secret
+
+            # Auth (Authentik)
+            - name: NEXT_AUTH_SSO_PROVIDERS
+              value: "authentik"
+            - name: NEXT_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: lobechat-secrets
+                  key: next-auth-secret
+            - name: AUTHENTIK_CLIENT_ID
+              value: "lobechat"
+            - name: AUTHENTIK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: lobechat-secrets
+                  key: authentik-client-secret
+            - name: AUTHENTIK_ISSUER
+              value: "https://auth.dimensiondoor.xyz/application/o/lobechat/"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "100m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5

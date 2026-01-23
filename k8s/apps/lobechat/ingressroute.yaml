@@ -1,0 +1,26 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: lobechat
+  namespace: lobechat
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "LobeChat"
+    gethomepage.dev/group: "AI"
+    gethomepage.dev/icon: "si-lobechat"
+    gethomepage.dev/description: "AI Agent Workspace"
+    gethomepage.dev/href: "https://lobe.dimensiondoor.xyz"
+    gethomepage.dev/pod-selector: "app=lobechat"
+    gethomepage.dev/siteMonitor: "http://lobechat.lobechat.svc:3210/api/health"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`lobe.dimensiondoor.xyz`)
+      kind: Rule
+      services:
+        - name: lobechat
+          port: 3210
+  tls:
+    secretName: lobechat-tls

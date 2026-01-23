@@ -172,6 +172,17 @@ resource "cloudflare_record" "scriberr" {
   comment = "Scriberr AI transcription (internal) - managed by Terraform"
 }
 
+# LobeChat AI workspace
+resource "cloudflare_record" "lobe" {
+  zone_id = local.zone_id
+  name    = "lobe"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "LobeChat AI workspace (internal) - managed by Terraform"
+}
+
 # =============================================================================
 # Cloudflare Tunnel Services
 # =============================================================================

@@ -126,3 +126,43 @@ data:
           meta_launch_url: https://git.dimensiondoor.xyz
           meta_icon: https://forgejo.org/favicon.ico
           policy_engine_mode: any
+
+  lobechat.yaml: |
+    # LobeChat OAuth2/OIDC Configuration
+    version: 1
+    metadata:
+      name: LobeChat SSO
+    entries:
+      # OAuth2 Provider for LobeChat
+      - model: authentik_providers_oauth2.oauth2provider
+        id: lobechat-provider
+        identifiers:
+          name: LobeChat
+        attrs:
+          name: LobeChat
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
+          client_type: confidential
+          client_id: lobechat
+          client_secret: !Env [LOBECHAT_CLIENT_SECRET, changeme]
+          redirect_uris:
+            - url: https://lobe.dimensiondoor.xyz/api/auth/callback/authentik
+              matching_mode: strict
+          property_mappings:
+            - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
+            - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-email]]
+            - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
+          sub_mode: user_email
+
+      # Application for LobeChat
+      - model: authentik_core.application
+        identifiers:
+          slug: lobechat
+        attrs:
+          name: LobeChat
+          slug: lobechat
+          provider: !KeyOf lobechat-provider
+          meta_launch_url: https://lobe.dimensiondoor.xyz
+          meta_icon: https://lobehub.com/icon-512x512.png
+          policy_engine_mode: any
