@@ -34,12 +34,10 @@ spec:
 
             # Database
             - name: DATABASE_URL
-              value: "postgresql://lobechat:$(DATABASE_PASSWORD)@postgres:5432/lobechat"
-            - name: DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: lobechat-secrets
-                  key: database-password
+                  key: database-url
 
             # S3/MinIO
             - name: S3_ENDPOINT
