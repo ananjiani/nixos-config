@@ -159,7 +159,7 @@ Add your app to `k8s/apps/kustomization.yaml`:
 
 ```yaml
 resources:
-  - adguard
+  - attic
   - your-app    # Add this line
 ```
 
@@ -214,21 +214,21 @@ spec:
 - Always include both `web` and `websecure` entrypoints. Traefik redirects HTTP to HTTPS, so if you only have `web`, HTTPS requests will 404.
 - Helm charts often create services with different names/ports than raw manifests would. Always verify with `kubectl get svc -n your-app`.
 
-**DNS:** Add a rewrite in `k8s/apps/adguard/helmrelease.yaml` under `values.bootstrapConfig.filtering.rewrites`:
+**DNS:** Add a rewrite in `modules/nixos/server/adguard.nix` under `filtering.rewrites`:
 
-```yaml
-values:
-  bootstrapConfig:
-    filtering:
-      rewrites:
-        # ... existing rewrites ...
-        - domain: your-app.lan
-          answer: 192.168.1.52  # Traefik LoadBalancer IP
+```nix
+filtering.rewrites = [
+  # ... existing rewrites ...
+  {
+    domain = "your-app.lan";
+    answer = "192.168.1.52";  # Traefik LoadBalancer IP
+  }
+];
 ```
 
-After updating DNS rewrites, the AdGuard pod needs to restart to pick up changes. Flux will handle this on reconcile, or manually:
+After updating DNS rewrites, deploy to the AdGuard servers:
 ```bash
-ssh root@boromir.lan "kubectl rollout restart deployment -n adguard"
+deploy .#theoden && deploy .#boromir && deploy .#samwise
 ```
 
 ## Homepage Auto-Discovery
@@ -263,16 +263,16 @@ metadata:
 
 ### Homepage Widgets
 
-For services with Homepage widget support (AdGuard, Immich, etc.), add widget annotations:
+For services with Homepage widget support (Immich, etc.), add widget annotations:
 
 ```yaml
 metadata:
   annotations:
     # ... basic annotations above ...
-    gethomepage.dev/widget.type: "adguard"
-    gethomepage.dev/widget.url: "http://adguard-home-http.adguard.svc:80"
-    gethomepage.dev/widget.username: "{{HOMEPAGE_VAR_ADGUARD_USER}}"
-    gethomepage.dev/widget.password: "{{HOMEPAGE_VAR_ADGUARD_PASS}}"
+    gethomepage.dev/widget.type: "immich"
+    gethomepage.dev/widget.url: "http://immich-server.immich.svc:2283"
+    gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_IMMICH_API_KEY}}"
+    gethomepage.dev/widget.version: "2"
 ```
 
 **Credentials:** Use `{{HOMEPAGE_VAR_*}}` syntax - these are replaced with environment variables from the Homepage deployment. Store secrets in `k8s/apps/homepage/secret.yaml` (SOPS-encrypted) and reference via `envFrom` in the deployment.

@@ -318,7 +318,7 @@ resource "opnsense_kea_subnet" "lan" {
 
   pools       = ["192.168.1.100-192.168.1.254"]
   routers     = [var.opnsense_host]
-  dns_servers = ["192.168.1.53"] # AdGuard Home (k8s MetalLB VIP)
+  dns_servers = ["192.168.1.53"] # AdGuard Home (keepalived VIP)
 }
 
 resource "opnsense_kea_reservation" "kuwfi_ap" {
@@ -451,13 +451,14 @@ resource "opnsense_kea_reservation" "theoden" {
 # =============================================================================
 # DNS Configuration
 # =============================================================================
-# DNS is handled by AdGuard Home running in k3s with a MetalLB LoadBalancer IP.
+# DNS is handled by AdGuard Home running on NixOS VMs (theoden, boromir, samwise)
+# with keepalived providing automatic failover via floating VIP 192.168.1.53.
 # DHCP hands out 192.168.1.53 as the DNS server (see dns_servers in kea_subnet).
 #
 # MANUAL STEPS REQUIRED:
 # 1. Disable Unbound: Services → Unbound DNS → Uncheck "Enable"
 # 2. Set OPNsense DNS: System → Settings → General → DNS servers: 192.168.1.1
-#    (Use router IP as fallback - AdGuard may be unavailable during k3s bootstrap)
+#    (Use router IP as fallback)
 #    Uncheck "Allow DNS server list to be overridden by DHCP/PPP on WAN"
 
 # resource "opnsense_kea_reservation" "jellyfin" {
