@@ -20,6 +20,7 @@
     ../../../modules/nixos/server/k3s.nix
     ../../../modules/nixos/nvidia.nix # GPU support for Ollama
     ../../../modules/nixos/server/attic-watch-store.nix
+    ../../../modules/nixos/server/adguard.nix
     ./ai.nix
   ];
 

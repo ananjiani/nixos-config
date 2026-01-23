@@ -24,6 +24,7 @@
     ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/k3s.nix
     ../../../modules/nixos/server/attic-watch-store.nix
+    ../../../modules/nixos/server/adguard.nix
   ];
 
   services.attic-watch-store.enable = true;

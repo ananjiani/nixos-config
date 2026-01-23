@@ -13,11 +13,8 @@ in
     mullvadCustomDns = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "Custom DNS servers for Mullvad VPN";
-      example = [
-        "192.168.1.53"
-        "192.168.1.1"
-      ];
+      description = "Custom DNS servers for Mullvad VPN (use dns.servers from lib/dns.nix)";
+      example = lib.literalExpression "(import ../../lib/dns.nix).servers";
     };
   };
 

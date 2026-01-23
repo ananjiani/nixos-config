@@ -23,6 +23,7 @@
     ../../../modules/nixos/server/zigbee2mqtt.nix
     ../../../modules/nixos/server/k3s.nix
     ../../../modules/nixos/server/attic-watch-store.nix
+    ../../../modules/nixos/server/adguard.nix
   ];
 
   networking = {

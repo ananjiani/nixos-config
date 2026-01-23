@@ -11,6 +11,7 @@
 
 let
   cfg = config.modules.k3s;
+  dns = import ../../../lib/dns.nix;
 in
 {
   options.modules.k3s = {
@@ -92,12 +93,8 @@ in
       );
     };
 
-    # Fallback DNS for cluster resilience
-    # If AdGuard (primary DNS) is down, nodes can still resolve via router
-    networking.nameservers = [
-      "192.168.1.53" # AdGuard on k8s
-      "192.168.1.1" # Router fallback
-    ];
+    # DNS servers for cluster nodes (AdGuard instances + fallback)
+    networking.nameservers = dns.servers;
 
     # Firewall rules for k3s cluster
     networking.firewall = {

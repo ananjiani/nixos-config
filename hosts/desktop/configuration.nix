@@ -9,6 +9,9 @@
   ...
 }:
 
+let
+  dns = import ../../lib/dns.nix;
+in
 {
   imports = [
     ./hardware-configuration.nix
@@ -47,11 +50,8 @@
       acceptDns = false; # Use AdGuard directly, avoid DNS conflicts with Mullvad
     };
 
-    # Mullvad custom DNS (AdGuard + router fallback)
-    privacy.mullvadCustomDns = [
-      "192.168.1.53" # AdGuard
-      "192.168.1.1" # Router fallback
-    ];
+    # Mullvad custom DNS (AdGuard instances + fallback)
+    privacy.mullvadCustomDns = dns.servers;
 
     # SSH server
     ssh.enable = true;
@@ -59,12 +59,7 @@
 
   networking = {
     hostName = "ammars-pc";
-    nameservers = [
-      "192.168.1.53" # AdGuard DNS
-      "192.168.1.1" # Router fallback
-      "1.1.1.1" # Cloudflare
-      "9.9.9.9" # Quad9
-    ];
+    nameservers = dns.servers;
     # Allow Tailscale traffic (100.64.0.0/10) to bypass Mullvad VPN
     # Mullvad's LAN sharing only covers RFC1918 ranges, not CGNAT
     nftables.tables.mullvad-tailscale-bypass = {

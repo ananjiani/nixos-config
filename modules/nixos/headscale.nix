@@ -3,6 +3,7 @@
 
 let
   cfg = config.modules.headscale;
+  dns = import ../lib/dns.nix;
 in
 {
   options.modules.headscale = {
@@ -38,11 +39,8 @@ in
         dns = {
           base_domain = cfg.baseDomain;
           magic_dns = true;
-          # Use AdGuard Home on k8s (MetalLB VIP) for .lan resolution
-          # AdGuard forwards external queries to upstream DNS
-          nameservers.global = [
-            "192.168.1.53"
-          ];
+          # Use AdGuard Home for .lan resolution
+          nameservers.global = dns.servers;
         };
 
         prefixes = {
