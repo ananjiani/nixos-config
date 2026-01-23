@@ -26,6 +26,9 @@ spec:
               containerPort: 3210
               protocol: TCP
           env:
+            # TLS workaround for internal services
+            - name: NODE_TLS_REJECT_UNAUTHORIZED
+              value: "0"
             # App URLs
             - name: APP_URL
               value: "https://lobe.dimensiondoor.xyz"
