@@ -183,6 +183,17 @@ resource "cloudflare_record" "lobe" {
   comment = "LobeChat AI workspace (internal) - managed by Terraform"
 }
 
+# LobeChat MinIO S3 storage
+resource "cloudflare_record" "lobe_s3" {
+  zone_id = local.zone_id
+  name    = "lobe-s3"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "LobeChat S3 storage (internal) - managed by Terraform"
+}
+
 # =============================================================================
 # Cloudflare Tunnel Services
 # =============================================================================

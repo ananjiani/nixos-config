@@ -42,6 +42,8 @@ spec:
             # S3/MinIO
             - name: S3_ENDPOINT
               value: "http://minio:9000"
+            - name: S3_PUBLIC_DOMAIN
+              value: "https://lobe-s3.dimensiondoor.xyz"
             - name: S3_BUCKET
               value: "lobe"
             - name: S3_ENABLE_PATH_STYLE

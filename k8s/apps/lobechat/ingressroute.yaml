@@ -24,3 +24,21 @@ spec:
           port: 3210
   tls:
     secretName: lobechat-tls
+---
+# MinIO S3 endpoint for file uploads
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: lobechat-minio
+  namespace: lobechat
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`lobe-s3.dimensiondoor.xyz`)
+      kind: Rule
+      services:
+        - name: minio
+          port: 9000
+  tls:
+    secretName: lobechat-minio-tls

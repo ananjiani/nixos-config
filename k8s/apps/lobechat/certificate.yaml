@@ -11,3 +11,16 @@ spec:
     kind: ClusterIssuer
   dnsNames:
     - lobe.dimensiondoor.xyz
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: lobechat-minio-tls
+  namespace: lobechat
+spec:
+  secretName: lobechat-minio-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - lobe-s3.dimensiondoor.xyz
