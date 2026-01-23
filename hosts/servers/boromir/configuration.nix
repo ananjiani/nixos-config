@@ -11,7 +11,7 @@
   imports = [
     ./disk-config.nix
     inputs.home-manager-unstable.nixosModules.home-manager
-    inputs.comfyui-nix.nixosModules.default
+    inputs.quadlet-nix.nixosModules.quadlet
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/ssh.nix
     ../../../modules/nixos/nfs-client.nix

@@ -78,6 +78,7 @@
       url = "github:utensils/comfyui-nix";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+    quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
   };
 
   outputs =
@@ -180,7 +181,6 @@
             ./hosts/servers/boromir/configuration.nix
             inputs.sops-nix.nixosModules.sops
             inputs.disko.nixosModules.disko
-            { nixpkgs.overlays = [ inputs.comfyui-nix.overlays.default ]; }
           ];
         };
 

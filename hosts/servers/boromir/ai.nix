@@ -39,14 +39,26 @@ in
     ];
   };
 
-  # ComfyUI for image generation with Flux models
-  services.comfyui = {
-    enable = true;
-    cuda = true;
-    enableManager = true;
-    port = 8188;
-    listenAddress = "0.0.0.0";
-    dataDir = "/var/lib/comfyui";
-    openFirewall = false; # Handled in main firewall config
+  # Podman for container workloads (ComfyUI)
+  virtualisation.podman.enable = true;
+
+  # ComfyUI via Quadlet container (latest version for Flux.2 Klein support)
+  # Using yanwk/comfyui-boot: CUDA 12.6, Python 3.12, includes ComfyUI Manager
+  # Logs: journalctl -u comfyui.service
+  virtualisation.quadlet.containers.comfyui = {
+    containerConfig = {
+      image = "docker.io/yanwk/comfyui-boot:cu126-cn";
+      publishPorts = [ "8188:8188" ];
+      volumes = [
+        "/var/lib/comfyui/models:/app/ComfyUI/models"
+        "/var/lib/comfyui/output:/app/ComfyUI/output"
+        "/var/lib/comfyui/input:/app/ComfyUI/input"
+        "/var/lib/comfyui/custom_nodes:/app/ComfyUI/custom_nodes"
+      ];
+      environments = {
+        CLI_ARGS = "--listen 0.0.0.0";
+      };
+      podmanArgs = [ "--device=nvidia.com/gpu=all" ];
+    };
   };
 }
