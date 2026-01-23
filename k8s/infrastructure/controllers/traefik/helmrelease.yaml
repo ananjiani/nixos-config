@@ -49,8 +49,9 @@ spec:
           default: true
         exposedPort: 443
         protocol: TCP
-        tls:
-          enabled: true
+        http:
+          tls:
+            enabled: true
 
     # Enable Traefik dashboard (internal only)
     ingressRoute:
