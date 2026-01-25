@@ -36,9 +36,9 @@ spec:
             - name: DATABASE_URL
               value: "postgres:$(POSTGRES_PASSWORD)@postgres:5432/comet"
 
-            # Proxy streaming disabled - stremio-server already handles this
+            # Proxy streaming - routes debrid traffic through cluster's stable connection
             - name: PROXY_DEBRID_STREAM
-              value: "False"
+              value: "True"
             - name: PROXY_DEBRID_STREAM_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -79,13 +79,17 @@ spec:
                   key: torbox-api-key
             - name: SCRAPE_TORBOX
               value: "True"
+
+            # Disable StremThru - use Torbox directly
+            - name: STREMTHRU_URL
+              value: ""
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "100m"
+              memory: "512Mi"
+              cpu: "250m"
             limits:
-              memory: "1Gi"
-              cpu: "500m"
+              memory: "2Gi"
+              cpu: "2"
           livenessProbe:
             httpGet:
               path: /health
