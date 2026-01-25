@@ -209,6 +209,20 @@ _: {
             domain = "lobe.dimensiondoor.xyz";
             answer = "192.168.1.52";
           }
+          {
+            domain = "ntfy.dimensiondoor.xyz";
+            answer = "192.168.1.52";
+          }
+          {
+            domain = "ntfy.lan";
+            answer = "192.168.1.52";
+          }
+
+          # Wyoming Whisper (Keepalived VIP - rohan primary, boromir backup)
+          {
+            domain = "whisper.lan";
+            answer = "192.168.1.54";
+          }
 
           # Forgejo SSH
           {

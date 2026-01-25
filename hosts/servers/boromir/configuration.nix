@@ -78,6 +78,45 @@
     secrets.tailscale_authkey = { };
   };
 
+  # Keepalived notify scripts for Wyoming Whisper failover
+  # These start/stop the wyoming-whisper service when VIP ownership changes
+  environment.etc = {
+    "keepalived/whisper-master.sh" = {
+      mode = "0755";
+      text = ''
+        #!/bin/bash
+        logger "Keepalived WHISPER: Becoming MASTER - starting wyoming-whisper"
+        systemctl start wyoming-whisper
+      '';
+    };
+    "keepalived/whisper-backup.sh" = {
+      mode = "0755";
+      text = ''
+        #!/bin/bash
+        logger "Keepalived WHISPER: Becoming BACKUP - stopping wyoming-whisper"
+        systemctl stop wyoming-whisper
+      '';
+    };
+  };
+
+  # Second VRRP instance for Wyoming Whisper HA (alongside adguard_vip from module)
+  # Rohan (192.168.1.24) is MASTER with priority 100
+  # Boromir (this host) is BACKUP with priority 50
+  services.keepalived.vrrpInstances.whisper_vip = {
+    interface = "ens18";
+    state = "BACKUP";
+    virtualRouterId = 54;
+    priority = 50;
+    noPreempt = false;
+    unicastPeers = [ "192.168.1.24" ]; # rohan
+    virtualIps = [ { addr = "192.168.1.54/24"; } ];
+    extraConfig = ''
+      notify_master "/etc/keepalived/whisper-master.sh"
+      notify_backup "/etc/keepalived/whisper-backup.sh"
+      notify_fault "/etc/keepalived/whisper-backup.sh"
+    '';
+  };
+
   # Docker for model conversion (bypasses NixOS library isolation)
   virtualisation.docker.enable = true;
   hardware.nvidia-container-toolkit.enable = true; # GPU passthrough for containers

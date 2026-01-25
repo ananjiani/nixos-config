@@ -12,7 +12,9 @@ resources:
   - home-assistant
   - homepage
   - immich
+  - ntfy
   - open-webui
+  - voicemail-receiver
   - scriberr
   - stremio
   - bifrost

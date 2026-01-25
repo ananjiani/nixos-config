@@ -1,0 +1,22 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: voicemail-config
+  namespace: voicemail-receiver
+data:
+  # Wyoming Whisper endpoint (Keepalived VIP)
+  WHISPER_HOST: "whisper.lan"
+  WHISPER_PORT: "10300"
+
+  # ntfy endpoint (in-cluster service)
+  NTFY_URL: "http://ntfy.ntfy.svc.cluster.local"
+  NTFY_TOPIC: "voicemail"
+
+  # Storage
+  AUDIO_DIR: "/data/voicemails"
+  GREETING_PATH: "/app/greetings/greeting.wav"
+
+  # Recording settings
+  MAX_RECORDING_SECONDS: "120"
+  SILENCE_TIMEOUT_SECONDS: "5"

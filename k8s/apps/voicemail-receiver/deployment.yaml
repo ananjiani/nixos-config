@@ -1,0 +1,56 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voicemail-receiver
+  namespace: voicemail-receiver
+  labels:
+    app: voicemail-receiver
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # Required for Longhorn RWO volumes
+  selector:
+    matchLabels:
+      app: voicemail-receiver
+  template:
+    metadata:
+      labels:
+        app: voicemail-receiver
+    spec:
+      containers:
+        - name: voicemail-receiver
+          # TODO: Build and push the voicemail-receiver container image
+          # See: /home/ammar/.claude/plans/magical-drifting-lightning.md for Python app code
+          # Build with: docker build -t your-registry/voicemail-receiver:latest .
+          image: ghcr.io/ananjiani/voicemail-receiver:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5060
+              protocol: UDP
+              name: sip
+          envFrom:
+            - configMapRef:
+                name: voicemail-config
+            - secretRef:
+                name: voicemail-secrets
+          volumeMounts:
+            - name: voicemail-storage
+              mountPath: /data/voicemails
+            - name: greeting
+              mountPath: /app/greetings
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        - name: voicemail-storage
+          persistentVolumeClaim:
+            claimName: voicemail-storage
+        - name: greeting
+          configMap:
+            name: voicemail-greeting
+            optional: true  # Allow deployment without greeting initially

@@ -1,6 +1,7 @@
 {
   pkgs,
   pkgs-stable,
+  lib,
   ...
 }:
 let
@@ -39,29 +40,57 @@ in
     ];
   };
 
-  # Podman for container workloads (ComfyUI)
-  virtualisation.podman.enable = true;
+  # Podman for container workloads
+  virtualisation = {
+    podman.enable = true;
 
-  # ComfyUI via Quadlet container (latest version for Flux.2 Klein support)
-  # Using yanwk/comfyui-boot: CUDA 12.6, Python 3.12, includes ComfyUI Manager
-  # Logs: journalctl -u comfyui.service
-  virtualisation.quadlet.containers.comfyui = {
-    containerConfig = {
-      image = "docker.io/yanwk/comfyui-boot:cu126-slim";
-      publishPorts = [ "8188:8188" ];
-      volumes = [
-        # Container state (ComfyUI installation, custom_nodes, etc.)
-        "/var/lib/comfyui/storage:/root"
-        # Models - mounted after /root so it overlays the models dir
-        "/var/lib/comfyui/models:/root/ComfyUI/models"
-        # User content
-        "/var/lib/comfyui/input:/root/ComfyUI/input"
-        "/var/lib/comfyui/output:/root/ComfyUI/output"
-      ];
-      environments = {
-        CLI_ARGS = "--listen 0.0.0.0";
+    quadlet.containers = {
+      # ComfyUI via Quadlet container (latest version for Flux.2 Klein support)
+      # Using yanwk/comfyui-boot: CUDA 12.6, Python 3.12, includes ComfyUI Manager
+      # Logs: journalctl -u comfyui.service
+      comfyui = {
+        containerConfig = {
+          image = "docker.io/yanwk/comfyui-boot:cu126-slim";
+          publishPorts = [ "8188:8188" ];
+          volumes = [
+            # Container state (ComfyUI installation, custom_nodes, etc.)
+            "/var/lib/comfyui/storage:/root"
+            # Models - mounted after /root so it overlays the models dir
+            "/var/lib/comfyui/models:/root/ComfyUI/models"
+            # User content
+            "/var/lib/comfyui/input:/root/ComfyUI/input"
+            "/var/lib/comfyui/output:/root/ComfyUI/output"
+          ];
+          environments = {
+            CLI_ARGS = "--listen 0.0.0.0";
+          };
+          podmanArgs = [ "--device=nvidia.com/gpu=all" ];
+        };
       };
-      podmanArgs = [ "--device=nvidia.com/gpu=all" ];
+
+      # Wyoming Faster Whisper for voicemail transcription (Keepalived BACKUP)
+      # Primary runs on rohan; this instance is on-demand via Keepalived failover.
+      # Logs: journalctl -u wyoming-whisper.service
+      wyoming-whisper = {
+        containerConfig = {
+          image = "docker.io/rhasspy/wyoming-whisper:latest";
+          publishPorts = [ "10300:10300" ];
+          volumes = [ "/var/lib/wyoming-whisper:/data" ];
+          podmanArgs = [ "--device=nvidia.com/gpu=all" ];
+          exec = "--model medium --language en --uri tcp://0.0.0.0:10300 --data-dir /data --download-dir /data";
+        };
+      };
     };
   };
+
+  # Disable auto-start - Keepalived notify scripts manage this service
+  systemd.services.wyoming-whisper.wantedBy = lib.mkForce [ ];
+
+  # Data directory for whisper models
+  systemd.tmpfiles.rules = [
+    "d /var/lib/wyoming-whisper 0755 root root -"
+  ];
+
+  # Firewall - allow Wyoming protocol
+  networking.firewall.allowedTCPPorts = [ 10300 ];
 }
