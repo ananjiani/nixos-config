@@ -15,7 +15,7 @@
     }
   ],
   "timezone": "America/Chicago",
-  "schedule": ["before 6am on sunday"],
+  "schedule": ["before 6am"],
   "labels": ["dependencies", "automated"],
   "packageRules": [
     {
