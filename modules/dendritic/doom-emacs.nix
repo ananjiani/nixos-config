@@ -61,6 +61,7 @@ in
                 ripgrep
                 nodejs
                 nodePackages.prettier
+                mermaid-cli
                 (aspellWithDicts (
                   d: with d; [
                     en
