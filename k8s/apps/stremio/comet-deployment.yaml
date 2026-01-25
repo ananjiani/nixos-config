@@ -36,9 +36,9 @@ spec:
             - name: DATABASE_URL
               value: "postgres:$(POSTGRES_PASSWORD)@postgres:5432/comet"
 
-            # Proxy streaming - routes all debrid traffic through server IP
+            # Proxy streaming disabled - stremio-server already handles this
             - name: PROXY_DEBRID_STREAM
-              value: "True"
+              value: "False"
             - name: PROXY_DEBRID_STREAM_PASSWORD
               valueFrom:
                 secretKeyRef:
