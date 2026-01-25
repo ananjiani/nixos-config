@@ -1,0 +1,29 @@
+---
+# Wyoming Faster Whisper with GPU acceleration via Podman + Quadlet
+#
+# Deploys wyoming-whisper container with NVIDIA GPU support.
+# Used as the primary transcription service for voicemail.
+# Requires NVIDIA container toolkit (set up by immich-ml or nvidia-fan-control role).
+
+- name: Create wyoming-whisper data directory
+  ansible.builtin.file:
+    path: /var/lib/wyoming-whisper
+    state: directory
+    mode: '0755'
+
+- name: Deploy wyoming-whisper Quadlet container
+  ansible.builtin.template:
+    src: wyoming-whisper.container.j2
+    dest: /etc/containers/systemd/wyoming-whisper.container
+    mode: '0644'
+  notify: Reload systemd and restart wyoming-whisper
+
+- name: Reload systemd to pick up Quadlet unit
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable and start wyoming-whisper service
+  ansible.builtin.systemd:
+    name: wyoming-whisper
+    enabled: true
+    state: started

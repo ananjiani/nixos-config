@@ -1,0 +1,7 @@
+---
+- name: Reload systemd and restart wyoming-whisper
+  ansible.builtin.systemd:
+    daemon_reload: true
+    name: wyoming-whisper
+    state: restarted
+    enabled: true

@@ -1,0 +1,26 @@
+---
+# Deploy Wyoming Faster Whisper with GPU acceleration on rohan
+#
+# This playbook sets up the wyoming-whisper container with NVIDIA GPU
+# support using Podman and Quadlet. The service is exposed on port 10300
+# and provides transcription services via the Wyoming protocol.
+#
+# Usage:
+#   cd ansible && ansible-playbook playbooks/proxmox-wyoming-whisper.yml
+#
+# Prerequisites:
+#   - NVIDIA drivers must be installed (nvidia-fan-control role handles this)
+#   - Running kernel must be compatible with NVIDIA drivers (6.14 pinned)
+#
+# Variables (optional, with defaults):
+#   - wyoming_whisper_version: Container image tag (default: latest)
+#   - wyoming_whisper_model: Whisper model size (default: medium)
+#   - wyoming_whisper_language: Language code (default: en)
+#   - wyoming_whisper_port: Host port (default: 10300)
+
+- name: Deploy Wyoming Whisper with GPU on rohan
+  hosts: rohan
+  become: true
+  roles:
+    - nvidia-fan-control  # Ensure GPU drivers and container toolkit are set up
+    - wyoming-whisper

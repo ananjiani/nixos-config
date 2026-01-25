@@ -74,5 +74,5 @@ spec:
               - secret:
                   name: forgejo-runner
                   items:
-                    - key: .runner
+                    - key: runner
                       path: .runner

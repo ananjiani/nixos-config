@@ -1,0 +1,41 @@
+# Keepalived configuration for Wyoming Whisper HA
+#
+# MASTER: Rohan (this host) - priority 100
+# BACKUP: Boromir (192.168.1.21) - priority 50
+# VIP: 192.168.1.54 (whisper.lan)
+
+global_defs {
+    router_id {{ ansible_hostname | upper }}_WHISPER
+    script_user root
+    enable_script_security
+}
+
+vrrp_script check_whisper {
+    script "/usr/bin/nc -z localhost {{ wyoming_whisper_port | default('10300') }}"
+    interval 5
+    weight -60
+    fall 3
+    rise 2
+}
+
+vrrp_instance WHISPER {
+    interface {{ keepalived_interface | default('vmbr0') }}
+    state MASTER
+    virtual_router_id 54
+    priority 100
+    nopreempt false
+
+    # Unicast for Proxmox VM communication
+    unicast_src_ip {{ ansible_host }}
+    unicast_peer {
+        192.168.1.21  # boromir
+    }
+
+    virtual_ipaddress {
+        192.168.1.54/24
+    }
+
+    track_script {
+        check_whisper
+    }
+}
