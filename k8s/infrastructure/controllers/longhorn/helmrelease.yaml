@@ -26,7 +26,7 @@ spec:
       # Use less aggressive resource settings for homelab
       guaranteedInstanceManagerCPU: 5
       # Faster failover: delete pods when node goes down (instead of waiting for k8s)
-      nodeDownPodDeletionPolicy: delete-deployment-pod
+      nodeDownPodDeletionPolicy: delete-statefulset-pod
     persistence:
       # Make Longhorn the default storage class
       defaultClass: true
