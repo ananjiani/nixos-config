@@ -28,7 +28,7 @@ spec:
               value: /certs/client
           volumeMounts:
             - name: docker-certs
-              mountPath: /certs/client
+              mountPath: /certs
               readOnly: true
             - name: runner-data
               mountPath: /data
