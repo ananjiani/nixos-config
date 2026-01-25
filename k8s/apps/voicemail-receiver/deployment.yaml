@@ -20,15 +20,15 @@ spec:
     spec:
       containers:
         - name: voicemail-receiver
-          # TODO: Build and push the voicemail-receiver container image
-          # See: /home/ammar/.claude/plans/magical-drifting-lightning.md for Python app code
-          # Build with: docker build -t your-registry/voicemail-receiver:latest .
+          # Webhook-based voicemail receiver
+          # Receives Telnyx webhooks, transcribes via Wyoming Whisper, notifies via ntfy
+          # Build from: https://github.com/ananjiani/voicemail-receiver (or your repo)
           image: ghcr.io/ananjiani/voicemail-receiver:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 5060
-              protocol: UDP
-              name: sip
+            - containerPort: 8080
+              protocol: TCP
+              name: http
           envFrom:
             - configMapRef:
                 name: voicemail-config
@@ -37,20 +37,26 @@ spec:
           volumeMounts:
             - name: voicemail-storage
               mountPath: /data/voicemails
-            - name: greeting
-              mountPath: /app/greetings
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
+              memory: "64Mi"
+              cpu: "50m"
             limits:
-              memory: "512Mi"
-              cpu: "500m"
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
       volumes:
         - name: voicemail-storage
           persistentVolumeClaim:
             claimName: voicemail-storage
-        - name: greeting
-          configMap:
-            name: voicemail-greeting
-            optional: true  # Allow deployment without greeting initially

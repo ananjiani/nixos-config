@@ -5,6 +5,10 @@ metadata:
   name: voicemail-config
   namespace: voicemail-receiver
 data:
+  # Server settings
+  PORT: "8080"
+  HOST: "0.0.0.0"
+
   # Wyoming Whisper endpoint (Keepalived VIP)
   WHISPER_HOST: "whisper.lan"
   WHISPER_PORT: "10300"
@@ -13,10 +17,13 @@ data:
   NTFY_URL: "http://ntfy.ntfy.svc.cluster.local"
   NTFY_TOPIC: "voicemail"
 
-  # Storage
-  AUDIO_DIR: "/data/voicemails"
-  GREETING_PATH: "/app/greetings/greeting.wav"
-
-  # Recording settings
+  # Voicemail settings
+  GREETING_TEXT: "Please leave a message after the beep. Press any key when finished."
   MAX_RECORDING_SECONDS: "120"
   SILENCE_TIMEOUT_SECONDS: "5"
+
+  # Storage (for saving recordings locally)
+  AUDIO_DIR: "/data/voicemails"
+
+  # Public URL for Telnyx callbacks (set in secret if sensitive)
+  # WEBHOOK_BASE_URL is set in secret since it reveals your domain

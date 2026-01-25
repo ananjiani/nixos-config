@@ -1,0 +1,13 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: voicemail-tls
+  namespace: voicemail-receiver
+spec:
+  secretName: voicemail-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - voicemail.dimensiondoor.xyz
