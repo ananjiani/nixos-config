@@ -20,7 +20,9 @@
   "packageRules": [
     {
       "matchUpdateTypes": ["patch"],
-      "automerge": true
+      "automerge": true,
+      "automergeType": "pr",
+      "ignoreTests": false
     },
     {
       "matchUpdateTypes": ["major"],
@@ -29,7 +31,10 @@
     {
       "matchManagers": ["nix"],
       "groupName": "nix flake inputs",
-      "description": "Group all Nix flake input updates together"
+      "description": "Group all Nix flake input updates together",
+      "automerge": true,
+      "automergeType": "pr",
+      "ignoreTests": false
     }
   ],
   "flux": {
