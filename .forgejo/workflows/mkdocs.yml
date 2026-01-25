@@ -1,0 +1,27 @@
+name: Deploy Postmortems
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'flake.nix'
+      - 'flake.lock'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+
+      - uses: https://github.com/cachix/install-nix-action@v30
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Build site with Nix
+        run: |
+          nix build .#documentation --out-link site
+
+      - uses: https://codeberg.org/git-pages/action@v1
+        with:
+          folder: site

@@ -1,0 +1,4 @@
+site_name: Homelab Postmortems
+docs_dir: postmortems
+theme:
+  name: material

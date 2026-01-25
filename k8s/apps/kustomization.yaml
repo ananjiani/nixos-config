@@ -7,6 +7,7 @@ resources:
   - chromadb
   - cliproxy
   - forgejo
+  - forgejo-runner
   - headscale
   - home-assistant
   - homepage

@@ -79,6 +79,10 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
+    mkdocs-flake = {
+      url = "github:applicative-systems/mkdocs-flake";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
   };
 
   outputs =
@@ -122,7 +126,13 @@
         imports = [
           inputs.flake-aspects.flakeModule
           (inputs.import-tree ./modules/dendritic)
+          inputs.mkdocs-flake.flakeModules.default
         ];
+
+        # MkDocs documentation configuration (perSystem option)
+        perSystem = _: {
+          documentation.mkdocs-root = ./docs;
+        };
       };
     in
     {
@@ -417,6 +427,12 @@
         };
       }
       // deploy-rs.lib.${system}.deployChecks self.deploy;
+
+      # Packages from dendriticFlake (mkdocs-flake documentation)
+      packages.${system} = dendriticFlake.packages.${system} or { };
+
+      # Apps from dendriticFlake (mkdocs-flake watch-documentation)
+      apps.${system} = dendriticFlake.apps.${system} or { };
 
       # Development shell with pre-commit hooks and deploy-rs
       devShells.${system}.default = pkgs.mkShell {
