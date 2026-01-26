@@ -434,8 +434,10 @@
       }
       // deploy-rs.lib.${system}.deployChecks self.deploy;
 
-      # Packages from documentationFlake (mkdocs-flake)
-      packages.${system} = documentationFlake.packages.${system} or { };
+      # Packages from documentationFlake (mkdocs-flake) plus utilities
+      packages.${system} = (documentationFlake.packages.${system} or { }) // {
+        inherit (pkgs) attic-client;
+      };
 
       # Apps from documentationFlake (mkdocs-flake watch-documentation)
       apps.${system} = documentationFlake.apps.${system} or { };

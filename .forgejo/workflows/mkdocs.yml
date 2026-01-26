@@ -34,8 +34,8 @@ jobs:
 
       - name: Push to Attic cache
         run: |
-          nix run nixpkgs#attic-client -- login local http://192.168.1.27:8080 ${{ secrets.ATTIC_TOKEN }}
-          nix run nixpkgs#attic-client -- push local:middle-earth result
+          nix run .#attic-client -- login local http://192.168.1.27:8080 ${{ secrets.ATTIC_TOKEN }}
+          nix run .#attic-client -- push local:middle-earth result
 
       - name: Prepare site for deploy
         run: cp -rL result _site
