@@ -5,6 +5,7 @@
 {
   config,
   lib,
+  pkgs,
   inputs,
   ...
 }:
@@ -48,5 +49,20 @@ in
         };
       };
     };
+
+    # Override activation scripts to use Nix store paths instead of /bin/mkdir
+    # Workaround for https://github.com/clawdbot/nix-clawdbot/pull/1
+    home.activation.clawdbotDirs = lib.mkForce (
+      lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        ${pkgs.coreutils}/bin/mkdir -p "$HOME/.clawdbot" "$HOME/.clawdbot/workspace"
+      ''
+    );
+
+    home.activation.clawdbotConfigFiles = lib.mkForce (
+      lib.hm.dag.entryAfter [ "clawdbotDirs" ] ''
+        set -euo pipefail
+        # Config is managed by home.file, no manual linking needed
+      ''
+    );
   };
 }

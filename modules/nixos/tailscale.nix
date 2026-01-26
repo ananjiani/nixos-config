@@ -79,6 +79,7 @@ in
       inherit (cfg) authKeyFile;
       extraUpFlags = [
         "--login-server=${cfg.loginServer}"
+        "--reset" # Override any existing settings from previous runs
       ]
       ++ lib.optionals cfg.exitNode [ "--advertise-exit-node" ]
       ++ lib.optionals (cfg.subnetRoutes != [ ]) [

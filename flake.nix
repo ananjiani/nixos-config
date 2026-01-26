@@ -84,6 +84,8 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     nix-clawdbot = {
+      # Main branch - has /bin/mkdir bug on NixOS, but supports Linux
+      # TODO: Switch to fixed version once https://github.com/clawdbot/nix-clawdbot/pull/1 merges with Linux support
       url = "github:clawdbot/nix-clawdbot";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };

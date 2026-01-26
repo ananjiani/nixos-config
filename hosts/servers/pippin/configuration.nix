@@ -33,7 +33,7 @@
 
   sops = {
     defaultSopsFile = ../../../secrets/secrets.yaml;
-    age.keyFile = "/var/lib/sops-nix/key.txt";
+    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
     secrets.tailscale_authkey = { };
   };
 
@@ -44,6 +44,7 @@
       authKeyFile = config.sops.secrets.tailscale_authkey.path;
       acceptDns = false;
       acceptRoutes = false;
+      useExitNode = null; # On LAN, no exit node needed
     };
 
     ssh = {
