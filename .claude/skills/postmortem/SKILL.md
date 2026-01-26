@@ -1,6 +1,6 @@
 ---
 name: postmortem
-description: Write incident postmortems and post-incident reviews for homelab infrastructure. Use when the user asks to document an incident, write a postmortem, analyze what went wrong with their infrastructure, create an incident report, or learn from a failure. Also use when user mentions they fixed something and want to document it, or references past incidents they want to record.
+description: Write incident postmortems for homelab infrastructure. Proactively invoke when you notice the user has been debugging a significant issue and finally resolves it, when troubleshooting reveals a surprising root cause or wrong assumption, or when an incident is mentioned in passing that sounds worth documenting. Suggest writing a postmortem rather than waiting to be asked.
 ---
 
 # Postmortem Skill
