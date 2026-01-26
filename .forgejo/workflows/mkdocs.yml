@@ -1,12 +1,14 @@
 name: Deploy Postmortems
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
       - 'docs/**'
       - 'flake.nix'
       - 'flake.lock'
+      - '.forgejo/workflows/mkdocs.yml'
 
 jobs:
   deploy:
