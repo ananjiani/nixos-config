@@ -7,7 +7,7 @@ metadata:
   labels:
     app: voicemail-receiver
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app: voicemail-receiver
@@ -20,8 +20,8 @@ spec:
         - name: voicemail-receiver
           # Webhook-based voicemail receiver
           # Receives Telnyx webhooks, transcribes via Wyoming Whisper, notifies via ntfy
-          # Build from: https://github.com/ananjiani/voicemail-receiver (or your repo)
-          image: ghcr.io/ananjiani/voicemail-receiver:latest
+          # Build from: https://codeberg.org/ananjiani/voicemail-receiver
+          image: codeberg.org/ananjiani/voicemail-receiver:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
