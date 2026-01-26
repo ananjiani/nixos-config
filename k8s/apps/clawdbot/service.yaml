@@ -1,0 +1,11 @@
+---
+# Headless service pointing to external Clawdbot instance
+apiVersion: v1
+kind: Service
+metadata:
+  name: clawdbot-external
+  namespace: clawdbot
+spec:
+  ports:
+    - port: 18789
+      targetPort: 18789

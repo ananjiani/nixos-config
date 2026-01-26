@@ -1,0 +1,12 @@
+---
+# External endpoints pointing to Clawdbot on Pippin
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: clawdbot-external
+  namespace: clawdbot
+subsets:
+  - addresses:
+      - ip: 192.168.1.28
+    ports:
+      - port: 18789

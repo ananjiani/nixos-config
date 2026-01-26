@@ -1,0 +1,24 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: clawdbot
+  namespace: clawdbot
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Clawdbot"
+    gethomepage.dev/group: "AI"
+    gethomepage.dev/icon: "mdi-robot"
+    gethomepage.dev/description: "AI Assistant - Telegram Bot"
+    gethomepage.dev/href: "https://clawd.dimensiondoor.xyz"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`clawd.dimensiondoor.xyz`)
+      kind: Rule
+      services:
+        - name: clawdbot-external
+          port: 18789
+  tls:
+    secretName: clawdbot-tls

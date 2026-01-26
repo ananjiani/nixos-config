@@ -194,6 +194,17 @@ resource "cloudflare_record" "lobe_s3" {
   comment = "LobeChat S3 storage (internal) - managed by Terraform"
 }
 
+# Clawdbot AI Assistant
+resource "cloudflare_record" "clawdbot" {
+  zone_id = local.zone_id
+  name    = "clawd"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "Clawdbot AI assistant (internal) - managed by Terraform"
+}
+
 # =============================================================================
 # Cloudflare Tunnel Services
 # =============================================================================
