@@ -6,7 +6,10 @@ duration: ~30m (investigation)
 systems: [stremio, comet, torbox]
 tags: [streaming, proxy, networking, performance]
 commit: https://codeberg.org/ananjiani/infra/commit/9fcd23c
+superseded_by: 2026-01-25-stremthru-empty-string
 ---
+
+> **SUPERSEDED**: This postmortem contains an incorrect root cause analysis. The "fix" of setting `STREMTHRU_URL: ""` actually caused a subsequent outage. See [2026-01-25-stremthru-empty-string](2026-01-25-stremthru-empty-string.md) for the correction. The actual fix for the original buffering issue was likely the increased Comet resources, not the StremThru change.
 
 ## Summary
 
