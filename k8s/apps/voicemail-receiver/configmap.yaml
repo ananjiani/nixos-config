@@ -9,8 +9,8 @@ data:
   PORT: "8080"
   HOST: "0.0.0.0"
 
-  # Wyoming Whisper endpoint (Keepalived VIP)
-  WHISPER_HOST: "whisper.lan"
+  # Wyoming Whisper endpoint (Keepalived VIP - use IP since pods can't resolve LAN DNS)
+  WHISPER_HOST: "192.168.1.54"
   WHISPER_PORT: "10300"
 
   # ntfy endpoint (in-cluster service)
