@@ -241,3 +241,62 @@ resource "proxmox_virtual_environment_vm" "theoden" {
     ]
   }
 }
+
+# =============================================================================
+# Pippin - Clawdbot AI Assistant VM
+# =============================================================================
+# Isolated VM for clawdbot to safely execute arbitrary commands.
+
+resource "proxmox_virtual_environment_vm" "pippin" {
+  name      = "pippin"
+  node_name = "the-shire"
+  vm_id     = 105
+
+  on_boot = true
+  started = true
+
+  cpu {
+    cores = 1
+    type  = "x86-64-v2-AES"
+  }
+
+  memory {
+    dedicated = 2048 # 2GB for clawdbot + tools
+  }
+
+  boot_order = ["scsi0", "ide2", "net0"]
+
+  disk {
+    datastore_id = var.proxmox_datastore
+    size         = 32
+    interface    = "scsi0"
+    file_format  = "raw"
+    iothread     = true
+  }
+
+  network_device {
+    bridge      = "vmbr0"
+    mac_address = local.mac_addresses.pippin
+  }
+
+  agent {
+    enabled = true
+  }
+
+  bios          = "seabios"
+  scsi_hardware = "virtio-scsi-single"
+
+  operating_system {
+    type = "l26"
+  }
+
+  serial_device {}
+
+  lifecycle {
+    ignore_changes = [
+      disk,
+      boot_order,
+      cdrom,
+    ]
+  }
+}

@@ -425,6 +425,14 @@ resource "opnsense_kea_reservation" "theoden" {
   description = "k3s server VM"
 }
 
+resource "opnsense_kea_reservation" "pippin" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.28"
+  mac_address = local.mac_addresses.pippin
+  hostname    = "pippin"
+  description = "Clawdbot AI assistant VM"
+}
+
 # =============================================================================
 # Port Forwarding for Traefik (k8s ingress)
 # =============================================================================

@@ -140,6 +140,10 @@ _: {
             answer = "192.168.1.27";
           }
           {
+            domain = "pippin.lan";
+            answer = "192.168.1.28";
+          }
+          {
             domain = "ammars-pc.lan";
             answer = "192.168.1.50";
           }

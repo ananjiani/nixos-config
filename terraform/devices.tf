@@ -20,5 +20,6 @@ locals {
     samwise = "BC:24:11:00:01:03" # NixOS VM (update after creation)
     # VMs on rohan
     theoden = "BC:24:11:00:01:04" # k3s server VM
+    pippin  = "BC:24:11:00:01:05" # Clawdbot VM
   }
 }

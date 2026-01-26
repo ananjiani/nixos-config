@@ -83,6 +83,10 @@
       url = "github:applicative-systems/mkdocs-flake";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+    nix-clawdbot = {
+      url = "github:clawdbot/nix-clawdbot";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
   };
 
   outputs =
@@ -223,6 +227,16 @@
           ];
         };
 
+        # Pippin - Clawdbot AI Assistant (Proxmox VM on the-shire)
+        pippin = lib.nixosSystem {
+          inherit system specialArgs;
+          modules = [
+            ./hosts/servers/pippin/configuration.nix
+            inputs.sops-nix.nixosModules.sops
+            inputs.disko.nixosModules.disko
+          ];
+        };
+
       };
 
       # deploy-rs deployment configuration
@@ -249,6 +263,14 @@
             user = "root";
             sshUser = "root";
             path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.theoden;
+          };
+        };
+        pippin = {
+          hostname = "pippin.lan";
+          profiles.system = {
+            user = "root";
+            sshUser = "root";
+            path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.pippin;
           };
         };
       };
