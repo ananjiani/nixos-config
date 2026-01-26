@@ -316,7 +316,10 @@
           default = "http_status:404";
           ingress = {
             "ci.dimensiondoor.xyz" = "http://localhost:8010";
-            "voicemail.dimensiondoor.xyz" = "http://192.168.1.52"; # Traefik LB - routes via Host header
+            "voicemail.dimensiondoor.xyz" = {
+              service = "https://192.168.1.52";
+              originRequest.noTLSVerify = true; # Internal traffic, skip cert validation
+            };
           };
         };
       };
