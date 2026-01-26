@@ -386,6 +386,12 @@
         nixos-ammars-pc = self.nixosConfigurations.ammars-pc.config.system.build.toplevel;
         nixos-framework13 = self.nixosConfigurations.framework13.config.system.build.toplevel;
 
+        # Server NixOS builds (includes home-manager, cached for deploy-rs checks)
+        nixos-boromir = self.nixosConfigurations.boromir.config.system.build.toplevel;
+        nixos-samwise = self.nixosConfigurations.samwise.config.system.build.toplevel;
+        nixos-theoden = self.nixosConfigurations.theoden.config.system.build.toplevel;
+        nixos-pippin = self.nixosConfigurations.pippin.config.system.build.toplevel;
+
         # Home Manager builds (for CI caching)
         home-ammars-pc = self.homeConfigurations."ammar@ammars-pc".activationPackage;
         home-framework13 = self.homeConfigurations."ammar@framework13".activationPackage;
