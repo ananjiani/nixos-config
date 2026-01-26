@@ -17,6 +17,11 @@ jobs:
       - uses: https://code.forgejo.org/actions/checkout@v4
         with:
           fetch-depth: 1
+          sparse-checkout: |
+            docs
+            flake.nix
+            flake.lock
+            mkdocs.yaml
 
       - uses: https://github.com/cachix/install-nix-action@v30
         with:
