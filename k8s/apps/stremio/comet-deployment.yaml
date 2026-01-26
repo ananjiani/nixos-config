@@ -79,10 +79,6 @@ spec:
                   key: torbox-api-key
             - name: SCRAPE_TORBOX
               value: "True"
-
-            # Disable StremThru - use Torbox directly
-            - name: STREMTHRU_URL
-              value: ""
           resources:
             requests:
               memory: "512Mi"
