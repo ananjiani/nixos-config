@@ -5,6 +5,7 @@ resources:
   - attic
   - authentik
   - chromadb
+  - clawdbot
   - cliproxy
   - forgejo
   - forgejo-runner

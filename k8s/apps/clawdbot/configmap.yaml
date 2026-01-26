@@ -1,0 +1,30 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clawdbot-config
+  namespace: clawdbot
+data:
+  clawdbot.json: |
+    {
+      "models": {
+        "providers": {
+          "bifrost": {
+            "baseUrl": "http://bifrost.bifrost.svc:8080/v1",
+            "apiKey": "${BIFROST_API_KEY}",
+            "api": "openai-completions",
+            "models": [
+              { "id": "deepseek-chat", "name": "DeepSeek Chat" },
+              { "id": "glm-4.7", "name": "GLM 4.7" }
+            ]
+          }
+        }
+      },
+      "agents": {
+        "defaults": {
+          "model": {
+            "primary": "bifrost/deepseek-chat"
+          }
+        }
+      }
+    }

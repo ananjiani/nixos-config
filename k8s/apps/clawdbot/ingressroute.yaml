@@ -1,0 +1,26 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: clawdbot
+  namespace: clawdbot
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Clawdbot"
+    gethomepage.dev/group: "AI"
+    gethomepage.dev/icon: "mdi-robot"
+    gethomepage.dev/description: "Personal AI Assistant"
+    gethomepage.dev/href: "https://clawd.dimensiondoor.xyz"
+    gethomepage.dev/pod-selector: "app=clawdbot"
+    gethomepage.dev/siteMonitor: "http://clawdbot.clawdbot.svc.cluster.local:18789"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`clawd.dimensiondoor.xyz`)
+      kind: Rule
+      services:
+        - name: clawdbot
+          port: 18789
+  tls:
+    secretName: clawdbot-tls

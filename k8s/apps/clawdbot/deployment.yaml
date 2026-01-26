@@ -1,0 +1,64 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clawdbot
+  namespace: clawdbot
+  labels:
+    app: clawdbot
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # Longhorn PVCs are RWO
+  selector:
+    matchLabels:
+      app: clawdbot
+  template:
+    metadata:
+      labels:
+        app: clawdbot
+    spec:
+      containers:
+        - name: clawdbot
+          image: ghcr.io/zot24/clawdbot-docker:latest
+          ports:
+            - name: gateway
+              containerPort: 18789
+              protocol: TCP
+          env:
+            - name: BIFROST_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: clawdbot-secrets
+                  key: bifrost-api-key
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: clawdbot-secrets
+                  key: telegram-bot-token
+            - name: NODE_ENV
+              value: "production"
+          volumeMounts:
+            - name: data
+              mountPath: /root/.clawdbot
+              subPath: config
+            - name: data
+              mountPath: /root/clawd
+              subPath: workspace
+            - name: config
+              mountPath: /root/.clawdbot/clawdbot.json
+              subPath: clawdbot.json
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: clawdbot-data
+        - name: config
+          configMap:
+            name: clawdbot-config
