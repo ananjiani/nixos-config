@@ -3,6 +3,10 @@ docs_dir: postmortems
 theme:
   name: material
 
+nav:
+  - Home: index.md
+  - Tags: tags.md
+
 plugins:
   - search
   - tags:
