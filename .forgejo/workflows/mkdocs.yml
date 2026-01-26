@@ -17,18 +17,9 @@ jobs:
       - uses: https://code.forgejo.org/actions/checkout@v4
 
       - uses: https://github.com/cachix/install-nix-action@v30
-        with:
-          extra_nix_config: |
-            substituters = https://cache.nixos.org http://theoden.lan:8080/middle-earth
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= middle-earth:QJM6g097RUDyZA0OG00fXc7JxFMOXN3J5ZBX8j+QfFI=
 
       - name: Build site with Nix
         run: nix build .#documentation
-
-      - name: Push to Attic cache
-        run: |
-          nix run nixpkgs#attic-client -- login local http://theoden.lan:8080 ${{ secrets.ATTIC_TOKEN }}
-          nix run nixpkgs#attic-client -- push local:middle-earth result
 
       - name: Prepare site for deploy
         run: cp -rL result _site
