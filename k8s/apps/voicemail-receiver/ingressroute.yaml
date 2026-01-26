@@ -1,21 +1,42 @@
 ---
+# External route (via Cloudflare Tunnel) - webhooks only, no /audio/*
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: voicemail-receiver
+  namespace: voicemail-receiver
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    # Only allow webhook endpoints through the tunnel
+    - match: Host(`voicemail.dimensiondoor.xyz`) && (Path(`/voice`) || Path(`/after-recording`) || Path(`/recording-complete`) || Path(`/health`))
+      kind: Rule
+      services:
+        - name: voicemail-receiver
+          port: 8080
+  tls:
+    secretName: voicemail-tls
+---
+# Internal route (LAN/Tailscale only) - full access including /audio/*
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: voicemail-receiver-internal
   namespace: voicemail-receiver
   annotations:
     gethomepage.dev/enabled: "true"
     gethomepage.dev/name: "Voicemail"
     gethomepage.dev/group: "Services"
     gethomepage.dev/icon: "voicemail.png"
-    gethomepage.dev/href: "https://voicemail.dimensiondoor.xyz"
+    gethomepage.dev/href: "https://voicemail.lan"
 spec:
   entryPoints:
     - web
     - websecure
   routes:
-    - match: Host(`voicemail.dimensiondoor.xyz`)
+    - match: Host(`voicemail.lan`)
       kind: Rule
       services:
         - name: voicemail-receiver
