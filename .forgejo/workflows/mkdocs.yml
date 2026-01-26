@@ -41,3 +41,5 @@ jobs:
         run: cp -rL result _site
 
       - uses: https://codeberg.org/git-pages/action@v1
+        with:
+          gitea_token: ${{ secrets.GITEA_TOKEN }}
