@@ -5,6 +5,7 @@ theme:
 
 nav:
   - Home: index.md
+  - ... | flat
   - Tags: tags.md
 
 plugins:
