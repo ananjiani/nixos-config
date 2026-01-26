@@ -9,3 +9,6 @@ resources:
   - service.yaml
   - ingressroute.yaml
   - certificate.yaml
+  # Cloudflare Tunnel for external webhook access
+  - cloudflared-secret.yaml
+  - cloudflared-deployment.yaml

@@ -26,8 +26,8 @@
     hostName = "pippin";
     useDHCP = true;
     nameservers = [
-      "192.168.1.1"
-      "9.9.9.9"
+      "192.168.1.53" # AdGuard VIP with internal DNS rewrites
+      "9.9.9.9" # Quad9 fallback
     ];
   };
 

@@ -307,7 +307,7 @@
       workerPasswordFile = config.sops.secrets.buildbot_worker_password_plain.path;
     };
 
-    # Cloudflare Tunnel for Buildbot webhooks
+    # Cloudflare Tunnel for external webhooks
     cloudflared = {
       enable = true;
       tunnels = {
@@ -316,6 +316,8 @@
           default = "http_status:404";
           ingress = {
             "ci.dimensiondoor.xyz" = "http://localhost:8010";
+            "voicemail.dimensiondoor.xyz" =
+              "http://voicemail-receiver.voicemail-receiver.svc.cluster.local:8080";
           };
         };
       };
