@@ -42,4 +42,5 @@ jobs:
 
       - uses: https://codeberg.org/git-pages/action@v1
         with:
-          gitea_token: ${{ secrets.GITEATOKEN }}
+          site: https://ananjiani.codeberg.page/infra
+          source: _site
