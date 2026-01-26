@@ -80,11 +80,12 @@
 
   # Keepalived notify scripts for Wyoming Whisper failover
   # These start/stop the wyoming-whisper service when VIP ownership changes
+  # NOTE: Must use pkgs.bash for NixOS - /bin/bash doesn't exist
   environment.etc = {
     "keepalived/whisper-master.sh" = {
       mode = "0755";
       text = ''
-        #!/bin/bash
+        #!${pkgs.bash}/bin/bash
         logger "Keepalived WHISPER: Becoming MASTER - starting wyoming-whisper"
         systemctl start wyoming-whisper
       '';
@@ -92,7 +93,7 @@
     "keepalived/whisper-backup.sh" = {
       mode = "0755";
       text = ''
-        #!/bin/bash
+        #!${pkgs.bash}/bin/bash
         logger "Keepalived WHISPER: Becoming BACKUP - stopping wyoming-whisper"
         systemctl stop wyoming-whisper
       '';

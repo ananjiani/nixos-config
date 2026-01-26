@@ -28,6 +28,12 @@ in
     programs.clawdbot = {
       enable = true;
 
+      # Disable macOS-only plugins that break nix flake check on Linux
+      firstParty = {
+        peekaboo.enable = false;
+        summarize.enable = false;
+      };
+
       instances.default = {
         enable = true;
 
