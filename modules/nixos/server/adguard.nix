@@ -229,6 +229,10 @@ _: {
             domain = "voicemail.dimensiondoor.xyz";
             answer = "192.168.1.52";
           }
+          {
+            domain = "voicemail.lan";
+            answer = "192.168.1.52";
+          }
 
           # Wyoming Whisper (Keepalived VIP - rohan primary, boromir backup)
           {
