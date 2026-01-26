@@ -39,12 +39,14 @@
       tailscale_authkey = { };
       telegram_bot_token = { };
       bifrost_api_key = { };
+      tavily_api_key = { };
     };
     # Environment file for clawdbot service
     templates."clawdbot.env" = {
       content = ''
         TELEGRAM_BOT_TOKEN=${config.sops.placeholder.telegram_bot_token}
         BIFROST_API_KEY=${config.sops.placeholder.bifrost_api_key}
+        TAVILY_API_KEY=${config.sops.placeholder.tavily_api_key}
       '';
     };
   };
@@ -127,6 +129,20 @@
           if [ ! -x /var/lib/clawdbot/.npm-global/bin/clawdbot ]; then
             echo "Installing clawdbot..."
             npm install -g clawdbot@latest
+          fi
+
+          # Install Tavily search skill if not present
+          # Note: clawdhub is broken (missing undici dep), so we use sparse checkout
+          if [ ! -d "$HOME/.clawdbot/skills/tavily" ]; then
+            echo "Installing Tavily search skill from GitHub..."
+            mkdir -p "$HOME/.clawdbot/skills"
+            cd "$HOME/.clawdbot/skills"
+            git clone --depth 1 --filter=blob:none --sparse https://github.com/clawdbot/skills.git _temp_skills
+            cd _temp_skills
+            git sparse-checkout set skills/bert-builder/tavily
+            mv skills/bert-builder/tavily ../tavily
+            cd ..
+            rm -rf _temp_skills
           fi
         '')
         (pkgs.writeShellScript "clawdbot-setup" ''
