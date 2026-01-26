@@ -23,8 +23,14 @@ jobs:
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= middle-earth:QJM6g097RUDyZA0OG00fXc7JxFMOXN3J5ZBX8j+QfFI=
 
       - name: Build site with Nix
+        run: nix build .#documentation
+
+      - name: Push to Attic cache
         run: |
-          nix build .#documentation
-          cp -rL result _site
+          nix run nixpkgs#attic-client -- login local http://theoden.lan:8080 ${{ secrets.ATTIC_TOKEN }}
+          nix run nixpkgs#attic-client -- push local:middle-earth result
+
+      - name: Prepare site for deploy
+        run: cp -rL result _site
 
       - uses: https://codeberg.org/git-pages/action@v1
