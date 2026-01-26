@@ -23,6 +23,11 @@ spec:
       attachmentTotalSizeLimit: "100M"
       attachmentFileSizeLimit: "10M"
       attachmentExpiryDuration: "72h"
+      extraArgs:
+        - "--attachment-cache-dir=/var/cache/ntfy/attachments"
+        - "--attachment-total-size-limit=100M"
+        - "--attachment-file-size-limit=10M"
+        - "--attachment-expiry-duration=72h"
 
     persistence:
       enabled: true
