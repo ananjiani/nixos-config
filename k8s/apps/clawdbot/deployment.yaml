@@ -18,6 +18,24 @@ spec:
       labels:
         app: clawdbot
     spec:
+      initContainers:
+        - name: config-init
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              # Only copy config if it doesn't exist (preserve user modifications)
+              if [ ! -f /data/config/clawdbot.json ]; then
+                mkdir -p /data/config
+                cp /config-template/clawdbot.json /data/config/clawdbot.json
+              fi
+              mkdir -p /data/workspace
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: config-template
+              mountPath: /config-template
       containers:
         - name: clawdbot
           image: ghcr.io/zot24/clawdbot-docker:latest
@@ -45,9 +63,6 @@ spec:
             - name: data
               mountPath: /root/clawd
               subPath: workspace
-            - name: config
-              mountPath: /root/.clawdbot/clawdbot.json
-              subPath: clawdbot.json
           resources:
             requests:
               memory: "256Mi"
@@ -59,6 +74,6 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: clawdbot-data
-        - name: config
+        - name: config-template
           configMap:
             name: clawdbot-config
