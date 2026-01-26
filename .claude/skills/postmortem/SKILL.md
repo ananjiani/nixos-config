@@ -29,6 +29,20 @@ Good candidates:
 - Recurring issues (even if individually minor)
 - Situations where assumptions proved wrong
 
+## File Naming Convention
+
+Use the format: `YYYY-MM-DD-HHMM-slug.md`
+
+- **YYYY-MM-DD**: Date of the incident
+- **HHMM**: Time (24h format) when the postmortem was written
+- **slug**: Brief kebab-case description
+
+Examples:
+- `2026-01-25-1923-metallb-hairpin-nat.md`
+- `2026-01-25-1745-sops-flux-decryption-failure.md`
+
+This enables automatic sorting by date/time in the mkdocs nav (newest first).
+
 ## Template Usage
 
 Copy the template from `template.md` to the user's postmortem location. The template includes:
