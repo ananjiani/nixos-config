@@ -20,6 +20,9 @@ spec:
       behindProxy: true
       cacheFile: "/var/cache/ntfy/cache.db"
       attachmentCacheDir: "/var/cache/ntfy/attachments"
+      attachmentTotalSizeLimit: "100M"
+      attachmentFileSizeLimit: "10M"
+      attachmentExpiryDuration: "72h"
 
     persistence:
       enabled: true
