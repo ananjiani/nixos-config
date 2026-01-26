@@ -44,7 +44,7 @@
     templates."clawdbot.env" = {
       content = ''
         TELEGRAM_BOT_TOKEN=${config.sops.placeholder.telegram_bot_token}
-        ANTHROPIC_API_KEY=${config.sops.placeholder.bifrost_api_key}
+        BIFROST_API_KEY=${config.sops.placeholder.bifrost_api_key}
       '';
     };
   };
@@ -138,6 +138,107 @@
           if [ ! -f "$CONFIG" ] || ! grep -q '"telegram"' "$CONFIG" 2>/dev/null; then
             echo "Running initial clawdbot setup..."
             clawdbot doctor --fix --non-interactive || true
+          fi
+
+          # Ensure gateway token and Bifrost provider are in config
+          if [ -f "$CONFIG" ]; then
+            node -e "
+              const fs = require('fs');
+              const config = JSON.parse(fs.readFileSync('$CONFIG'));
+              let changed = false;
+
+              // Gateway token (for CLI and web UI pairing)
+              const token = process.env.CLAWDBOT_GATEWAY_TOKEN;
+              if (!config.gateway || config.gateway.auth?.token !== token) {
+                config.gateway = {
+                  auth: { token },
+                  remote: { token }
+                };
+                changed = true;
+                console.log('Gateway token configured');
+              }
+
+              // Bifrost provider (OpenAI-compatible LLM gateway)
+              // Always overwrite to keep Nix config as source of truth
+              config.models = config.models || {};
+              config.models.providers = config.models.providers || {};
+              config.models.providers.bifrost = {
+                  baseUrl: 'https://bifrost.dimensiondoor.xyz/v1',
+                  apiKey: process.env.BIFROST_API_KEY,
+                  api: 'openai-completions',
+                  models: [
+                    {
+                      id: 'cliproxy/claude-opus-4-5-20251101',
+                      name: 'Claude Opus 4.5',
+                      api: 'openai-completions',
+                      reasoning: true,
+                      input: ['text', 'image'],
+                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                      contextWindow: 200000,
+                      maxTokens: 64000
+                    },
+                    {
+                      id: 'cliproxy/claude-sonnet-4-5-20250929',
+                      name: 'Claude Sonnet 4.5',
+                      api: 'openai-completions',
+                      reasoning: true,
+                      input: ['text', 'image'],
+                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                      contextWindow: 200000,
+                      maxTokens: 64000
+                    },
+                    {
+                      id: 'cliproxy/claude-haiku-4-5-20251001',
+                      name: 'Claude Haiku 4.5',
+                      api: 'openai-completions',
+                      reasoning: true,
+                      input: ['text', 'image'],
+                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                      contextWindow: 200000,
+                      maxTokens: 64000
+                    },
+                    {
+                      id: 'deepseek/deepseek-chat',
+                      name: 'DeepSeek V3',
+                      api: 'openai-completions',
+                      reasoning: false,
+                      input: ['text'],
+                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                      contextWindow: 64000,
+                      maxTokens: 8000
+                    },
+                    {
+                      id: 'deepseek/deepseek-reasoner',
+                      name: 'DeepSeek R1',
+                      api: 'openai-completions',
+                      reasoning: true,
+                      input: ['text'],
+                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                      contextWindow: 64000,
+                      maxTokens: 8000
+                    },
+                    {
+                      id: 'zai/glm-4.7',
+                      name: 'GLM 4.7',
+                      api: 'openai-completions',
+                      reasoning: true,
+                      input: ['text'],
+                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                      contextWindow: 200000,
+                      maxTokens: 128000
+                    }
+              ]
+              };
+              console.log('Bifrost provider configured');
+
+              // Set default agent model to DeepSeek V3 via Bifrost
+              config.agents = config.agents || {};
+              config.agents.defaults = config.agents.defaults || {};
+              config.agents.defaults.model = { primary: 'bifrost/deepseek/deepseek-chat' };
+              console.log('Default model set to bifrost/deepseek/deepseek-chat');
+
+              fs.writeFileSync('$CONFIG', JSON.stringify(config, null, 2));
+            "
           fi
         '')
       ];
