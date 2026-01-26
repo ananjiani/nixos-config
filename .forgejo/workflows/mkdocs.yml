@@ -22,8 +22,7 @@ jobs:
 
       - name: Build site with Nix
         run: |
-          nix build .#documentation --out-link site
+          nix build .#documentation
+          cp -rL result _site
 
       - uses: https://codeberg.org/git-pages/action@v1
-        with:
-          folder: site
