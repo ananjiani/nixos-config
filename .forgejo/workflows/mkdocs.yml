@@ -18,9 +18,9 @@ jobs:
 
       - uses: https://github.com/cachix/install-nix-action@v30
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
-
-      - uses: https://github.com/DeterminateSystems/magic-nix-cache-action@main
+          extra_nix_config: |
+            substituters = https://cache.nixos.org http://theoden.lan:8080/middle-earth
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= middle-earth:QJM6g097RUDyZA0OG00fXc7JxFMOXN3J5ZBX8j+QfFI=
 
       - name: Build site with Nix
         run: |
