@@ -126,10 +126,16 @@
         imports = [
           inputs.flake-aspects.flakeModule
           (inputs.import-tree ./modules/dendritic)
-          inputs.mkdocs-flake.flakeModules.default
         ];
+      };
 
-        # MkDocs documentation configuration (perSystem option)
+      # Separate documentation flake (decoupled from dendritic modules)
+      documentationFlake = flake-parts.lib.mkFlake { inherit inputs; } {
+        systems = [
+          system
+          "aarch64-linux"
+        ];
+        imports = [ inputs.mkdocs-flake.flakeModules.default ];
         perSystem = _: {
           documentation.mkdocs-root = ./docs;
         };
@@ -428,11 +434,11 @@
       }
       // deploy-rs.lib.${system}.deployChecks self.deploy;
 
-      # Packages from dendriticFlake (mkdocs-flake documentation)
-      packages.${system} = dendriticFlake.packages.${system} or { };
+      # Packages from documentationFlake (mkdocs-flake)
+      packages.${system} = documentationFlake.packages.${system} or { };
 
-      # Apps from dendriticFlake (mkdocs-flake watch-documentation)
-      apps.${system} = dendriticFlake.apps.${system} or { };
+      # Apps from documentationFlake (mkdocs-flake watch-documentation)
+      apps.${system} = documentationFlake.apps.${system} or { };
 
       # Development shell with pre-commit hooks and deploy-rs
       devShells.${system}.default = pkgs.mkShell {

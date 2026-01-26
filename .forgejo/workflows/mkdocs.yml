@@ -22,7 +22,6 @@ jobs:
             flake.nix
             flake.lock
             mkdocs.yaml
-            modules/dendritic
 
       - uses: https://github.com/cachix/install-nix-action@v30
         with:
