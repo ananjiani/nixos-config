@@ -46,9 +46,6 @@ spec:
               value: "production"
           volumeMounts:
             - name: data
-              mountPath: /root/.clawdbot
-              subPath: config
-            - name: data
               mountPath: /root/clawd
               subPath: workspace
           resources:
