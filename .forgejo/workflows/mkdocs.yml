@@ -44,3 +44,4 @@ jobs:
         with:
           site: https://ananjiani.codeberg.page/infra
           source: _site
+          token: ${{ secrets.GITEATOKEN }}
