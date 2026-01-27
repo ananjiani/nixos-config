@@ -110,6 +110,10 @@
       pkgs.gnused
       pkgs.gnugrep
       pkgs.gawk
+      pkgs.which
+      pkgs.findutils
+      pkgs.curl
+      pkgs.jq
     ];
 
     serviceConfig = {
@@ -133,14 +137,14 @@
 
           # Install Tavily search skill if not present
           # Note: clawdhub is broken (missing undici dep), so we use sparse checkout
-          if [ ! -d "$HOME/.clawdbot/skills/tavily" ]; then
+          if [ ! -d "$HOME/.clawdbot/skills/tavily-search" ]; then
             echo "Installing Tavily search skill from GitHub..."
             mkdir -p "$HOME/.clawdbot/skills"
             cd "$HOME/.clawdbot/skills"
             git clone --depth 1 --filter=blob:none --sparse https://github.com/clawdbot/skills.git _temp_skills
             cd _temp_skills
-            git sparse-checkout set skills/bert-builder/tavily
-            mv skills/bert-builder/tavily ../tavily
+            git sparse-checkout set skills/arun-8687/tavily-search
+            mv skills/arun-8687/tavily-search ../tavily-search
             cd ..
             rm -rf _temp_skills
           fi
@@ -247,11 +251,20 @@
               };
               console.log('Bifrost provider configured');
 
-              // Set default agent model to DeepSeek V3 via Bifrost
               config.agents = config.agents || {};
               config.agents.defaults = config.agents.defaults || {};
-              config.agents.defaults.model = { primary: 'bifrost/deepseek/deepseek-chat' };
-              console.log('Default model set to bifrost/deepseek/deepseek-chat');
+              config.agents.defaults.model = { primary: 'deepseek/deepseek-chat' };
+
+              // Configure embeddings for semantic memory search via Bifrost/Ollama
+              config.agents.defaults.memorySearch = {
+                provider: 'openai',
+                model: 'ollama/nomic-embed-text',
+                remote: {
+                  baseUrl: 'https://bifrost.dimensiondoor.xyz/v1',
+                  apiKey: process.env.BIFROST_API_KEY
+                }
+              };
+              console.log('Memory search embeddings configured via Bifrost/Ollama');
 
               fs.writeFileSync('$CONFIG', JSON.stringify(config, null, 2));
             "
