@@ -188,36 +188,6 @@
                   api: 'openai-completions',
                   models: [
                     {
-                      id: 'cliproxy/claude-opus-4-5-20251101',
-                      name: 'Claude Opus 4.5',
-                      api: 'openai-completions',
-                      reasoning: true,
-                      input: ['text', 'image'],
-                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-                      contextWindow: 200000,
-                      maxTokens: 64000
-                    },
-                    {
-                      id: 'cliproxy/claude-sonnet-4-5-20250929',
-                      name: 'Claude Sonnet 4.5',
-                      api: 'openai-completions',
-                      reasoning: true,
-                      input: ['text', 'image'],
-                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-                      contextWindow: 200000,
-                      maxTokens: 64000
-                    },
-                    {
-                      id: 'cliproxy/claude-haiku-4-5-20251001',
-                      name: 'Claude Haiku 4.5',
-                      api: 'openai-completions',
-                      reasoning: true,
-                      input: ['text', 'image'],
-                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-                      contextWindow: 200000,
-                      maxTokens: 64000
-                    },
-                    {
                       id: 'deepseek/deepseek-chat',
                       name: 'DeepSeek V3',
                       api: 'openai-completions',
@@ -241,12 +211,11 @@
                       id: 'zai/glm-4.7',
                       name: 'GLM 4.7',
                       api: 'openai-completions',
-                      reasoning: true,
+                      reasoning: false,  // ZAI doesn't accept OpenAI reasoning param
                       input: ['text'],
                       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
                       contextWindow: 200000,
-                      maxTokens: 128000,
-                      defaultMaxTokens: 8000
+                      maxTokens: 128000
                     }
               ]
               };
