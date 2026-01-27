@@ -114,6 +114,24 @@
       pkgs.findutils
       pkgs.curl
       pkgs.jq
+      # Git platforms
+      pkgs.gh
+      pkgs.codeberg-cli
+      # Search/files
+      pkgs.ripgrep
+      pkgs.fd
+      pkgs.tree
+      pkgs.bat
+      # Data processing
+      pkgs.yq
+      pkgs.python3
+      # Network
+      pkgs.wget
+      pkgs.httpie
+      # Archives
+      pkgs.unzip
+      pkgs.zip
+      pkgs.gnutar
     ];
 
     serviceConfig = {
