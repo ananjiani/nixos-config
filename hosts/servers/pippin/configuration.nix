@@ -245,7 +245,8 @@
                       input: ['text'],
                       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
                       contextWindow: 200000,
-                      maxTokens: 128000
+                      maxTokens: 128000,
+                      defaultMaxTokens: 8000
                     }
               ]
               };
@@ -253,7 +254,7 @@
 
               config.agents = config.agents || {};
               config.agents.defaults = config.agents.defaults || {};
-              config.agents.defaults.model = { primary: 'bifrost/deepseek/deepseek-chat' };
+              config.agents.defaults.model = { primary: 'bifrost/zai/glm-4.7' };
 
               // Configure embeddings for semantic memory search via Bifrost/Ollama
               config.agents.defaults.memorySearch = {
