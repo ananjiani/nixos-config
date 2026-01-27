@@ -253,7 +253,7 @@
 
               config.agents = config.agents || {};
               config.agents.defaults = config.agents.defaults || {};
-              config.agents.defaults.model = { primary: 'deepseek/deepseek-chat' };
+              config.agents.defaults.model = { primary: 'bifrost/deepseek/deepseek-chat' };
 
               // Configure embeddings for semantic memory search via Bifrost/Ollama
               config.agents.defaults.memorySearch = {
