@@ -132,6 +132,8 @@
       pkgs.unzip
       pkgs.zip
       pkgs.gnutar
+      # Browser
+      pkgs.chromium
     ];
 
     serviceConfig = {
