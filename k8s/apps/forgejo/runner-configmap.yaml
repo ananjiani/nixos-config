@@ -9,7 +9,7 @@ data:
     log:
       level: info
     runner:
-      file: /config/.runner
+      file: /data/.runner
       capacity: 2
       timeout: 3h
       labels:

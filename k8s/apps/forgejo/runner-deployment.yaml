@@ -16,6 +16,16 @@ spec:
       labels:
         app: forgejo-runner
     spec:
+      initContainers:
+        - name: copy-runner-config
+          image: busybox:1.37
+          command: ["sh", "-c", "cp /secret/.runner /data/.runner"]
+          volumeMounts:
+            - name: runner-secret
+              mountPath: /secret
+              readOnly: true
+            - name: runner-data
+              mountPath: /data
       containers:
         - name: runner
           image: code.forgejo.org/forgejo/runner:12.6.1
@@ -68,12 +78,11 @@ spec:
         - name: dind-storage
           emptyDir: {}
         - name: config
-          projected:
-            sources:
-              - configMap:
-                  name: forgejo-runner-config
-              - secret:
-                  name: forgejo-runner
-                  items:
-                    - key: runner
-                      path: .runner
+          configMap:
+            name: forgejo-runner-config
+        - name: runner-secret
+          secret:
+            secretName: forgejo-runner
+            items:
+              - key: runner
+                path: .runner
