@@ -8,3 +8,6 @@ resources:
   - certificate.yaml
   - ingressroute.yaml
   - cronjob.yaml
+  - runner-configmap.yaml
+  - runner-secret.yaml
+  - runner-deployment.yaml
