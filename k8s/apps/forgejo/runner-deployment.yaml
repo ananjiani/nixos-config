@@ -37,6 +37,11 @@ spec:
               value: "1"
             - name: DOCKER_CERT_PATH
               value: /certs/client
+            - name: REGISTRY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: forgejo-runner
+                  key: registry-token
           volumeMounts:
             - name: docker-certs
               mountPath: /certs
