@@ -55,7 +55,7 @@ spec:
                   valueFrom:
                     secretKeyRef:
                       name: forgejo-secrets
-                      key: api-token
+                      key: api_token
               resources:
                 requests:
                   memory: "32Mi"
