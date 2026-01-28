@@ -19,7 +19,7 @@ spec:
       initContainers:
         - name: copy-runner-config
           image: busybox:1.37
-          command: ["sh", "-c", "cp /secret/.runner /data/.runner"]
+          command: ["sh", "-c", "cp /secret/.runner /data/.runner && chmod 666 /data/.runner"]
           volumeMounts:
             - name: runner-secret
               mountPath: /secret
