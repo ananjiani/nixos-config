@@ -55,7 +55,9 @@ spec:
           INSTALL_LOCK: true
 
         packages:
-          ENABLED: false
+          ENABLED: true
+          STORAGE_TYPE: local
+          PATH: /data/packages
 
         mirror:
           ENABLED: true
@@ -113,6 +115,17 @@ spec:
       limits:
         memory: "1Gi"
         cpu: "1000m"
+
+    # NFS volume for container registry packages
+    extraVolumes:
+      - name: packages-storage
+        nfs:
+          server: 192.168.1.27 # theoden
+          path: /srv/nfs
+    extraVolumeMounts:
+      - name: packages-storage
+        mountPath: /data/packages
+        subPath: forgejo/packages
 
     # Service configuration
     service:

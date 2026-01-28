@@ -7,3 +7,4 @@ resources:
   - helmrelease.yaml
   - certificate.yaml
   - ingressroute.yaml
+  - cronjob.yaml
