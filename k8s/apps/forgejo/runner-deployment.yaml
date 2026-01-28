@@ -69,6 +69,9 @@ spec:
               mountPath: /certs
             - name: dind-storage
               mountPath: /var/lib/docker
+            - name: docker-config
+              mountPath: /etc/docker
+              readOnly: true
           resources:
             requests:
               memory: "256Mi"
@@ -85,6 +88,12 @@ spec:
         - name: config
           configMap:
             name: forgejo-runner-config
+        - name: docker-config
+          configMap:
+            name: forgejo-runner-config
+            items:
+              - key: daemon.json
+                path: daemon.json
         - name: runner-secret
           secret:
             secretName: forgejo-runner

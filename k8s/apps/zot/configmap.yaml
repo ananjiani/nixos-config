@@ -1,0 +1,45 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zot-config
+  namespace: zot
+data:
+  config.json: |
+    {
+      "storage": {
+        "rootDirectory": "/var/lib/zot"
+      },
+      "http": {
+        "address": "0.0.0.0",
+        "port": "5000"
+      },
+      "log": {
+        "level": "info"
+      },
+      "extensions": {
+        "sync": {
+          "enable": true,
+          "registries": [
+            {
+              "urls": ["https://registry-1.docker.io"],
+              "onDemand": true,
+              "tlsVerify": true,
+              "content": [{ "prefix": "**" }]
+            },
+            {
+              "urls": ["https://ghcr.io"],
+              "onDemand": true,
+              "tlsVerify": true,
+              "content": [{ "prefix": "**" }]
+            },
+            {
+              "urls": ["https://code.forgejo.org"],
+              "onDemand": true,
+              "tlsVerify": true,
+              "content": [{ "prefix": "**" }]
+            }
+          ]
+        }
+      }
+    }

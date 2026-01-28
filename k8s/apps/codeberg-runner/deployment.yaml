@@ -53,6 +53,9 @@ spec:
               mountPath: /certs
             - name: dind-storage
               mountPath: /var/lib/docker
+            - name: docker-config
+              mountPath: /etc/docker
+              readOnly: true
           resources:
             requests:
               memory: "256Mi"
@@ -66,6 +69,12 @@ spec:
           emptyDir: {}
         - name: dind-storage
           emptyDir: {}
+        - name: docker-config
+          configMap:
+            name: codeberg-runner-config
+            items:
+              - key: daemon.json
+                path: daemon.json
         - name: config
           projected:
             sources:
