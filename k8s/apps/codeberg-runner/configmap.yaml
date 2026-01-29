@@ -16,7 +16,7 @@ data:
     cache:
       enabled: false
     container:
-      network: bridge
+      network: host
       privileged: false
       options: ""
       workdir_parent: /workspace

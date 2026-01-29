@@ -17,9 +17,9 @@ data:
     cache:
       enabled: false
     container:
-      network: bridge
+      network: host
       privileged: false
-      options: "--add-host=git.dimensiondoor.xyz:192.168.1.52"
+      options: ""
       workdir_parent: /workspace
   daemon.json: |
     {
