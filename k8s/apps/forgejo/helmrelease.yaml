@@ -58,6 +58,7 @@ spec:
           ENABLED: true
           STORAGE_TYPE: local
           PATH: /data/packages
+          CHUNKED_UPLOAD_PATH: /data/packages/tmp
 
         mirror:
           ENABLED: true
