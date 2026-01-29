@@ -22,5 +22,6 @@ data:
       workdir_parent: /workspace
   daemon.json: |
     {
-      "registry-mirrors": ["http://zot.zot.svc.cluster.local:5000"]
+      "registry-mirrors": ["http://zot.zot.svc.cluster.local:5000"],
+      "mtu": 1400
     }
