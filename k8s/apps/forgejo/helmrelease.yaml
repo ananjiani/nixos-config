@@ -114,7 +114,7 @@ spec:
         memory: "256Mi"
         cpu: "100m"
       limits:
-        memory: "4Gi"
+        memory: "1Gi"
         cpu: "1000m"
 
     # NFS volume for container registry packages

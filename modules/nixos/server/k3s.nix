@@ -51,13 +51,6 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    # Install kubectl for cluster management
-    environment.systemPackages = with pkgs; [
-      kubectl
-      kubernetes-helm
-      fluxcd
-    ];
-
     # Longhorn requirements
     services.openiscsi = {
       enable = true;
@@ -71,9 +64,26 @@ in
       "L+ /usr/sbin/iscsiadm - - - - /run/current-system/sw/bin/iscsiadm"
     ];
 
-    # Set KUBECONFIG for all users on server nodes
-    environment.sessionVariables = lib.mkIf (cfg.role == "server") {
-      KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
+    environment = {
+      # Install kubectl for cluster management
+      systemPackages = with pkgs; [
+        kubectl
+        kubernetes-helm
+        fluxcd
+      ];
+
+      # Set KUBECONFIG for all users on server nodes
+      sessionVariables = lib.mkIf (cfg.role == "server") {
+        KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
+      };
+
+      # Configure containerd to trust internal Zot registry (HTTP)
+      etc."rancher/k3s/registries.yaml".text = ''
+        mirrors:
+          "zot.zot.svc.cluster.local:5000":
+            endpoint:
+              - "http://zot.zot.svc.cluster.local:5000"
+      '';
     };
 
     services.k3s = {
