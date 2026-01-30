@@ -1,0 +1,25 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: persona-mcp
+  namespace: persona-mcp
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Persona MCP"
+    gethomepage.dev/group: "AI"
+    gethomepage.dev/icon: "mdi-account-voice"
+    gethomepage.dev/description: "MCP Persona Server"
+    gethomepage.dev/href: "http://persona.lan"
+    gethomepage.dev/pod-selector: "app=persona-mcp"
+    gethomepage.dev/siteMonitor: "http://persona-mcp.persona-mcp.svc:8080/health"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`persona.lan`)
+      kind: Rule
+      services:
+        - name: persona-mcp
+          port: 8080

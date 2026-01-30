@@ -1,0 +1,68 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: persona-mcp
+  namespace: persona-mcp
+  labels:
+    app: persona-mcp
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: persona-mcp
+  template:
+    metadata:
+      labels:
+        app: persona-mcp
+    spec:
+      containers:
+        - name: persona-mcp
+          image: zot.zot.svc.cluster.local:5000/ammar/persona-mcp:latest
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: persona-mcp-secrets
+                  key: openai-api-key
+            - name: OPENAI_API_BASE
+              value: "http://bifrost.bifrost.svc:8080/v1"
+            - name: PERSONA_PERSONAS_DIR
+              value: "/app/personas"
+            - name: PERSONA_MODEL
+              value: "deepseek-chat"
+          volumeMounts:
+            - name: personas
+              mountPath: /app/personas
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "100m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+      volumes:
+        - name: personas
+          nfs:
+            server: 192.168.1.27
+            path: /srv/nfs/persona-mcp
