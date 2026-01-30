@@ -78,11 +78,13 @@ in
       };
 
       # Configure containerd to trust internal Zot registry (HTTP)
+      # Uses zot.lan (MetalLB LB at 192.168.1.56) so kubelet on the host
+      # network can resolve and pull images from Zot.
       etc."rancher/k3s/registries.yaml".text = ''
         mirrors:
-          "zot.zot.svc.cluster.local:5000":
+          "zot.lan:5000":
             endpoint:
-              - "http://zot.zot.svc.cluster.local:5000"
+              - "http://zot.lan:5000"
       '';
     };
 

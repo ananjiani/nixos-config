@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: persona-mcp
-          image: zot.zot.svc.cluster.local:5000/ammar/persona-mcp:latest
+          image: zot.lan:5000/ammar/persona-mcp:latest
           ports:
             - name: http
               containerPort: 8080

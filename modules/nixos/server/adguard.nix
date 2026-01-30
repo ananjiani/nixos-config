@@ -233,6 +233,14 @@ _: {
             domain = "voicemail.lan";
             answer = "192.168.1.52";
           }
+          {
+            domain = "persona.lan";
+            answer = "192.168.1.52";
+          }
+          {
+            domain = "zot.lan";
+            answer = "192.168.1.56";
+          }
 
           # Wyoming Whisper (Keepalived VIP - rohan primary, boromir backup)
           {
