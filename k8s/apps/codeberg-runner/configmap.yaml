@@ -12,7 +12,7 @@ data:
       capacity: 2
       timeout: 3h
       labels:
-        - "ubuntu-latest:docker://ghcr.io/catthehacker/ubuntu:act-latest"
+        - "ubuntu-latest:docker://zot.zot.svc.cluster.local:5000/ghcr.io/catthehacker/ubuntu:act-latest"
     cache:
       enabled: false
     container:
