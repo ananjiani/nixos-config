@@ -1,6 +1,6 @@
-# Pippin - Clawdbot AI Assistant (Proxmox VM on the-shire)
+# Pippin - Openclaw AI Assistant (Proxmox VM on the-shire)
 #
-# Dedicated isolated VM for clawdbot to safely execute arbitrary commands.
+# Dedicated isolated VM for openclaw to safely execute arbitrary commands.
 # Uses npm-based installation for simplicity and small footprint.
 {
   inputs,
@@ -28,7 +28,7 @@
       "192.168.1.53" # AdGuard VIP with internal DNS rewrites
       "9.9.9.9" # Quad9 fallback
     ];
-    # Allow clawdbot web UI access
+    # Allow openclaw web UI access
     firewall.allowedTCPPorts = [ 18789 ];
   };
 
@@ -41,8 +41,8 @@
       bifrost_api_key = { };
       tavily_api_key = { };
     };
-    # Environment file for clawdbot service
-    templates."clawdbot.env" = {
+    # Environment file for openclaw service
+    templates."openclaw.env" = {
       content = ''
         TELEGRAM_BOT_TOKEN=${config.sops.placeholder.telegram_bot_token}
         BIFROST_API_KEY=${config.sops.placeholder.bifrost_api_key}
@@ -109,9 +109,9 @@
     "d /var/lib/clawdbot/.npm-global 0755 root root -"
   ];
 
-  # Clawdbot systemd service
-  systemd.services.clawdbot = {
-    description = "Clawdbot AI Assistant";
+  # Openclaw systemd service
+  systemd.services.openclaw = {
+    description = "Openclaw AI Assistant";
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
@@ -121,8 +121,8 @@
       NPM_CONFIG_PREFIX = "/var/lib/clawdbot/.npm-global";
       # Skip native libvips build (uses JS fallback)
       SHARP_IGNORE_GLOBAL_LIBVIPS = "1";
-      # Gateway auth token for LAN binding (required by clawdbot)
-      CLAWDBOT_GATEWAY_TOKEN = "pippin-gateway-token";
+      # Gateway auth token for LAN binding (required by openclaw)
+      OPENCWL_GATEWAY_TOKEN = "pippin-gateway-token";
     };
 
     path = [ "/run/current-system/sw" ];
@@ -130,45 +130,53 @@
     serviceConfig = {
       Type = "simple";
       WorkingDirectory = "/var/lib/clawdbot";
-      EnvironmentFile = config.sops.templates."clawdbot.env".path;
+      EnvironmentFile = config.sops.templates."openclaw.env".path;
 
       # Allow 10 minutes for initial npm install
       TimeoutStartSec = "10min";
 
-      # Install and setup clawdbot
+      # Install and setup openclaw
       ExecStartPre = [
-        (pkgs.writeShellScript "clawdbot-install" ''
+        (pkgs.writeShellScript "openclaw-install" ''
           set -euo pipefail
           export PATH=/var/lib/clawdbot/.npm-global/bin:$PATH
 
-          if [ ! -x /var/lib/clawdbot/.npm-global/bin/clawdbot ]; then
-            echo "Installing clawdbot..."
-            npm install -g clawdbot@latest
+          if [ ! -x /var/lib/clawdbot/.npm-global/bin/openclaw ]; then
+            echo "Installing openclaw..."
+            npm install -g openclaw@latest
           fi
 
-          # Install Tavily search skill if not present
-          # Note: clawdhub is broken (missing undici dep), so we use sparse checkout
-          if [ ! -d "$HOME/.clawdbot/skills/tavily-search" ]; then
-            echo "Installing Tavily search skill from GitHub..."
-            mkdir -p "$HOME/.clawdbot/skills"
-            cd "$HOME/.clawdbot/skills"
-            git clone --depth 1 --filter=blob:none --sparse https://github.com/clawdbot/skills.git _temp_skills
-            cd _temp_skills
-            git sparse-checkout set skills/arun-8687/tavily-search
-            mv skills/arun-8687/tavily-search ../tavily-search
-            cd ..
-            rm -rf _temp_skills
-          fi
+          # Install skills from clawdbot/skills repo (clawdhub is broken)
+          install_skill() {
+            local skill_path="$1"
+            local skill_name="$2"
+            if [ ! -d "$HOME/.openclaw/skills/$skill_name" ]; then
+              echo "Installing $skill_name skill from GitHub..."
+              mkdir -p "$HOME/.openclaw/skills"
+              cd "$HOME/.openclaw/skills"
+              git clone --depth 1 --filter=blob:none --sparse https://github.com/clawdbot/skills.git _temp_skills
+              cd _temp_skills
+              git sparse-checkout set "$skill_path"
+              mv "$skill_path" ../"$skill_name"
+              cd ..
+              rm -rf _temp_skills
+            fi
+          }
+
+          install_skill "skills/arun-8687/tavily-search" "tavily-search"
+          install_skill "skills/clawdbot/github" "github"
+          install_skill "skills/clawdbot/weather" "weather"
+          install_skill "skills/clawdbot/session-logs" "session-logs"
         '')
-        (pkgs.writeShellScript "clawdbot-setup" ''
+        (pkgs.writeShellScript "openclaw-setup" ''
           set -euo pipefail
           export PATH=/var/lib/clawdbot/.npm-global/bin:$PATH
 
           # Only run doctor --fix on first setup (when telegram isn't configured)
-          CONFIG="$HOME/.clawdbot/clawdbot.json"
+          CONFIG="$HOME/.openclaw/openclaw.json"
           if [ ! -f "$CONFIG" ] || ! grep -q '"telegram"' "$CONFIG" 2>/dev/null; then
-            echo "Running initial clawdbot setup..."
-            clawdbot doctor --fix --non-interactive || true
+            echo "Running initial openclaw setup..."
+            openclaw doctor --fix --non-interactive || true
           fi
 
           # Ensure gateway token and Bifrost provider are in config
@@ -179,7 +187,7 @@
               let changed = false;
 
               // Gateway token (for CLI and web UI pairing)
-              const token = process.env.CLAWDBOT_GATEWAY_TOKEN;
+              const token = process.env.OPENCWL_GATEWAY_TOKEN;
               if (!config.gateway || config.gateway.auth?.token !== token) {
                 config.gateway = {
                   auth: { token },
@@ -264,17 +272,15 @@
         '')
       ];
 
-      ExecStart = "/var/lib/clawdbot/.npm-global/bin/clawdbot gateway --port 18789 --bind lan --allow-unconfigured";
+      ExecStart = "/var/lib/clawdbot/.npm-global/bin/openclaw gateway --port 18789 --bind lan --allow-unconfigured";
 
       Restart = "on-failure";
       RestartSec = "10s";
 
-      # Security hardening
+      # Security hardening (middle ground - relaxed filesystem access)
       NoNewPrivileges = true;
-      ProtectSystem = "strict";
-      ProtectHome = true;
       PrivateTmp = true;
-      ReadWritePaths = [ "/var/lib/clawdbot" ];
+      # Note: ProtectSystem and ProtectHome removed to allow full VM management
     };
   };
 
