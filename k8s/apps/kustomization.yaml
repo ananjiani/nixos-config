@@ -19,6 +19,7 @@ resources:
   - stremio
   - bifrost
   - lobechat
+  - monitoring
   - renovate
   - clawdbot
   - zot

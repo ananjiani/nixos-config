@@ -242,6 +242,14 @@ _: {
             answer = "192.168.1.52";
           }
           {
+            domain = "grafana.dimensiondoor.xyz";
+            answer = "192.168.1.52";
+          }
+          {
+            domain = "grafana.lan";
+            answer = "192.168.1.52";
+          }
+          {
             domain = "zot.lan";
             answer = "192.168.1.56";
           }

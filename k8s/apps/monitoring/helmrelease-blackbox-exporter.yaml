@@ -1,0 +1,77 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: prometheus-blackbox-exporter
+  namespace: monitoring
+spec:
+  interval: 1h
+  dependsOn:
+    - name: kube-prometheus-stack
+  chart:
+    spec:
+      chart: prometheus-blackbox-exporter
+      version: "11.7.1"
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+      interval: 1h
+  values:
+    config:
+      modules:
+        http_2xx:
+          prober: http
+          timeout: 10s
+          http:
+            valid_http_versions:
+              - "HTTP/1.1"
+              - "HTTP/2.0"
+            follow_redirects: true
+            preferred_ip_protocol: "ip4"
+            tls_config:
+              insecure_skip_verify: false
+
+    resources:
+      requests:
+        memory: "32Mi"
+        cpu: "25m"
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+
+    serviceMonitor:
+      enabled: true
+      selfMonitor:
+        enabled: true
+      defaults:
+        interval: 60s
+        scrapeTimeout: 30s
+        module: http_2xx
+      targets:
+        - name: bifrost
+          url: https://bifrost.dimensiondoor.xyz
+        - name: clawd
+          url: https://clawd.dimensiondoor.xyz
+        - name: ntfy
+          url: https://ntfy.dimensiondoor.xyz
+        - name: open-webui
+          url: https://ai.dimensiondoor.xyz
+        - name: immich
+          url: https://immich.dimensiondoor.xyz
+        - name: authentik
+          url: https://auth.dimensiondoor.xyz
+        - name: forgejo
+          url: https://git.dimensiondoor.xyz
+        - name: home-assistant
+          url: https://ha.dimensiondoor.xyz
+        - name: lobechat
+          url: https://lobe.dimensiondoor.xyz
+        - name: scriberr
+          url: https://scriberr.dimensiondoor.xyz
+        - name: attic
+          url: https://attic.dimensiondoor.xyz
+        - name: homepage
+          url: https://home.dimensiondoor.xyz
+        - name: headscale
+          url: https://ts.dimensiondoor.xyz
