@@ -231,12 +231,14 @@
                     {
                       id: 'kimi-coding/kimi-for-coding',
                       name: 'Kimi K2.5 (Coder)',
-                      api: 'anthropic-messages',
+                      api: 'openai-completions',
                       reasoning: true,
-                      input: ['text', 'image'],
+                      input: ['text'],
                       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
                       contextWindow: 262144,
-                      maxTokens: 96000
+                      maxTokens: 32768,
+                      headers: { 'User-Agent': 'KimiCLI/0.77' },
+                      compat: { supportsDeveloperRole: false }
                     }
               ]
               };
