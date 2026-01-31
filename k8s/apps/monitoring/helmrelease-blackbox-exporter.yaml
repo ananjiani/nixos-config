@@ -49,29 +49,30 @@ spec:
         scrapeTimeout: 30s
         module: http_2xx
       targets:
+        # Internal service probes (reliable, no DNS dependency on AdGuard)
         - name: bifrost
-          url: https://bifrost.dimensiondoor.xyz
+          url: http://bifrost.bifrost.svc:8080
         - name: clawd
-          url: https://clawd.dimensiondoor.xyz
+          url: http://clawdbot-external.clawdbot.svc:18789
         - name: ntfy
-          url: https://ntfy.dimensiondoor.xyz
+          url: http://ntfy.ntfy.svc:80
         - name: open-webui
-          url: https://ai.dimensiondoor.xyz
+          url: http://open-webui.open-webui.svc:8080
         - name: immich
-          url: https://immich.dimensiondoor.xyz
+          url: http://immich-external.immich.svc:2283
         - name: authentik
-          url: https://auth.dimensiondoor.xyz
+          url: http://authentik-server.authentik.svc:80
         - name: forgejo
-          url: https://git.dimensiondoor.xyz
+          url: http://forgejo-http.forgejo.svc:3000
         - name: home-assistant
-          url: https://ha.dimensiondoor.xyz
+          url: http://home-assistant-external.home-assistant.svc:8123
         - name: lobechat
-          url: https://lobe.dimensiondoor.xyz
+          url: http://lobechat.lobechat.svc:3210
         - name: scriberr
-          url: https://scriberr.dimensiondoor.xyz
+          url: http://scriberr-external.scriberr.svc:8080
         - name: attic
-          url: https://attic.dimensiondoor.xyz
+          url: http://attic-external.attic.svc:8080
         - name: homepage
-          url: https://home.dimensiondoor.xyz
+          url: http://homepage.homepage.svc:3000
         - name: headscale
-          url: https://ts.dimensiondoor.xyz
+          url: http://headscale.headscale.svc:8080
