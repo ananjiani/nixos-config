@@ -77,7 +77,30 @@
   # Node.js for clawdbot
   environment.systemPackages = with pkgs; [
     nodejs_22
-    git # Required by clawdbot installer
+    git
+    openssh
+    curl
+    jq
+    # Git platforms
+    gh
+    codeberg-cli
+    # Search/files
+    ripgrep
+    fd
+    tree
+    bat
+    # Data processing
+    yq
+    python3
+    # Network
+    wget
+    httpie
+    # Archives
+    unzip
+    zip
+    gnutar
+    # Browser
+    chromium
   ];
 
   # Clawdbot data directory
@@ -102,15 +125,7 @@
       OPENCWL_GATEWAY_TOKEN = "pippin-gateway-token";
     };
 
-    path = [
-      pkgs.nodejs_22
-      pkgs.git
-      pkgs.coreutils
-      pkgs.bash
-      pkgs.gnused
-      pkgs.gnugrep
-      pkgs.gawk
-    ];
+    path = [ "/run/current-system/sw" ];
 
     serviceConfig = {
       Type = "simple";
@@ -133,14 +148,14 @@
 
           # Install Tavily search skill if not present
           # Note: clawdhub is broken (missing undici dep), so we use sparse checkout
-          if [ ! -d "$HOME/.openclaw/skills/tavily" ]; then
+          if [ ! -d "$HOME/.openclaw/skills/tavily-search" ]; then
             echo "Installing Tavily search skill from GitHub..."
             mkdir -p "$HOME/.openclaw/skills"
             cd "$HOME/.openclaw/skills"
             git clone --depth 1 --filter=blob:none --sparse https://github.com/clawdbot/skills.git _temp_skills
             cd _temp_skills
-            git sparse-checkout set skills/bert-builder/tavily
-            mv skills/bert-builder/tavily ../tavily
+            git sparse-checkout set skills/arun-8687/tavily-search
+            mv skills/arun-8687/tavily-search ../tavily-search
             cd ..
             rm -rf _temp_skills
           fi
@@ -184,36 +199,6 @@
                   api: 'openai-completions',
                   models: [
                     {
-                      id: 'cliproxy/claude-opus-4-5-20251101',
-                      name: 'Claude Opus 4.5',
-                      api: 'openai-completions',
-                      reasoning: true,
-                      input: ['text', 'image'],
-                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-                      contextWindow: 200000,
-                      maxTokens: 64000
-                    },
-                    {
-                      id: 'cliproxy/claude-sonnet-4-5-20250929',
-                      name: 'Claude Sonnet 4.5',
-                      api: 'openai-completions',
-                      reasoning: true,
-                      input: ['text', 'image'],
-                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-                      contextWindow: 200000,
-                      maxTokens: 64000
-                    },
-                    {
-                      id: 'cliproxy/claude-haiku-4-5-20251001',
-                      name: 'Claude Haiku 4.5',
-                      api: 'openai-completions',
-                      reasoning: true,
-                      input: ['text', 'image'],
-                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-                      contextWindow: 200000,
-                      maxTokens: 64000
-                    },
-                    {
                       id: 'deepseek/deepseek-chat',
                       name: 'DeepSeek V3',
                       api: 'openai-completions',
@@ -237,21 +222,41 @@
                       id: 'zai/glm-4.7',
                       name: 'GLM 4.7',
                       api: 'openai-completions',
-                      reasoning: true,
+                      reasoning: false,  // ZAI doesn't accept OpenAI reasoning param
                       input: ['text'],
                       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
                       contextWindow: 200000,
                       maxTokens: 128000
+                    },
+                    {
+                      id: 'cliproxy/kimi-for-coding',
+                      name: 'Kimi K2.5 (Coder)',
+                      api: 'openai-completions',
+                      reasoning: false,
+                      input: ['text'],
+                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                      contextWindow: 262144,
+                      maxTokens: 32768,
+                      compat: { supportsDeveloperRole: false }
                     }
               ]
               };
               console.log('Bifrost provider configured');
 
-              // Set default agent model to DeepSeek V3 via Bifrost
               config.agents = config.agents || {};
               config.agents.defaults = config.agents.defaults || {};
-              config.agents.defaults.model = { primary: 'bifrost/deepseek/deepseek-chat' };
-              console.log('Default model set to bifrost/deepseek/deepseek-chat');
+              config.agents.defaults.model = { primary: 'bifrost/cliproxy/kimi-for-coding' };
+
+              // Configure embeddings for semantic memory search via Bifrost/Ollama
+              config.agents.defaults.memorySearch = {
+                provider: 'openai',
+                model: 'ollama/nomic-embed-text',
+                remote: {
+                  baseUrl: 'https://bifrost.dimensiondoor.xyz/v1',
+                  apiKey: process.env.BIFROST_API_KEY
+                }
+              };
+              console.log('Memory search embeddings configured via Bifrost/Ollama');
 
               fs.writeFileSync('$CONFIG', JSON.stringify(config, null, 2));
             "

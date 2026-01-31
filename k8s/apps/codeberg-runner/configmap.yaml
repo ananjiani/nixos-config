@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: codeberg-runner-config
+  namespace: codeberg-runner
+data:
+  config.yaml: |
+    log:
+      level: info
+    runner:
+      file: /config/.runner
+      capacity: 2
+      timeout: 3h
+      labels:
+        - "ubuntu-latest:docker://zot.zot.svc.cluster.local:5000/ghcr.io/catthehacker/ubuntu:act-latest"
+    cache:
+      enabled: false
+    container:
+      network: host
+      privileged: false
+      options: ""
+      workdir_parent: /workspace
+  daemon.json: |
+    {
+      "registry-mirrors": ["http://zot.zot.svc.cluster.local:5000"],
+      "insecure-registries": ["zot.zot.svc.cluster.local:5000"],
+      "mtu": 1400
+    }

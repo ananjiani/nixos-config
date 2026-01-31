@@ -55,7 +55,10 @@ spec:
           INSTALL_LOCK: true
 
         packages:
-          ENABLED: false
+          ENABLED: true
+          STORAGE_TYPE: local
+          PATH: /data/packages
+          CHUNKED_UPLOAD_PATH: /data/packages/tmp
 
         mirror:
           ENABLED: true
@@ -72,7 +75,7 @@ spec:
           ACCOUNT_LINKING: auto
 
         actions:
-          ENABLED: false
+          ENABLED: true
 
       # Authentik OAuth2 provider
       oauth:
@@ -113,6 +116,17 @@ spec:
       limits:
         memory: "1Gi"
         cpu: "1000m"
+
+    # NFS volume for container registry packages
+    extraVolumes:
+      - name: packages-storage
+        nfs:
+          server: 192.168.1.27 # theoden
+          path: /srv/nfs
+    extraVolumeMounts:
+      - name: packages-storage
+        mountPath: /data/packages
+        subPath: forgejo/packages
 
     # Service configuration
     service:

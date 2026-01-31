@@ -88,6 +88,7 @@ resource "opnsense_firewall_alias" "vpn_exempt_destinations" {
   content = [
     "api.deepseek.com",
     "api.tavily.com",
+    "code.forgejo.org",
   ]
 }
 

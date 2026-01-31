@@ -1,0 +1,57 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zot
+  namespace: zot
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: zot
+  template:
+    metadata:
+      labels:
+        app: zot
+    spec:
+      containers:
+        - name: zot
+          image: ghcr.io/project-zot/zot-linux-amd64:v2.1.2
+          args: ["serve", "/etc/zot/config.json"]
+          ports:
+            - containerPort: 5000
+              name: http
+          volumeMounts:
+            - name: config
+              mountPath: /etc/zot
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/zot
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "2Gi"
+          readinessProbe:
+            httpGet:
+              path: /v2/
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /v2/
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+      volumes:
+        - name: config
+          configMap:
+            name: zot-config
+        - name: data
+          nfs:
+            server: 192.168.1.27
+            path: /srv/nfs/zot

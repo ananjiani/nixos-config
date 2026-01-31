@@ -23,5 +23,19 @@ spec:
       services:
         - name: forgejo-http
           port: 3000
+          serversTransport: forgejo-transport
   tls:
     secretName: forgejo-tls
+---
+# ServersTransport with extended timeouts for container registry blob uploads
+# Default 60s responseHeaderTimeout is too short for large image layer pushes
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: forgejo-transport
+  namespace: forgejo
+spec:
+  forwardingTimeouts:
+    dialTimeout: 30s
+    responseHeaderTimeout: 600s
+    idleConnTimeout: 90s

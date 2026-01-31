@@ -1,20 +1,33 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: forgejo-runner
-  namespace: forgejo-runner
+  name: codeberg-runner
+  namespace: codeberg-runner
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: forgejo-runner
+      app: codeberg-runner
   template:
     metadata:
       labels:
-        app: forgejo-runner
+        app: codeberg-runner
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - comet
+                        - stremio-server
+                topologyKey: kubernetes.io/hostname
       containers:
         - name: runner
           image: code.forgejo.org/forgejo/runner:12.6.1
@@ -41,6 +54,7 @@ spec:
               cpu: "100m"
             limits:
               memory: "512Mi"
+              cpu: "500m"
         - name: dind
           image: docker:27-dind
           securityContext:
@@ -53,12 +67,16 @@ spec:
               mountPath: /certs
             - name: dind-storage
               mountPath: /var/lib/docker
+            - name: docker-config
+              mountPath: /etc/docker
+              readOnly: true
           resources:
             requests:
               memory: "256Mi"
               cpu: "100m"
             limits:
               memory: "2Gi"
+              cpu: "2"
       volumes:
         - name: docker-certs
           emptyDir: {}
@@ -66,13 +84,19 @@ spec:
           emptyDir: {}
         - name: dind-storage
           emptyDir: {}
+        - name: docker-config
+          configMap:
+            name: codeberg-runner-config
+            items:
+              - key: daemon.json
+                path: daemon.json
         - name: config
           projected:
             sources:
               - configMap:
-                  name: forgejo-runner-config
+                  name: codeberg-runner-config
               - secret:
-                  name: forgejo-runner
+                  name: codeberg-runner
                   items:
                     - key: runner
                       path: .runner

@@ -1,0 +1,117 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forgejo-runner
+  namespace: forgejo
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: forgejo-runner
+  template:
+    metadata:
+      labels:
+        app: forgejo-runner
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - comet
+                        - stremio-server
+                topologyKey: kubernetes.io/hostname
+      initContainers:
+        - name: copy-runner-config
+          image: busybox:1.37
+          command: ["sh", "-c", "cp /secret/.runner /data/.runner && chmod 666 /data/.runner"]
+          volumeMounts:
+            - name: runner-secret
+              mountPath: /secret
+              readOnly: true
+            - name: runner-data
+              mountPath: /data
+      containers:
+        - name: runner
+          image: code.forgejo.org/forgejo/runner:12.6.1
+          command: ["forgejo-runner", "daemon", "--config", "/config/config.yaml"]
+          env:
+            - name: DOCKER_HOST
+              value: tcp://localhost:2376
+            - name: DOCKER_TLS_VERIFY
+              value: "1"
+            - name: DOCKER_CERT_PATH
+              value: /certs/client
+            - name: REGISTRY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: forgejo-runner
+                  key: registry-token
+          volumeMounts:
+            - name: docker-certs
+              mountPath: /certs
+              readOnly: true
+            - name: runner-data
+              mountPath: /data
+            - name: config
+              mountPath: /config
+              readOnly: true
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+        - name: dind
+          image: docker:27-dind
+          securityContext:
+            privileged: true
+          env:
+            - name: DOCKER_TLS_CERTDIR
+              value: /certs
+          volumeMounts:
+            - name: docker-certs
+              mountPath: /certs
+            - name: dind-storage
+              mountPath: /var/lib/docker
+            - name: docker-config
+              mountPath: /etc/docker
+              readOnly: true
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "2Gi"
+              cpu: "2"
+      volumes:
+        - name: docker-certs
+          emptyDir: {}
+        - name: runner-data
+          emptyDir: {}
+        - name: dind-storage
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: forgejo-runner-config
+        - name: docker-config
+          configMap:
+            name: forgejo-runner-config
+            items:
+              - key: daemon.json
+                path: daemon.json
+        - name: runner-secret
+          secret:
+            secretName: forgejo-runner
+            items:
+              - key: runner
+                path: .runner

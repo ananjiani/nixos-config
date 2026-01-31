@@ -4,10 +4,6 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - secret.yaml
-  - helmrelease.yaml
-  - certificate.yaml
+  - deployment.yaml
+  - service.yaml
   - ingressroute.yaml
-  - cronjob.yaml
-  - runner-configmap.yaml
-  - runner-secret.yaml
-  - runner-deployment.yaml

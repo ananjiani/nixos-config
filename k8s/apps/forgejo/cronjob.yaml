@@ -1,0 +1,66 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: forgejo-package-cleanup
+  namespace: forgejo
+spec:
+  schedule: "0 3 * * 0" # Sunday 3am
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: cleanup
+              image: alpine/curl:latest
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  API="http://forgejo-http.forgejo.svc.cluster.local:3000/api/v1"
+                  AUTH="Authorization: token ${FORGEJO_TOKEN}"
+                  KEEP=5
+
+                  echo "Fetching packages..."
+                  # List all packages for the admin user
+                  packages=$(curl -sf -H "$AUTH" "$API/packages/forgejo-admin" | \
+                    grep -o '"name":"[^"]*"' | cut -d'"' -f4 | sort -u)
+
+                  for pkg in $packages; do
+                    echo "Processing package: $pkg"
+                    # List versions sorted by created date (newest first)
+                    versions=$(curl -sf -H "$AUTH" \
+                      "$API/packages/forgejo-admin/container/$pkg?limit=50" | \
+                      grep -o '"version":"[^"]*"' | cut -d'"' -f4)
+
+                    count=0
+                    for ver in $versions; do
+                      count=$((count + 1))
+                      if [ "$count" -gt "$KEEP" ]; then
+                        echo "  Deleting $pkg:$ver"
+                        curl -sf -X DELETE -H "$AUTH" \
+                          "$API/packages/forgejo-admin/container/$pkg/$ver" || \
+                          echo "  Failed to delete $pkg:$ver"
+                      fi
+                    done
+                    echo "  Kept $((count < KEEP ? count : KEEP)) of $count versions"
+                  done
+                  echo "Cleanup complete."
+              env:
+                - name: FORGEJO_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: forgejo-secrets
+                      key: api_token
+              resources:
+                requests:
+                  memory: "32Mi"
+                  cpu: "50m"
+                limits:
+                  memory: "128Mi"
+                  cpu: "200m"
+          restartPolicy: OnFailure

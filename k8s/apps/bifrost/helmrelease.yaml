@@ -73,6 +73,7 @@ spec:
         deepseek:
           network_config:
             base_url: "https://api.deepseek.com"
+            default_request_timeout_in_seconds: 120
           custom_provider_config:
             base_provider_type: openai
           keys:
@@ -82,6 +83,7 @@ spec:
         zai:
           network_config:
             base_url: "https://api.z.ai/api/coding/paas/v4"
+            default_request_timeout_in_seconds: 120
           custom_provider_config:
             base_provider_type: openai
             request_path_overrides:
@@ -125,11 +127,6 @@ spec:
           envVar: CLIPROXY_API_KEY
 
       governance:
-        virtualKeys:
-          - id: default
-            name: default
-            value: env.BIFROST_DEFAULT_VK
-            is_active: true
         authConfig:
           isEnabled: true
           disableAuthOnInference: false
