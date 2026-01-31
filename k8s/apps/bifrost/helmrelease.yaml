@@ -131,6 +131,12 @@ spec:
           existingSecret: bifrost-secrets
           usernameKey: admin-username
           passwordKey: admin-password
+        virtualKeys:
+          - id: "default"
+            name: "Default Virtual Key"
+            description: "Default key for all services (openclaw, lobechat, etc.)"
+            value: "env.BIFROST_DEFAULT_VK"
+            is_active: true
 
     env:
       - name: BIFROST_DEFAULT_VK
