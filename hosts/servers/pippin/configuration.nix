@@ -146,19 +146,27 @@
             npm install -g openclaw@latest
           fi
 
-          # Install Tavily search skill if not present
-          # Note: clawdhub is broken (missing undici dep), so we use sparse checkout
-          if [ ! -d "$HOME/.openclaw/skills/tavily-search" ]; then
-            echo "Installing Tavily search skill from GitHub..."
-            mkdir -p "$HOME/.openclaw/skills"
-            cd "$HOME/.openclaw/skills"
-            git clone --depth 1 --filter=blob:none --sparse https://github.com/clawdbot/skills.git _temp_skills
-            cd _temp_skills
-            git sparse-checkout set skills/arun-8687/tavily-search
-            mv skills/arun-8687/tavily-search ../tavily-search
-            cd ..
-            rm -rf _temp_skills
-          fi
+          # Install skills from clawdbot/skills repo (clawdhub is broken)
+          install_skill() {
+            local skill_path="$1"
+            local skill_name="$2"
+            if [ ! -d "$HOME/.openclaw/skills/$skill_name" ]; then
+              echo "Installing $skill_name skill from GitHub..."
+              mkdir -p "$HOME/.openclaw/skills"
+              cd "$HOME/.openclaw/skills"
+              git clone --depth 1 --filter=blob:none --sparse https://github.com/clawdbot/skills.git _temp_skills
+              cd _temp_skills
+              git sparse-checkout set "$skill_path"
+              mv "$skill_path" ../"$skill_name"
+              cd ..
+              rm -rf _temp_skills
+            fi
+          }
+
+          install_skill "skills/arun-8687/tavily-search" "tavily-search"
+          install_skill "skills/clawdbot/github" "github"
+          install_skill "skills/clawdbot/weather" "weather"
+          install_skill "skills/clawdbot/session-logs" "session-logs"
         '')
         (pkgs.writeShellScript "openclaw-setup" ''
           set -euo pipefail
