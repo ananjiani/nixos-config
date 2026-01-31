@@ -231,7 +231,7 @@
                     {
                       id: 'kimi-coding/kimi-for-coding',
                       name: 'Kimi K2.5 (Coder)',
-                      api: 'openai-completions',
+                      api: 'anthropic-messages',
                       reasoning: true,
                       input: ['text', 'image'],
                       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
