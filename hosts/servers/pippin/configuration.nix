@@ -38,6 +38,7 @@
     secrets = {
       tailscale_authkey = { };
       telegram_bot_token = { };
+      keres_telegram_token = { };
       bifrost_api_key = { };
       tavily_api_key = { };
     };
@@ -45,8 +46,10 @@
     templates."openclaw.env" = {
       content = ''
         TELEGRAM_BOT_TOKEN=${config.sops.placeholder.telegram_bot_token}
+        KERES_TELEGRAM_TOKEN=${config.sops.placeholder.keres_telegram_token}
         BIFROST_API_KEY=${config.sops.placeholder.bifrost_api_key}
         TAVILY_API_KEY=${config.sops.placeholder.tavily_api_key}
+        PERSONA_MCP_URL=https://mcp.persona.lan/mcp
       '';
     };
   };
@@ -167,6 +170,7 @@
           install_skill "skills/clawdbot/github" "github"
           install_skill "skills/clawdbot/weather" "weather"
           install_skill "skills/clawdbot/session-logs" "session-logs"
+          install_skill "skills/clawdbot/persona-mcp-bridge" "persona-mcp-bridge"
         '')
         (pkgs.writeShellScript "openclaw-setup" ''
           set -euo pipefail
@@ -265,6 +269,47 @@
                 }
               };
               console.log('Memory search embeddings configured via Bifrost/Ollama');
+
+              // Multi-account Telegram setup: D43M0N + Keres
+              config.channels = config.channels || {};
+              config.channels.telegram = {
+                enabled: true,
+                accounts: {
+                  d43m0n: {
+                    name: 'D43M0N',
+                    botToken: process.env.TELEGRAM_BOT_TOKEN,
+                    dmPolicy: 'allowlist',
+                    allowFrom: ['6341127220']
+                  },
+                  keres: {
+                    name: 'Keres',
+                    botToken: process.env.KERES_TELEGRAM_TOKEN,
+                    dmPolicy: 'allowlist',
+                    allowFrom: ['6341127220']
+                  }
+                }
+              };
+              console.log('Multi-account Telegram configured (D43M0N + Keres)');
+
+              // Agent bindings: route each Telegram account to its agent
+              config.agents.list = [
+                {
+                  id: 'main',
+                  name: 'D43M0N',
+                  description: 'Technical executor and infrastructure daemon'
+                },
+                {
+                  id: 'keres',
+                  name: 'Keres',
+                  description: 'Persona-driven companion (uses MCP)',
+                  skills: ['persona-mcp-bridge']
+                }
+              ];
+              config.agents.bindings = [
+                { agentId: 'main', match: { channel: 'telegram', accountId: 'd43m0n' } },
+                { agentId: 'keres', match: { channel: 'telegram', accountId: 'keres' } }
+              ];
+              console.log('Agent bindings configured: d43m0n -> main, keres -> keres');
 
               fs.writeFileSync('$CONFIG', JSON.stringify(config, null, 2));
             "
