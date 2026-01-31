@@ -154,6 +154,7 @@
               echo "Installing $skill_name skill from GitHub..."
               mkdir -p "$HOME/.openclaw/skills"
               cd "$HOME/.openclaw/skills"
+              rm -rf _temp_skills
               git clone --depth 1 --filter=blob:none --sparse https://github.com/clawdbot/skills.git _temp_skills
               cd _temp_skills
               git sparse-checkout set "$skill_path"
@@ -164,98 +165,93 @@
           }
 
           install_skill "skills/arun-8687/tavily-search" "tavily-search"
-          install_skill "skills/clawdbot/github" "github"
-          install_skill "skills/clawdbot/weather" "weather"
-          install_skill "skills/clawdbot/session-logs" "session-logs"
+          install_skill "skills/steipete/github" "github"
+          install_skill "skills/steipete/weather" "weather"
         '')
         (pkgs.writeShellScript "openclaw-setup" ''
           set -euo pipefail
           export PATH=/var/lib/clawdbot/.npm-global/bin:$PATH
 
-          # Only run doctor --fix on first setup (when telegram isn't configured)
           CONFIG="$HOME/.openclaw/openclaw.json"
-          if [ ! -f "$CONFIG" ] || ! grep -q '"telegram"' "$CONFIG" 2>/dev/null; then
+
+          # Bootstrap config if it doesn't exist
+          if [ ! -f "$CONFIG" ]; then
             echo "Running initial openclaw setup..."
             openclaw doctor --fix --non-interactive || true
           fi
 
-          # Ensure gateway token and Bifrost provider are in config
+          # Declarative config management — Nix is source of truth
           if [ -f "$CONFIG" ]; then
             node -e "
               const fs = require('fs');
               const config = JSON.parse(fs.readFileSync('$CONFIG'));
-              let changed = false;
 
-              // Gateway token (for CLI and web UI pairing)
+              // Gateway: merge to preserve runtime state (paired devices etc.)
               const token = process.env.OPENCWL_GATEWAY_TOKEN;
-              if (!config.gateway || config.gateway.auth?.token !== token) {
-                config.gateway = {
-                  auth: { token },
-                  remote: { token }
-                };
-                changed = true;
-                console.log('Gateway token configured');
-              }
+              config.gateway = config.gateway || {};
+              config.gateway.auth = { token };
+              config.gateway.remote = { token };
+              config.gateway.mode = 'local';
+              config.gateway.trustedProxies = ['192.168.1.21', '192.168.1.50'];
+              console.log('Gateway configured');
 
               // Bifrost provider (OpenAI-compatible LLM gateway)
-              // Always overwrite to keep Nix config as source of truth
               config.models = config.models || {};
               config.models.providers = config.models.providers || {};
               config.models.providers.bifrost = {
-                  baseUrl: 'https://bifrost.dimensiondoor.xyz/v1',
-                  apiKey: process.env.BIFROST_API_KEY,
-                  api: 'openai-completions',
-                  models: [
-                    {
-                      id: 'deepseek/deepseek-chat',
-                      name: 'DeepSeek V3',
-                      api: 'openai-completions',
-                      reasoning: false,
-                      input: ['text'],
-                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-                      contextWindow: 64000,
-                      maxTokens: 8000
-                    },
-                    {
-                      id: 'deepseek/deepseek-reasoner',
-                      name: 'DeepSeek R1',
-                      api: 'openai-completions',
-                      reasoning: true,
-                      input: ['text'],
-                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-                      contextWindow: 64000,
-                      maxTokens: 8000
-                    },
-                    {
-                      id: 'zai/glm-4.7',
-                      name: 'GLM 4.7',
-                      api: 'openai-completions',
-                      reasoning: false,  // ZAI doesn't accept OpenAI reasoning param
-                      input: ['text'],
-                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-                      contextWindow: 200000,
-                      maxTokens: 128000
-                    },
-                    {
-                      id: 'cliproxy/kimi-for-coding',
-                      name: 'Kimi K2.5 (Coder)',
-                      api: 'openai-completions',
-                      reasoning: false,
-                      input: ['text'],
-                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-                      contextWindow: 262144,
-                      maxTokens: 32768,
-                      compat: { supportsDeveloperRole: false }
-                    }
-              ]
+                baseUrl: 'https://bifrost.dimensiondoor.xyz/v1',
+                apiKey: process.env.BIFROST_API_KEY,
+                api: 'openai-completions',
+                models: [
+                  {
+                    id: 'deepseek/deepseek-chat',
+                    name: 'DeepSeek V3',
+                    api: 'openai-completions',
+                    reasoning: false,
+                    input: ['text'],
+                    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                    contextWindow: 64000,
+                    maxTokens: 8000
+                  },
+                  {
+                    id: 'deepseek/deepseek-reasoner',
+                    name: 'DeepSeek R1',
+                    api: 'openai-completions',
+                    reasoning: true,
+                    input: ['text'],
+                    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                    contextWindow: 64000,
+                    maxTokens: 8000
+                  },
+                  {
+                    id: 'zai/glm-4.7',
+                    name: 'GLM 4.7',
+                    api: 'openai-completions',
+                    reasoning: false,
+                    input: ['text'],
+                    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                    contextWindow: 200000,
+                    maxTokens: 128000
+                  },
+                  {
+                    id: 'cliproxy/kimi-for-coding',
+                    name: 'Kimi K2.5 (Coder)',
+                    api: 'openai-completions',
+                    reasoning: false,
+                    input: ['text'],
+                    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                    contextWindow: 262144,
+                    maxTokens: 32768,
+                    compat: { supportsDeveloperRole: false }
+                  }
+                ]
               };
               console.log('Bifrost provider configured');
 
+              // Agent defaults
               config.agents = config.agents || {};
               config.agents.defaults = config.agents.defaults || {};
               config.agents.defaults.model = { primary: 'bifrost/cliproxy/kimi-for-coding' };
-
-              // Configure embeddings for semantic memory search via Bifrost/Ollama
               config.agents.defaults.memorySearch = {
                 provider: 'openai',
                 model: 'ollama/nomic-embed-text',
@@ -265,6 +261,15 @@
                 }
               };
               console.log('Memory search embeddings configured via Bifrost/Ollama');
+
+              // Telegram plugin: schema is empty, bot token comes from env
+              config.plugins = config.plugins || {};
+              config.plugins.entries = config.plugins.entries || {};
+              config.plugins.entries.telegram = { enabled: true, config: {} };
+              console.log('Telegram plugin config sanitized');
+
+              // Fix state dir permissions
+              fs.chmodSync('$HOME/.openclaw', 0o700);
 
               fs.writeFileSync('$CONFIG', JSON.stringify(config, null, 2));
             "
