@@ -229,8 +229,8 @@
                       maxTokens: 128000
                     },
                     {
-                      id: 'moonshot/kimi-k2.5-preview',
-                      name: 'Kimi K2.5',
+                      id: 'kimi-coding/kimi-for-coding',
+                      name: 'Kimi K2.5 (Coder)',
                       api: 'openai-completions',
                       reasoning: true,
                       input: ['text', 'image'],
@@ -244,7 +244,7 @@
 
               config.agents = config.agents || {};
               config.agents.defaults = config.agents.defaults || {};
-              config.agents.defaults.model = { primary: 'bifrost/moonshot/kimi-k2.5-preview' };
+              config.agents.defaults.model = { primary: 'bifrost/kimi-coding/kimi-for-coding' };
 
               // Configure embeddings for semantic memory search via Bifrost/Ollama
               config.agents.defaults.memorySearch = {
