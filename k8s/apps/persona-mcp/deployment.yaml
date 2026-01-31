@@ -39,6 +39,8 @@ spec:
               value: "deepseek-chat"
             - name: PERSONA_ACTIVE
               value: "keres"
+            - name: USER
+              value: "persona-mcp"
           volumeMounts:
             - name: personas
               mountPath: /app/personas
