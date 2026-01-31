@@ -149,6 +149,7 @@
         credential.helper = "store";
         pull.rebase = false;
         push.autoSetupRemote = true;
+        safe.directory = "/mnt/nfs/persona-mcp";
       };
     };
     lazygit.enable = true;
