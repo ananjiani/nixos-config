@@ -23,7 +23,7 @@ spec:
           image: zot.lan:5000/ammar/persona-mcp:latest
           ports:
             - name: http
-              containerPort: 8080
+              containerPort: 8000
               protocol: TCP
           env:
             - name: OPENAI_API_KEY

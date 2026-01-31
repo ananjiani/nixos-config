@@ -12,7 +12,7 @@ metadata:
     gethomepage.dev/description: "MCP Persona Server"
     gethomepage.dev/href: "http://persona.lan"
     gethomepage.dev/pod-selector: "app=persona-mcp"
-    gethomepage.dev/siteMonitor: "http://persona-mcp.persona-mcp.svc:8080/health"
+    gethomepage.dev/siteMonitor: "http://persona-mcp.persona-mcp.svc:8000/health"
 spec:
   entryPoints:
     - web
@@ -22,4 +22,4 @@ spec:
       kind: Rule
       services:
         - name: persona-mcp
-          port: 8080
+          port: 8000
