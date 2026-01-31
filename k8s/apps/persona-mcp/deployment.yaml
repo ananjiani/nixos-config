@@ -57,14 +57,14 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: http
+              port: mcp
             initialDelaySeconds: 300
             periodSeconds: 30
             timeoutSeconds: 10
           readinessProbe:
             httpGet:
               path: /health
-              port: http
+              port: mcp
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
