@@ -25,13 +25,18 @@ spec:
             - sh
             - -c
             - |
-              sed "s/REPLACE_API_KEY/$API_KEY/" /config-template/config.yaml > /config/config.yaml
+              sed -e "s/REPLACE_API_KEY/$API_KEY/" -e "s/REPLACE_KIMI_KEY/$KIMI_KEY/" /config-template/config.yaml > /config/config.yaml
           env:
             - name: API_KEY
               valueFrom:
                 secretKeyRef:
                   name: cliproxy-secrets
                   key: api-key
+            - name: KIMI_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cliproxy-secrets
+                  key: kimi-key
           volumeMounts:
             - name: config-template
               mountPath: /config-template
