@@ -37,6 +37,8 @@ spec:
               value: "/app/personas"
             - name: PERSONA_MODEL
               value: "deepseek-chat"
+            - name: PERSONA_ACTIVE
+              value: "keres"
           volumeMounts:
             - name: personas
               mountPath: /app/personas
@@ -51,7 +53,7 @@ spec:
             httpGet:
               path: /health
               port: http
-            initialDelaySeconds: 30
+            initialDelaySeconds: 300
             periodSeconds: 30
             timeoutSeconds: 10
           readinessProbe:
