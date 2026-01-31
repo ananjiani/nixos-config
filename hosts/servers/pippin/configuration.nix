@@ -229,7 +229,7 @@
                       maxTokens: 128000
                     },
                     {
-                      id: 'kimi-coding/kimi-for-coding',
+                      id: 'cliproxy/kimi-for-coding',
                       name: 'Kimi K2.5 (Coder)',
                       api: 'openai-completions',
                       reasoning: true,
@@ -237,7 +237,6 @@
                       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
                       contextWindow: 262144,
                       maxTokens: 32768,
-                      headers: { 'User-Agent': 'KimiCLI/0.77' },
                       compat: { supportsDeveloperRole: false }
                     }
               ]
@@ -246,7 +245,7 @@
 
               config.agents = config.agents || {};
               config.agents.defaults = config.agents.defaults || {};
-              config.agents.defaults.model = { primary: 'bifrost/kimi-coding/kimi-for-coding' };
+              config.agents.defaults.model = { primary: 'bifrost/cliproxy/kimi-for-coding' };
 
               // Configure embeddings for semantic memory search via Bifrost/Ollama
               config.agents.defaults.memorySearch = {
