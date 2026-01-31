@@ -39,7 +39,7 @@ spec:
             - name: PERSONA_PERSONAS_DIR
               value: "/app/personas"
             - name: PERSONA_MODEL
-              value: "deepseek-chat"
+              value: "deepseek/deepseek-chat"
             - name: PERSONA_ACTIVE
               value: "keres"
             - name: USER
