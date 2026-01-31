@@ -187,7 +187,7 @@
     nfs.server = {
       enable = true;
       exports = ''
-        /srv/nfs 192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,fsid=0)
+        /srv/nfs 192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,fsid=0,anonuid=1500,anongid=1500)
       '';
     };
 

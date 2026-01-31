@@ -3,6 +3,10 @@
 
 let
   cfg = config.modules.nfs-client;
+  mountOptions = [
+    "nfsvers=4.2"
+    "acl"
+  ];
 in
 {
   options.modules.nfs-client = {
@@ -22,8 +26,8 @@ in
 
     export = lib.mkOption {
       type = lib.types.str;
-      default = "/srv/nfs";
-      description = "NFS export path on the server";
+      default = "/";
+      description = "NFS export path on the server (/ for NFSv4 with fsid=0)";
     };
 
     automount = lib.mkOption {
@@ -40,6 +44,9 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    # NFS client support
+    boot.supportedFilesystems = [ "nfs" ];
+
     # Storage group for NFS write access (matches GID on theoden)
     users.groups.storage = {
       gid = 1500;
@@ -49,20 +56,28 @@ in
     users.users = lib.mkIf (cfg.user != null) {
       ${cfg.user}.extraGroups = [ "storage" ];
     };
-    fileSystems.${cfg.mountPoint} = {
-      device = "${cfg.server}:${cfg.export}";
-      fsType = "nfs";
-      options =
-        if cfg.automount then
-          [
-            "x-systemd.automount"
-            "noauto"
-            "x-systemd.idle-timeout=600"
-          ]
-        else
-          [
-            "_netdev"
-          ];
-    };
+
+    # Use explicit systemd units instead of fileSystems to avoid
+    # automount reload failures during activation (NixOS bug:
+    # automount units don't support reload, causing deploy-rs rollbacks)
+    systemd.mounts = [
+      {
+        what = "${cfg.server}:${cfg.export}";
+        where = cfg.mountPoint;
+        type = "nfs";
+        options = lib.concatStringsSep "," (mountOptions ++ lib.optional (!cfg.automount) "_netdev");
+        wantedBy = lib.mkIf (!cfg.automount) [ "multi-user.target" ];
+      }
+    ];
+
+    systemd.automounts = lib.mkIf cfg.automount [
+      {
+        where = cfg.mountPoint;
+        automountConfig = {
+          TimeoutIdleSec = "600";
+        };
+        wantedBy = [ "multi-user.target" ];
+      }
+    ];
   };
 }
