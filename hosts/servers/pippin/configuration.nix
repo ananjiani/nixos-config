@@ -232,7 +232,7 @@
                       id: 'cliproxy/kimi-for-coding',
                       name: 'Kimi K2.5 (Coder)',
                       api: 'openai-completions',
-                      reasoning: true,
+                      reasoning: false,
                       input: ['text'],
                       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
                       contextWindow: 262144,
