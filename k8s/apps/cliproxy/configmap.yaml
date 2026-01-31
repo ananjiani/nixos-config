@@ -15,7 +15,16 @@ data:
     # API keys - replaced by init container from secret
     api-keys:
       - "REPLACE_API_KEY"
-      - "REPLACE_KIMI_KEY"
+
+    # Kimi upstream provider (claude-compatible)
+    claude-api-key:
+      - api-key: "REPLACE_KIMI_KEY"
+        base-url: "https://api.kimi.com/coding"
+        headers:
+          User-Agent: "KimiCLI/1.3"
+        models:
+          - name: "kimi-for-coding"
+            alias: "kimi-for-coding"
 
     # Remote management panel
     remote-management:
