@@ -28,6 +28,21 @@ spec:
                         - comet
                         - stremio-server
                 topologyKey: kubernetes.io/hostname
+      initContainers:
+        - name: copy-config
+          image: code.forgejo.org/forgejo/runner:12.6.1
+          command:
+            - sh
+            - -c
+            - |
+              cp /config-src/config.yaml /config/config.yaml
+              cp /config-src/.runner /config/.runner
+          volumeMounts:
+            - name: config-src
+              mountPath: /config-src
+              readOnly: true
+            - name: runner-data
+              mountPath: /config
       containers:
         - name: runner
           image: code.forgejo.org/forgejo/runner:12.6.1
@@ -44,10 +59,7 @@ spec:
               mountPath: /certs
               readOnly: true
             - name: runner-data
-              mountPath: /data
-            - name: config
               mountPath: /config
-              readOnly: true
           resources:
             requests:
               memory: "128Mi"
@@ -90,7 +102,7 @@ spec:
             items:
               - key: daemon.json
                 path: daemon.json
-        - name: config
+        - name: config-src
           projected:
             sources:
               - configMap:
