@@ -23,3 +23,8 @@ spec:
       services:
         - name: persona-mcp
           port: 8000
+    - match: Host(`mcp.persona.lan`)
+      kind: Rule
+      services:
+        - name: persona-mcp
+          port: 8080

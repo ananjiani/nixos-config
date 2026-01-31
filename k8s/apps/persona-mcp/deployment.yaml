@@ -25,6 +25,9 @@ spec:
             - name: http
               containerPort: 8000
               protocol: TCP
+            - name: mcp
+              containerPort: 8080
+              protocol: TCP
           env:
             - name: OPENAI_API_KEY
               valueFrom:

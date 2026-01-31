@@ -13,3 +13,7 @@ spec:
       port: 8000
       targetPort: 8000
       protocol: TCP
+    - name: mcp
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
