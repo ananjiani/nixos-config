@@ -77,7 +77,30 @@
   # Node.js for clawdbot
   environment.systemPackages = with pkgs; [
     nodejs_22
-    git # Required by clawdbot installer
+    git
+    openssh
+    curl
+    jq
+    # Git platforms
+    gh
+    codeberg-cli
+    # Search/files
+    ripgrep
+    fd
+    tree
+    bat
+    # Data processing
+    yq
+    python3
+    # Network
+    wget
+    httpie
+    # Archives
+    unzip
+    zip
+    gnutar
+    # Browser
+    chromium
   ];
 
   # Clawdbot data directory
@@ -102,39 +125,7 @@
       CLAWDBOT_GATEWAY_TOKEN = "pippin-gateway-token";
     };
 
-    path = [
-      pkgs.nodejs_22
-      pkgs.git
-      pkgs.coreutils
-      pkgs.bash
-      pkgs.gnused
-      pkgs.gnugrep
-      pkgs.gawk
-      pkgs.which
-      pkgs.findutils
-      pkgs.curl
-      pkgs.jq
-      # Git platforms
-      pkgs.gh
-      pkgs.codeberg-cli
-      # Search/files
-      pkgs.ripgrep
-      pkgs.fd
-      pkgs.tree
-      pkgs.bat
-      # Data processing
-      pkgs.yq
-      pkgs.python3
-      # Network
-      pkgs.wget
-      pkgs.httpie
-      # Archives
-      pkgs.unzip
-      pkgs.zip
-      pkgs.gnutar
-      # Browser
-      pkgs.chromium
-    ];
+    path = [ "/run/current-system/sw" ];
 
     serviceConfig = {
       Type = "simple";
@@ -236,6 +227,16 @@
                       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
                       contextWindow: 200000,
                       maxTokens: 128000
+                    },
+                    {
+                      id: 'moonshot/kimi-k2.5-preview',
+                      name: 'Kimi K2.5',
+                      api: 'openai-completions',
+                      reasoning: true,
+                      input: ['text', 'image'],
+                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                      contextWindow: 262144,
+                      maxTokens: 96000
                     }
               ]
               };
@@ -243,7 +244,7 @@
 
               config.agents = config.agents || {};
               config.agents.defaults = config.agents.defaults || {};
-              config.agents.defaults.model = { primary: 'bifrost/zai/glm-4.7' };
+              config.agents.defaults.model = { primary: 'bifrost/moonshot/kimi-k2.5-preview' };
 
               // Configure embeddings for semantic memory search via Bifrost/Ollama
               config.agents.defaults.memorySearch = {
