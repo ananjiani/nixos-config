@@ -1,17 +1,17 @@
-site_name: Homelab Postmortems
-docs_dir: postmortems
+site_name: Homelab Docs
+docs_dir: content
 theme:
   name: material
 
 nav:
-  - Home: index.md
-  - ... | flat
-  - Tags: tags.md
+  - index.md
+  - Postmortems: postmortems
+  - ADRs: adrs
+  - tags.md
 
 plugins:
   - search
-  - tags:
-      tags_file: tags.md
+  - tags
   - awesome-pages
 
 markdown_extensions:
