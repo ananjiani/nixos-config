@@ -6,5 +6,6 @@ resources:
   - helmrelease-kube-prometheus-stack.yaml
   - helmrelease-blackbox-exporter.yaml
   - flux-podmonitor.yaml
+  - scrapeconfig-proxmox.yaml
   - ingressroute.yaml
   - certificate.yaml
