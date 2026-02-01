@@ -81,7 +81,7 @@ The underlying issue is that VXLAN encapsulation on a standard 1500-byte network
 - [x] Delete stale flannel-subnet.env backups with old MTU values
 - [ ] Add Flux source reconciliation failure alerting (e.g., Prometheus alert on `gotk_reconcile_condition{type="Ready",status="False"}`)
 - [ ] Deploy the NixOS config change via deploy-rs to make the MTU fix persist across reboots (currently only applied via k3s restart, not a NixOS rebuild)
-- [ ] Evaluate switching flannel backend from `vxlan` to `host-gw` since all nodes are on the same L2 subnet, eliminating VXLAN overhead entirely
+- [x] Evaluate switching flannel backend from `vxlan` to `host-gw` since all nodes are on the same L2 subnet, eliminating VXLAN overhead entirely
 
 ## Lessons
 
