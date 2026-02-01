@@ -10,7 +10,7 @@ spec:
   timeout: 5m0s
   ref:
     branch: main
-  url: https://github.com/ananjiani/nixos-config
+  url: https://codeberg.org/ananjiani/infra
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
