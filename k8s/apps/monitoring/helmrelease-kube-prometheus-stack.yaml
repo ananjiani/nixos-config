@@ -167,3 +167,27 @@ spec:
                 annotations:
                   summary: "HTTP failure on {{ $labels.instance }}"
                   description: "HTTP status {{ $value }} on {{ $labels.instance }} for more than 2 minutes."
+      flux-alerts:
+        groups:
+          - name: flux
+            rules:
+              - alert: FluxReconciliationStalled
+                expr: |
+                  rate(gotk_reconcile_duration_seconds_sum{kind="GitRepository"}[10m])
+                  / rate(gotk_reconcile_duration_seconds_count{kind="GitRepository"}[10m])
+                  > 240
+                for: 10m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Flux {{ $labels.kind }} {{ $labels.name }} reconciliation stalled"
+                  description: "Average reconcile duration for {{ $labels.kind }}/{{ $labels.name }} in {{ $labels.namespace }} exceeds 4 minutes, likely hitting the clone timeout."
+              - alert: FluxReconciliationFailure
+                expr: |
+                  increase(gotk_reconcile_duration_seconds_count{kind=~"GitRepository|Kustomization|HelmRelease"}[30m]) == 0
+                for: 30m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Flux {{ $labels.kind }} {{ $labels.name }} has not reconciled"
+                  description: "{{ $labels.kind }}/{{ $labels.name }} in {{ $labels.namespace }} has not completed a reconciliation in 30 minutes."
