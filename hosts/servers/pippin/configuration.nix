@@ -172,8 +172,6 @@
           install_skill "skills/arun-8687/tavily-search" "tavily-search"
           install_skill "skills/steipete/github" "github"
           install_skill "skills/steipete/weather" "weather"
-          install_skill "skills/clawdbot/session-logs" "session-logs"
-          install_skill "skills/clawdbot/persona-mcp-bridge" "persona-mcp-bridge"
         '')
         (pkgs.writeShellScript "openclaw-setup" ''
           set -euo pipefail
@@ -306,7 +304,7 @@
               ];
               config.agents.bindings = [
                 { agentId: 'main', match: { channel: 'telegram', accountId: 'd43m0n' } },
-                { agentId: 'keres', match: { channel: 'telegram', accountId: 'keres' } }
+                { agentId: 'main', match: { channel: 'telegram', accountId: 'keres' } }
               ];
               console.log('Agent bindings configured: d43m0n -> main, keres -> keres');
 
@@ -344,10 +342,6 @@
               fs.mkdirSync(workspace, { recursive: true });
               const soulPath = workspace + '/SOUL.md';
               const existingSoul = fs.existsSync(soulPath) ? fs.readFileSync(soulPath, 'utf8') : String();
-              const ttsBlock = '## TTS Instructions\\nYour replies are read aloud via TTS. Use [[tts:text]] blocks for audio-only expressive cues. Add natural cues like (laughs), (sighs), (softly), (excited), (whispers) where appropriate. Use punctuation for pacing: ellipses for pauses, em-dashes for breaks. Keep the text reply clean — expressive tags go inside [[tts:text]]...[[/tts:text]] only.';
-              if (!existingSoul.includes('## TTS Instructions')) {
-                fs.appendFileSync(soulPath, (existingSoul ? '\\n\\n' : String()) + ttsBlock + '\\n');
-              }
               console.log('SOUL.md TTS instructions ensured');
 
               // Fix state dir permissions
