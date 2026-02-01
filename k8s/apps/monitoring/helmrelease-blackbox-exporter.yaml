@@ -75,4 +75,4 @@ spec:
         - name: homepage
           url: http://homepage.homepage.svc:3000
         - name: headscale
-          url: http://headscale.headscale.svc:8080
+          url: http://headscale.headscale.svc:8080/health
