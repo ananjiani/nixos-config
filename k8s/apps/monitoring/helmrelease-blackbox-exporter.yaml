@@ -68,8 +68,6 @@ spec:
           url: http://home-assistant-external.home-assistant.svc:8123
         - name: lobechat
           url: http://lobechat.lobechat.svc:3210
-        - name: scriberr
-          url: http://scriberr-external.scriberr.svc:8080
         - name: attic
           url: http://attic-external.attic.svc:8080
         - name: homepage

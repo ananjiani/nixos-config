@@ -161,17 +161,6 @@ resource "cloudflare_record" "dns_dot" {
   comment = "AdGuard DNS-over-TLS (internal) - managed by Terraform"
 }
 
-# Scriberr AI transcription
-resource "cloudflare_record" "scriberr" {
-  zone_id = local.zone_id
-  name    = "scriberr"
-  content = "192.168.1.52" # Traefik LoadBalancer (internal)
-  type    = "A"
-  proxied = false # Internal IP, cannot be proxied
-  ttl     = 300
-  comment = "Scriberr AI transcription (internal) - managed by Terraform"
-}
-
 # LobeChat AI workspace
 resource "cloudflare_record" "lobe" {
   zone_id = local.zone_id
