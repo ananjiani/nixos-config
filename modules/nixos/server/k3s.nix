@@ -48,6 +48,17 @@ in
       default = [ ];
       description = "Extra flags to pass to k3s";
     };
+
+    flannelMtu = lib.mkOption {
+      type = lib.types.int;
+      default = 1450;
+      description = ''
+        Host interface MTU to set before k3s starts. Flannel auto-detects pod
+        MTU as this value minus VXLAN overhead (50 bytes). Default 1450 yields
+        pod MTU of 1400, providing headroom for HTTP/2 + TLS framing within
+        the standard 1500-byte physical MTU.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -65,51 +76,77 @@ in
         "L+ /usr/sbin/iscsiadm - - - - /run/current-system/sw/bin/iscsiadm"
       ];
 
-      # Workaround: k3s's embedded flannel can fail to regenerate /run/flannel/subnet.env
-      # after a reboot (/run is tmpfs). Without this file, the flannel CNI plugin cannot
-      # assign pod IPs and no pods can start. We persist a backup to disk and restore it
-      # before k3s starts.
-      services.k3s-flannel-restore = {
-        description = "Restore flannel subnet.env from persistent backup";
-        before = [ "k3s.service" ];
-        requiredBy = [ "k3s.service" ];
-        unitConfig.ConditionPathExists = "!/run/flannel/subnet.env";
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-        };
-        script = ''
-          mkdir -p /run/flannel
-          BACKUP="/var/lib/rancher/k3s/flannel-subnet.env"
-          if [ -f "$BACKUP" ]; then
-            cp "$BACKUP" /run/flannel/subnet.env
-            echo "Restored flannel subnet.env from $BACKUP"
-          else
-            echo "No flannel backup found at $BACKUP — first boot or backup missing"
-          fi
-        '';
-      };
-
-      services.k3s-flannel-backup = {
-        description = "Backup flannel subnet.env to persistent storage";
-        after = [ "k3s.service" ];
-        wantedBy = [ "multi-user.target" ];
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-        };
-        script = ''
-          # Wait for flannel to create subnet.env (up to 5 minutes)
-          for i in $(seq 1 60); do
-            if [ -f /run/flannel/subnet.env ]; then
-              cp /run/flannel/subnet.env /var/lib/rancher/k3s/flannel-subnet.env
-              echo "Backed up flannel subnet.env"
-              exit 0
+      services = {
+        # Lower host interface MTU so Flannel auto-detects a safe pod MTU.
+        # Without this, VXLAN + HTTP/2 + TLS framing can exceed the physical MTU,
+        # causing git clones and other HTTP/2 connections to silently fail.
+        k3s-flannel-mtu = {
+          description = "Set host interface MTU for Flannel VXLAN headroom";
+          before = [ "k3s.service" ];
+          requiredBy = [ "k3s.service" ];
+          after = [ "network-online.target" ];
+          wants = [ "network-online.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          };
+          script = ''
+            IFACE=$(${pkgs.iproute2}/bin/ip route show default | ${pkgs.gawk}/bin/awk '/default/ {print $5; exit}')
+            if [ -n "$IFACE" ]; then
+              ${pkgs.iproute2}/bin/ip link set "$IFACE" mtu ${toString cfg.flannelMtu}
+              echo "Set $IFACE MTU to ${toString cfg.flannelMtu}"
+            else
+              echo "Warning: no default interface found, skipping MTU override"
             fi
-            sleep 5
-          done
-          echo "Warning: flannel subnet.env not found after 5 minutes"
-        '';
+          '';
+        };
+
+        # Workaround: k3s's embedded flannel can fail to regenerate /run/flannel/subnet.env
+        # after a reboot (/run is tmpfs). Without this file, the flannel CNI plugin cannot
+        # assign pod IPs and no pods can start. We persist a backup to disk and restore it
+        # before k3s starts.
+        k3s-flannel-restore = {
+          description = "Restore flannel subnet.env from persistent backup";
+          before = [ "k3s.service" ];
+          requiredBy = [ "k3s.service" ];
+          unitConfig.ConditionPathExists = "!/run/flannel/subnet.env";
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          };
+          script = ''
+            mkdir -p /run/flannel
+            BACKUP="/var/lib/rancher/k3s/flannel-subnet.env"
+            if [ -f "$BACKUP" ]; then
+              cp "$BACKUP" /run/flannel/subnet.env
+              echo "Restored flannel subnet.env from $BACKUP"
+            else
+              echo "No flannel backup found at $BACKUP — first boot or backup missing"
+            fi
+          '';
+        };
+
+        k3s-flannel-backup = {
+          description = "Backup flannel subnet.env to persistent storage";
+          after = [ "k3s.service" ];
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          };
+          script = ''
+            # Wait for flannel to create subnet.env (up to 5 minutes)
+            for i in $(seq 1 60); do
+              if [ -f /run/flannel/subnet.env ]; then
+                cp /run/flannel/subnet.env /var/lib/rancher/k3s/flannel-subnet.env
+                echo "Backed up flannel subnet.env"
+                exit 0
+              fi
+              sleep 5
+            done
+            echo "Warning: flannel subnet.env not found after 5 minutes"
+          '';
+        };
       };
     };
 
