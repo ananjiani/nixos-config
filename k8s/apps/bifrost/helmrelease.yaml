@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: bifrost
-      version: ">=1.0.0"
+      version: "2.0.0"
       sourceRef:
         kind: HelmRepository
         name: bifrost
@@ -43,9 +43,7 @@ spec:
       mode: sqlite
       persistence:
         enabled: true
-        storageClass: longhorn
-        accessMode: ReadWriteOnce
-        size: 10Gi
+        existingClaim: bifrost-data
 
     bifrost:
       port: 8080
@@ -133,6 +131,12 @@ spec:
           existingSecret: bifrost-secrets
           usernameKey: admin-username
           passwordKey: admin-password
+        virtualKeys:
+          - id: "default"
+            name: "Default Virtual Key"
+            description: "Default key for all services (openclaw, lobechat, etc.)"
+            value: "env.BIFROST_DEFAULT_VK"
+            is_active: true
 
     env:
       - name: BIFROST_DEFAULT_VK
@@ -142,8 +146,7 @@ spec:
             key: default-virtual-key
 
     ingress:
-      main:
-        enabled: false
+      enabled: false
 
     resources:
       requests:

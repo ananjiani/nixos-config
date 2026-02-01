@@ -2,12 +2,12 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: scriberr-tls
-  namespace: scriberr
+  name: grafana-tls
+  namespace: monitoring
 spec:
-  secretName: scriberr-tls
+  secretName: grafana-tls
   issuerRef:
     name: letsencrypt-prod
     kind: ClusterIssuer
   dnsNames:
-    - scriberr.dimensiondoor.xyz
+    - grafana.dimensiondoor.xyz

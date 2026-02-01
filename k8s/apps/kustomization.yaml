@@ -15,10 +15,10 @@ resources:
   - ntfy
   - open-webui
   - voicemail-receiver
-  - scriberr
   - stremio
   - bifrost
   - lobechat
+  - monitoring
   - renovate
   - clawdbot
   - zot

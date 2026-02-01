@@ -1,0 +1,169 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kube-prometheus-stack
+  namespace: monitoring
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      version: "81.4.2"
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+      interval: 1h
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
+  values:
+    # ---- Prometheus ----
+    prometheus:
+      prometheusSpec:
+        retention: 5d
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: longhorn
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 10Gi
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        # Discover all ServiceMonitors, Probes, Rules without label filtering
+        ruleSelectorNilUsesHelmValues: false
+        serviceMonitorSelectorNilUsesHelmValues: false
+        podMonitorSelectorNilUsesHelmValues: false
+        probeSelectorNilUsesHelmValues: false
+        scrapeConfigSelectorNilUsesHelmValues: false
+
+    # ---- Grafana ----
+    grafana:
+      enabled: true
+      adminPassword: "prom-operator"
+      persistence:
+        enabled: true
+        storageClassName: longhorn
+        size: 2Gi
+      ingress:
+        enabled: false
+      resources:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "512Mi"
+          cpu: "500m"
+      sidecar:
+        dashboards:
+          enabled: true
+        datasources:
+          enabled: true
+
+    # ---- Alertmanager ----
+    alertmanager:
+      enabled: true
+      alertmanagerSpec:
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      config:
+        global:
+          resolve_timeout: 5m
+        receivers:
+          - name: "null"
+          - name: ntfy
+            webhook_configs:
+              - url: "http://ntfy.ntfy.svc:80/monitoring?template=alertmanager"
+                send_resolved: true
+        route:
+          receiver: ntfy
+          group_by:
+            - alertname
+            - namespace
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 4h
+          routes:
+            - receiver: "null"
+              matchers:
+                - alertname = "Watchdog"
+
+    # ---- kube-state-metrics ----
+    kube-state-metrics:
+      resources:
+        requests:
+          memory: "64Mi"
+          cpu: "50m"
+        limits:
+          memory: "256Mi"
+          cpu: "200m"
+
+    # ---- node-exporter ----
+    prometheus-node-exporter:
+      resources:
+        requests:
+          memory: "32Mi"
+          cpu: "50m"
+        limits:
+          memory: "128Mi"
+          cpu: "200m"
+
+    # ---- Disable k3s-incompatible monitors ----
+    kubeEtcd:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    kubeControllerManager:
+      enabled: false
+    kubeProxy:
+      enabled: false
+
+    # ---- Default PrometheusRules ----
+    defaultRules:
+      create: true
+
+    # ---- Custom PrometheusRules for blackbox probes ----
+    additionalPrometheusRulesMap:
+      blackbox-alerts:
+        groups:
+          - name: blackbox-exporter
+            rules:
+              - alert: BlackboxProbeFailed
+                expr: probe_success == 0
+                for: 2m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Endpoint {{ $labels.instance }} is down"
+                  description: "Blackbox probe failed for {{ $labels.instance }} for more than 2 minutes."
+              - alert: BlackboxProbeSlowResponse
+                expr: probe_duration_seconds > 10
+                for: 5m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Endpoint {{ $labels.instance }} is slow"
+                  description: "Blackbox probe for {{ $labels.instance }} took more than 10 seconds for 5 minutes."
+              - alert: BlackboxProbeHttpFailure
+                expr: probe_http_status_code != 200 and probe_http_status_code != 0
+                for: 2m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "HTTP failure on {{ $labels.instance }}"
+                  description: "HTTP status {{ $value }} on {{ $labels.instance }} for more than 2 minutes."

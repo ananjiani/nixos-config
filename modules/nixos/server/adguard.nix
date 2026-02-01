@@ -206,10 +206,6 @@ _: {
             answer = "192.168.1.52";
           }
           {
-            domain = "scriberr.dimensiondoor.xyz";
-            answer = "192.168.1.52";
-          }
-          {
             domain = "lobe.dimensiondoor.xyz";
             answer = "192.168.1.52";
           }
@@ -235,6 +231,18 @@ _: {
           }
           {
             domain = "persona.lan";
+            answer = "192.168.1.52";
+          }
+          {
+            domain = "mcp.persona.lan";
+            answer = "192.168.1.52";
+          }
+          {
+            domain = "grafana.dimensiondoor.xyz";
+            answer = "192.168.1.52";
+          }
+          {
+            domain = "grafana.lan";
             answer = "192.168.1.52";
           }
           {

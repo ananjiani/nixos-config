@@ -1,0 +1,76 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: prometheus-blackbox-exporter
+  namespace: monitoring
+spec:
+  interval: 1h
+  dependsOn:
+    - name: kube-prometheus-stack
+  chart:
+    spec:
+      chart: prometheus-blackbox-exporter
+      version: "11.7.1"
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+      interval: 1h
+  values:
+    config:
+      modules:
+        http_2xx:
+          prober: http
+          timeout: 10s
+          http:
+            valid_http_versions:
+              - "HTTP/1.1"
+              - "HTTP/2.0"
+            follow_redirects: true
+            preferred_ip_protocol: "ip4"
+            tls_config:
+              insecure_skip_verify: false
+
+    resources:
+      requests:
+        memory: "32Mi"
+        cpu: "25m"
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+
+    serviceMonitor:
+      enabled: true
+      selfMonitor:
+        enabled: true
+      defaults:
+        interval: 60s
+        scrapeTimeout: 30s
+        module: http_2xx
+      targets:
+        # Internal service probes (reliable, no DNS dependency on AdGuard)
+        - name: bifrost
+          url: http://bifrost.bifrost.svc:8080
+        - name: clawd
+          url: http://clawdbot-external.clawdbot.svc:18789
+        - name: ntfy
+          url: http://ntfy.ntfy.svc:80
+        - name: open-webui
+          url: http://open-webui.open-webui.svc:8080
+        - name: immich
+          url: http://immich-external.immich.svc:2283
+        - name: authentik
+          url: http://authentik-server.authentik.svc:80
+        - name: forgejo
+          url: http://forgejo-http.forgejo.svc:3000
+        - name: home-assistant
+          url: http://home-assistant-external.home-assistant.svc:8123
+        - name: lobechat
+          url: http://lobechat.lobechat.svc:3210
+        - name: attic
+          url: http://attic-external.attic.svc:8080
+        - name: homepage
+          url: http://homepage.homepage.svc:3000
+        - name: headscale
+          url: http://headscale.headscale.svc:8080/health
