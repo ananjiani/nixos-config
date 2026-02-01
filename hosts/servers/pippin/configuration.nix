@@ -40,6 +40,7 @@
       telegram_bot_token = { };
       bifrost_api_key = { };
       tavily_api_key = { };
+      elevenlabs_api_key = { };
     };
     # Environment file for openclaw service
     templates."openclaw.env" = {
@@ -47,6 +48,7 @@
         TELEGRAM_BOT_TOKEN=${config.sops.placeholder.telegram_bot_token}
         BIFROST_API_KEY=${config.sops.placeholder.bifrost_api_key}
         TAVILY_API_KEY=${config.sops.placeholder.tavily_api_key}
+        ELEVENLABS_API_KEY=${config.sops.placeholder.elevenlabs_api_key}
       '';
     };
   };
@@ -262,11 +264,51 @@
               };
               console.log('Memory search embeddings configured via Bifrost/Ollama');
 
+              // ElevenLabs TTS with model overrides for multi-voice support
+              config.messages = config.messages || {};
+              config.messages.tts = {
+                provider: 'elevenlabs',
+                auto: 'always',
+                modelOverrides: {
+                  enabled: true,
+                  allowProvider: true
+                },
+                elevenlabs: {
+                  apiKey: process.env.ELEVENLABS_API_KEY,
+                  voiceId: '7IggYPBduXWgroMBqf5S',
+                  modelId: 'eleven_multilingual_v2',
+                  voiceSettings: {
+                    stability: 0.3,
+                    similarityBoost: 0.8,
+                    style: 0.4,
+                    useSpeakerBoost: true,
+                    speed: 1.0
+                  }
+                }
+              };
+              console.log('ElevenLabs TTS configured');
+
               // Telegram plugin: schema is empty, bot token comes from env
               config.plugins = config.plugins || {};
               config.plugins.entries = config.plugins.entries || {};
               config.plugins.entries.telegram = { enabled: true, config: {} };
               console.log('Telegram plugin config sanitized');
+
+              // Clean up stale keys from previous config iterations
+              if (config.agents && config.agents.defaults) delete config.agents.defaults.identity;
+              if (config.channels && config.channels.telegram) delete config.channels.telegram.systemPrompt;
+              console.log('Stale config keys cleaned');
+
+              // TTS expressive tags via workspace SOUL.md
+              const workspace = (config.agents && config.agents.defaults && config.agents.defaults.workspace) || String('$HOME/.openclaw/workspace');
+              fs.mkdirSync(workspace, { recursive: true });
+              const soulPath = workspace + '/SOUL.md';
+              const existingSoul = fs.existsSync(soulPath) ? fs.readFileSync(soulPath, 'utf8') : String();
+              const ttsBlock = '## TTS Instructions\\nYour replies are read aloud via TTS. Use [[tts:text]] blocks for audio-only expressive cues. Add natural cues like (laughs), (sighs), (softly), (excited), (whispers) where appropriate. Use punctuation for pacing: ellipses for pauses, em-dashes for breaks. Keep the text reply clean — expressive tags go inside [[tts:text]]...[[/tts:text]] only.';
+              if (!existingSoul.includes('## TTS Instructions')) {
+                fs.appendFileSync(soulPath, (existingSoul ? '\\n\\n' : String()) + ttsBlock + '\\n');
+              }
+              console.log('SOUL.md TTS instructions ensured');
 
               // Fix state dir permissions
               fs.chmodSync('$HOME/.openclaw', 0o700);
