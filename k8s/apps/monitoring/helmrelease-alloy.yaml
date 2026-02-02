@@ -80,6 +80,7 @@ spec:
           loki.source.journal "nodes" {
             forward_to    = [loki.write.default.receiver]
             relabel_rules = loki.relabel.journal.rules
+            path          = "/var/log/journal"
             labels        = {source = "journal", job = "k3s-journal"}
             max_age       = "12h"
           }
