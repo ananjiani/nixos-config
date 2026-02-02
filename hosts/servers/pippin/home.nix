@@ -19,6 +19,12 @@ let
       ${old.installPhase}
       mkdir -p $out/lib/openclaw/docs/reference/templates
       cp -r $src/docs/reference/templates/* $out/lib/openclaw/docs/reference/templates/
+
+      # Upstream pnpm bug: form-data@2.5.4 requires 'hasown' (no hyphen) but
+      # only has-own@1.0.1 (with hyphen) is linked. Symlink the existing
+      # hasown@2.0.2 into form-data's node_modules so require() finds it.
+      ln -s ../../hasown@2.0.2/node_modules/hasown \
+        $out/lib/openclaw/node_modules/.pnpm/form-data@2.5.4/node_modules/hasown
     '';
   });
 
@@ -198,6 +204,7 @@ in
 
       # Telegram (D43M0N only)
       channels.telegram = {
+        enabled = true;
         accounts.d43m0n = {
           botToken = "SOPS_PLACEHOLDER"; # injected at runtime
           dmPolicy = "allowlist";
@@ -229,6 +236,11 @@ in
     };
   };
 
+  # Force-manage openclaw.json so HM can always replace it.
+  # The gateway writes back to this file at runtime, replacing the symlink
+  # with a regular file, which causes "would be clobbered" on next activation.
+  home.file.".openclaw/openclaw.json".force = true;
+
   # Override the openclaw systemd user service to:
   # 1. Inject secrets into a runtime config copy before start
   # 2. Point openclaw at the runtime config (not the HM-managed symlink)
@@ -237,11 +249,22 @@ in
     Install.WantedBy = [ "default.target" ];
     Service = {
       ExecStartPre = lib.mkBefore [ "${injectSecrets}" ];
-      Environment = [
+      # mkForce replaces the module's Environment entirely so we control
+      # config paths. The module sets OPENCLAW_CONFIG_PATH to the HM-managed
+      # openclaw.json (which has SOPS_PLACEHOLDER values); we need the
+      # runtime copy that ExecStartPre patches with real secrets.
+      Environment = lib.mkForce [
         "SHARP_IGNORE_GLOBAL_LIBVIPS=1"
+        "HOME=%h"
         "OPENCLAW_CONFIG_PATH=%h/.openclaw/openclaw-runtime.json"
+        "OPENCLAW_STATE_DIR=%h/.openclaw"
+        "OPENCLAW_NIX_MODE=1"
         "MOLTBOT_CONFIG_PATH=%h/.openclaw/openclaw-runtime.json"
+        "MOLTBOT_STATE_DIR=%h/.openclaw"
+        "MOLTBOT_NIX_MODE=1"
         "CLAWDBOT_CONFIG_PATH=%h/.openclaw/openclaw-runtime.json"
+        "CLAWDBOT_STATE_DIR=%h/.openclaw"
+        "CLAWDBOT_NIX_MODE=1"
       ];
     };
   };
