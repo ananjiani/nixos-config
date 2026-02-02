@@ -167,6 +167,70 @@ spec:
                 annotations:
                   summary: "HTTP failure on {{ $labels.instance }}"
                   description: "HTTP status {{ $value }} on {{ $labels.instance }} for more than 2 minutes."
+      external-probe-alerts:
+        groups:
+          - name: external-probes
+            rules:
+              - alert: ExternalEndpointDown
+                expr: probe_success{job=~".*external-.*"} == 0
+                for: 2m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "External endpoint {{ $labels.instance }} is unreachable"
+                  description: "Public URL {{ $labels.instance }} has been down for 2 minutes. This indicates a DNS, Cloudflare, or Traefik issue (not just the service itself)."
+              - alert: ServiceBodyAssertionFailed
+                expr: probe_success{job=~".*external-.*"} == 0 and probe_http_status_code{job=~".*external-.*"} == 200
+                for: 2m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "{{ $labels.instance }} returns 200 but body assertion failed"
+                  description: "{{ $labels.instance }} is responding with HTTP 200 but the response body does not match expected content. The service may be functionally broken."
+      vm-alerts:
+        groups:
+          - name: nixos-vm-health
+            rules:
+              - alert: VMDiskSpaceCritical
+                expr: (node_filesystem_avail_bytes{job="nixos-node-exporter",fstype!="tmpfs"} / node_filesystem_size_bytes{job="nixos-node-exporter",fstype!="tmpfs"}) < 0.1
+                for: 5m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Disk space critical on {{ $labels.instance }}"
+                  description: "{{ $labels.instance }} has less than 10% disk space remaining on {{ $labels.mountpoint }}."
+              - alert: VMDiskSpaceWarning
+                expr: (node_filesystem_avail_bytes{job="nixos-node-exporter",fstype!="tmpfs"} / node_filesystem_size_bytes{job="nixos-node-exporter",fstype!="tmpfs"}) < 0.2
+                for: 10m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Disk space low on {{ $labels.instance }}"
+                  description: "{{ $labels.instance }} has less than 20% disk space remaining on {{ $labels.mountpoint }}."
+              - alert: VMMemoryPressure
+                expr: (node_memory_MemAvailable_bytes{job="nixos-node-exporter"} / node_memory_MemTotal_bytes{job="nixos-node-exporter"}) < 0.1
+                for: 5m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Memory pressure on {{ $labels.instance }}"
+                  description: "{{ $labels.instance }} has less than 10% memory available."
+              - alert: VMSystemdUnitFailed
+                expr: node_systemd_unit_state{job="nixos-node-exporter",state="failed"} == 1
+                for: 5m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Systemd unit failed on {{ $labels.instance }}"
+                  description: "Unit {{ $labels.name }} on {{ $labels.instance }} is in a failed state."
+              - alert: PostgresConnectionsHigh
+                expr: sum by (instance) (pg_stat_activity_count{job="nixos-app-exporters"}) / on (instance) pg_settings_max_connections{job="nixos-app-exporters"} > 0.8
+                for: 5m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "PostgreSQL connections high on {{ $labels.instance }}"
+                  description: "{{ $labels.instance }} is using more than 80% of max_connections."
       flux-alerts:
         groups:
           - name: flux

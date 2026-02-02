@@ -31,6 +31,20 @@ spec:
             preferred_ip_protocol: "ip4"
             tls_config:
               insecure_skip_verify: false
+        # Module with body assertion — for services where HTTP 200 != healthy
+        http_2xx_body:
+          prober: http
+          timeout: 10s
+          http:
+            valid_http_versions:
+              - "HTTP/1.1"
+              - "HTTP/2.0"
+            follow_redirects: true
+            preferred_ip_protocol: "ip4"
+            tls_config:
+              insecure_skip_verify: false
+            fail_if_body_not_matches_regexp:
+              - ".*" # Default: body must not be empty. Override per-target via relabeling.
 
     resources:
       requests:
@@ -49,7 +63,7 @@ spec:
         scrapeTimeout: 30s
         module: http_2xx
       targets:
-        # Internal service probes (reliable, no DNS dependency on AdGuard)
+        # ── Internal service probes (cluster DNS, no external dependency) ──
         - name: bifrost
           url: http://bifrost.bifrost.svc:8080
         - name: clawd
@@ -74,3 +88,25 @@ spec:
           url: http://homepage.homepage.svc:3000
         - name: headscale
           url: http://headscale.headscale.svc:8080/health
+        # ── External probes (full path: DNS → Cloudflare → Traefik → Service) ──
+        - name: external-bifrost
+          url: https://bifrost.dimensiondoor.xyz/v1/models
+          module: http_2xx_body
+        - name: external-forgejo
+          url: https://git.dimensiondoor.xyz
+        - name: external-immich
+          url: https://immich.dimensiondoor.xyz
+        - name: external-authentik
+          url: https://auth.dimensiondoor.xyz
+        - name: external-ntfy
+          url: https://ntfy.dimensiondoor.xyz
+        - name: external-home-assistant
+          url: https://ha.dimensiondoor.xyz
+        - name: external-homepage
+          url: https://home.dimensiondoor.xyz
+        - name: external-open-webui
+          url: https://ai.dimensiondoor.xyz
+        - name: external-headscale
+          url: https://ts.dimensiondoor.xyz/health
+        - name: external-grafana
+          url: https://grafana.dimensiondoor.xyz
