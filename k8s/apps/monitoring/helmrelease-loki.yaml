@@ -46,7 +46,11 @@ spec:
       limits_config:
         retention_period: 336h
       compactor:
+        working_directory: /var/loki/retention
         retention_enabled: true
+        delete_request_store: filesystem
+        compaction_interval: 10m
+        retention_delete_delay: 2h
 
     # ---- SingleBinary ----
     singleBinary:
