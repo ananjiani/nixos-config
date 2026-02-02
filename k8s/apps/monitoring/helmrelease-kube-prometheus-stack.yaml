@@ -116,7 +116,7 @@ spec:
     # ---- node-exporter ----
     # Disabled: NixOS-native node exporters run on each VM with systemd/process
     # collectors. Scrape targets and alert rules use job="nixos-node-exporter".
-    prometheus-node-exporter:
+    nodeExporter:
       enabled: false
 
     # ---- Disable k3s-incompatible monitors ----
