@@ -79,6 +79,10 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
+    nix-openclaw = {
+      url = "github:openclaw/nix-openclaw";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
     mkdocs-flake = {
       url = "github:applicative-systems/mkdocs-flake";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
