@@ -127,6 +127,38 @@
   services = {
     qemuGuest.enable = true;
     attic-watch-store.enable = true;
+
+    promtail = {
+      enable = true;
+      configuration = {
+        server = {
+          http_listen_port = 3031;
+          grpc_listen_port = 0;
+        };
+        positions.filename = "/tmp/positions.yaml";
+        clients = [
+          { url = "http://192.168.1.21:31080/loki/api/v1/push"; }
+        ];
+        scrape_configs = [
+          {
+            job_name = "journal";
+            journal = {
+              max_age = "12h";
+              labels = {
+                job = "nixos-journal";
+                host = "pippin";
+              };
+            };
+            relabel_configs = [
+              {
+                source_labels = [ "__journal__systemd_unit" ];
+                target_label = "unit";
+              }
+            ];
+          }
+        ];
+      };
+    };
   };
 
   boot = {

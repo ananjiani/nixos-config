@@ -69,6 +69,15 @@ spec:
           enabled: true
         datasources:
           enabled: true
+      additionalDataSources:
+        - name: Loki
+          type: loki
+          access: proxy
+          url: http://loki-gateway.monitoring.svc:80
+          isDefault: false
+          editable: true
+          jsonData:
+            maxLines: 1000
 
     # ---- Alertmanager ----
     alertmanager:
