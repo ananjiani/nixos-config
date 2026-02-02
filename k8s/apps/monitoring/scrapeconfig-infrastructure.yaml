@@ -43,8 +43,9 @@ spec:
       labels:
         job: nixos-app-exporters
         exporter: postgres
-    - targets:
-        - "192.168.1.26:9641" # samwise mqtt
-      labels:
-        job: nixos-app-exporters
-        exporter: mqtt
+    # TODO: Re-enable when Zigbee devices are added to the network
+    # - targets:
+    #     - "192.168.1.26:9641" # samwise mqtt
+    #   labels:
+    #     job: nixos-app-exporters
+    #     exporter: mqtt

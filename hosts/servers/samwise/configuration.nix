@@ -122,8 +122,9 @@
     };
 
     # Prometheus MQTT exporter for Mosquitto metrics
+    # TODO: Re-enable when Zigbee devices are added to the network
     prometheus.exporters.mqtt = {
-      enable = true;
+      enable = false;
       openFirewall = true;
     };
 
