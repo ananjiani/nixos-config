@@ -125,7 +125,6 @@
     prometheus.exporters.mqtt = {
       enable = true;
       openFirewall = true;
-      mqttAddress = "tcp://localhost:1883";
     };
 
     # Mosquitto MQTT broker
