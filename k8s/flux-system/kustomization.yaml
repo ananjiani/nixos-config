@@ -10,4 +10,5 @@ resources:
   - infrastructure.yaml
   - metallb-config.yaml
   - cert-manager-config.yaml
+  - k8sgpt-config.yaml
   - apps.yaml
