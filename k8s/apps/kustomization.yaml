@@ -13,6 +13,7 @@ resources:
   - homepage
   - immich
   - ntfy
+  - ntfy-alertmanager
   - open-webui
   - voicemail-receiver
   - stremio

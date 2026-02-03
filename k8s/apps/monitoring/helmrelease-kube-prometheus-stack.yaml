@@ -97,7 +97,7 @@ spec:
           - name: "null"
           - name: ntfy
             webhook_configs:
-              - url: "http://ntfy.ntfy.svc:80/monitoring?template=alertmanager"
+              - url: "http://ntfy-alertmanager.monitoring.svc:8080"
                 send_resolved: true
         route:
           receiver: ntfy
