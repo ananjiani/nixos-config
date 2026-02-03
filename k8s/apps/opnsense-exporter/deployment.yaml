@@ -49,8 +49,7 @@ spec:
             limits:
               memory: 64Mi
           livenessProbe:
-            httpGet:
-              path: /metrics
+            tcpSocket:
               port: metrics
             initialDelaySeconds: 10
             periodSeconds: 30
@@ -58,8 +57,9 @@ spec:
             httpGet:
               path: /metrics
               port: metrics
-            initialDelaySeconds: 5
-            periodSeconds: 10
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 15
 ---
 apiVersion: v1
 kind: Service
