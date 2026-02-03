@@ -21,10 +21,12 @@ spec:
   noCache: false
   repository: ghcr.io/k8sgpt-ai/k8sgpt
   version: v0.4.1
-  integrations:
-    trivy:
-      enabled: true
-      namespace: k8sgpt
+  # TODO: Re-enable Trivy when operator bug is fixed
+  # (nil pointer dereference in AddIntegration gRPC call)
+  # integrations:
+  #   trivy:
+  #     enabled: true
+  #     namespace: k8sgpt
   resources:
     requests:
       cpu: 100m
