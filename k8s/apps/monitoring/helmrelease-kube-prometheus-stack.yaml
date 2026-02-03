@@ -260,3 +260,15 @@ spec:
                 annotations:
                   summary: "Flux {{ $labels.kind }} {{ $labels.name }} has not reconciled"
                   description: "{{ $labels.kind }}/{{ $labels.name }} in {{ $labels.namespace }} has not completed a reconciliation in 30 minutes."
+      k8sgpt-alerts:
+        groups:
+          - name: k8sgpt
+            rules:
+              - alert: K8sGPTIssuesDetected
+                expr: k8sgpt_number_of_results > 0
+                for: 10m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "K8sGPT detected {{ $value }} cluster issues"
+                  description: "K8sGPT has found issues that need attention. Inspect with: kubectl get results -n k8sgpt"
