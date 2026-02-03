@@ -308,14 +308,6 @@ spec:
                 annotations:
                   summary: "DNS node {{ $labels.target }} is not resolving"
                   description: "AdGuard instance {{ $labels.target }} has failed to resolve queries for 2 minutes. Keepalived should failover, but capacity is reduced."
-              - alert: DNSFallbackDown
-                expr: probe_success{target="dns-opnsense"} == 0
-                for: 2m
-                labels:
-                  severity: warning
-                annotations:
-                  summary: "OPNsense fallback DNS is not resolving"
-                  description: "The OPNsense fallback DNS at 192.168.1.1 is not responding. If AdGuard VIP also fails, there is no DNS redundancy."
       k8sgpt-alerts:
         groups:
           - name: k8sgpt

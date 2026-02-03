@@ -99,9 +99,6 @@ spec:
         - name: dns-samwise
           url: 192.168.1.26
           module: dns_resolve
-        - name: dns-opnsense
-          url: 192.168.1.1
-          module: dns_resolve
         # ── Infrastructure probes (LAN devices, self-signed TLS) ──
         - name: opnsense
           url: https://192.168.1.1:8443
