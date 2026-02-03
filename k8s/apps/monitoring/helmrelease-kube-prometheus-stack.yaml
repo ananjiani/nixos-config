@@ -288,6 +288,34 @@ spec:
                 annotations:
                   summary: "OPNsense web UI unreachable"
                   description: "OPNsense web interface at 192.168.1.1 has been down for more than 2 minutes."
+      dns-alerts:
+        groups:
+          - name: dns
+            rules:
+              - alert: DNSVIPDown
+                expr: probe_success{target="dns-vip"} == 0
+                for: 1m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "DNS VIP (192.168.1.53) is not resolving"
+                  description: "The keepalived DNS VIP has failed to resolve queries for more than 1 minute. All network DNS is affected."
+              - alert: DNSNodeDown
+                expr: probe_success{target=~"dns-(theoden|boromir|samwise)"} == 0
+                for: 2m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "DNS node {{ $labels.target }} is not resolving"
+                  description: "AdGuard instance {{ $labels.target }} has failed to resolve queries for 2 minutes. Keepalived should failover, but capacity is reduced."
+              - alert: DNSFallbackDown
+                expr: probe_success{target="dns-opnsense"} == 0
+                for: 2m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "OPNsense fallback DNS is not resolving"
+                  description: "The OPNsense fallback DNS at 192.168.1.1 is not responding. If AdGuard VIP also fails, there is no DNS redundancy."
       k8sgpt-alerts:
         groups:
           - name: k8sgpt
