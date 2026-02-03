@@ -153,3 +153,12 @@ metadata:
 spec:
   interval: 1h
   url: https://charts.k8sgpt.ai/
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: robusta
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://robusta-charts.storage.googleapis.com
