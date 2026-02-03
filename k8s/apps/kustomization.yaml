@@ -25,3 +25,4 @@ resources:
   - zot
   - persona-mcp
   - holmesgpt
+  - opnsense-exporter

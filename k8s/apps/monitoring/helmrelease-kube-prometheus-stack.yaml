@@ -260,6 +260,34 @@ spec:
                 annotations:
                   summary: "Flux {{ $labels.kind }} {{ $labels.name }} has not reconciled"
                   description: "{{ $labels.kind }}/{{ $labels.name }} in {{ $labels.namespace }} has not completed a reconciliation in 30 minutes."
+      opnsense-alerts:
+        groups:
+          - name: opnsense
+            rules:
+              - alert: OPNsenseGatewayDown
+                expr: opnsense_gateways_status != 1
+                for: 2m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "OPNsense gateway {{ $labels.name }} is down"
+                  description: "Gateway {{ $labels.name }} has been offline for more than 2 minutes."
+              - alert: OPNsenseHighCPU
+                expr: (1 - avg(rate(node_cpu_seconds_total{job="opnsense-node-exporter",mode="idle"}[5m]))) > 0.85
+                for: 10m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "OPNsense CPU usage above 85%"
+                  description: "OPNsense router CPU has been above 85% for 10 minutes."
+              - alert: OPNsenseWebUIDown
+                expr: probe_success{instance=~".*192.168.1.1.*"} == 0
+                for: 2m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "OPNsense web UI unreachable"
+                  description: "OPNsense web interface at 192.168.1.1 has been down for more than 2 minutes."
       k8sgpt-alerts:
         groups:
           - name: k8sgpt

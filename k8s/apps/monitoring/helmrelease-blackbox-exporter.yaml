@@ -31,6 +31,18 @@ spec:
             preferred_ip_protocol: "ip4"
             tls_config:
               insecure_skip_verify: false
+        # Module for self-signed TLS (e.g. OPNsense default cert)
+        http_2xx_insecure:
+          prober: http
+          timeout: 10s
+          http:
+            valid_http_versions:
+              - "HTTP/1.1"
+              - "HTTP/2.0"
+            follow_redirects: true
+            preferred_ip_protocol: "ip4"
+            tls_config:
+              insecure_skip_verify: true
         # Module with body assertion — for services where HTTP 200 != healthy
         http_2xx_body:
           prober: http
@@ -63,6 +75,10 @@ spec:
         scrapeTimeout: 30s
         module: http_2xx
       targets:
+        # ── Infrastructure probes (LAN devices, self-signed TLS) ──
+        - name: opnsense
+          url: https://192.168.1.1:8443
+          module: http_2xx_insecure
         # ── Internal service probes (cluster DNS, no external dependency) ──
         - name: bifrost
           url: http://bifrost.bifrost.svc:8080

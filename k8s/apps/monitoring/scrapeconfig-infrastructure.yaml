@@ -33,6 +33,19 @@ spec:
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: ScrapeConfig
 metadata:
+  name: opnsense-node-exporter
+  namespace: monitoring
+spec:
+  scrapeInterval: 60s
+  staticConfigs:
+    - targets:
+        - "192.168.1.1:9100" # router.lan
+      labels:
+        job: opnsense-node-exporter
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
   name: nixos-app-exporters
   namespace: monitoring
 spec:

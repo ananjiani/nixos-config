@@ -85,6 +85,22 @@ spec:
             max_age       = "12h"
           }
 
+          // ── OPNsense syslog collection ──
+          loki.source.syslog "opnsense" {
+            listener {
+              address  = "0.0.0.0:5514"
+              protocol = "udp"
+              labels   = {source = "syslog", job = "opnsense"}
+            }
+            forward_to = [loki.write.default.receiver]
+          }
+
+      extraPorts:
+        - name: syslog
+          port: 5514
+          targetPort: 5514
+          protocol: UDP
+
       mounts:
         varlog: true
 
@@ -95,6 +111,11 @@ spec:
         limits:
           cpu: "200m"
           memory: "512Mi"
+
+    service:
+      type: LoadBalancer
+      annotations:
+        metallb.universe.tf/loadBalancerIPs: "192.168.1.57"
 
     controller:
       type: daemonset
