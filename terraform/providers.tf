@@ -4,7 +4,7 @@ terraform {
   required_providers {
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "~> 4.0"
+      version = "~> 5.0"
     }
     opnsense = {
       source  = "browningluke/opnsense"
@@ -12,7 +12,7 @@ terraform {
     }
     proxmox = {
       source  = "bpg/proxmox"
-      version = "~> 0.89"
+      version = "~> 0.93"
     }
     sops = {
       source  = "carlpett/sops"

@@ -7,7 +7,9 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": ["ansible/.*\\.ya?ml$"],
+      "managerFilePatterns": [
+        "/ansible/.*\\.ya?ml$/"
+      ],
       "matchStrings": [
         "#\\s*renovate:\\s*datasource=(?<datasource>.*?) depName=(?<depName>.*?)\\n.*?:\\s*\"?(?<currentValue>[^\"\\n]+)\"?"
       ],
@@ -15,21 +17,36 @@
     }
   ],
   "timezone": "America/Chicago",
-  "schedule": ["before 6am"],
-  "labels": ["dependencies", "automated"],
+  "schedule": [
+    "before 6am"
+  ],
+  "labels": [
+    "dependencies",
+    "automated"
+  ],
   "packageRules": [
     {
-      "matchUpdateTypes": ["patch"],
+      "matchUpdateTypes": [
+        "patch"
+      ],
       "automerge": true,
       "automergeType": "pr",
       "ignoreTests": false
     },
     {
-      "matchUpdateTypes": ["major"],
-      "labels": ["dependencies", "automated", "major-update"]
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "labels": [
+        "dependencies",
+        "automated",
+        "major-update"
+      ]
     },
     {
-      "matchManagers": ["nix"],
+      "matchManagers": [
+        "nix"
+      ],
       "groupName": "nix flake inputs",
       "description": "Group all Nix flake input updates together",
       "automerge": true,
@@ -38,13 +55,19 @@
     }
   ],
   "flux": {
-    "fileMatch": ["k8s/apps/.+\\.yaml$"]
+    "managerFilePatterns": [
+      "/k8s/apps/.+\\.yaml$/"
+    ]
   },
   "kubernetes": {
-    "fileMatch": ["k8s/apps/.+\\.yaml$"]
+    "managerFilePatterns": [
+      "/k8s/apps/.+\\.yaml$/"
+    ]
   },
   "terraform": {
-    "fileMatch": ["terraform/.+\\.tf$"]
+    "managerFilePatterns": [
+      "/terraform/.+\\.tf$/"
+    ]
   },
   "nix": {
     "enabled": true
