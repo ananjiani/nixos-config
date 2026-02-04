@@ -52,6 +52,14 @@ resource "opnsense_firewall_alias" "iot_network" {
   content     = [var.iot_subnet]
 }
 
+resource "opnsense_firewall_alias" "chromecast_ips" {
+  count       = var.vlan_interfaces_configured ? 1 : 0
+  name        = "chromecast_ips"
+  type        = "host"
+  description = "Chromecast IPs (WiFi + Ethernet)"
+  content     = ["192.168.1.10", "192.168.1.11"]
+}
+
 resource "opnsense_firewall_alias" "chromecast_tcp_ports" {
   count       = var.vlan_interfaces_configured ? 1 : 0
   name        = "chromecast_tcp_ports"
@@ -159,7 +167,7 @@ resource "opnsense_firewall_filter" "guest_to_chromecast_tcp" {
     protocol  = "TCP"
 
     destination = {
-      net  = "192.168.1.10"
+      net  = opnsense_firewall_alias.chromecast_ips[0].name
       port = opnsense_firewall_alias.chromecast_tcp_ports[0].name
     }
   }
@@ -182,7 +190,7 @@ resource "opnsense_firewall_filter" "guest_to_chromecast_udp" {
     protocol  = "UDP"
 
     destination = {
-      net  = "192.168.1.10"
+      net  = opnsense_firewall_alias.chromecast_ips[0].name
       port = opnsense_firewall_alias.chromecast_udp_ports[0].name
     }
   }

@@ -73,7 +73,8 @@ resource "opnsense_firewall_alias" "vpn_exempt_devices" {
   type        = "host"
   description = "Devices that bypass VPN and use WAN directly"
   content = [
-    "192.168.1.10", # chromecast (needs direct WAN for Private DNS bootstrap)
+    "192.168.1.10", # chromecast WiFi (needs direct WAN for Private DNS bootstrap)
+    "192.168.1.11", # chromecast Ethernet
     "192.168.1.25", # frodo (Home Assistant - cloud integrations require non-VPN)
     "192.168.1.50", # ammars-pc
     "192.168.1.51", # phone
@@ -351,7 +352,15 @@ resource "opnsense_kea_reservation" "chromecast" {
   ip_address  = "192.168.1.10"
   mac_address = local.mac_addresses.chromecast
   hostname    = "chromecast"
-  description = "Google Chromecast"
+  description = "Google Chromecast (WiFi)"
+}
+
+resource "opnsense_kea_reservation" "chromecast_eth" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.11"
+  mac_address = local.mac_addresses.chromecast_eth
+  hostname    = "chromecast"
+  description = "Google Chromecast (Ethernet)"
 }
 
 resource "opnsense_kea_reservation" "gondor" {
