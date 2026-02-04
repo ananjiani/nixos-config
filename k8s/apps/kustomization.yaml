@@ -13,6 +13,7 @@ resources:
   - homepage
   - immich
   - ntfy
+  - ntfy-alertmanager
   - open-webui
   - voicemail-receiver
   - stremio
@@ -23,3 +24,5 @@ resources:
   - clawdbot
   - zot
   - persona-mcp
+  - holmesgpt
+  - opnsense-exporter

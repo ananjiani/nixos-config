@@ -7,3 +7,4 @@ resources:
   - controllers/longhorn
   - controllers/cert-manager
   - controllers/traefik
+  - controllers/k8sgpt

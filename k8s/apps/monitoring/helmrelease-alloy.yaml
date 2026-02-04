@@ -1,0 +1,121 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: alloy
+  namespace: monitoring
+spec:
+  interval: 1h
+  dependsOn:
+    - name: loki
+  chart:
+    spec:
+      chart: alloy
+      version: "0.12.0"
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+      interval: 1h
+  values:
+    alloy:
+      configMap:
+        content: |
+          // ── Loki write endpoint ──
+          loki.write "default" {
+            endpoint {
+              url = "http://loki-gateway.monitoring.svc:80/loki/api/v1/push"
+            }
+          }
+
+          // ── Kubernetes pod log collection ──
+          discovery.kubernetes "pods" {
+            role = "pod"
+          }
+
+          discovery.relabel "pod_logs" {
+            targets = discovery.kubernetes.pods.targets
+
+            rule {
+              source_labels = ["__meta_kubernetes_namespace"]
+              target_label  = "namespace"
+            }
+            rule {
+              source_labels = ["__meta_kubernetes_pod_name"]
+              target_label  = "pod"
+            }
+            rule {
+              source_labels = ["__meta_kubernetes_pod_container_name"]
+              target_label  = "container"
+            }
+            rule {
+              source_labels = ["__meta_kubernetes_pod_node_name"]
+              target_label  = "node"
+            }
+          }
+
+          loki.source.kubernetes "pod_logs" {
+            targets    = discovery.relabel.pod_logs.output
+            forward_to = [loki.write.default.receiver]
+          }
+
+          // ── Node journal log collection ──
+          loki.relabel "journal" {
+            forward_to = []
+
+            rule {
+              source_labels = ["__journal__systemd_unit"]
+              target_label  = "unit"
+            }
+            rule {
+              source_labels = ["__journal__hostname"]
+              target_label  = "hostname"
+            }
+            rule {
+              source_labels = ["__journal__priority_keyword"]
+              target_label  = "level"
+            }
+          }
+
+          loki.source.journal "nodes" {
+            forward_to    = [loki.write.default.receiver]
+            relabel_rules = loki.relabel.journal.rules
+            path          = "/var/log/journal"
+            labels        = {source = "journal", job = "k3s-journal"}
+            max_age       = "12h"
+          }
+
+          // ── OPNsense syslog collection ──
+          loki.source.syslog "opnsense" {
+            listener {
+              address  = "0.0.0.0:5514"
+              protocol = "udp"
+              labels   = {source = "syslog", job = "opnsense"}
+            }
+            forward_to = [loki.write.default.receiver]
+          }
+
+      extraPorts:
+        - name: syslog
+          port: 5514
+          targetPort: 5514
+          protocol: UDP
+
+      mounts:
+        varlog: true
+
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "128Mi"
+        limits:
+          cpu: "200m"
+          memory: "512Mi"
+
+    service:
+      type: LoadBalancer
+      annotations:
+        metallb.universe.tf/loadBalancerIPs: "192.168.1.57"
+
+    controller:
+      type: daemonset
