@@ -47,7 +47,7 @@ _: {
         upstream_mode = "load_balance";
         fastest_timeout = "1s";
         cache_size = 4194304;
-        enable_dnssec = false;
+        enable_dnssec = true;
 
         edns_client_subnet = {
           custom_ip = "";
@@ -90,6 +90,42 @@ _: {
           name = "AdAway Default Blocklist";
           id = 2;
         }
+        {
+          enabled = true;
+          url = "https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/SmartTV-AGH.txt";
+          name = "Perflyst Smart TV Blocklist";
+          id = 3;
+        }
+        {
+          enabled = true;
+          url = "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.txt";
+          name = "HaGeZi Pro";
+          id = 4;
+        }
+        {
+          enabled = true;
+          url = "https://big.oisd.nl/";
+          name = "OISD Big";
+          id = 5;
+        }
+        {
+          enabled = true;
+          url = "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/tif.medium.txt";
+          name = "HaGeZi Threat Intelligence Feeds (Medium)";
+          id = 6;
+        }
+        {
+          enabled = true;
+          url = "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/Alternate%20versions%20Anti-Malware%20List/AntiMalwareAdGuardHome.txt";
+          name = "Dandelion Sprout's Anti-Malware";
+          id = 7;
+        }
+        {
+          enabled = true;
+          url = "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/native.apple.txt";
+          name = "HaGeZi Apple Native Tracking";
+          id = 8;
+        }
       ];
 
       dhcp = {
@@ -100,6 +136,30 @@ _: {
         blocking_mode = "default";
         filtering_enabled = true;
         protection_enabled = true;
+
+        # Chromecast telemetry (scoped to device IPs only)
+        user_rules = [
+          "||firebaselogging-pa.googleapis.com^$client='192.168.1.10'|'192.168.1.11'"
+          "||firebaselogging.googleapis.com^$client='192.168.1.10'|'192.168.1.11'"
+          "||firebaseinstallations.googleapis.com^$client='192.168.1.10'|'192.168.1.11'"
+          "||firebase-settings.crashlytics.com^$client='192.168.1.10'|'192.168.1.11'"
+          "||crashlyticsreports-pa.googleapis.com^$client='192.168.1.10'|'192.168.1.11'"
+          "||app-measurement.com^$client='192.168.1.10'|'192.168.1.11'"
+
+          # Global ad blocking (safe, ensures these aren't overridden by allowlists)
+          "||adservice.google.*^$important"
+          "||pagead2.googlesyndication.com^$important"
+          "||googleadservices.com^$important"
+
+          # Prevent DoH bypass (blocks resolution of DNS-over-HTTPS endpoints)
+          "||dns.google^$important"
+          "||dns.google.com^$important"
+          "||dns64.dns.google^$important"
+          "||cloudflare-dns.com^$important"
+          "||mozilla.cloudflare-dns.com^$important"
+          "||doh.opendns.com^$important"
+          "||dns.adguard-dns.com^$important"
+        ];
 
         rewrites = [
           # Local infrastructure
@@ -272,7 +332,24 @@ _: {
           dhcp = true;
           hosts = true;
         };
-        persistent = [ ];
+        persistent = [
+          {
+            name = "Chromecast 4K";
+            ids = [
+              "192.168.1.10" # WiFi
+              "192.168.1.11" # Ethernet
+            ];
+            tags = [ "device_tv" ];
+            use_global_settings = true;
+            use_global_blocked_services = true;
+            filtering_enabled = true;
+            safebrowsing_enabled = false;
+            parental_enabled = false;
+            safe_search = {
+              enabled = false;
+            };
+          }
+        ];
       };
 
       log = {
