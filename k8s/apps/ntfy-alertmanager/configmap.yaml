@@ -1,0 +1,50 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ntfy-alertmanager-config
+  namespace: monitoring
+data:
+  config: |
+    http-address :8080
+    log-level info
+    alert-mode single
+
+    labels {
+        order "severity"
+
+        severity "critical" {
+            priority 5
+            tags "rotating_light"
+        }
+
+        severity "warning" {
+            priority 3
+            tags "warning"
+        }
+
+        severity "info" {
+            priority 2
+            tags "information_source"
+        }
+    }
+
+    resolved {
+        tags "white_check_mark"
+        priority 1
+    }
+
+    ntfy {
+        server http://ntfy.ntfy.svc:80
+        topic monitoring
+    }
+
+    alertmanager {
+        url http://kube-prometheus-stack-alertmanager.monitoring.svc:9093
+    }
+
+    cache {
+        type memory
+        duration 24h
+        cleanup-interval 1h
+    }

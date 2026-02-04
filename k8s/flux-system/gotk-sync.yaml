@@ -7,10 +7,10 @@ metadata:
   namespace: flux-system
 spec:
   interval: 1m0s
-  timeout: 5m0s
+  timeout: 10m0s
   ref:
     branch: main
-  url: https://github.com/ananjiani/nixos-config
+  url: https://codeberg.org/ananjiani/infra
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -19,7 +19,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m0s
-  path: ./k8s
+  path: ./k8s/flux-system
   prune: true
   sourceRef:
     kind: GitRepository

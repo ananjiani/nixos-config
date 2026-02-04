@@ -1,0 +1,14 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: opnsense-exporter
+  namespace: monitoring
+spec:
+  endpoints:
+    - port: metrics
+      interval: 60s
+      scrapeTimeout: 30s
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: opnsense-exporter
