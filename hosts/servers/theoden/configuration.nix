@@ -28,8 +28,6 @@
     ../../../modules/nixos/server/keepalived.nix
   ];
 
-  services.attic-watch-store.enable = true;
-
   networking = {
     hostName = "theoden";
     useDHCP = true;
@@ -182,6 +180,26 @@
 
   services = {
     qemuGuest.enable = true;
+    attic-watch-store.enable = true;
+
+    # Prometheus node exporter for VM-level monitoring
+    prometheus.exporters.node = {
+      enable = true;
+      port = 9100;
+      openFirewall = true;
+      enabledCollectors = [
+        "systemd"
+        "processes"
+      ];
+    };
+
+    # Prometheus postgres exporter for database metrics
+    prometheus.exporters.postgres = {
+      enable = true;
+      port = 9187;
+      openFirewall = true;
+      runAsLocalSuperUser = true;
+    };
 
     # NFS Server
     nfs.server = {

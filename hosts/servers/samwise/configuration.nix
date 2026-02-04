@@ -97,21 +97,6 @@
     };
   };
 
-  # Mosquitto MQTT broker
-  services.mosquitto = {
-    enable = true;
-    listeners = [
-      {
-        port = 1883;
-        address = "0.0.0.0";
-        settings = {
-          allow_anonymous = true; # For initial setup; add auth later
-        };
-        acl = [ "topic readwrite #" ];
-      }
-    ];
-  };
-
   # Home Manager integration
   home-manager = {
     useGlobalPkgs = true;
@@ -120,10 +105,43 @@
     users.ammar = import ./home.nix;
   };
 
-  # Proxmox VM integration and Attic cache
   services = {
+    # Proxmox VM integration and Attic cache
     qemuGuest.enable = true;
     attic-watch-store.enable = true;
+
+    # Prometheus node exporter for VM-level monitoring
+    prometheus.exporters.node = {
+      enable = true;
+      port = 9100;
+      openFirewall = true;
+      enabledCollectors = [
+        "systemd"
+        "processes"
+      ];
+    };
+
+    # Prometheus MQTT exporter for Mosquitto metrics
+    # TODO: Re-enable when Zigbee devices are added to the network
+    prometheus.exporters.mqtt = {
+      enable = false;
+      openFirewall = true;
+    };
+
+    # Mosquitto MQTT broker
+    mosquitto = {
+      enable = true;
+      listeners = [
+        {
+          port = 1883;
+          address = "0.0.0.0";
+          settings = {
+            allow_anonymous = true; # For initial setup; add auth later
+          };
+          acl = [ "topic readwrite #" ];
+        }
+      ];
+    };
   };
 
   # Boot configuration (GRUB for BIOS)

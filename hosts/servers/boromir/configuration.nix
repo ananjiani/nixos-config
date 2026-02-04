@@ -100,24 +100,6 @@
     };
   };
 
-  # Second VRRP instance for Wyoming Whisper HA (alongside adguard_vip from module)
-  # Rohan (192.168.1.24) is MASTER with priority 100
-  # Boromir (this host) is BACKUP with priority 50
-  services.keepalived.vrrpInstances.whisper_vip = {
-    interface = "ens18";
-    state = "BACKUP";
-    virtualRouterId = 54;
-    priority = 50;
-    noPreempt = false;
-    unicastPeers = [ "192.168.1.24" ]; # rohan
-    virtualIps = [ { addr = "192.168.1.54/24"; } ];
-    extraConfig = ''
-      notify_master "/etc/keepalived/whisper-master.sh"
-      notify_backup "/etc/keepalived/whisper-backup.sh"
-      notify_fault "/etc/keepalived/whisper-backup.sh"
-    '';
-  };
-
   # Docker for model conversion (bypasses NixOS library isolation)
   virtualisation.docker.enable = true;
   hardware.nvidia-container-toolkit.enable = true; # GPU passthrough for containers
@@ -154,10 +136,39 @@
     users.ammar = import ./home.nix;
   };
 
-  # Proxmox VM integration and Attic cache
   services = {
+    # Proxmox VM integration and Attic cache
     qemuGuest.enable = true;
     attic-watch-store.enable = true;
+
+    # Second VRRP instance for Wyoming Whisper HA (alongside adguard_vip from module)
+    # Rohan (192.168.1.24) is MASTER with priority 100
+    # Boromir (this host) is BACKUP with priority 50
+    keepalived.vrrpInstances.whisper_vip = {
+      interface = "ens18";
+      state = "BACKUP";
+      virtualRouterId = 54;
+      priority = 50;
+      noPreempt = false;
+      unicastPeers = [ "192.168.1.24" ]; # rohan
+      virtualIps = [ { addr = "192.168.1.54/24"; } ];
+      extraConfig = ''
+        notify_master "/etc/keepalived/whisper-master.sh"
+        notify_backup "/etc/keepalived/whisper-backup.sh"
+        notify_fault "/etc/keepalived/whisper-backup.sh"
+      '';
+    };
+
+    # Prometheus node exporter for VM-level monitoring
+    prometheus.exporters.node = {
+      enable = true;
+      port = 9100;
+      openFirewall = true;
+      enabledCollectors = [
+        "systemd"
+        "processes"
+      ];
+    };
   };
 
   # Boot configuration (GRUB for BIOS)

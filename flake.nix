@@ -54,10 +54,14 @@
       url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+    mix-nix = {
+      url = "github:tophc7/mix.nix";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
     play-nix = {
       url = "github:TophC7/play.nix";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
-      inputs.chaotic.follows = "chaotic";
+      inputs.mix-nix.follows = "mix-nix";
     };
     nixos-avf = {
       url = "github:nix-community/nixos-avf";
@@ -79,6 +83,10 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
+    nix-openclaw = {
+      url = "github:openclaw/nix-openclaw";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
     mkdocs-flake = {
       url = "github:applicative-systems/mkdocs-flake";
       inputs.nixpkgs.follows = "nixpkgs-unstable";

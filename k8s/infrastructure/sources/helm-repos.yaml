@@ -135,3 +135,30 @@ metadata:
 spec:
   interval: 1h
   url: https://prometheus-community.github.io/helm-charts
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: grafana
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://grafana.github.io/helm-charts
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: k8sgpt
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://charts.k8sgpt.ai/
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: robusta
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://robusta-charts.storage.googleapis.com
