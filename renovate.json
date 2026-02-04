@@ -44,6 +44,14 @@
       ]
     },
     {
+      "description": "Postgres major upgrades require pg_dump/restore - never automerge",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["postgres"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "automated", "manual-upgrade-required"]
+    },
+    {
       "matchManagers": [
         "nix"
       ],
