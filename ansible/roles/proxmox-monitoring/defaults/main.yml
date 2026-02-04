@@ -2,7 +2,15 @@
 # node_exporter settings
 node_exporter_version: "1.7.0"
 node_exporter_port: 9100
+node_exporter_textfile_dir: "/var/lib/node_exporter/textfile_collector"
 
 # SMART monitoring
 smartd_enable: true
 smartd_schedule: "S/../.././02"  # Short test daily at 2am
+
+# SMART textfile collector for Prometheus
+smartmon_script_url: "https://raw.githubusercontent.com/prometheus-community/node-exporter-textfile-collector-scripts/master/smartmon.sh"
+
+# Syslog forwarding to Loki (via Alloy)
+syslog_target_host: "192.168.1.57"
+syslog_target_port: 5515

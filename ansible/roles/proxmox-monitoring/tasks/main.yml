@@ -26,6 +26,12 @@
     remote_src: true
   when: not node_exporter_bin.stat.exists
 
+- name: Create textfile collector directory
+  ansible.builtin.file:
+    path: "{{ node_exporter_textfile_dir }}"
+    state: directory
+    mode: '0755'
+
 - name: Create node_exporter systemd service
   ansible.builtin.copy:
     dest: /etc/systemd/system/node_exporter.service
@@ -36,7 +42,9 @@
 
       [Service]
       Type=simple
-      ExecStart=/usr/local/bin/node_exporter --web.listen-address=:{{ node_exporter_port }}
+      ExecStart=/usr/local/bin/node_exporter \
+        --web.listen-address=:{{ node_exporter_port }} \
+        --collector.textfile.directory={{ node_exporter_textfile_dir }}
       Restart=always
       RestartSec=5
 
@@ -53,9 +61,11 @@
     daemon_reload: true
 
 # --- SMART monitoring ---
-- name: Install smartmontools
+- name: Install smartmontools and gawk
   ansible.builtin.apt:
-    name: smartmontools
+    name:
+      - smartmontools
+      - gawk
     state: present
 
 - name: Enable smartd
@@ -64,3 +74,56 @@
     enabled: true
     state: started
   when: smartd_enable
+
+# --- SMART textfile collector for Prometheus ---
+- name: Download smartmon.sh collector script
+  ansible.builtin.get_url:
+    url: "{{ smartmon_script_url }}"
+    dest: /usr/local/bin/smartmon.sh
+    mode: '0755'
+
+- name: Create smartmon-textfile systemd service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/smartmon-textfile.service
+    content: |
+      [Unit]
+      Description=Export SMART metrics for node_exporter textfile collector
+
+      [Service]
+      Type=oneshot
+      Environment=TEXTFILE_DIR={{ node_exporter_textfile_dir }}
+      ExecStart=/bin/bash -c '/usr/local/bin/smartmon.sh > $TEXTFILE_DIR/smartmon.prom.tmp && mv $TEXTFILE_DIR/smartmon.prom.tmp $TEXTFILE_DIR/smartmon.prom'
+    mode: '0644'
+
+- name: Create smartmon-textfile systemd timer
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/smartmon-textfile.timer
+    content: |
+      [Unit]
+      Description=Run SMART textfile collector every 5 minutes
+
+      [Timer]
+      OnBootSec=1min
+      OnUnitActiveSec=5min
+      AccuracySec=30s
+
+      [Install]
+      WantedBy=timers.target
+    mode: '0644'
+
+- name: Enable and start smartmon-textfile timer
+  ansible.builtin.systemd:
+    name: smartmon-textfile.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+
+# --- Syslog forwarding to Loki (via Alloy) ---
+- name: Configure rsyslog forwarding to Loki
+  ansible.builtin.copy:
+    dest: /etc/rsyslog.d/99-forward-to-loki.conf
+    content: |
+      # Forward all syslog to Alloy (Loki) via UDP
+      *.* @{{ syslog_target_host }}:{{ syslog_target_port }}
+    mode: '0644'
+  notify: Restart rsyslog

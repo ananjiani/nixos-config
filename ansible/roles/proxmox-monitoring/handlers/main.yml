@@ -4,3 +4,8 @@
     name: node_exporter
     state: restarted
     daemon_reload: true
+
+- name: Restart rsyslog
+  ansible.builtin.systemd:
+    name: rsyslog
+    state: restarted
