@@ -13,6 +13,25 @@
   ...
 }:
 
+let
+  # buildbot-prometheus: Exposes Buildbot metrics for Prometheus scraping.
+  # Uses the same Python interpreter as buildbot-nix to ensure compatibility.
+  buildbotPackages = config.services.buildbot-nix.packages;
+  buildbot-prometheus = buildbotPackages.python.pkgs.buildPythonPackage rec {
+    pname = "buildbot-prometheus";
+    version = "22.0.0";
+    format = "wheel";
+    src = pkgs.fetchurl {
+      url = "https://files.pythonhosted.org/packages/9f/88/dfddd9927138e0c49c6a88eb7f7a9d64de11ef1a9a78b91abaca175eb73c/buildbot_prometheus-22.0.0-py3-none-any.whl";
+      hash = "sha256-sM95bktdQiwgQ8+GARWq/qXESrMrJQQ5E6YLyflqO0A=";
+    };
+    dependencies = with buildbotPackages.python.pkgs; [
+      prometheus-client
+      twisted
+    ];
+    doCheck = false;
+  };
+in
 {
   imports = [
     ./disk-config.nix
@@ -43,6 +62,7 @@
         2283 # Immich
         8080 # Attic binary cache
         8010 # Buildbot web UI
+        9101 # Buildbot Prometheus metrics
         445 # SMB
         139 # NetBIOS
       ];
@@ -324,6 +344,20 @@
       enable = true;
       workerPasswordFile = config.sops.secrets.buildbot_worker_password_plain.path;
     };
+
+    # Buildbot Prometheus metrics exporter (port 9101, node_exporter uses 9100)
+    # Override pythonPackages to inject buildbot-prometheus into buildbot-nix's
+    # Python environment. buildbot-nix hardcodes this list so we must replicate
+    # all original packages plus our addition.
+    buildbot-master.pythonPackages = lib.mkForce (ps: [
+      (ps.toPythonModule buildbotPackages.buildbot-worker)
+      buildbotPackages.buildbot-nix
+      buildbotPackages.buildbot-effects
+      buildbotPackages.buildbot-plugins.www
+      buildbotPackages.buildbot-gitea
+      buildbot-prometheus
+    ]);
+    buildbot-master.reporters = [ "reporters.Prometheus(port=9101)" ];
 
     # Cloudflare Tunnel for external webhooks
     cloudflared = {

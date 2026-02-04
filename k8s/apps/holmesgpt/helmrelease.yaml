@@ -77,6 +77,43 @@ spec:
         enabled: true
       bash:
         enabled: true
+      # Custom toolset: Investigate Buildbot CI/CD failures via REST API
+      # Buildbot runs on theoden (192.168.1.27:8010), reachable from k8s pods on LAN
+      buildbot/ci:
+        description: "Tools for investigating Buildbot CI/CD build failures and worker issues on theoden"
+        tools:
+          - name: get_recent_failed_builds
+            description: >
+              Get recent failed builds from Buildbot CI. Use when investigating
+              BuildbotBuildFailure or BuildbotBuildError alerts. Result codes:
+              0=success, 2=failure, 4=exception.
+            command: >
+              curl -s 'http://192.168.1.27:8010/api/v2/builds?complete=true&results__ge=2&order=-started_at&limit={{ limit | default(10) }}'
+          - name: get_build_steps
+            description: >
+              Get all steps for a specific build by ID. Shows which steps
+              passed and which failed with step names and result codes.
+            command: >
+              curl -s 'http://192.168.1.27:8010/api/v2/builds/{{ build_id }}/steps'
+          - name: get_step_log_content
+            description: >
+              Get the raw log content for a specific build step. First get
+              step numbers from get_build_steps, then fetch log content.
+              Shows the actual error output that caused a failure.
+            command: >
+              curl -s 'http://192.168.1.27:8010/api/v2/builds/{{ build_id }}/steps/{{ step_number }}/logs/{{ log_slug | default("stdio") }}/contents'
+          - name: get_worker_status
+            description: >
+              Get status of all Buildbot workers. Use when investigating
+              BuildbotWorkerDown alerts. Shows connected status and info.
+            command: >
+              curl -s 'http://192.168.1.27:8010/api/v2/workers'
+          - name: get_builders
+            description: >
+              List all builders configured in Buildbot. Shows builder
+              names and IDs for correlating with build failures.
+            command: >
+              curl -s 'http://192.168.1.27:8010/api/v2/builders'
 
     resources:
       requests:

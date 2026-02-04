@@ -80,3 +80,16 @@ spec:
         - "192.168.1.25:8123"
       labels:
         job: home-assistant
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: buildbot
+  namespace: monitoring
+spec:
+  scrapeInterval: 60s
+  staticConfigs:
+    - targets:
+        - "192.168.1.27:9101" # theoden buildbot-prometheus
+      labels:
+        job: buildbot

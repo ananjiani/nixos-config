@@ -320,3 +320,39 @@ spec:
                 annotations:
                   summary: "K8sGPT detected {{ $value }} cluster issues"
                   description: "K8sGPT has found issues that need attention. Inspect with: kubectl get results -n k8sgpt"
+      buildbot-alerts:
+        groups:
+          - name: buildbot
+            rules:
+              - alert: BuildbotBuildFailure
+                expr: increase(buildbot_builds_failure_total[1h]) > 0
+                for: 0m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Buildbot build failure detected"
+                  description: "{{ $value }} build(s) failed in the last hour."
+              - alert: BuildbotBuildError
+                expr: increase(buildbot_builds_error_total[1h]) > 0
+                for: 0m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Buildbot build error detected"
+                  description: "{{ $value }} build error(s) in the last hour."
+              - alert: BuildbotWorkerDown
+                expr: buildbot_workers_running_total == 0
+                for: 5m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "All Buildbot workers are offline"
+                  description: "No Buildbot workers have been online for 5 minutes."
+              - alert: BuildbotBuildSlow
+                expr: buildbot_builds_duration_seconds > 3600
+                for: 10m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Buildbot build running > 1 hour"
+                  description: "A build has been running for more than 1 hour."
