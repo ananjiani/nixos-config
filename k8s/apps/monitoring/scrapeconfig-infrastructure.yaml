@@ -1,0 +1,82 @@
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: proxmox-node-exporter
+  namespace: monitoring
+spec:
+  scrapeInterval: 60s
+  staticConfigs:
+    - targets:
+        - "192.168.1.24:9100" # rohan
+        - "192.168.1.20:9100" # gondor
+        - "192.168.1.23:9100" # the-shire
+      labels:
+        job: proxmox-node-exporter
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: nixos-node-exporter
+  namespace: monitoring
+spec:
+  scrapeInterval: 60s
+  staticConfigs:
+    - targets:
+        - "192.168.1.21:9100" # boromir
+        - "192.168.1.26:9100" # samwise
+        - "192.168.1.27:9100" # theoden
+        - "192.168.1.28:9100" # pippin
+      labels:
+        job: nixos-node-exporter
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: opnsense-node-exporter
+  namespace: monitoring
+spec:
+  scrapeInterval: 60s
+  staticConfigs:
+    - targets:
+        - "192.168.1.1:9100" # router.lan
+      labels:
+        job: opnsense-node-exporter
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: nixos-app-exporters
+  namespace: monitoring
+spec:
+  scrapeInterval: 60s
+  staticConfigs:
+    - targets:
+        - "192.168.1.27:9187" # theoden postgres
+      labels:
+        job: nixos-app-exporters
+        exporter: postgres
+    # TODO: Re-enable when Zigbee devices are added to the network
+    # - targets:
+    #     - "192.168.1.26:9641" # samwise mqtt
+    #   labels:
+    #     job: nixos-app-exporters
+    #     exporter: mqtt
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: home-assistant
+  namespace: monitoring
+spec:
+  scrapeInterval: 60s
+  metricsPath: /api/prometheus
+  authorization:
+    credentials:
+      name: home-assistant-prometheus-token
+      key: token
+  staticConfigs:
+    - targets:
+        - "192.168.1.25:8123"
+      labels:
+        job: home-assistant

@@ -69,6 +69,15 @@ spec:
           enabled: true
         datasources:
           enabled: true
+      additionalDataSources:
+        - name: Loki
+          type: loki
+          access: proxy
+          url: http://loki-gateway.monitoring.svc:80
+          isDefault: false
+          editable: true
+          jsonData:
+            maxLines: 1000
 
     # ---- Alertmanager ----
     alertmanager:
@@ -88,7 +97,7 @@ spec:
           - name: "null"
           - name: ntfy
             webhook_configs:
-              - url: "http://ntfy.ntfy.svc:80/monitoring?template=alertmanager"
+              - url: "http://ntfy-alertmanager.monitoring.svc:8080"
                 send_resolved: true
         route:
           receiver: ntfy
@@ -114,14 +123,10 @@ spec:
           cpu: "200m"
 
     # ---- node-exporter ----
-    prometheus-node-exporter:
-      resources:
-        requests:
-          memory: "32Mi"
-          cpu: "50m"
-        limits:
-          memory: "128Mi"
-          cpu: "200m"
+    # Disabled: NixOS-native node exporters run on each VM with systemd/process
+    # collectors. Scrape targets and alert rules use job="nixos-node-exporter".
+    nodeExporter:
+      enabled: false
 
     # ---- Disable k3s-incompatible monitors ----
     kubeEtcd:
@@ -167,3 +172,151 @@ spec:
                 annotations:
                   summary: "HTTP failure on {{ $labels.instance }}"
                   description: "HTTP status {{ $value }} on {{ $labels.instance }} for more than 2 minutes."
+      external-probe-alerts:
+        groups:
+          - name: external-probes
+            rules:
+              - alert: ExternalEndpointDown
+                expr: probe_success{job=~".*external-.*"} == 0
+                for: 2m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "External endpoint {{ $labels.instance }} is unreachable"
+                  description: "Public URL {{ $labels.instance }} has been down for 2 minutes. This indicates a DNS, Cloudflare, or Traefik issue (not just the service itself)."
+              - alert: ServiceBodyAssertionFailed
+                expr: probe_success{job=~".*external-.*"} == 0 and probe_http_status_code{job=~".*external-.*"} == 200
+                for: 2m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "{{ $labels.instance }} returns 200 but body assertion failed"
+                  description: "{{ $labels.instance }} is responding with HTTP 200 but the response body does not match expected content. The service may be functionally broken."
+      vm-alerts:
+        groups:
+          - name: nixos-vm-health
+            rules:
+              - alert: VMDiskSpaceCritical
+                expr: (node_filesystem_avail_bytes{job="nixos-node-exporter",fstype!="tmpfs"} / node_filesystem_size_bytes{job="nixos-node-exporter",fstype!="tmpfs"}) < 0.1
+                for: 5m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Disk space critical on {{ $labels.instance }}"
+                  description: "{{ $labels.instance }} has less than 10% disk space remaining on {{ $labels.mountpoint }}."
+              - alert: VMDiskSpaceWarning
+                expr: (node_filesystem_avail_bytes{job="nixos-node-exporter",fstype!="tmpfs"} / node_filesystem_size_bytes{job="nixos-node-exporter",fstype!="tmpfs"}) < 0.2
+                for: 10m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Disk space low on {{ $labels.instance }}"
+                  description: "{{ $labels.instance }} has less than 20% disk space remaining on {{ $labels.mountpoint }}."
+              - alert: VMMemoryPressure
+                expr: (node_memory_MemAvailable_bytes{job="nixos-node-exporter"} / node_memory_MemTotal_bytes{job="nixos-node-exporter"}) < 0.1
+                for: 5m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Memory pressure on {{ $labels.instance }}"
+                  description: "{{ $labels.instance }} has less than 10% memory available."
+              - alert: VMSystemdUnitFailed
+                expr: node_systemd_unit_state{job="nixos-node-exporter",state="failed"} == 1
+                for: 5m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Systemd unit failed on {{ $labels.instance }}"
+                  description: "Unit {{ $labels.name }} on {{ $labels.instance }} is in a failed state."
+              - alert: PostgresConnectionsHigh
+                expr: sum by (instance) (pg_stat_activity_count{job="nixos-app-exporters"}) / on (instance) pg_settings_max_connections{job="nixos-app-exporters"} > 0.8
+                for: 5m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "PostgreSQL connections high on {{ $labels.instance }}"
+                  description: "{{ $labels.instance }} is using more than 80% of max_connections."
+      flux-alerts:
+        groups:
+          - name: flux
+            rules:
+              - alert: FluxReconciliationStalled
+                expr: |
+                  rate(gotk_reconcile_duration_seconds_sum{kind="GitRepository"}[10m])
+                  / rate(gotk_reconcile_duration_seconds_count{kind="GitRepository"}[10m])
+                  > 240
+                for: 10m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Flux {{ $labels.kind }} {{ $labels.name }} reconciliation stalled"
+                  description: "Average reconcile duration for {{ $labels.kind }}/{{ $labels.name }} in {{ $labels.namespace }} exceeds 4 minutes, likely hitting the clone timeout."
+              - alert: FluxReconciliationFailure
+                expr: |
+                  increase(gotk_reconcile_duration_seconds_count{kind=~"GitRepository|Kustomization|HelmRelease"}[30m]) == 0
+                for: 30m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Flux {{ $labels.kind }} {{ $labels.name }} has not reconciled"
+                  description: "{{ $labels.kind }}/{{ $labels.name }} in {{ $labels.namespace }} has not completed a reconciliation in 30 minutes."
+      opnsense-alerts:
+        groups:
+          - name: opnsense
+            rules:
+              - alert: OPNsenseGatewayDown
+                expr: opnsense_gateways_status != 1
+                for: 2m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "OPNsense gateway {{ $labels.name }} is down"
+                  description: "Gateway {{ $labels.name }} has been offline for more than 2 minutes."
+              - alert: OPNsenseHighCPU
+                expr: (1 - avg(rate(node_cpu_seconds_total{job="opnsense-node-exporter",mode="idle"}[5m]))) > 0.85
+                for: 10m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "OPNsense CPU usage above 85%"
+                  description: "OPNsense router CPU has been above 85% for 10 minutes."
+              - alert: OPNsenseWebUIDown
+                expr: probe_success{instance=~".*192.168.1.1.*"} == 0
+                for: 2m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "OPNsense web UI unreachable"
+                  description: "OPNsense web interface at 192.168.1.1 has been down for more than 2 minutes."
+      dns-alerts:
+        groups:
+          - name: dns
+            rules:
+              - alert: DNSVIPDown
+                expr: probe_success{target="dns-vip"} == 0
+                for: 1m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "DNS VIP (192.168.1.53) is not resolving"
+                  description: "The keepalived DNS VIP has failed to resolve queries for more than 1 minute. All network DNS is affected."
+              - alert: DNSNodeDown
+                expr: probe_success{target=~"dns-(theoden|boromir|samwise)"} == 0
+                for: 2m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "DNS node {{ $labels.target }} is not resolving"
+                  description: "AdGuard instance {{ $labels.target }} has failed to resolve queries for 2 minutes. Keepalived should failover, but capacity is reduced."
+      k8sgpt-alerts:
+        groups:
+          - name: k8sgpt
+            rules:
+              - alert: K8sGPTIssuesDetected
+                expr: k8sgpt_number_of_results > 0
+                for: 10m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "K8sGPT detected {{ $value }} cluster issues"
+                  description: "K8sGPT has found issues that need attention. Inspect with: kubectl get results -n k8sgpt"

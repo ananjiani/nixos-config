@@ -5,5 +5,10 @@ resources:
   - namespace.yaml
   - helmrelease-kube-prometheus-stack.yaml
   - helmrelease-blackbox-exporter.yaml
+  - flux-podmonitor.yaml
+  - scrapeconfig-infrastructure.yaml
+  - home-assistant-secret.yaml
+  - helmrelease-loki.yaml
+  - helmrelease-alloy.yaml
   - ingressroute.yaml
   - certificate.yaml
