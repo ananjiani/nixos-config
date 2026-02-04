@@ -21,6 +21,7 @@
       fe = "$EDITOR $(fzf)";
       fv = "vi $(fzf)";
       oc = "npx opencode-ai";
+      claude = "happy";
     };
 
     packages =
