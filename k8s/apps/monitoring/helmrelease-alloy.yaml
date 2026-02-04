@@ -95,10 +95,24 @@ spec:
             forward_to = [loki.write.default.receiver]
           }
 
+          // ── Proxmox syslog collection ──
+          loki.source.syslog "proxmox" {
+            listener {
+              address  = "0.0.0.0:5515"
+              protocol = "udp"
+              labels   = {source = "syslog", job = "proxmox"}
+            }
+            forward_to = [loki.write.default.receiver]
+          }
+
       extraPorts:
         - name: syslog
           port: 5514
           targetPort: 5514
+          protocol: UDP
+        - name: syslog-proxmox
+          port: 5515
+          targetPort: 5515
           protocol: UDP
 
       mounts:

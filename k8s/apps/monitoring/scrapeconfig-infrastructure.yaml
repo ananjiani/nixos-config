@@ -84,6 +84,46 @@ spec:
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: ScrapeConfig
 metadata:
+  name: proxmox-pve-exporter
+  namespace: monitoring
+spec:
+  scrapeInterval: 60s
+  metricsPath: /pve
+  params:
+    module: ["default"]
+    cluster: ["1"]
+    node: ["1"]
+  staticConfigs:
+    - targets:
+        - "192.168.1.24" # rohan
+        - "192.168.1.20" # gondor
+        - "192.168.1.23" # the-shire
+      labels:
+        job: proxmox-pve-exporter
+  relabelings:
+    - sourceLabels: ["__address__"]
+      targetLabel: __param_target
+    - sourceLabels: ["__param_target"]
+      targetLabel: instance
+    - targetLabel: __address__
+      replacement: "192.168.1.24:9221"
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: proxmox-nvidia-gpu-exporter
+  namespace: monitoring
+spec:
+  scrapeInterval: 60s
+  staticConfigs:
+    - targets:
+        - "192.168.1.24:9835" # rohan nvidia gpu
+      labels:
+        job: proxmox-nvidia-gpu-exporter
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
   name: buildbot
   namespace: monitoring
 spec:
