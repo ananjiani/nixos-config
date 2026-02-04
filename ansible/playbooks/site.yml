@@ -6,8 +6,10 @@
     - proxmox-base
     - proxmox-monitoring
 
-- name: Configure GPU fan control on rohan
+- name: Configure rohan-specific services (GPU, PVE exporter)
   hosts: rohan
   become: true
   roles:
     - nvidia-fan-control
+    - proxmox-nvidia-gpu-exporter
+    - proxmox-pve-exporter

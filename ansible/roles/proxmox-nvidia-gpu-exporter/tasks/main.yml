@@ -1,0 +1,52 @@
+---
+- name: Check if nvidia_gpu_exporter is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/nvidia_gpu_exporter
+  register: nvidia_gpu_exporter_bin
+
+- name: Download nvidia_gpu_exporter
+  ansible.builtin.get_url:
+    url: "https://github.com/utkuozdemir/nvidia_gpu_exporter/releases/download/v{{ nvidia_gpu_exporter_version }}/nvidia_gpu_exporter_{{ nvidia_gpu_exporter_version }}_linux_x86_64.tar.gz"
+    dest: /tmp/nvidia_gpu_exporter.tar.gz
+  when: not nvidia_gpu_exporter_bin.stat.exists
+
+- name: Extract nvidia_gpu_exporter
+  ansible.builtin.unarchive:
+    src: /tmp/nvidia_gpu_exporter.tar.gz
+    dest: /tmp
+    remote_src: true
+  when: not nvidia_gpu_exporter_bin.stat.exists
+
+- name: Install nvidia_gpu_exporter binary
+  ansible.builtin.copy:
+    src: /tmp/nvidia_gpu_exporter
+    dest: /usr/local/bin/nvidia_gpu_exporter
+    mode: '0755'
+    remote_src: true
+  when: not nvidia_gpu_exporter_bin.stat.exists
+
+- name: Create nvidia_gpu_exporter systemd service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/nvidia_gpu_exporter.service
+    content: |
+      [Unit]
+      Description=NVIDIA GPU Prometheus Exporter
+      After=network.target nvidia-persistenced.service
+
+      [Service]
+      Type=simple
+      ExecStart=/usr/local/bin/nvidia_gpu_exporter --web.listen-address=:{{ nvidia_gpu_exporter_port }}
+      Restart=always
+      RestartSec=5
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+  notify: Restart nvidia_gpu_exporter
+
+- name: Enable and start nvidia_gpu_exporter
+  ansible.builtin.systemd:
+    name: nvidia_gpu_exporter
+    enabled: true
+    state: started
+    daemon_reload: true

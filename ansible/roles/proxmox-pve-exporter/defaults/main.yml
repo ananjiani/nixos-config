@@ -1,0 +1,8 @@
+---
+pve_exporter_port: 9221
+
+# SOPS secret paths (relative to secrets/secrets.yaml)
+sops_secrets_file: "../../../secrets/secrets.yaml"
+pve_exporter_sops_user_key: '["pve_exporter_user"]'
+pve_exporter_sops_token_name_key: '["pve_exporter_token_name"]'
+pve_exporter_sops_token_value_key: '["pve_exporter_token_value"]'

@@ -1,0 +1,64 @@
+---
+# --- Install prometheus-pve-exporter via pipx ---
+- name: Install pipx
+  ansible.builtin.apt:
+    name: pipx
+    state: present
+
+- name: Install prometheus-pve-exporter via pipx
+  ansible.builtin.command:
+    cmd: pipx install prometheus-pve-exporter
+    creates: /usr/local/bin/pve_exporter
+  environment:
+    PIPX_HOME: /opt/pipx
+    PIPX_BIN_DIR: /usr/local/bin
+
+# --- Configure PVE exporter credentials ---
+- name: Create pve_exporter config directory
+  ansible.builtin.file:
+    path: /etc/pve_exporter
+    state: directory
+    mode: '0700'
+
+- name: Decrypt PVE API credentials from SOPS
+  ansible.builtin.set_fact:
+    pve_user: "{{ lookup('pipe', 'sops -d --extract ' ~ pve_exporter_sops_user_key ~ ' ' ~ sops_secrets_file) }}"
+    pve_token_name: "{{ lookup('pipe', 'sops -d --extract ' ~ pve_exporter_sops_token_name_key ~ ' ' ~ sops_secrets_file) }}"
+    pve_token_value: "{{ lookup('pipe', 'sops -d --extract ' ~ pve_exporter_sops_token_value_key ~ ' ' ~ sops_secrets_file) }}"
+  no_log: true
+
+- name: Template PVE exporter configuration
+  ansible.builtin.template:
+    src: pve.yml.j2
+    dest: /etc/pve_exporter/pve.yml
+    mode: '0600'
+  notify: Restart pve_exporter
+
+# --- Systemd service ---
+- name: Create pve_exporter systemd service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/pve_exporter.service
+    content: |
+      [Unit]
+      Description=Prometheus PVE Exporter
+      After=network.target
+
+      [Service]
+      Type=simple
+      ExecStart=/usr/local/bin/pve_exporter \
+        --config.file=/etc/pve_exporter/pve.yml \
+        --web.listen-address=:{{ pve_exporter_port }}
+      Restart=always
+      RestartSec=5
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+  notify: Restart pve_exporter
+
+- name: Enable and start pve_exporter
+  ansible.builtin.systemd:
+    name: pve_exporter
+    enabled: true
+    state: started
+    daemon_reload: true
