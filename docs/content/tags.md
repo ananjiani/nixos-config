@@ -1,5 +1,5 @@
 # Tags
 
-Browse postmortems by tag.
+Browse documentation by tag.
 
 <!-- material/tags -->

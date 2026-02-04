@@ -1,0 +1,86 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: holmesgpt
+  namespace: holmesgpt
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: holmes
+      version: "0.19.0"
+      sourceRef:
+        kind: HelmRepository
+        name: robusta
+        namespace: flux-system
+      interval: 1h
+  values:
+    replicas: 1
+    logLevel: INFO
+    enableTelemetry: false
+
+    additionalEnvVars:
+      - name: OPENAI_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: holmesgpt-ai-secret
+            key: api-key
+
+    modelList:
+      bifrost-kimi:
+        api_key: "{{ env.OPENAI_API_KEY }}"
+        api_base: "http://bifrost.bifrost.svc:8080/v1"
+        model: openai/cliproxy/kimi-for-coding
+        temperature: 1
+
+    customClusterRoleRules:
+      # Fix upstream chart bug: deployments/daemonsets/replicasets/statefulsets
+      # are in the "apps" apiGroup, not core ""
+      - apiGroups: ["apps"]
+        resources: ["deployments", "daemonsets", "replicasets", "statefulsets"]
+        verbs: ["get", "list", "watch"]
+      # Allow investigating webhook configurations (K8sGPT detects these)
+      - apiGroups: ["admissionregistration.k8s.io"]
+        resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
+        verbs: ["get", "list", "watch"]
+      # Allow investigating network policies and ingresses
+      - apiGroups: ["networking.k8s.io"]
+        resources: ["ingresses", "networkpolicies"]
+        verbs: ["get", "list", "watch"]
+      # Allow investigating Flux HelmReleases and Kustomizations
+      - apiGroups: ["helm.toolkit.fluxcd.io"]
+        resources: ["helmreleases"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["kustomize.toolkit.fluxcd.io"]
+        resources: ["kustomizations"]
+        verbs: ["get", "list", "watch"]
+
+    toolsets:
+      kubernetes/core:
+        enabled: true
+      kubernetes/logs:
+        enabled: false
+      grafana/loki:
+        enabled: true
+        config:
+          url: http://loki-gateway.monitoring.svc:80
+      prometheus/metrics:
+        enabled: true
+        config:
+          prometheus_url: http://kube-prometheus-stack-prometheus.monitoring.svc:9090
+      robusta:
+        enabled: false
+      internet:
+        enabled: true
+      runbook:
+        enabled: true
+      bash:
+        enabled: true
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 1024Mi
+      limits:
+        memory: 2048Mi

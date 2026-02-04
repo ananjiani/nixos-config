@@ -48,17 +48,6 @@ in
       default = [ ];
       description = "Extra flags to pass to k3s";
     };
-
-    flannelMtu = lib.mkOption {
-      type = lib.types.int;
-      default = 1450;
-      description = ''
-        Host interface MTU to set before k3s starts. Flannel auto-detects pod
-        MTU as this value minus VXLAN overhead (50 bytes). Default 1450 yields
-        pod MTU of 1400, providing headroom for HTTP/2 + TLS framing within
-        the standard 1500-byte physical MTU.
-      '';
-    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -77,30 +66,6 @@ in
       ];
 
       services = {
-        # Lower host interface MTU so Flannel auto-detects a safe pod MTU.
-        # Without this, VXLAN + HTTP/2 + TLS framing can exceed the physical MTU,
-        # causing git clones and other HTTP/2 connections to silently fail.
-        k3s-flannel-mtu = {
-          description = "Set host interface MTU for Flannel VXLAN headroom";
-          before = [ "k3s.service" ];
-          requiredBy = [ "k3s.service" ];
-          after = [ "network-online.target" ];
-          wants = [ "network-online.target" ];
-          serviceConfig = {
-            Type = "oneshot";
-            RemainAfterExit = true;
-          };
-          script = ''
-            IFACE=$(${pkgs.iproute2}/bin/ip route show default | ${pkgs.gawk}/bin/awk '/default/ {print $5; exit}')
-            if [ -n "$IFACE" ]; then
-              ${pkgs.iproute2}/bin/ip link set "$IFACE" mtu ${toString cfg.flannelMtu}
-              echo "Set $IFACE MTU to ${toString cfg.flannelMtu}"
-            else
-              echo "Warning: no default interface found, skipping MTU override"
-            fi
-          '';
-        };
-
         # Workaround: k3s's embedded flannel can fail to regenerate /run/flannel/subnet.env
         # after a reboot (/run is tmpfs). Without this file, the flannel CNI plugin cannot
         # assign pod IPs and no pods can start. We persist a backup to disk and restore it
@@ -184,8 +149,11 @@ in
           # Disable built-in components we're replacing
           "--disable=traefik" # Using external ingress or none
           "--disable=servicelb" # Using MetalLB instead
-          # Flannel backend for pod networking
-          "--flannel-backend=vxlan"
+          # Flannel backend: host-gw adds static routes instead of VXLAN encapsulation.
+          # Requires all nodes on the same L2 subnet (ours are all 192.168.1.x).
+          # Gives pods full 1500-byte MTU — avoids the VXLAN overhead that caused
+          # repeated HTTP/2 + TLS framing failures (see postmortem 2026-02-01-0445).
+          "--flannel-backend=host-gw"
         ]
         ++ cfg.extraFlags
       );
@@ -205,7 +173,6 @@ in
       ];
 
       allowedUDPPorts = [
-        8472 # Flannel VXLAN
         7946 # MetalLB speaker memberlist
       ];
     };
