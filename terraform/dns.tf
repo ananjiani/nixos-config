@@ -4,7 +4,7 @@ locals {
 }
 
 # Root domain A record
-resource "cloudflare_record" "root" {
+resource "cloudflare_dns_record" "root" {
   zone_id = local.zone_id
   name    = var.domain
   content = var.homeserver_ip
@@ -15,7 +15,7 @@ resource "cloudflare_record" "root" {
 }
 
 # Forgejo git server (internal via Tailscale)
-resource "cloudflare_record" "git" {
+resource "cloudflare_dns_record" "git" {
   zone_id = local.zone_id
   name    = "git"
   content = "192.168.1.52" # Traefik LoadBalancer (internal)
@@ -26,7 +26,7 @@ resource "cloudflare_record" "git" {
 }
 
 # Media subdomain A record
-resource "cloudflare_record" "media" {
+resource "cloudflare_dns_record" "media" {
   zone_id = local.zone_id
   name    = "media"
   content = var.homeserver_ip
@@ -37,7 +37,7 @@ resource "cloudflare_record" "media" {
 }
 
 # Spatial Jobs Index API subdomain A record (VPS)
-resource "cloudflare_record" "sji_api" {
+resource "cloudflare_dns_record" "sji_api" {
   zone_id = local.zone_id
   name    = "sji-api"
   content = "159.223.139.52"
@@ -48,7 +48,7 @@ resource "cloudflare_record" "sji_api" {
 }
 
 # Tailscale/Headscale control server
-resource "cloudflare_record" "tailscale" {
+resource "cloudflare_dns_record" "tailscale" {
   zone_id = local.zone_id
   name    = "ts"
   content = var.homeserver_ip
@@ -63,7 +63,7 @@ resource "cloudflare_record" "tailscale" {
 # =============================================================================
 
 # Authentik SSO
-resource "cloudflare_record" "auth" {
+resource "cloudflare_dns_record" "auth" {
   zone_id = local.zone_id
   name    = "auth"
   content = "192.168.1.52" # Traefik LoadBalancer (internal)
@@ -74,7 +74,7 @@ resource "cloudflare_record" "auth" {
 }
 
 # Immich photo management
-resource "cloudflare_record" "immich" {
+resource "cloudflare_dns_record" "immich" {
   zone_id = local.zone_id
   name    = "immich"
   content = "192.168.1.52" # Traefik LoadBalancer (internal)
@@ -85,7 +85,7 @@ resource "cloudflare_record" "immich" {
 }
 
 # Open WebUI AI chat
-resource "cloudflare_record" "ai" {
+resource "cloudflare_dns_record" "ai" {
   zone_id = local.zone_id
   name    = "ai"
   content = "192.168.1.52" # Traefik LoadBalancer (internal)
@@ -96,7 +96,7 @@ resource "cloudflare_record" "ai" {
 }
 
 # Homepage dashboard
-resource "cloudflare_record" "home" {
+resource "cloudflare_dns_record" "home" {
   zone_id = local.zone_id
   name    = "home"
   content = "192.168.1.52" # Traefik LoadBalancer (internal)
@@ -107,7 +107,7 @@ resource "cloudflare_record" "home" {
 }
 
 # Bifrost LLM Gateway
-resource "cloudflare_record" "bifrost" {
+resource "cloudflare_dns_record" "bifrost" {
   zone_id = local.zone_id
   name    = "bifrost"
   content = "192.168.1.52" # Traefik LoadBalancer (internal)
@@ -118,7 +118,7 @@ resource "cloudflare_record" "bifrost" {
 }
 
 # Stremio streaming server (for web.stremio.com)
-resource "cloudflare_record" "stremio" {
+resource "cloudflare_dns_record" "stremio" {
   zone_id = local.zone_id
   name    = "stremio"
   content = "192.168.1.52" # Traefik LoadBalancer (internal)
@@ -129,7 +129,7 @@ resource "cloudflare_record" "stremio" {
 }
 
 # Comet addon for Stremio
-resource "cloudflare_record" "comet" {
+resource "cloudflare_dns_record" "comet" {
   zone_id = local.zone_id
   name    = "comet"
   content = "192.168.1.52" # Traefik LoadBalancer (internal)
@@ -140,7 +140,7 @@ resource "cloudflare_record" "comet" {
 }
 
 # Prowlarr indexer manager
-resource "cloudflare_record" "prowlarr" {
+resource "cloudflare_dns_record" "prowlarr" {
   zone_id = local.zone_id
   name    = "prowlarr"
   content = "192.168.1.52" # Traefik LoadBalancer (internal)
@@ -151,7 +151,7 @@ resource "cloudflare_record" "prowlarr" {
 }
 
 # AdGuard DNS-over-TLS (for Android Private DNS)
-resource "cloudflare_record" "dns_dot" {
+resource "cloudflare_dns_record" "dns_dot" {
   zone_id = local.zone_id
   name    = "dns"
   content = "192.168.1.56" # AdGuard DoT LoadBalancer (internal)
@@ -162,7 +162,7 @@ resource "cloudflare_record" "dns_dot" {
 }
 
 # LobeChat AI workspace
-resource "cloudflare_record" "lobe" {
+resource "cloudflare_dns_record" "lobe" {
   zone_id = local.zone_id
   name    = "lobe"
   content = "192.168.1.52" # Traefik LoadBalancer (internal)
@@ -173,7 +173,7 @@ resource "cloudflare_record" "lobe" {
 }
 
 # LobeChat MinIO S3 storage
-resource "cloudflare_record" "lobe_s3" {
+resource "cloudflare_dns_record" "lobe_s3" {
   zone_id = local.zone_id
   name    = "lobe-s3"
   content = "192.168.1.52" # Traefik LoadBalancer (internal)
@@ -184,7 +184,7 @@ resource "cloudflare_record" "lobe_s3" {
 }
 
 # Clawdbot AI Assistant
-resource "cloudflare_record" "clawdbot" {
+resource "cloudflare_dns_record" "clawdbot" {
   zone_id = local.zone_id
   name    = "clawd"
   content = "192.168.1.52" # Traefik LoadBalancer (internal)
@@ -199,7 +199,7 @@ resource "cloudflare_record" "clawdbot" {
 # =============================================================================
 
 # Buildbot CI/CD (via Cloudflare Tunnel for Codeberg webhooks)
-resource "cloudflare_record" "buildbot" {
+resource "cloudflare_dns_record" "buildbot" {
   zone_id = local.zone_id
   name    = "ci"
   content = "b33ec739-7324-4c6f-b6fa-daedbe0828c8.cfargotunnel.com"
@@ -210,7 +210,7 @@ resource "cloudflare_record" "buildbot" {
 }
 
 # Voicemail receiver (via Cloudflare Tunnel for Telnyx webhooks)
-resource "cloudflare_record" "voicemail" {
+resource "cloudflare_dns_record" "voicemail" {
   zone_id = local.zone_id
   name    = "voicemail"
   content = "b33ec739-7324-4c6f-b6fa-daedbe0828c8.cfargotunnel.com"
