@@ -7,4 +7,3 @@ resources:
   - service.yaml
   - certificate.yaml
   - ingressroute.yaml
-  - prometheus-secret.yaml
