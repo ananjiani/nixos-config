@@ -443,6 +443,14 @@ resource "opnsense_kea_reservation" "pippin" {
   description = "Clawdbot AI assistant VM"
 }
 
+resource "opnsense_kea_reservation" "rivendell" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.29"
+  mac_address = local.mac_addresses.rivendell
+  hostname    = "rivendell"
+  description = "HTPC (Trycoo WI6 N100)"
+}
+
 # =============================================================================
 # Port Forwarding for Traefik (k8s ingress)
 # =============================================================================

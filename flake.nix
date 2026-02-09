@@ -241,6 +241,15 @@
           ];
         };
 
+        # Rivendell - HTPC (Intel N100 bare metal)
+        rivendell = lib.nixosSystem {
+          inherit system specialArgs;
+          modules = [
+            ./hosts/servers/rivendell/configuration.nix
+            inputs.sops-nix.nixosModules.sops
+          ];
+        };
+
       };
 
       # deploy-rs deployment configuration
@@ -275,6 +284,14 @@
             user = "root";
             sshUser = "root";
             path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.pippin;
+          };
+        };
+        rivendell = {
+          hostname = "rivendell.lan";
+          profiles.system = {
+            user = "root";
+            sshUser = "root";
+            path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.rivendell;
           };
         };
       };
@@ -395,6 +412,7 @@
         nixos-samwise = self.nixosConfigurations.samwise.config.system.build.toplevel;
         nixos-theoden = self.nixosConfigurations.theoden.config.system.build.toplevel;
         nixos-pippin = self.nixosConfigurations.pippin.config.system.build.toplevel;
+        nixos-rivendell = self.nixosConfigurations.rivendell.config.system.build.toplevel;
 
         # Home Manager builds (for CI caching)
         home-ammars-pc = self.homeConfigurations."ammar@ammars-pc".activationPackage;
