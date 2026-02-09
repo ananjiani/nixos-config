@@ -9,7 +9,7 @@
 
 {
   imports = [
-    ./hardware-configuration.nix
+    ./disk-config.nix
     inputs.home-manager-unstable.nixosModules.home-manager
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/htpc.nix
@@ -78,11 +78,26 @@
     ];
   };
 
-  # EFI boot (bare metal, not Proxmox VM)
-  boot.loader = {
-    systemd-boot.enable = true;
-    efi.canTouchEfiVariables = true;
+  # Boot configuration (bare metal EFI)
+  boot = {
+    loader = {
+      systemd-boot.enable = true;
+      efi.canTouchEfiVariables = true;
+    };
+    initrd = {
+      availableKernelModules = [
+        "xhci_pci"
+        "ahci"
+        "nvme"
+        "usb_storage"
+        "sd_mod"
+      ];
+      kernelModules = [ "i915" ]; # Intel GPU early load for Kodi-GBM
+    };
+    kernelModules = [ "kvm-intel" ];
   };
+
+  hardware.cpu.intel.updateMicrocode = true;
 
   system.stateVersion = "25.11";
   nixpkgs.hostPlatform = "x86_64-linux";
