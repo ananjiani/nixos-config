@@ -23,6 +23,7 @@ in
     ../../modules/nixos/bluetooth.nix
     ../../modules/nixos/android.nix
     ../../modules/nixos/nfs-client.nix
+    ../../modules/nixos/openconnect.nix
     ../../modules/nixos/networking.nix
     ../../modules/nixos/tailscale.nix
     inputs.play-nix.nixosModules.play
@@ -73,7 +74,10 @@ in
       '';
     };
   };
-  environment.systemPackages = with pkgs; [ signal-desktop ];
+  environment.systemPackages = with pkgs; [
+    signal-desktop
+    cifs-utils
+  ];
 
   virtualisation.docker.enable = true;
 
