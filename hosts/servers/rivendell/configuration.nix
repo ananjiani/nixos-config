@@ -16,6 +16,8 @@
     ../../../modules/nixos/ssh.nix
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/tailscale.nix
+    ../../../modules/nixos/server/k3s.nix
+    ../../../modules/nixos/server/adguard.nix
   ];
 
   modules = {
@@ -34,6 +36,15 @@
       loginServer = "https://ts.dimensiondoor.xyz";
       authKeyFile = config.sops.secrets.tailscale_authkey.path;
     };
+
+    # k3s agent node (joins existing cluster, no control plane overhead)
+    k3s = {
+      enable = true;
+      role = "agent";
+      serverAddr = "https://192.168.1.21:6443"; # boromir
+      tokenFile = config.sops.secrets.k3s_token.path;
+      extraFlags = [ "--node-ip=192.168.1.29" ];
+    };
   };
 
   # SOPS secrets
@@ -41,6 +52,7 @@
     defaultSopsFile = ../../../secrets/secrets.yaml;
     age.keyFile = "/var/lib/sops-nix/key.txt";
     secrets.tailscale_authkey = { };
+    secrets.k3s_token = { };
   };
 
   networking = {

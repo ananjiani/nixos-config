@@ -204,6 +204,10 @@ _: {
             answer = "192.168.1.28";
           }
           {
+            domain = "rivendell.lan";
+            answer = "192.168.1.29";
+          }
+          {
             domain = "ammars-pc.lan";
             answer = "192.168.1.50";
           }
