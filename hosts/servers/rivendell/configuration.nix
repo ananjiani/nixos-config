@@ -18,6 +18,7 @@
     ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/k3s.nix
     ../../../modules/nixos/server/adguard.nix
+    ../../../modules/nixos/server/keepalived.nix
   ];
 
   modules = {
@@ -44,6 +45,18 @@
       serverAddr = "https://192.168.1.21:6443"; # boromir
       tokenFile = config.sops.secrets.k3s_token.path;
       extraFlags = [ "--node-ip=192.168.1.29" ];
+    };
+
+    # Keepalived for HA DNS — rivendell is quaternary (lowest priority, may power cycle)
+    keepalived = {
+      enable = true;
+      interface = "eno1"; # Bare metal NIC (not ens18 like Proxmox VMs)
+      priority = 70;
+      unicastPeers = [
+        "192.168.1.27" # theoden
+        "192.168.1.21" # boromir
+        "192.168.1.26" # samwise
+      ];
     };
   };
 

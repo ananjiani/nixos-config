@@ -157,6 +157,7 @@ in
       unicastPeers = [
         "192.168.1.21" # boromir
         "192.168.1.26" # samwise
+        "192.168.1.29" # rivendell
       ];
     };
   };
