@@ -10,6 +10,7 @@
 
 {
   imports = [
+    ./hardware-configuration.nix
     ./disk-config.nix
     inputs.home-manager-unstable.nixosModules.home-manager
     ../../../modules/nixos/base.nix
@@ -106,22 +107,13 @@
   };
 
   # Boot configuration (bare metal EFI)
+  # Hardware kernel modules are in hardware-configuration.nix
   boot = {
     loader = {
       systemd-boot.enable = true;
       efi.canTouchEfiVariables = true;
     };
-    initrd = {
-      availableKernelModules = [
-        "xhci_pci"
-        "ahci"
-        "nvme"
-        "usb_storage"
-        "sd_mod"
-      ];
-      kernelModules = [ "i915" ]; # Intel GPU early load for Kodi-GBM
-    };
-    kernelModules = [ "kvm-intel" ];
+    initrd.kernelModules = [ "i915" ]; # Intel GPU early load for Kodi-GBM
     # Disable PCIe Active State Power Management — ASPM puts the Realtek
     # RTL8168 PCI device into low-power states that cause the NIC to stop
     # responding to inbound traffic. EEE alone is not sufficient.
@@ -148,8 +140,5 @@
     };
   };
 
-  hardware.cpu.intel.updateMicrocode = true;
-
   system.stateVersion = "25.11";
-  nixpkgs.hostPlatform = "x86_64-linux";
 }
