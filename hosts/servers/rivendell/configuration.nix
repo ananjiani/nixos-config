@@ -2,6 +2,7 @@
 # Kodi-GBM media center with CEC remote, connected to LG OLED
 {
   inputs,
+  pkgs,
   pkgs-stable,
   config,
   ...
@@ -36,6 +37,7 @@
       enable = true;
       loginServer = "https://ts.dimensiondoor.xyz";
       authKeyFile = config.sops.secrets.tailscale_authkey.path;
+      useExitNode = null; # HTPC needs direct LAN access, no exit node
     };
 
     # k3s agent node (joins existing cluster, no control plane overhead)
@@ -120,6 +122,22 @@
       kernelModules = [ "i915" ]; # Intel GPU early load for Kodi-GBM
     };
     kernelModules = [ "kvm-intel" ];
+  };
+
+  # Disable Energy Efficient Ethernet (EEE) on the Realtek RTL8168 NIC.
+  # EEE puts the PHY into low-power states between bursts, which on r8169
+  # causes missed inbound ARP requests — the host "disappears" from the
+  # network while outbound traffic continues working fine.
+  environment.systemPackages = [ pkgs.ethtool ];
+  systemd.services.disable-eee = {
+    description = "Disable EEE on Realtek NIC to prevent connectivity drops";
+    after = [ "network-pre.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.ethtool}/bin/ethtool --set-eee enp1s0 eee off";
+    };
   };
 
   hardware.cpu.intel.updateMicrocode = true;
