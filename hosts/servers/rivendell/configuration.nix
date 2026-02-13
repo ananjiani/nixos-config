@@ -121,23 +121,31 @@
   };
 
   # Realtek RTL8168 (r8169 driver) NIC stability fixes:
-  # This NIC drops inbound connectivity intermittently due to aggressive
-  # power management. Three mitigations applied (belt-and-suspenders):
-  # 1. r8169 module param: disable EEE at driver load time (before NIC is up)
-  # 2. pcie_aspm=off: disable PCIe power management at bus level (see boot.kernelParams)
-  # 3. ethtool: runtime EEE disable as a fallback
-  # See: https://gist.github.com/milesburton/c079ab7397d439ccb59e06b9f1ddce16
-  boot.extraModprobeConfig = "options r8169 eee_enable=0";
+  # This NIC drops inbound packets (~450/3.5min) causing connectivity loss after ~7 min.
+  # Prometheus metrics confirmed: monotonic packet drops with zero errors (RX buffer overflow).
+  # Hardware RX ring buffer is capped at 256 entries — cannot be increased.
+  # Three mitigations applied:
+  # 1. pcie_aspm=off: disable PCIe power management at bus level (see boot.kernelParams)
+  # 2. ethtool: disable EEE (Energy Efficient Ethernet)
+  # 3. ethtool: disable hardware offloading (rx/tx/sg/tso/gro/gso) to prevent
+  #    DMA-related packet loss on this budget Realtek NIC
+  # See: https://forum.proxmox.com/threads/lots-of-missed-packets-with-realtek-nic-r8168-r8169.168792/
+  # Note: r8169 does NOT support eee_enable module param (that's r8168 only).
+  # EEE is controlled via ethtool in the realtek-nic-tuning service below.
   environment.systemPackages = [ pkgs.ethtool ];
-  systemd.services.disable-eee = {
-    description = "Disable EEE on Realtek NIC (runtime fallback)";
+  systemd.services.realtek-nic-tuning = {
+    description = "Realtek RTL8168 NIC stability tuning (EEE, ring buffer, offloading)";
     after = [ "network-pre.target" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.ethtool}/bin/ethtool --set-eee enp1s0 eee off";
     };
+    script = ''
+      ${pkgs.ethtool}/bin/ethtool --set-eee enp1s0 eee off || true
+      ${pkgs.ethtool}/bin/ethtool -G enp1s0 rx 4096 tx 4096 || true
+      ${pkgs.ethtool}/bin/ethtool -K enp1s0 rx off tx off sg off tso off gro off gso off || true
+    '';
   };
 
   system.stateVersion = "25.11";
