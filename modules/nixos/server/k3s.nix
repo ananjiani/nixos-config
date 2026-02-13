@@ -145,8 +145,8 @@ in
       serverAddr = lib.mkIf (cfg.serverAddr != null) cfg.serverAddr;
 
       extraFlags = lib.concatStringsSep " " (
-        [
-          # Disable built-in components we're replacing
+        lib.optionals (cfg.role == "server") [
+          # Disable built-in components we're replacing (server-only flags)
           "--disable=traefik" # Using external ingress or none
           "--disable=servicelb" # Using MetalLB instead
           # Flannel backend: host-gw adds static routes instead of VXLAN encapsulation.
