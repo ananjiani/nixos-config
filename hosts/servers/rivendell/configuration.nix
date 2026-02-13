@@ -122,15 +122,23 @@
       kernelModules = [ "i915" ]; # Intel GPU early load for Kodi-GBM
     };
     kernelModules = [ "kvm-intel" ];
+    # Disable PCIe Active State Power Management — ASPM puts the Realtek
+    # RTL8168 PCI device into low-power states that cause the NIC to stop
+    # responding to inbound traffic. EEE alone is not sufficient.
+    kernelParams = [ "pcie_aspm=off" ];
   };
 
-  # Disable Energy Efficient Ethernet (EEE) on the Realtek RTL8168 NIC.
-  # EEE puts the PHY into low-power states between bursts, which on r8169
-  # causes missed inbound ARP requests — the host "disappears" from the
-  # network while outbound traffic continues working fine.
+  # Realtek RTL8168 (r8169 driver) NIC stability fixes:
+  # This NIC drops inbound connectivity intermittently due to aggressive
+  # power management. Three mitigations applied (belt-and-suspenders):
+  # 1. r8169 module param: disable EEE at driver load time (before NIC is up)
+  # 2. pcie_aspm=off: disable PCIe power management at bus level (see boot.kernelParams)
+  # 3. ethtool: runtime EEE disable as a fallback
+  # See: https://gist.github.com/milesburton/c079ab7397d439ccb59e06b9f1ddce16
+  boot.extraModprobeConfig = "options r8169 eee_enable=0";
   environment.systemPackages = [ pkgs.ethtool ];
   systemd.services.disable-eee = {
-    description = "Disable EEE on Realtek NIC to prevent connectivity drops";
+    description = "Disable EEE on Realtek NIC (runtime fallback)";
     after = [ "network-pre.target" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
