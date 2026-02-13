@@ -50,7 +50,7 @@
     # Keepalived for HA DNS — rivendell is quaternary (lowest priority, may power cycle)
     keepalived = {
       enable = true;
-      interface = "eno1"; # Bare metal NIC (not ens18 like Proxmox VMs)
+      interface = "enp1s0"; # Bare metal NIC (not ens18 like Proxmox VMs)
       priority = 70;
       unicastPeers = [
         "192.168.1.27" # theoden
@@ -71,7 +71,7 @@
   networking = {
     hostName = "rivendell";
     useDHCP = false;
-    interfaces.eno1.ipv4.addresses = [
+    interfaces.enp1s0.ipv4.addresses = [
       {
         address = "192.168.1.29";
         prefixLength = 24;

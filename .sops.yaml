@@ -8,6 +8,8 @@ keys:
   - &theoden age1r3mztcslxm6a60x8maclx6stwl82aka6435jz0p8vzm7nqc4uqnqqjqts3
   # standalone servers
   - &pippin age1uztzgxpgt70eua00mmq4uqv2ka2kmruv6edxgw8gndnr7c2y23es4tp74l
+  # bare metal
+  - &rivendell age1wcsjhp3t49f65vgv3c0sgat5rqydru8vef0drq6g4nfruh4fxv0qyenve7
 creation_rules:
   - path_regex: secrets/work-vpn.conf
     key_groups:
@@ -29,6 +31,7 @@ creation_rules:
           - *samwise
           - *theoden
           - *pippin
+          - *rivendell
   # Kubernetes secrets - encrypted for k3s cluster nodes + desktop for editing
   - path_regex: k8s/.*/.*secret.*\.yaml$
     encrypted_regex: '^(data|stringData)$'

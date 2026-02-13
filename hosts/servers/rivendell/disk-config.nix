@@ -3,7 +3,7 @@
 {
   disko.devices = {
     disk.disk1 = {
-      device = lib.mkDefault "/dev/nvme0n1"; # Trycoo WI6 NVMe SSD
+      device = lib.mkDefault "/dev/sda"; # Trycoo WI6 SATA SSD
       type = "disk";
       content = {
         type = "gpt";

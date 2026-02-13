@@ -23,6 +23,6 @@ locals {
     theoden = "BC:24:11:00:01:04" # k3s server VM
     pippin  = "BC:24:11:00:01:05" # Clawdbot VM
     # Bare metal
-    rivendell = "XX:XX:XX:XX:XX:XX" # HTPC (Trycoo WI6 N100) — TODO: fill with actual MAC
+    rivendell = "00:e0:9d:87:1d:e4" # HTPC (Trycoo WI6 N100)
   }
 }
