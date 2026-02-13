@@ -12,3 +12,4 @@ resources:
   - cert-manager-config.yaml
   - k8sgpt-config.yaml
   - apps.yaml
+  - notifications.yaml

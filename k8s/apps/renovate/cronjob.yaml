@@ -5,7 +5,7 @@ metadata:
   name: renovate
   namespace: renovate
 spec:
-  schedule: "0 5 * * 0" # Sunday 5am (matches renovate.json schedule)
+  schedule: "0 5 * * *" # Daily 5am (matches renovate.json schedule)
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3

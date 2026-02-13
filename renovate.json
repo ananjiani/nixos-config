@@ -44,6 +44,14 @@
       ]
     },
     {
+      "description": "Auto-merge minor Helm chart updates (Flux handles rollback)",
+      "matchManagers": ["flux"],
+      "matchUpdateTypes": ["minor"],
+      "automerge": true,
+      "automergeType": "pr",
+      "ignoreTests": false
+    },
+    {
       "description": "Postgres major upgrades require pg_dump/restore - never automerge",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["postgres"],
