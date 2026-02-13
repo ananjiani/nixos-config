@@ -14,8 +14,13 @@
 let
   cfg = config.modules.htpc;
 
+  # Must use kodi-gbm.packages (not pkgs.kodiPackages) so that addons are
+  # tagged with kodiAddonFor = kodi-gbm. Using the wrong kodiPackages causes
+  # withPackages to silently filter out the addon.
+  gbmKodiPackages = pkgs.kodi-gbm.packages;
+
   # Jacktook — debrid streaming addon (not in nixpkgs)
-  jacktook = pkgs.kodiPackages.buildKodiAddon rec {
+  jacktook = gbmKodiPackages.buildKodiAddon rec {
     pname = "jacktook";
     namespace = "plugin.video.jacktook";
     version = "0.24.0";
@@ -27,7 +32,7 @@ let
       hash = "sha256-AJXMOt6p3qqjaLV+U/gg38R2fFuClLQGojOn0OA5YsU=";
     };
 
-    propagatedBuildInputs = with pkgs.kodiPackages; [
+    propagatedBuildInputs = with gbmKodiPackages; [
       requests
       routing
     ];
@@ -44,8 +49,7 @@ let
   kodiPkg = pkgs.kodi-gbm.withPackages (kp: [
     kp.inputstream-adaptive # ABR streaming (HLS, DASH, Smooth Streaming)
     kp.inputstream-ffmpegdirect # Direct stream playback via FFmpeg
-    kp.trakt # Watch history sync across devices
-    jacktook # Debrid streaming (Prowlarr, Comet, TorBox)
+    jacktook # Debrid streaming + built-in Trakt sync (Comet, TorBox)
   ]);
 in
 {
