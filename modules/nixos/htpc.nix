@@ -14,9 +14,38 @@
 let
   cfg = config.modules.htpc;
 
+  # Jacktook — debrid streaming addon (not in nixpkgs)
+  jacktook = pkgs.kodiPackages.buildKodiAddon rec {
+    pname = "jacktook";
+    namespace = "plugin.video.jacktook";
+    version = "0.24.0";
+
+    src = pkgs.fetchFromGitHub {
+      owner = "Sam-Max";
+      repo = "plugin.video.jacktook";
+      rev = "2173568d144455d1c4928e23b4b142d51c63e111";
+      hash = "sha256-AJXMOt6p3qqjaLV+U/gg38R2fFuClLQGojOn0OA5YsU=";
+    };
+
+    propagatedBuildInputs = with pkgs.kodiPackages; [
+      requests
+      routing
+    ];
+
+    passthru.pythonPath = "lib";
+
+    meta = {
+      homepage = "https://github.com/Sam-Max/plugin.video.jacktook";
+      description = "Torrent streaming addon for Kodi with debrid support";
+      license = lib.licenses.gpl2Only;
+    };
+  };
+
   kodiPkg = pkgs.kodi-gbm.withPackages (kp: [
     kp.inputstream-adaptive # ABR streaming (HLS, DASH, Smooth Streaming)
     kp.inputstream-ffmpegdirect # Direct stream playback via FFmpeg
+    kp.trakt # Watch history sync across devices
+    jacktook # Debrid streaming (Prowlarr, Comet, TorBox)
   ]);
 in
 {
