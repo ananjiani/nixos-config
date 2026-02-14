@@ -110,22 +110,28 @@
   };
 
   # Realtek RTL8168 (r8169 driver) NIC stability fixes:
-  # This NIC drops inbound packets (~450/3.5min) causing connectivity loss after ~7 min.
-  # Prometheus metrics confirmed: monotonic packet drops with zero errors (RX buffer overflow).
-  # Hardware RX ring buffer is capped at 256 entries — cannot be increased.
-  # Three mitigations applied:
-  # 1. pcie_aspm=off: disable PCIe power management at bus level (see boot.kernelParams)
-  # 2. ethtool: disable EEE (Energy Efficient Ethernet)
-  # 3. ethtool: disable hardware offloading (rx/tx/sg/tso/gro/gso) to prevent
-  #    DMA-related packet loss on this budget Realtek NIC
+  # This NIC loses inbound connectivity ~10-12 min after boot. Prometheus data across
+  # 5 boots shows: rx_fifo=0 (no HW overflow), rx_err=0, carrier never drops, then
+  # instant death (scrape 0.05s→10s timeout in one step). Thermal ruled out (54°C at
+  # death vs 58°C survived for 69 min). k3s iptables ruled out (died without k3s).
+  # Root cause: PCI runtime power management (D3hot) — separate from ASPM. The kernel
+  # suspends idle PCI devices via /sys/devices/.../power/control=auto. The r8169 driver
+  # supports runtime PM but PME wake from D3 is broken on many Realtek chips.
+  # Four mitigations applied:
+  # 1. pcie_aspm=off: disable PCIe link-level power states (see boot.kernelParams)
+  # 2. PCI runtime PM: force power/control=on via udev to prevent D3 suspend
+  # 3. ethtool: disable EEE (Energy Efficient Ethernet)
+  # 4. ethtool: disable hardware offloading (rx/tx/sg/tso/gro/gso)
   # Two application methods (belt-and-suspenders):
-  # - udev rule: fires on NIC add events (driver reload, interface cycling)
+  # - udev rule: fires on NIC/PCI add events (driver reload, interface cycling)
   # - systemd service: runs after network-addresses configures the interface,
-  #   with restartTriggers to re-apply on every nixos-switch / deploy-rs activation
+  #   with PartOf to re-apply on every nixos-switch / deploy-rs activation
   # See: https://forum.proxmox.com/threads/lots-of-missed-packets-with-realtek-nic-r8168-r8169.168792/
+  # See: https://bugs.archlinux.org/task/59090
   environment.systemPackages = [ pkgs.ethtool ];
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="net", KERNEL=="enp1s0", RUN+="${pkgs.bash}/bin/bash -c '${pkgs.ethtool}/bin/ethtool --set-eee enp1s0 eee off; ${pkgs.ethtool}/bin/ethtool -K enp1s0 rx off tx off sg off tso off gro off gso off'"
+    ACTION=="add", SUBSYSTEM=="pci", DRIVER=="r8169", ATTR{power/control}="on"
   '';
   systemd.services.nic-offloading = {
     description = "Disable hardware offloading on Realtek RTL8168 NIC";
@@ -138,8 +144,14 @@
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.ethtool}/bin/ethtool --set-eee enp1s0 eee off; ${pkgs.ethtool}/bin/ethtool -K enp1s0 rx off tx off sg off tso off gro off gso off'";
     };
+    script = ''
+      ${pkgs.ethtool}/bin/ethtool --set-eee enp1s0 eee off
+      ${pkgs.ethtool}/bin/ethtool -K enp1s0 rx off tx off sg off tso off gro off gso off
+      # Disable PCI runtime PM (D3hot) — r8169 PME wake from D3 is broken
+      pci_dev=$(basename $(readlink /sys/class/net/enp1s0/device))
+      echo on > /sys/bus/pci/devices/$pci_dev/power/control
+    '';
   };
 
   system.stateVersion = "25.11";
