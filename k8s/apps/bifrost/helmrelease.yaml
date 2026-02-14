@@ -93,7 +93,7 @@ spec:
               weight: 1.0
               models:
                 - "glm-4.7"
-                - "glm-5-code"
+                - "glm-5"
         cliproxy:
           network_config:
             base_url: "http://cliproxy.cliproxy.svc:8317"
