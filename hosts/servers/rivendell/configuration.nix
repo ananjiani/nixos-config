@@ -39,6 +39,7 @@
       loginServer = "https://ts.dimensiondoor.xyz";
       authKeyFile = config.sops.secrets.tailscale_authkey.path;
       useExitNode = null; # HTPC needs direct LAN access, no exit node
+      udpGroExcludeInterfaces = [ "enp1s0" ]; # Realtek RTL8168: GRO causes packet loss
     };
 
     # k3s agent node (joins existing cluster, no control plane overhead)

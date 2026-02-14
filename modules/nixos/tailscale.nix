@@ -70,6 +70,13 @@ in
       default = true;
       description = "Allow direct access to local network when using an exit node";
     };
+
+    udpGroExcludeInterfaces = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Physical interfaces to exclude from Tailscale UDP GRO forwarding optimization. Use this for NICs where enabling GRO causes packet loss (e.g. Realtek RTL8168).";
+      example = [ "enp1s0" ];
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -127,15 +134,22 @@ in
         RemainAfterExit = true;
       };
       path = [ pkgs.ethtool ];
-      script = ''
-        for iface in /sys/class/net/*; do
-          iface=$(basename "$iface")
-          # Skip loopback and virtual interfaces
-          if [ "$iface" != "lo" ] && [ -d "/sys/class/net/$iface/device" ]; then
-            ethtool -K "$iface" rx-udp-gro-forwarding on rx-gro-list off 2>/dev/null || true
-          fi
-        done
-      '';
+      script =
+        let
+          excludeChecks = lib.concatMapStringsSep " && " (
+            iface: ''[ "$iface" != "${iface}" ]''
+          ) cfg.udpGroExcludeInterfaces;
+          excludeCondition = lib.optionalString (cfg.udpGroExcludeInterfaces != [ ]) " && ${excludeChecks}";
+        in
+        ''
+          for iface in /sys/class/net/*; do
+            iface=$(basename "$iface")
+            # Skip loopback, virtual interfaces, and excluded interfaces
+            if [ "$iface" != "lo" ] && [ -d "/sys/class/net/$iface/device" ]${excludeCondition}; then
+              ethtool -K "$iface" rx-udp-gro-forwarding on rx-gro-list off 2>/dev/null || true
+            fi
+          done
+        '';
     };
   };
 }
