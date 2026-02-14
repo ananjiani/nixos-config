@@ -129,23 +129,28 @@
   # 2. ethtool: disable EEE (Energy Efficient Ethernet)
   # 3. ethtool: disable hardware offloading (rx/tx/sg/tso/gro/gso) to prevent
   #    DMA-related packet loss on this budget Realtek NIC
+  # Two application methods (belt-and-suspenders):
+  # - udev rule: fires on NIC add events (driver reload, interface cycling)
+  # - systemd service: runs after network-addresses configures the interface,
+  #   with restartTriggers to re-apply on every nixos-switch / deploy-rs activation
   # See: https://forum.proxmox.com/threads/lots-of-missed-packets-with-realtek-nic-r8168-r8169.168792/
-  # Note: r8169 does NOT support eee_enable module param (that's r8168 only).
-  # EEE is controlled via ethtool in the realtek-nic-tuning service below.
   environment.systemPackages = [ pkgs.ethtool ];
-  systemd.services.realtek-nic-tuning = {
-    description = "Realtek RTL8168 NIC stability tuning (EEE, ring buffer, offloading)";
-    after = [ "network-pre.target" ];
+  services.udev.extraRules = ''
+    ACTION=="add", SUBSYSTEM=="net", KERNEL=="enp1s0", RUN+="${pkgs.bash}/bin/bash -c '${pkgs.ethtool}/bin/ethtool --set-eee enp1s0 eee off; ${pkgs.ethtool}/bin/ethtool -K enp1s0 rx off tx off sg off tso off gro off gso off'"
+  '';
+  systemd.services.nic-offloading = {
+    description = "Disable hardware offloading on Realtek RTL8168 NIC";
+    after = [ "network-addresses-enp1s0.service" ];
+    requires = [ "network-addresses-enp1s0.service" ];
     wantedBy = [ "multi-user.target" ];
+    # PartOf ensures this restarts whenever scripted networking restarts the
+    # address service (e.g. during deploy-rs nixos-switch activations)
+    partOf = [ "network-addresses-enp1s0.service" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
+      ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.ethtool}/bin/ethtool --set-eee enp1s0 eee off; ${pkgs.ethtool}/bin/ethtool -K enp1s0 rx off tx off sg off tso off gro off gso off'";
     };
-    script = ''
-      ${pkgs.ethtool}/bin/ethtool --set-eee enp1s0 eee off || true
-      ${pkgs.ethtool}/bin/ethtool -G enp1s0 rx 4096 tx 4096 || true
-      ${pkgs.ethtool}/bin/ethtool -K enp1s0 rx off tx off sg off tso off gro off gso off || true
-    '';
   };
 
   system.stateVersion = "25.11";
