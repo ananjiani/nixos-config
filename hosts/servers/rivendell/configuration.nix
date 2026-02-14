@@ -42,26 +42,14 @@
       udpGroExcludeInterfaces = [ "enp1s0" ]; # Realtek RTL8168: GRO causes packet loss
     };
 
-    # k3s agent node (joins existing cluster, no control plane overhead)
-    k3s = {
-      enable = true;
-      role = "agent";
-      serverAddr = "https://192.168.1.21:6443"; # boromir
-      tokenFile = config.sops.secrets.k3s_token.path;
-      extraFlags = [ "--node-ip=192.168.1.29" ];
-    };
+    # k3s agent node — TEMPORARILY DISABLED for NIC stability testing
+    # k3s iptables/nftables rules are suspected of causing NIC death at ~12 min
+    # Re-enable once NIC stability is confirmed without k3s
+    k3s.enable = false;
 
-    # Keepalived for HA DNS — rivendell is quaternary (lowest priority, may power cycle)
-    keepalived = {
-      enable = true;
-      interface = "enp1s0"; # Bare metal NIC (not ens18 like Proxmox VMs)
-      priority = 70;
-      unicastPeers = [
-        "192.168.1.27" # theoden
-        "192.168.1.21" # boromir
-        "192.168.1.26" # samwise
-      ];
-    };
+    # Keepalived for HA DNS — TEMPORARILY DISABLED for NIC stability testing
+    # Re-enable once NIC stability is confirmed
+    keepalived.enable = false;
   };
 
   # SOPS secrets
@@ -69,7 +57,7 @@
     defaultSopsFile = ../../../secrets/secrets.yaml;
     age.keyFile = "/var/lib/sops-nix/key.txt";
     secrets.tailscale_authkey = { };
-    secrets.k3s_token = { };
+    # k3s_token removed while k3s is disabled for NIC stability testing
   };
 
   networking = {
