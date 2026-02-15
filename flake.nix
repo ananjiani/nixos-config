@@ -248,6 +248,17 @@
             ./hosts/servers/rivendell/configuration.nix
             inputs.sops-nix.nixosModules.sops
             inputs.disko.nixosModules.disko
+            # Dendritic kodi NixOS module (SOPS secret injection)
+            (if self._modules ? nixos && self._modules.nixos ? kodi then self._modules.nixos.kodi else { })
+            # Dendritic kodi HM module (advancedsettings.xml) — via sharedModules
+            (
+              if self._modules ? homeManager && self._modules.homeManager ? kodi then
+                {
+                  home-manager.sharedModules = [ self._modules.homeManager.kodi ];
+                }
+              else
+                { }
+            )
           ];
         };
 

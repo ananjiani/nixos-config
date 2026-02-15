@@ -1,6 +1,7 @@
 # Rivendell — HTPC (Trycoo WI6 N100 bare metal)
 # Kodi-GBM media center with CEC remote, connected to LG OLED
 {
+  config,
   inputs,
   pkgs,
   pkgs-stable,
@@ -51,7 +52,27 @@
   sops = {
     defaultSopsFile = ../../../secrets/secrets.yaml;
     age.keyFile = "/var/lib/sops-nix/key.txt";
-    # tailscale_authkey and k3s_token removed while services are disabled for NIC stability testing
+    secrets = {
+      torbox_api_key = {
+        owner = "kodi";
+        mode = "0400";
+      };
+      trakt_client_id = {
+        owner = "kodi";
+        mode = "0400";
+      };
+      trakt_client_secret = {
+        owner = "kodi";
+        mode = "0400";
+      };
+    };
+  };
+
+  # Dendritic kodi module — inject Jacktook addon secrets
+  kodi.secrets = {
+    torboxApiKey = config.sops.secrets.torbox_api_key.path;
+    traktClientId = config.sops.secrets.trakt_client_id.path;
+    traktClientSecret = config.sops.secrets.trakt_client_secret.path;
   };
 
   networking = {
@@ -70,12 +91,15 @@
     ];
   };
 
-  # Home Manager for ammar (SSH maintenance user)
+  # Home Manager
   home-manager = {
     useGlobalPkgs = true;
     useUserPackages = true;
     extraSpecialArgs = { inherit inputs pkgs-stable; };
-    users.ammar = import ./home.nix;
+    users.ammar = import ./home.nix; # SSH maintenance user
+    users.kodi = {
+      imports = [ ./kodi-home.nix ];
+    }; # Kodi HTPC (advancedsettings.xml)
   };
 
   # Prometheus node exporter for monitoring
@@ -104,24 +128,14 @@
   };
 
   # Realtek RTL8168 (r8169 driver) NIC stability fixes:
-  # This NIC loses inbound connectivity ~10-12 min after boot. Prometheus data across
-  # 5 boots shows: rx_fifo=0 (no HW overflow), rx_err=0, carrier never drops, then
-  # instant death (scrape 0.05s→10s timeout in one step). Thermal ruled out (54°C at
-  # death vs 58°C survived for 69 min). k3s iptables ruled out (died without k3s).
-  # Root cause: PCI runtime power management (D3hot) — separate from ASPM. The kernel
-  # suspends idle PCI devices via /sys/devices/.../power/control=auto. The r8169 driver
-  # supports runtime PM but PME wake from D3 is broken on many Realtek chips.
-  # Four mitigations applied:
-  # 1. pcie_aspm=off: disable PCIe link-level power states (see boot.kernelParams)
-  # 2. PCI runtime PM: force power/control=on via udev to prevent D3 suspend
-  # 3. ethtool: disable EEE (Energy Efficient Ethernet)
-  # 4. ethtool: disable hardware offloading (rx/tx/sg/tso/gro/gso)
-  # Two application methods (belt-and-suspenders):
-  # - udev rule: fires on NIC/PCI add events (driver reload, interface cycling)
-  # - systemd service: runs after network-addresses configures the interface,
-  #   with PartOf to re-apply on every nixos-switch / deploy-rs activation
+  # Two root causes identified (see postmortem 2026-02-13):
+  # 1. Hardware offloading causes RX buffer overflow at ~7 min (256-entry max ring buffer)
+  # 2. Tailscale netfilter modifications trigger driver bug at ~11 min (Tailscale disabled)
+  # Mitigations:
+  # - pcie_aspm=off: disable PCIe link-level power states (see boot.kernelParams)
+  # - PCI runtime PM: force power/control=on via udev to prevent D3 suspend
+  # - ethtool: disable EEE + all hardware offloading (rx/tx/sg/tso/gro/gso)
   # See: https://forum.proxmox.com/threads/lots-of-missed-packets-with-realtek-nic-r8168-r8169.168792/
-  # See: https://bugs.archlinux.org/task/59090
   environment.systemPackages = [ pkgs.ethtool ];
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="net", KERNEL=="enp1s0", RUN+="${pkgs.bash}/bin/bash -c '${pkgs.ethtool}/bin/ethtool --set-eee enp1s0 eee off; ${pkgs.ethtool}/bin/ethtool -K enp1s0 rx off tx off sg off tso off gro off gso off'"
