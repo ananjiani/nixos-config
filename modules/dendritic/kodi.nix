@@ -1,6 +1,6 @@
 # Dendritic Kodi Module
 # Aspect-oriented configuration for Kodi HTPC with debrid streaming.
-# NixOS aspect: SOPS secret injection into Jacktook addon settings
+# NixOS aspect: SOPS secret injection into Jacktook addon settings (Trakt)
 # Home Manager aspect: advancedsettings.xml via programs.kodi.settings
 _:
 
@@ -9,6 +9,7 @@ let
 in
 {
   # NixOS aspect — SOPS secret injection into Kodi addon settings
+  # Debrid (TorBox) is handled by Comet Stremio addon, so only Trakt secrets are injected.
   flake.aspects.kodi.nixos =
     {
       pkgs,
@@ -18,7 +19,7 @@ in
     }:
     let
       cfg = config.kodi;
-      hasSecrets = cfg.secrets.torboxApiKey != null || cfg.secrets.traktClientId != null;
+      hasSecrets = cfg.secrets.traktClientId != null;
       kodiHome = config.users.users.${cfg.user}.home;
       addonDataDir = "${kodiHome}/.kodi/userdata/addon_data/${jacktookAddon}";
 
@@ -33,12 +34,6 @@ in
         # Start building settings XML
         {
           echo '<settings version="2">'
-
-          ${lib.optionalString (cfg.secrets.torboxApiKey != null) ''
-            TORBOX_TOKEN=$(cat "${cfg.secrets.torboxApiKey}")
-            echo "  <setting id=\"torbox_enabled\">true</setting>"
-            echo "  <setting id=\"torbox_token\">$TORBOX_TOKEN</setting>"
-          ''}
 
           ${lib.optionalString (cfg.secrets.traktClientId != null) ''
             TRAKT_CLIENT=$(cat "${cfg.secrets.traktClientId}")
@@ -66,12 +61,6 @@ in
         };
 
         secrets = {
-          torboxApiKey = lib.mkOption {
-            type = lib.types.nullOr lib.types.path;
-            default = null;
-            description = "Path to SOPS-decrypted TorBox API key file";
-          };
-
           traktClientId = lib.mkOption {
             type = lib.types.nullOr lib.types.path;
             default = null;

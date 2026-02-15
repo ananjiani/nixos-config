@@ -53,10 +53,6 @@
     defaultSopsFile = ../../../secrets/secrets.yaml;
     age.keyFile = "/var/lib/sops-nix/key.txt";
     secrets = {
-      torbox_api_key = {
-        owner = "kodi";
-        mode = "0400";
-      };
       trakt_client_id = {
         owner = "kodi";
         mode = "0400";
@@ -68,9 +64,9 @@
     };
   };
 
-  # Dendritic kodi module — inject Jacktook addon secrets
+  # Dendritic kodi module — inject Jacktook Trakt secrets
+  # Debrid (TorBox) is handled by Comet Stremio addon, no API key needed here
   kodi.secrets = {
-    torboxApiKey = config.sops.secrets.torbox_api_key.path;
     traktClientId = config.sops.secrets.trakt_client_id.path;
     traktClientSecret = config.sops.secrets.trakt_client_secret.path;
   };
