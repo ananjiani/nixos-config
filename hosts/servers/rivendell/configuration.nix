@@ -4,7 +4,6 @@
   inputs,
   pkgs,
   pkgs-stable,
-  config,
   ...
 }:
 
@@ -33,14 +32,10 @@
       permitRootLogin = "prohibit-password";
     };
 
-    # Tailscale for remote access via Headscale
-    tailscale = {
-      enable = true;
-      loginServer = "https://ts.dimensiondoor.xyz";
-      authKeyFile = config.sops.secrets.tailscale_authkey.path;
-      useExitNode = null; # HTPC needs direct LAN access, no exit node
-      udpGroExcludeInterfaces = [ "enp1s0" ]; # Realtek RTL8168: GRO causes packet loss
-    };
+    # Tailscale — TEMPORARILY DISABLED for NIC stability testing
+    # Tailscale modifies routing/netfilter and retries auth periodically;
+    # testing whether this causes the ~12 min NIC death
+    tailscale.enable = false;
 
     # k3s agent node — TEMPORARILY DISABLED for NIC stability testing
     # k3s iptables/nftables rules are suspected of causing NIC death at ~12 min
@@ -56,8 +51,7 @@
   sops = {
     defaultSopsFile = ../../../secrets/secrets.yaml;
     age.keyFile = "/var/lib/sops-nix/key.txt";
-    secrets.tailscale_authkey = { };
-    # k3s_token removed while k3s is disabled for NIC stability testing
+    # tailscale_authkey and k3s_token removed while services are disabled for NIC stability testing
   };
 
   networking = {
