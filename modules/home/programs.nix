@@ -1,6 +1,5 @@
 {
   pkgs,
-  pkgs-stable,
   inputs,
   ...
 }:
@@ -24,7 +23,7 @@
     google-chrome
     xournalpp
     openai-whisper
-    pkgs-stable.whisperx
+    # whisperx: nixpkgs broken (pyannote-audio 4.0), use `uvx whisperx` instead
     uv
     inputs.whisper-dictation.packages.${pkgs.stdenv.hostPlatform.system}.default
     pear-desktop
