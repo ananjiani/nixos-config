@@ -33,19 +33,26 @@
       permitRootLogin = "prohibit-password";
     };
 
-    # Tailscale — TEMPORARILY DISABLED for NIC stability testing
-    # Tailscale modifies routing/netfilter and retries auth periodically;
-    # testing whether this causes the ~12 min NIC death
+    # Tailscale — PERMANENTLY DISABLED
+    # Tailscale netfilter modifications trigger r8169 driver bug causing
+    # complete inbound packet loss at ~11 min (see postmortem 2026-02-13)
     tailscale.enable = false;
 
-    # k3s agent node — TEMPORARILY DISABLED for NIC stability testing
-    # k3s iptables/nftables rules are suspected of causing NIC death at ~12 min
-    # Re-enable once NIC stability is confirmed without k3s
+    # k3s agent node — DISABLED pending netfilter risk assessment
+    # k3s iptables rule churn may trigger the same r8169 bug as Tailscale
     k3s.enable = false;
 
-    # Keepalived for HA DNS — TEMPORARILY DISABLED for NIC stability testing
-    # Re-enable once NIC stability is confirmed
-    keepalived.enable = false;
+    # Keepalived + AdGuard for HA DNS
+    keepalived = {
+      enable = true;
+      interface = "enp1s0";
+      priority = 70; # Lowest — prefer VMs (theoden=100, boromir=90, samwise=80)
+      unicastPeers = [
+        "192.168.1.27" # theoden
+        "192.168.1.21" # boromir
+        "192.168.1.26" # samwise
+      ];
+    };
   };
 
   # SOPS secrets
