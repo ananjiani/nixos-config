@@ -68,7 +68,7 @@ spec:
               memory: "512Mi"
               cpu: "500m"
         - name: dind
-          image: docker:27-dind
+          image: docker:29-dind
           securityContext:
             privileged: true
           env:
