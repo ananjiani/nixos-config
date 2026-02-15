@@ -97,6 +97,13 @@ in
     sunshine.enable = true;
   };
 
+  programs.ssh.knownHosts = {
+    "theoden.lan".publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINAzH8WouJOjPIrJH3ngAxWaSEw6YLDREAbFxIgr7mjX";
+    "boromir.lan".publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEsPlw7G8qNx5esED6AHc6EQhZk0nuLxfwh1IlZ1k5Nb";
+  };
+
   nix = {
     distributedBuilds = true;
     settings = {
