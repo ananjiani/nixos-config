@@ -97,6 +97,42 @@ in
     sunshine.enable = true;
   };
 
+  nix = {
+    distributedBuilds = true;
+    settings = {
+      max-jobs = 0;
+      builders-use-substitutes = true;
+    };
+    buildMachines = [
+      {
+        hostName = "theoden.lan";
+        systems = [ "x86_64-linux" ];
+        sshUser = "root";
+        sshKey = "/home/ammar/.ssh/id_ed25519";
+        maxJobs = 4;
+        speedFactor = 2;
+        supportedFeatures = [
+          "nixos-test"
+          "big-parallel"
+          "kvm"
+        ];
+      }
+      {
+        hostName = "boromir.lan";
+        systems = [ "x86_64-linux" ];
+        sshUser = "root";
+        sshKey = "/home/ammar/.ssh/id_ed25519";
+        maxJobs = 3;
+        speedFactor = 2;
+        supportedFeatures = [
+          "nixos-test"
+          "big-parallel"
+          "kvm"
+        ];
+      }
+    ];
+  };
+
   opendeck.enable = true;
 
   # Brave browser - disable DoH since OPNsense handles DNS with Mullvad DoT
