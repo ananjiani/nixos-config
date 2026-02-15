@@ -1,0 +1,16 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: holmesgpt
+  namespace: holmesgpt
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`holmes.lan`)
+      kind: Rule
+      services:
+        - name: holmesgpt-holmes
+          port: 80
