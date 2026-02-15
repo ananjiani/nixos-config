@@ -23,33 +23,57 @@ in
       kodiHome = config.users.users.${cfg.user}.home;
       addonDataDir = "${kodiHome}/.kodi/userdata/addon_data/${jacktookAddon}";
 
+      # Build the list of secret file paths to pass as env vars to the Python script
+      secretEnvs = lib.concatStringsSep "\n" (
+        lib.optional (
+          cfg.secrets.traktClientId != null
+        ) ''export TRAKT_CLIENT_FILE="${cfg.secrets.traktClientId}"''
+        ++ lib.optional (
+          cfg.secrets.traktClientSecret != null
+        ) ''export TRAKT_SECRET_FILE="${cfg.secrets.traktClientSecret}"''
+      );
+
       injectSecrets = pkgs.writeShellScript "kodi-inject-secrets" ''
         set -euo pipefail
 
-        SETTINGS_DIR="${addonDataDir}"
-        SETTINGS_FILE="$SETTINGS_DIR/settings.xml"
+        mkdir -p "${addonDataDir}"
 
-        mkdir -p "$SETTINGS_DIR"
+        ${secretEnvs}
+        export SETTINGS_FILE="${addonDataDir}/settings.xml"
 
-        # Start building settings XML
-        {
-          echo '<settings version="2">'
+        ${pkgs.python3}/bin/python3 <<'PYTHON'
+        import os
+        import xml.etree.ElementTree as ET
 
-          ${lib.optionalString (cfg.secrets.traktClientId != null) ''
-            TRAKT_CLIENT=$(cat "${cfg.secrets.traktClientId}")
-            echo "  <setting id=\"trakt_enabled\">true</setting>"
-            echo "  <setting id=\"trakt_client\">$TRAKT_CLIENT</setting>"
-          ''}
+        settings_file = os.environ["SETTINGS_FILE"]
 
-          ${lib.optionalString (cfg.secrets.traktClientSecret != null) ''
-            TRAKT_SECRET=$(cat "${cfg.secrets.traktClientSecret}")
-            echo "  <setting id=\"trakt_secret\">$TRAKT_SECRET</setting>"
-          ''}
+        # Load existing settings or create new root
+        if os.path.isfile(settings_file):
+            tree = ET.parse(settings_file)
+            root = tree.getroot()
+        else:
+            root = ET.fromstring('<settings version="2"></settings>')
+            tree = ET.ElementTree(root)
 
-          echo '</settings>'
-        } > "$SETTINGS_FILE"
+        def upsert(setting_id, value):
+            el = root.find(f".//setting[@id='{setting_id}']")
+            if el is None:
+                el = ET.SubElement(root, "setting", id=setting_id)
+            el.text = value
 
-        chmod 600 "$SETTINGS_FILE"
+        # Read secrets from SOPS-decrypted files and merge into settings
+        trakt_client_file = os.environ.get("TRAKT_CLIENT_FILE")
+        if trakt_client_file:
+            upsert("trakt_enabled", "true")
+            upsert("trakt_client", open(trakt_client_file).read().strip())
+
+        trakt_secret_file = os.environ.get("TRAKT_SECRET_FILE")
+        if trakt_secret_file:
+            upsert("trakt_secret", open(trakt_secret_file).read().strip())
+
+        tree.write(settings_file, xml_declaration=False)
+        os.chmod(settings_file, 0o600)
+        PYTHON
       '';
     in
     {
