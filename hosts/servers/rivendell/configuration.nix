@@ -38,9 +38,14 @@
     # complete inbound packet loss at ~11 min (see postmortem 2026-02-13)
     tailscale.enable = false;
 
-    # k3s agent node — DISABLED pending netfilter risk assessment
-    # k3s iptables rule churn may trigger the same r8169 bug as Tailscale
-    k3s.enable = false;
+    # k3s agent node — verified: iptables rules do NOT trigger r8169 NIC bug
+    k3s = {
+      enable = true;
+      role = "agent";
+      serverAddr = "https://192.168.1.21:6443"; # boromir
+      tokenFile = config.sops.secrets.k3s_token.path;
+      extraFlags = [ "--node-ip=192.168.1.29" ];
+    };
 
     # Keepalived + AdGuard for HA DNS
     keepalived = {
@@ -60,6 +65,7 @@
     defaultSopsFile = ../../../secrets/secrets.yaml;
     age.keyFile = "/var/lib/sops-nix/key.txt";
     secrets = {
+      k3s_token = { };
       trakt_client_id = {
         owner = "kodi";
         mode = "0400";
