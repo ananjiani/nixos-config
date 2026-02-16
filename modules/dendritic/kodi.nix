@@ -130,11 +130,19 @@ in
       config = lib.mkIf config.kodi.enable {
         programs.kodi = {
           enable = true;
-          # advancedsettings.xml — buffer tuning for debrid streaming
+          # advancedsettings.xml — buffer tuning + web server for remote control
           settings = {
             cache = {
               memorysize = "52428800"; # 50MB read buffer
               readfactor = "20"; # Read ahead at 20x playback speed
+            };
+            services = {
+              webserver = "true";
+              webserverport = "8080";
+              webserverusername = "kodi";
+              webserverpassword = "kodi";
+              esallinterfaces = "true";
+              zeroconf = "true";
             };
           };
         };
