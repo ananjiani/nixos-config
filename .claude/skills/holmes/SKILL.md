@@ -14,10 +14,10 @@ Query HolmesGPT to investigate infrastructure issues. HolmesGPT has direct acces
 Run this command using the Bash tool, replacing QUESTION with the user's question from $ARGUMENTS. Escape double quotes in the question for valid JSON.
 
 ```bash
-curl -s --max-time 300 \
-  -X POST http://holmes.lan/api/chat \
+curl -sk --max-time 300 \
+  -X POST https://holmes.lan/api/chat \
   -H 'Content-Type: application/json' \
-  -d '{"question": "QUESTION", "model": "bifrost-kimi"}'
+  -d '{"ask": "QUESTION", "model": "bifrost-kimi"}'
 ```
 
 ### Step 2: Parse and present the response
