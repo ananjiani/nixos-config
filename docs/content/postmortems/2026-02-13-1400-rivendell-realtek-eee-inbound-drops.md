@@ -72,6 +72,17 @@ Systematic elimination across Boots 3-7:
 | 6 | 11 min | + PCI runtime PM fixed | Dead |
 | 7 | **21+ min** | **No Tailscale** | **Stable** |
 
+### Follow-up: k3s + keepalived re-enabled (Feb 15)
+
+After confirming Tailscale as the sole netfilter culprit, keepalived + AdGuard DNS were re-enabled (30+ min soak, NIC stable). k3s was then re-enabled as an agent node:
+
+| Test | Duration | Config | Result |
+|------|----------|--------|--------|
+| Keepalived+AdGuard | 30+ min | VRRP + DNS, no Tailscale | **Stable** |
+| k3s agent | 22+ min | 14 containers, 23 KUBE iptables chains | **Stable** |
+
+k3s adds KUBE-SERVICES chains, ClusterIP DNAT rules, masquerade, and connection tracking — yet the NIC handled all of it without issue. This narrows the root cause to Tailscale's **mark-based policy routing** specifically (`fwmark 0x80000/0xff0000`, `ip rule` entries, routing table 52, MagicDNS DNAT), not conventional iptables DNAT/masquerade.
+
 Tailscale modifies the kernel network stack in several ways: nftables rules for tunnel routing, policy routing via `ip rule`, and UDP GRO forwarding optimization. The r8169 driver + RTL8168h chip combination is fragile, and Tailscale's netfilter packet processing path triggers a driver bug that causes complete inbound connectivity loss after ~11 minutes.
 
 ### Red herrings investigated
@@ -98,7 +109,7 @@ Tailscale modifies the kernel network stack in several ways: nftables rules for 
 ## What I Was Wrong About
 
 - **"Disabling offloading fully fixed the NIC."** The 15-minute soak test in Session 2 passed, but a longer test would have revealed the ~11 min Tailscale failure. The offloading fix only resolved Issue 1.
-- **"k3s iptables rules are causing the 11-min death."** k3s was the obvious suspect since it adds extensive nftables rules, but Boot 5 eliminated it.
+- **"k3s iptables rules are causing the 11-min death."** k3s was the obvious suspect since it adds extensive nftables rules, but Boot 5 eliminated it. Follow-up testing on Feb 15 confirmed k3s agent (14 containers, 23 KUBE chains) runs indefinitely without NIC issues.
 - **"PCI runtime PM (D3hot) is suspending the NIC."** The kernel runtime PM framework can independently put PCI devices into D3hot even with ASPM off. This was a reasonable hypothesis, but Boot 6 proved the device stayed in D0 the entire time.
 - **"systemd-tmpfiles-clean.timer at 12 min is suspiciously correlated."** Coincidental timing — Boot 7 survived the timer firing with no issues.
 - **"The RX buffer can be increased."** Hardware max is 256. `ethtool -G` silently fails.
@@ -124,7 +135,7 @@ Tailscale modifies the kernel network stack in several ways: nftables rules for 
 
 Two patterns emerged:
 
-1. **Budget Realtek NICs are incompatible with complex netfilter stacks.** The r8169 driver cannot handle Tailscale's packet processing modifications. This limits what bare metal hosts with Realtek NICs can run. Future bare metal purchases should prioritize Intel I225-V or similar.
+1. **Budget Realtek NICs are incompatible with Tailscale's mark-based policy routing.** The r8169 driver cannot handle Tailscale's fwmark/policy routing modifications specifically — conventional iptables (k3s KUBE-SERVICES, DNAT, masquerade) and VRRP (keepalived) work fine. This limits Tailscale usage on bare metal hosts with Realtek NICs, but doesn't preclude k3s or other standard netfilter users. Future bare metal purchases should still prioritize Intel I225-V or similar.
 2. **15-minute soak tests give false confidence.** The offloading fix passed a 15-minute test but the Tailscale issue manifested at 11 min. Soak tests should run for at least 30 minutes, preferably 1 hour.
 
 ## Action Items
@@ -135,8 +146,8 @@ Two patterns emerged:
 - [x] Add PCI runtime PM udev rule (`ATTR{power/control}="on"` for r8169)
 - [x] Add PCI runtime PM override in systemd service
 - [x] Add rivendell to Prometheus node_exporter scrape targets
-- [x] Disable Tailscale on rivendell
-- [x] Disable k3s and keepalived on rivendell (no longer needed without Tailscale/cluster membership)
+- [x] Disable Tailscale on rivendell (permanently)
+- [x] Re-enable k3s agent + keepalived + AdGuard on rivendell (verified safe via 22+ min soak test)
 - [x] Document hardware quirk in MEMORY.md
 - [ ] Consider USB Ethernet adapter if Tailscale is needed later
 - [ ] Consider extracting NIC tuning into a reusable NixOS module if another bare metal host is added
@@ -146,7 +157,7 @@ Two patterns emerged:
 
 - **Two overlapping failure modes with identical symptoms can mask each other.** Both offloading overflow and Tailscale interaction presented as inbound-only loss. Fixing one revealed the other at a different time threshold.
 - **Systematic elimination is the only reliable approach for hardware/driver bugs.** Intuition and log analysis failed — only disabling services one at a time across separate boots proved the cause.
-- **Budget Realtek NICs are fragile under netfilter load.** The r8169 driver + RTL8168h chip cannot handle Tailscale's nftables modifications. Don't assume commodity NIC hardware can handle server-grade networking stacks.
+- **Budget Realtek NICs are fragile under Tailscale's policy routing, not netfilter in general.** The r8169 driver + RTL8168h chip cannot handle Tailscale's fwmark-based routing, but conventional iptables (k3s, keepalived) work fine. The failure is specific to Tailscale's packet marking path, not netfilter load broadly.
 - **Prometheus is more reliable than SSH for diagnosing NIC issues.** SSH depends on the NIC being healthy. An external Prometheus scraper provides observability even during failure.
 - **Boot 1 outliers can be misleading.** The 69-minute Boot 1 survival was due to Tailscale not being fully initialized, not because the NIC was healthy. Always confirm stability under steady-state conditions.
 - **Soak tests must exceed 2x the failure window.** A 15-minute soak test can miss an 11-minute failure if the first issue is fixed but the second isn't.
