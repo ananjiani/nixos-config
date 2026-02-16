@@ -268,7 +268,7 @@ resource "proxmox_virtual_environment_vm" "pippin" {
 
   disk {
     datastore_id = var.proxmox_datastore
-    size         = 32
+    size         = 48
     interface    = "scsi0"
     file_format  = "raw"
     iothread     = true
