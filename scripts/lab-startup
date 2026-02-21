@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Selective homelab startup / recovery with dependency resolution
-# Run from devshell (nix develop) for kubectl access
+# k3s nodes auto-uncordon themselves via systemd (k3s-auto-uncordon.service)
 #
 # Proxmox hosts need WoL or manual power-on first.
 # gondor: WoL disabled in OS (enable in BIOS or use ethtool)
@@ -16,8 +16,8 @@ show_help() {
   cat <<'USAGE'
 Usage: lab-startup [options] [targets...]
 
-Brings selected homelab nodes back online. Sends WoL to Proxmox hosts,
-starts VMs, waits for k3s nodes, and uncordons them.
+Brings selected homelab nodes back online. Sends WoL to Proxmox hosts
+and starts VMs. k3s nodes auto-uncordon themselves via systemd.
 
 USAGE
   show_common_options
@@ -26,10 +26,10 @@ USAGE
   cat <<'EXAMPLES'
 
 Examples:
-  lab-startup --all               WoL everything, start VMs, uncordon k3s
-  lab-startup rohan               WoL rohan, start theoden, uncordon in k3s
-  lab-startup boromir theoden     Start VMs via qm, uncordon in k3s
-  lab-startup rivendell           WoL rivendell, uncordon in k3s
+  lab-startup --all               WoL everything, start VMs
+  lab-startup rohan               WoL rohan, start theoden
+  lab-startup boromir theoden     Start specific VMs via qm
+  lab-startup rivendell           WoL rivendell
   lab-startup --dry-run --all     Preview startup plan
 EXAMPLES
 }
@@ -40,14 +40,6 @@ if ! $DRY_RUN; then
 fi
 classify_targets
 
-# --- Pre-flight ---
-if [[ ${#TARGET_K3S[@]} -gt 0 ]]; then
-  if ! command -v kubectl &>/dev/null; then
-    error "kubectl not found. Are you in the devshell? (nix develop)"
-    exit 1
-  fi
-fi
-
 # --- Show plan ---
 echo ""
 echo "Startup plan:"
@@ -55,7 +47,7 @@ echo "Startup plan:"
 [[ ${#TARGET_VMS_SSH[@]} -gt 0 || ${#TARGET_VMS_QM[@]} -gt 0 ]] && \
   echo "  Start VMs:     ${TARGET_VMS_SSH[*]} ${TARGET_VMS_QM[*]}"
 [[ ${#TARGET_BARE[@]} -gt 0 ]]    && echo "  Wake bare:     ${TARGET_BARE[*]}"
-[[ ${#TARGET_K3S[@]} -gt 0 ]]     && echo "  Uncordon k3s:  ${TARGET_K3S[*]}"
+[[ ${#TARGET_K3S[@]} -gt 0 ]]     && echo "  (k3s nodes will auto-uncordon via systemd)"
 echo ""
 
 if ! $DRY_RUN; then
@@ -144,62 +136,7 @@ if [[ ${#TARGET_BARE[@]} -gt 0 ]]; then
   done
 fi
 
-# --- Phase 4: Wait for k3s API ---
-if [[ ${#TARGET_K3S[@]} -gt 0 ]] && ! $DRY_RUN; then
-  step "Waiting for k3s API..."
-  attempts=0
-  while (( attempts < 60 )); do
-    if kubectl get nodes &>/dev/null; then
-      info "k3s API is responding"
-      break
-    fi
-    (( attempts++ ))
-    sleep 5
-  done
-  if (( attempts >= 60 )); then
-    error "k3s API did not come up. Check control plane nodes."
-    exit 1
-  fi
-
-  # Wait for nodes to be Ready
-  for node in "${K3S_UNCORDON_ORDER[@]}"; do
-    if is_in_array "$node" "${TARGET_K3S[@]}"; then
-      info "Waiting for $node to be Ready..."
-      if wait_for_node_ready "$node" 60; then
-        info "$node is Ready"
-      else
-        warn "$node is not Ready — check manually: kubectl get nodes"
-      fi
-    fi
-  done
-fi
-
-# --- Phase 5: Uncordon k3s nodes ---
-if [[ ${#TARGET_K3S[@]} -gt 0 ]]; then
-  step "Uncordoning k3s nodes..."
-  for node in "${K3S_UNCORDON_ORDER[@]}"; do
-    if is_in_array "$node" "${TARGET_K3S[@]}"; then
-      info "Uncordoning $node"
-      run_or_dry kubectl uncordon "$node" 2>/dev/null || warn "Could not uncordon $node"
-    fi
-  done
-fi
-
-# --- Phase 6: Verify ---
-if [[ ${#TARGET_K3S[@]} -gt 0 ]] && ! $DRY_RUN; then
-  step "Cluster status"
-  kubectl get nodes
-  echo ""
-  unhealthy=$(kubectl get pods -A --field-selector='status.phase!=Running,status.phase!=Succeeded' --no-headers 2>/dev/null) || true
-  if [[ -z "$unhealthy" ]]; then
-    info "All pods healthy"
-  else
-    warn "Unhealthy pods:"
-    echo "$unhealthy"
-  fi
-fi
-
-# --- Phase 7: Reconnect local Tailscale ---
+# --- Phase 4: Reconnect local Tailscale ---
 if command -v tailscale &>/dev/null; then
   status=$(tailscale status 2>&1) || true
   if [[ "$status" == *"Tailscale is stopped"* ]]; then

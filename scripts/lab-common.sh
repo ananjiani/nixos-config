@@ -33,9 +33,6 @@ declare -A K3S_ROLE=(
   [rivendell]=agent
 )
 
-# Uncordon order: boromir first (API endpoint), then others
-K3S_UNCORDON_ORDER=(boromir theoden samwise rivendell)
-
 declare -A CAN_SSH=(
   [gondor]=1 [rohan]=1 [the-shire]=1
   [boromir]=1 [samwise]=1 [theoden]=1
@@ -94,20 +91,6 @@ wait_for_ssh() {
   local host=$1 max=${2:-30} attempt=0
   while (( attempt < max )); do
     if ssh -o ConnectTimeout=3 -o BatchMode=yes "root@${host}" true &>/dev/null; then
-      return 0
-    fi
-    (( attempt++ ))
-    sleep 5
-  done
-  return 1
-}
-
-wait_for_node_ready() {
-  local node=$1 max=${2:-60} attempt=0
-  while (( attempt < max )); do
-    local status
-    status=$(kubectl get node "$node" -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null) || true
-    if [[ "$status" == "True" ]]; then
       return 0
     fi
     (( attempt++ ))
