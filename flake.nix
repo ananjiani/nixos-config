@@ -516,6 +516,7 @@
           pkgs.opentofu
           pkgs.ansible
           pkgs.kubectl
+          pkgs.wakeonlan
           inputs.nvfetcher.packages.${system}.default
           deploy-rs.packages.${system}.default
         ];

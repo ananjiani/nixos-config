@@ -1,0 +1,203 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Selective homelab startup / recovery with dependency resolution
+# Run from devshell (nix develop) for kubectl access
+#
+# Proxmox hosts need WoL or manual power-on first.
+# gondor: WoL disabled in OS (enable in BIOS or use ethtool)
+# rivendell: r8169 WoL unreliable, may need manual power
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=lab-common.sh
+source "$SCRIPT_DIR/lab-common.sh"
+
+show_help() {
+  cat <<'USAGE'
+Usage: lab-startup [options] [targets...]
+
+Brings selected homelab nodes back online. Sends WoL to Proxmox hosts,
+starts VMs, waits for k3s nodes, and uncordons them.
+
+USAGE
+  show_common_options
+  echo ""
+  show_topology
+  cat <<'EXAMPLES'
+
+Examples:
+  lab-startup --all               WoL everything, start VMs, uncordon k3s
+  lab-startup rohan               WoL rohan, start theoden, uncordon in k3s
+  lab-startup boromir theoden     Start VMs via qm, uncordon in k3s
+  lab-startup rivendell           WoL rivendell, uncordon in k3s
+  lab-startup --dry-run --all     Preview startup plan
+EXAMPLES
+}
+
+parse_args "$@"
+if ! $DRY_RUN; then
+  resolve_startup_deps
+fi
+classify_targets
+
+# --- Pre-flight ---
+if [[ ${#TARGET_K3S[@]} -gt 0 ]]; then
+  if ! command -v kubectl &>/dev/null; then
+    error "kubectl not found. Are you in the devshell? (nix develop)"
+    exit 1
+  fi
+fi
+
+# --- Show plan ---
+echo ""
+echo "Startup plan:"
+[[ ${#TARGET_PROXMOX[@]} -gt 0 ]] && echo "  Wake Proxmox:  ${TARGET_PROXMOX[*]}"
+[[ ${#TARGET_VMS_SSH[@]} -gt 0 || ${#TARGET_VMS_QM[@]} -gt 0 ]] && \
+  echo "  Start VMs:     ${TARGET_VMS_SSH[*]} ${TARGET_VMS_QM[*]}"
+[[ ${#TARGET_BARE[@]} -gt 0 ]]    && echo "  Wake bare:     ${TARGET_BARE[*]}"
+[[ ${#TARGET_K3S[@]} -gt 0 ]]     && echo "  Uncordon k3s:  ${TARGET_K3S[*]}"
+echo ""
+
+if ! $DRY_RUN; then
+  confirm
+fi
+
+# --- Phase 1: Wake Proxmox hosts ---
+if [[ ${#TARGET_PROXMOX[@]} -gt 0 ]]; then
+  step "Waking Proxmox hosts..."
+  for px in "${TARGET_PROXMOX[@]}"; do
+    if ssh -o ConnectTimeout=2 -o BatchMode=yes "root@${px}" true &>/dev/null; then
+      info "$px is already up"
+    else
+      info "Sending WoL to $px (${MAC_ADDR[$px]})"
+      run_or_dry wakeonlan "${MAC_ADDR[$px]}" 2>/dev/null || {
+        warn "WoL failed for $px — power on manually"
+      }
+    fi
+  done
+
+  if ! $DRY_RUN; then
+    for px in "${TARGET_PROXMOX[@]}"; do
+      info "Waiting for $px (up to 2.5 min)..."
+      if wait_for_ssh "$px" 30; then
+        info "$px is up"
+      else
+        error "$px did not come online. Check power/network."
+        exit 1
+      fi
+    done
+  fi
+fi
+
+# --- Phase 2: Start VMs ---
+all_target_vms=("${TARGET_VMS_SSH[@]}" "${TARGET_VMS_QM[@]}")
+if [[ ${#all_target_vms[@]} -gt 0 ]]; then
+  step "Starting VMs..."
+  for vm in "${all_target_vms[@]}"; do
+    local_host="${VM_HOST[$vm]}"
+    local_vmid="${VM_ID[$vm]}"
+
+    # If the Proxmox host was also targeted, VMs auto-start with on_boot=true
+    if is_in_array "$local_host" "${TARGET_PROXMOX[@]}"; then
+      info "$vm will auto-start with $local_host (on_boot=true)"
+    else
+      info "Starting $vm (qm start $local_vmid on $local_host)"
+      run_or_dry ssh -o ConnectTimeout=5 "root@${local_host}" "qm start $local_vmid" 2>/dev/null || {
+        warn "Could not start $vm"
+      }
+    fi
+  done
+
+  # Wait for SSH-capable VMs
+  if ! $DRY_RUN; then
+    for vm in "${TARGET_VMS_SSH[@]}"; do
+      info "Waiting for $vm (up to 5 min)..."
+      if wait_for_ssh "$vm" 60; then
+        info "$vm is reachable"
+      else
+        warn "$vm did not come online"
+      fi
+    done
+  fi
+fi
+
+# --- Phase 3: Wake bare metal ---
+if [[ ${#TARGET_BARE[@]} -gt 0 ]]; then
+  step "Waking bare metal..."
+  for bm in "${TARGET_BARE[@]}"; do
+    if ssh -o ConnectTimeout=2 -o BatchMode=yes "root@${bm}" true &>/dev/null; then
+      info "$bm is already up"
+    else
+      [[ "$bm" == "rivendell" ]] && warn "rivendell r8169 WoL is unreliable — may need manual power"
+      info "Sending WoL to $bm (${MAC_ADDR[$bm]})"
+      run_or_dry wakeonlan "${MAC_ADDR[$bm]}" 2>/dev/null || true
+
+      if ! $DRY_RUN; then
+        info "Waiting for $bm (up to 2.5 min)..."
+        if wait_for_ssh "$bm" 30; then
+          info "$bm is up"
+        else
+          warn "$bm did not come online — check power"
+        fi
+      fi
+    fi
+  done
+fi
+
+# --- Phase 4: Wait for k3s API ---
+if [[ ${#TARGET_K3S[@]} -gt 0 ]] && ! $DRY_RUN; then
+  step "Waiting for k3s API..."
+  attempts=0
+  while (( attempts < 60 )); do
+    if kubectl get nodes &>/dev/null; then
+      info "k3s API is responding"
+      break
+    fi
+    (( attempts++ ))
+    sleep 5
+  done
+  if (( attempts >= 60 )); then
+    error "k3s API did not come up. Check control plane nodes."
+    exit 1
+  fi
+
+  # Wait for nodes to be Ready
+  for node in "${K3S_UNCORDON_ORDER[@]}"; do
+    if is_in_array "$node" "${TARGET_K3S[@]}"; then
+      info "Waiting for $node to be Ready..."
+      if wait_for_node_ready "$node" 60; then
+        info "$node is Ready"
+      else
+        warn "$node is not Ready — check manually: kubectl get nodes"
+      fi
+    fi
+  done
+fi
+
+# --- Phase 5: Uncordon k3s nodes ---
+if [[ ${#TARGET_K3S[@]} -gt 0 ]]; then
+  step "Uncordoning k3s nodes..."
+  for node in "${K3S_UNCORDON_ORDER[@]}"; do
+    if is_in_array "$node" "${TARGET_K3S[@]}"; then
+      info "Uncordoning $node"
+      run_or_dry kubectl uncordon "$node" 2>/dev/null || warn "Could not uncordon $node"
+    fi
+  done
+fi
+
+# --- Phase 6: Verify ---
+if [[ ${#TARGET_K3S[@]} -gt 0 ]] && ! $DRY_RUN; then
+  step "Cluster status"
+  kubectl get nodes
+  echo ""
+  unhealthy=$(kubectl get pods -A --field-selector='status.phase!=Running,status.phase!=Succeeded' --no-headers 2>/dev/null) || true
+  if [[ -z "$unhealthy" ]]; then
+    info "All pods healthy"
+  else
+    warn "Unhealthy pods:"
+    echo "$unhealthy"
+  fi
+fi
+
+echo ""
+info "Startup complete."
