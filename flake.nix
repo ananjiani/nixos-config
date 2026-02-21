@@ -430,6 +430,9 @@
         home-ammars-pc = self.homeConfigurations."ammar@ammars-pc".activationPackage;
         home-framework13 = self.homeConfigurations."ammar@framework13".activationPackage;
 
+        # Documentation (validates mkdocs build pre-merge, cached for Codeberg Pages deploy)
+        docs = self.packages.${system}.documentation;
+
         # DevShell (cached in Attic for faster `nix develop` across machines)
         devshell = self.devShells.${system}.default;
 
