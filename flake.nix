@@ -511,6 +511,7 @@
       devShells.${system}.default = pkgs.mkShell {
         shellHook = self.checks.${system}.pre-commit-check.shellHook + ''
           export KUBECONFIG="$PWD/kubeconfig"
+          export PATH="$PWD/scripts:$PATH"
         '';
         buildInputs = self.checks.${system}.pre-commit-check.enabledPackages ++ [
           pkgs.opentofu
