@@ -36,21 +36,21 @@ resolve_shutdown_deps
 classify_targets
 
 # --- Pre-flight ---
+K3S_REACHABLE=false
 if [[ ${#TARGET_K3S[@]} -gt 0 ]]; then
   if ! command -v kubectl &>/dev/null; then
-    error "kubectl not found. Are you in the devshell? (nix develop)"
-    exit 1
-  fi
-  if ! $DRY_RUN && ! kubectl get nodes &>/dev/null; then
-    error "Cannot reach k3s cluster. Check KUBECONFIG and network."
-    exit 1
+    warn "kubectl not found — skipping k3s drain"
+  elif ! $DRY_RUN && ! kubectl get nodes &>/dev/null; then
+    warn "Cannot reach k3s cluster — skipping drain (nodes may already be down)"
+  else
+    K3S_REACHABLE=true
   fi
 fi
 
 # --- Show plan ---
 echo ""
 echo "Shutdown plan:"
-[[ ${#TARGET_K3S[@]} -gt 0 ]]     && echo "  Drain k3s:       ${TARGET_K3S[*]}"
+$K3S_REACHABLE && [[ ${#TARGET_K3S[@]} -gt 0 ]] && echo "  Drain k3s:       ${TARGET_K3S[*]}"
 [[ ${#TARGET_VMS_SSH[@]} -gt 0 ]] && echo "  Shutdown (SSH):   ${TARGET_VMS_SSH[*]}"
 [[ ${#TARGET_VMS_QM[@]} -gt 0 ]]  && echo "  Shutdown (ACPI):  ${TARGET_VMS_QM[*]}"
 [[ ${#TARGET_BARE[@]} -gt 0 ]]    && echo "  Shutdown (bare):  ${TARGET_BARE[*]}"
@@ -69,7 +69,7 @@ if command -v tailscale &>/dev/null && tailscale status &>/dev/null; then
 fi
 
 # --- Phase 1: Drain k3s nodes ---
-if [[ ${#TARGET_K3S[@]} -gt 0 ]]; then
+if $K3S_REACHABLE && [[ ${#TARGET_K3S[@]} -gt 0 ]]; then
   step "Draining k3s nodes..."
   for node in "${K3S_DRAIN_ORDER[@]}"; do
     if is_in_array "$node" "${TARGET_K3S[@]}"; then
