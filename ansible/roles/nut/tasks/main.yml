@@ -1,0 +1,97 @@
+---
+- name: Install NUT packages
+  ansible.builtin.apt:
+    name:
+      - nut
+      - nut-client
+    state: present
+    update_cache: true
+
+# --- NUT mode configuration ---
+- name: Configure NUT mode
+  ansible.builtin.template:
+    src: nut.conf.j2
+    dest: /etc/nut/nut.conf
+    owner: root
+    group: nut
+    mode: '0640'
+  notify:
+    - Restart nut-server
+    - Restart nut-monitor
+
+# --- Master-only: UPS driver + server ---
+- name: Configure UPS driver (master only)
+  ansible.builtin.template:
+    src: ups.conf.j2
+    dest: /etc/nut/ups.conf
+    owner: root
+    group: nut
+    mode: '0640'
+  when: inventory_hostname == nut_master_host
+  notify: Restart nut-server
+
+- name: Configure upsd listener (master only)
+  ansible.builtin.template:
+    src: upsd.conf.j2
+    dest: /etc/nut/upsd.conf
+    owner: root
+    group: nut
+    mode: '0640'
+  when: inventory_hostname == nut_master_host
+  notify: Restart nut-server
+
+- name: Configure upsd users (master only)
+  ansible.builtin.template:
+    src: upsd.users.j2
+    dest: /etc/nut/upsd.users
+    owner: root
+    group: nut
+    mode: '0640'
+  when: inventory_hostname == nut_master_host
+  notify: Restart nut-server
+
+# --- All hosts: monitoring client ---
+- name: Configure upsmon
+  ansible.builtin.template:
+    src: upsmon.conf.j2
+    dest: /etc/nut/upsmon.conf
+    owner: root
+    group: nut
+    mode: '0640'
+  notify: Restart nut-monitor
+
+# --- VM graceful shutdown script ---
+- name: Install VM shutdown script
+  ansible.builtin.template:
+    src: shutdown-vms.sh.j2
+    dest: /usr/local/bin/nut-shutdown-vms
+    owner: root
+    group: root
+    mode: '0755'
+
+# --- Enable services ---
+- name: Enable and start nut-server (master only)
+  ansible.builtin.systemd:
+    name: nut-server
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: inventory_hostname == nut_master_host
+
+- name: Enable and start nut-monitor
+  ansible.builtin.systemd:
+    name: nut-monitor
+    enabled: true
+    state: started
+    daemon_reload: true
+
+# --- Firewall: allow NUT port from other Proxmox hosts ---
+- name: Allow NUT port in firewall (master only)
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "{{ nut_listen_port }}"
+    source: "192.168.1.0/24"
+    jump: ACCEPT
+    comment: "NUT upsd for UPS monitoring"
+  when: inventory_hostname == nut_master_host

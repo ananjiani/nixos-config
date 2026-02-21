@@ -1,0 +1,28 @@
+{% if inventory_hostname == nut_master_host %}
+# Master: powerdownflag=1, this host tells the UPS to cut power after all slaves disconnect
+MONITOR {{ nut_ups_name }}@localhost {{ nut_listen_port }} 1 {{ nut_monitor_user }} {{ nut_monitor_password }} master
+{% else %}
+# Slave: powerdownflag=0, this host shuts down when master says battery is low
+MONITOR {{ nut_ups_name }}@{{ nut_master_host }} {{ nut_listen_port }} 1 {{ nut_monitor_user }} {{ nut_monitor_password }} slave
+{% endif %}
+
+# Gracefully shut down VMs before powering off the host
+SHUTDOWNCMD "/usr/local/bin/nut-shutdown-vms"
+
+# Seconds between LOWBATT and running SHUTDOWNCMD
+FINALDELAY {{ nut_finaldelay }}
+
+# Poll interval (seconds)
+POLLFREQ 5
+POLLFREQALERT 5
+
+# How long to wait before declaring UPS dead (seconds)
+DEADTIME 15
+
+# Where to send notifications
+NOTIFYCMD /usr/sbin/upssched
+NOTIFYFLAG ONLINE SYSLOG
+NOTIFYFLAG ONBATT SYSLOG
+NOTIFYFLAG LOWBATT SYSLOG
+NOTIFYFLAG FSD SYSLOG
+NOTIFYFLAG SHUTDOWN SYSLOG
