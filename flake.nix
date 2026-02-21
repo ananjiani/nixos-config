@@ -509,10 +509,13 @@
 
       # Development shell with pre-commit hooks and deploy-rs
       devShells.${system}.default = pkgs.mkShell {
-        inherit (self.checks.${system}.pre-commit-check) shellHook;
+        shellHook = self.checks.${system}.pre-commit-check.shellHook + ''
+          export KUBECONFIG="$PWD/kubeconfig"
+        '';
         buildInputs = self.checks.${system}.pre-commit-check.enabledPackages ++ [
           pkgs.opentofu
           pkgs.ansible
+          pkgs.kubectl
           inputs.nvfetcher.packages.${system}.default
           deploy-rs.packages.${system}.default
         ];
