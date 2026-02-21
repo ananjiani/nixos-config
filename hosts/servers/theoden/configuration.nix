@@ -89,7 +89,7 @@ in
         group = "atticd";
         mode = "0400";
       };
-      # Buildbot (Codeberg/Gitea)
+      # Buildbot (Codeberg/Gitea + GitHub)
       codeberg_token = {
         owner = "buildbot";
         mode = "0400";
@@ -99,6 +99,14 @@ in
         mode = "0400";
       };
       codeberg_oauth_secret = {
+        owner = "buildbot";
+        mode = "0400";
+      };
+      github_app_secret = {
+        owner = "buildbot";
+        mode = "0400";
+      };
+      github_webhook_secret = {
         owner = "buildbot";
         mode = "0400";
       };
@@ -319,7 +327,7 @@ in
       };
     };
 
-    # Buildbot-nix CI/CD (Codeberg/Gitea)
+    # Buildbot-nix CI/CD (Codeberg/Gitea + GitHub)
     buildbot-nix.master = {
       enable = true;
       domain = "ci.dimensiondoor.xyz";
@@ -336,6 +344,13 @@ in
         webhookSecretFile = config.sops.secrets.codeberg_webhook_secret.path;
         oauthId = "3c068786-8f5c-44b6-abe8-153394049c91";
         oauthSecretFile = config.sops.secrets.codeberg_oauth_secret.path;
+        topic = "buildbot-nix";
+      };
+      github = {
+        enable = true;
+        appId = 2918119;
+        appSecretKeyFile = config.sops.secrets.github_app_secret.path;
+        webhookSecretFile = config.sops.secrets.github_webhook_secret.path;
         topic = "buildbot-nix";
       };
       admins = [ "ananjiani" ];
