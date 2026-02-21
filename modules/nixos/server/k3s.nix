@@ -66,6 +66,38 @@ in
       ];
 
       services = {
+        # Gracefully drain this node before k3s stops during shutdown.
+        # Tells the cluster to reschedule pods elsewhere before we disappear.
+        # After=k3s.service means: start after k3s, stop BEFORE k3s (reverse order).
+        k3s-graceful-drain = lib.mkIf (cfg.role == "server") {
+          description = "Drain k3s node before shutdown";
+          after = [ "k3s.service" ];
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = "${pkgs.coreutils}/bin/true";
+            ExecStop =
+              let
+                drainScript = pkgs.writeShellScript "k3s-drain" ''
+                  NODE=$(${pkgs.hostname}/bin/hostname)
+                  echo "Cordoning $NODE..."
+                  ${pkgs.kubectl}/bin/kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml \
+                    cordon "$NODE" || true
+                  echo "Draining $NODE..."
+                  ${pkgs.kubectl}/bin/kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml \
+                    drain "$NODE" \
+                    --ignore-daemonsets \
+                    --delete-emptydir-data \
+                    --disable-eviction \
+                    --timeout=60s || true
+                  echo "Drain complete for $NODE"
+                '';
+              in
+              "${drainScript}";
+          };
+        };
+
         # Workaround: k3s's embedded flannel can fail to regenerate /run/flannel/subnet.env
         # after a reboot (/run is tmpfs). Without this file, the flannel CNI plugin cannot
         # assign pod IPs and no pods can start. We persist a backup to disk and restore it

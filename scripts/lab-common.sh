@@ -33,9 +33,6 @@ declare -A K3S_ROLE=(
   [rivendell]=agent
 )
 
-# Drain order: agents first, boromir last (kubeconfig points to it)
-K3S_DRAIN_ORDER=(rivendell samwise theoden boromir)
-
 # Uncordon order: boromir first (API endpoint), then others
 K3S_UNCORDON_ORDER=(boromir theoden samwise rivendell)
 

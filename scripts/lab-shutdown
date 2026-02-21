@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Selective homelab shutdown with dependency resolution
-# Run from devshell (nix develop) for kubectl access
+# k3s nodes drain themselves via systemd (k3s-graceful-drain.service)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=lab-common.sh
@@ -12,8 +12,9 @@ show_help() {
   cat <<'USAGE'
 Usage: lab-shutdown [options] [targets...]
 
-Gracefully shuts down selected homelab nodes. Automatically drains
-k3s nodes and resolves dependencies (Proxmox host → its VMs).
+Gracefully shuts down selected homelab nodes. Resolves dependencies
+(Proxmox host → its VMs). k3s nodes drain themselves automatically
+during shutdown via systemd.
 
 USAGE
   show_common_options
@@ -22,9 +23,9 @@ USAGE
   cat <<'EXAMPLES'
 
 Examples:
-  lab-shutdown rohan              Drain theoden, shut down theoden + rohan
-  lab-shutdown --k3s              Drain & shut down all k3s nodes
-  lab-shutdown the-shire          Drain samwise, shut down samwise + pippin + frodo + the-shire
+  lab-shutdown rohan              Shut down theoden + rohan
+  lab-shutdown --k3s              Shut down all k3s nodes
+  lab-shutdown the-shire          Shut down samwise + pippin + frodo + the-shire
   lab-shutdown pippin             Shut down just pippin
   lab-shutdown --all              Full homelab shutdown
   lab-shutdown --dry-run --all    Preview full shutdown plan
@@ -35,57 +36,25 @@ parse_args "$@"
 resolve_shutdown_deps
 classify_targets
 
-# --- Pre-flight ---
-K3S_REACHABLE=false
-if [[ ${#TARGET_K3S[@]} -gt 0 ]]; then
-  if ! command -v kubectl &>/dev/null; then
-    warn "kubectl not found — skipping k3s drain"
-  elif ! $DRY_RUN && ! kubectl get nodes &>/dev/null; then
-    warn "Cannot reach k3s cluster — skipping drain (nodes may already be down)"
-  else
-    K3S_REACHABLE=true
-  fi
-fi
-
 # --- Show plan ---
 echo ""
 echo "Shutdown plan:"
-$K3S_REACHABLE && [[ ${#TARGET_K3S[@]} -gt 0 ]] && echo "  Drain k3s:       ${TARGET_K3S[*]}"
 [[ ${#TARGET_VMS_SSH[@]} -gt 0 ]] && echo "  Shutdown (SSH):   ${TARGET_VMS_SSH[*]}"
 [[ ${#TARGET_VMS_QM[@]} -gt 0 ]]  && echo "  Shutdown (ACPI):  ${TARGET_VMS_QM[*]}"
 [[ ${#TARGET_BARE[@]} -gt 0 ]]    && echo "  Shutdown (bare):  ${TARGET_BARE[*]}"
 [[ ${#TARGET_PROXMOX[@]} -gt 0 ]] && echo "  Shutdown Proxmox: ${TARGET_PROXMOX[*]}"
+[[ ${#TARGET_K3S[@]} -gt 0 ]]     && echo "  (k3s nodes will self-drain via systemd)"
 echo ""
 
 if ! $DRY_RUN; then
   confirm
 fi
 
-# --- Phase 0: Disconnect local Tailscale ---
+# --- Phase 1: Disconnect local Tailscale ---
 # Prevents losing network when Headscale/DNS on the cluster goes down
 if command -v tailscale &>/dev/null && tailscale status &>/dev/null; then
   step "Disconnecting local Tailscale..."
   run_or_dry tailscale down
-fi
-
-# --- Phase 1: Drain k3s nodes ---
-if $K3S_REACHABLE && [[ ${#TARGET_K3S[@]} -gt 0 ]]; then
-  step "Draining k3s nodes..."
-  for node in "${K3S_DRAIN_ORDER[@]}"; do
-    if is_in_array "$node" "${TARGET_K3S[@]}"; then
-      info "Cordoning $node"
-      run_or_dry kubectl cordon "$node"
-    fi
-  done
-  for node in "${K3S_DRAIN_ORDER[@]}"; do
-    if is_in_array "$node" "${TARGET_K3S[@]}"; then
-      info "Draining $node"
-      run_or_dry kubectl drain "$node" \
-        --ignore-daemonsets --delete-emptydir-data --disable-eviction --timeout=120s || {
-        warn "Drain timed out for $node, continuing..."
-      }
-    fi
-  done
 fi
 
 # --- Phase 2: Shut down VMs via SSH ---
@@ -123,8 +92,8 @@ fi
 # --- Phase 5: Wait ---
 if [[ ${#TARGET_VMS_SSH[@]} -gt 0 || ${#TARGET_VMS_QM[@]} -gt 0 || ${#TARGET_BARE[@]} -gt 0 ]]; then
   if ! $DRY_RUN; then
-    info "Waiting 30s for systems to fully shut down..."
-    sleep 30
+    info "Waiting for systems to shut down (k3s nodes draining via systemd)..."
+    sleep 90
   fi
 fi
 
