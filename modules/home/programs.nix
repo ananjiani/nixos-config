@@ -40,6 +40,6 @@
     };
     etesync-dav.enable = true;
   };
-  # programs.element-desktop.enable = true;
+  programs.element-desktop.enable = true;
 
 }
