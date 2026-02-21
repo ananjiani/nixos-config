@@ -71,6 +71,13 @@ in
       description = "Allow direct access to local network when using an exit node";
     };
 
+    operator = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Unprivileged user allowed to manage Tailscale (e.g., run tailscale down without sudo).";
+      example = "ammar";
+    };
+
     udpGroExcludeInterfaces = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
@@ -95,6 +102,9 @@ in
       extraSetFlags = [
         "--accept-dns=${lib.boolToString cfg.acceptDns}"
         "--accept-routes=${lib.boolToString cfg.acceptRoutes}"
+      ]
+      ++ lib.optionals (cfg.operator != null) [
+        "--operator=${cfg.operator}"
       ]
       ++ lib.optionals (cfg.useExitNode != null) [
         "--exit-node=${cfg.useExitNode}"

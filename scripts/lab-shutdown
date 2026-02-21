@@ -61,6 +61,13 @@ if ! $DRY_RUN; then
   confirm
 fi
 
+# --- Phase 0: Disconnect local Tailscale ---
+# Prevents losing network when Headscale/DNS on the cluster goes down
+if command -v tailscale &>/dev/null && tailscale status &>/dev/null; then
+  step "Disconnecting local Tailscale..."
+  run_or_dry tailscale down
+fi
+
 # --- Phase 1: Drain k3s nodes ---
 if [[ ${#TARGET_K3S[@]} -gt 0 ]]; then
   step "Draining k3s nodes..."
@@ -74,7 +81,7 @@ if [[ ${#TARGET_K3S[@]} -gt 0 ]]; then
     if is_in_array "$node" "${TARGET_K3S[@]}"; then
       info "Draining $node"
       run_or_dry kubectl drain "$node" \
-        --ignore-daemonsets --delete-emptydir-data --timeout=120s || {
+        --ignore-daemonsets --delete-emptydir-data --disable-eviction --timeout=120s || {
         warn "Drain timed out for $node, continuing..."
       }
     fi

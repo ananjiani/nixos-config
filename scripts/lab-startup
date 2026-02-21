@@ -199,5 +199,14 @@ if [[ ${#TARGET_K3S[@]} -gt 0 ]] && ! $DRY_RUN; then
   fi
 fi
 
+# --- Phase 7: Reconnect local Tailscale ---
+if command -v tailscale &>/dev/null; then
+  status=$(tailscale status 2>&1) || true
+  if [[ "$status" == *"Tailscale is stopped"* ]]; then
+    step "Reconnecting local Tailscale..."
+    run_or_dry tailscale up
+  fi
+fi
+
 echo ""
 info "Startup complete."
