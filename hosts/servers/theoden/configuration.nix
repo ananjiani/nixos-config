@@ -303,7 +303,7 @@ in
         database.url = "postgresql:///atticd?host=/run/postgresql";
         storage = {
           type = "local";
-          path = "/var/lib/atticd/storage";
+          path = "/srv/nfs/attic";
         };
         chunking = {
           nar-size-threshold = 65536;
@@ -314,7 +314,7 @@ in
         compression.type = "zstd";
         garbage-collection = {
           interval = "12 hours";
-          default-retention-period = "3 months";
+          default-retention-period = "1 month";
         };
       };
     };
