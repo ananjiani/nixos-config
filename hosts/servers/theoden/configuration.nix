@@ -444,6 +444,10 @@ in
         "atticd.service"
         "postgresql.service"
       ];
+      path = [
+        config.services.postgresql.package
+        pkgs.findutils
+      ];
       serviceConfig = {
         Type = "oneshot";
         User = "atticd";
@@ -490,7 +494,6 @@ in
         OnCalendar = "daily";
         OnBootSec = "15min";
         RandomizedDelaySec = "1h";
-        Persistent = true;
       };
     };
   };
