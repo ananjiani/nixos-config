@@ -219,7 +219,9 @@ in
       enabledCollectors = [
         "systemd"
         "processes"
+        "textfile"
       ];
+      extraFlags = [ "--collector.textfile.directory=/var/lib/attic-monitor" ];
     };
 
     # Prometheus postgres exporter for database metrics
@@ -427,6 +429,70 @@ in
   # Immich user needs storage group for NFS write access
   users.users.immich = {
     extraGroups = [ "storage" ];
+  };
+
+  # Attic chunk integrity check: detects DB records with missing chunk files on disk.
+  # Runs daily and writes a Prometheus textfile metric picked up by node_exporter.
+  systemd = {
+    tmpfiles.rules = [
+      "d /var/lib/attic-monitor 0755 atticd atticd -"
+    ];
+
+    services.attic-chunk-check = {
+      description = "Check Attic binary cache chunk integrity";
+      after = [
+        "atticd.service"
+        "postgresql.service"
+      ];
+      serviceConfig = {
+        Type = "oneshot";
+        User = "atticd";
+      };
+      script =
+        let
+          checkScript = pkgs.writeShellScript "attic-chunk-check" ''
+            set -euo pipefail
+            STORAGE_PATH="/srv/nfs/attic"
+            OUTFILE="/var/lib/attic-monitor/attic.prom"
+            DB_LIST=$(mktemp)
+            FS_LIST=$(mktemp)
+            trap 'rm -f "$DB_LIST" "$FS_LIST"' EXIT
+
+            # All valid chunk filenames expected by DB (strip "local:" prefix, sort)
+            psql -U atticd -d atticd -t -A \
+              -c "SELECT remote_file_id FROM chunk WHERE state = 'V'" \
+              | sed 's/^local://' | sort > "$DB_LIST"
+
+            # All chunk files actually present on disk (just filename, sort)
+            find "$STORAGE_PATH" -name '*.chunk' -printf '%f\n' | sort > "$FS_LIST"
+
+            # Chunks in DB but missing on disk
+            orphaned=$(comm -23 "$DB_LIST" "$FS_LIST" | wc -l)
+            total=$(wc -l < "$DB_LIST")
+
+            cat > "$OUTFILE" <<EOF
+            # HELP attic_orphaned_chunks Chunk DB records with no corresponding file on disk
+            # TYPE attic_orphaned_chunks gauge
+            attic_orphaned_chunks $orphaned
+            # HELP attic_chunks_total Total valid chunk records in Attic database
+            # TYPE attic_chunks_total gauge
+            attic_chunks_total $total
+            EOF
+          '';
+        in
+        "${checkScript}";
+    };
+
+    timers.attic-chunk-check = {
+      description = "Run Attic chunk integrity check daily";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "daily";
+        OnBootSec = "15min";
+        RandomizedDelaySec = "1h";
+        Persistent = true;
+      };
+    };
   };
 
   system.stateVersion = "25.11";

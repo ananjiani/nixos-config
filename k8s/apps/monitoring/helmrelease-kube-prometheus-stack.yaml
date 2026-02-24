@@ -432,3 +432,19 @@ spec:
                 annotations:
                   summary: "NVIDIA GPU exporter is down on {{ $labels.instance }}"
                   description: "GPU metrics exporter has been unreachable for 5 minutes."
+      attic-alerts:
+        groups:
+          - name: attic-cache
+            rules:
+              - alert: AtticOrphanedChunks
+                expr: attic_orphaned_chunks{instance="192.168.1.27:9100"} > 0
+                for: 1h
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Attic cache has {{ $value }} orphaned chunk(s)"
+                  description: >-
+                    Attic binary cache has chunk records in the database with no corresponding
+                    file on disk. Fetching these paths returns HTTP 500 and blocks deploys.
+                    Fix: delete orphaned DB rows (nar/chunk/chunkref/object) then re-push via
+                    attic push middle-earth <store-path>.

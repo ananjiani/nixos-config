@@ -35,6 +35,7 @@
         "https://comfyui.cachix.org"
         "https://cache.nixos-cuda.org"
         "https://cache.garnix.io"
+        "https://pre-commit-hooks.cachix.org"
         # "https://attic.dimensiondoor.xyz/middle-earth" # Attic via Traefik (disabled until K8s routing ready)
         "http://theoden.lan:8080/middle-earth" # Attic direct
       ];
@@ -45,6 +46,7 @@
         "comfyui.cachix.org-1:33mf9VzoIjzVbp0zwj+fT51HG0y31ZTK3nzYZAX0rec="
         "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M="
         "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
+        "pre-commit-hooks.cachix.org-1:Fh9gmh3LNW5ql37bCKCQ3UPE7AXrBVOeHLiuTJfV7Jo="
         "middle-earth:QJM6g097RUDyZA0OG00fXc7JxFMOXN3J5ZBX8j+QfFI="
       ];
       auto-optimise-store = true;
