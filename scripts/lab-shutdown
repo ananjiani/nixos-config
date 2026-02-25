@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Selective homelab shutdown with dependency resolution
+# k3s nodes drain themselves via systemd (k3s-graceful-drain.service)
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=lab-common.sh
+source "$SCRIPT_DIR/lab-common.sh"
+
+show_help() {
+  cat <<'USAGE'
+Usage: lab-shutdown [options] [targets...]
+
+Gracefully shuts down selected homelab nodes. Resolves dependencies
+(Proxmox host → its VMs). k3s nodes drain themselves automatically
+during shutdown via systemd.
+
+USAGE
+  show_common_options
+  echo ""
+  show_topology
+  cat <<'EXAMPLES'
+
+Examples:
+  lab-shutdown rohan              Shut down theoden + rohan
+  lab-shutdown --k3s              Shut down all k3s nodes
+  lab-shutdown the-shire          Shut down samwise + pippin + frodo + the-shire
+  lab-shutdown pippin             Shut down just pippin
+  lab-shutdown --all              Full homelab shutdown
+  lab-shutdown --dry-run --all    Preview full shutdown plan
+EXAMPLES
+}
+
+parse_args "$@"
+resolve_shutdown_deps
+classify_targets
+
+# --- Show plan ---
+echo ""
+echo "Shutdown plan:"
+[[ ${#TARGET_VMS_SSH[@]} -gt 0 ]] && echo "  Shutdown (SSH):   ${TARGET_VMS_SSH[*]}"
+[[ ${#TARGET_VMS_QM[@]} -gt 0 ]]  && echo "  Shutdown (ACPI):  ${TARGET_VMS_QM[*]}"
+[[ ${#TARGET_BARE[@]} -gt 0 ]]    && echo "  Shutdown (bare):  ${TARGET_BARE[*]}"
+[[ ${#TARGET_PROXMOX[@]} -gt 0 ]] && echo "  Shutdown Proxmox: ${TARGET_PROXMOX[*]}"
+[[ ${#TARGET_K3S[@]} -gt 0 ]]     && echo "  (k3s nodes will self-drain via systemd)"
+echo ""
+
+if ! $DRY_RUN; then
+  confirm
+fi
+
+# --- Phase 1: Disconnect local Tailscale ---
+# Prevents losing network when Headscale/DNS on the cluster goes down
+if command -v tailscale &>/dev/null && tailscale status &>/dev/null; then
+  step "Disconnecting local Tailscale..."
+  run_or_dry tailscale down
+fi
+
+# --- Phase 2: Shut down VMs via SSH ---
+if [[ ${#TARGET_VMS_SSH[@]} -gt 0 ]]; then
+  step "Shutting down VMs (SSH)..."
+  for vm in "${TARGET_VMS_SSH[@]}"; do
+    info "Shutting down $vm"
+    run_or_dry ssh -o ConnectTimeout=5 "root@${vm}" "shutdown now" 2>/dev/null || true
+  done
+fi
+
+# --- Phase 3: Shut down VMs via qm (no SSH, e.g. frodo) ---
+if [[ ${#TARGET_VMS_QM[@]} -gt 0 ]]; then
+  step "Shutting down VMs (ACPI)..."
+  for vm in "${TARGET_VMS_QM[@]}"; do
+    local_host="${VM_HOST[$vm]}"
+    local_vmid="${VM_ID[$vm]}"
+    info "Shutting down $vm (qm shutdown $local_vmid on $local_host)"
+    run_or_dry ssh -o ConnectTimeout=5 "root@${local_host}" "qm shutdown $local_vmid --timeout 60" || {
+      warn "ACPI shutdown failed for $vm, trying hard stop..."
+      run_or_dry ssh -o ConnectTimeout=5 "root@${local_host}" "qm stop $local_vmid" || true
+    }
+  done
+fi
+
+# --- Phase 4: Shut down bare metal ---
+if [[ ${#TARGET_BARE[@]} -gt 0 ]]; then
+  step "Shutting down bare metal..."
+  for bm in "${TARGET_BARE[@]}"; do
+    info "Shutting down $bm"
+    run_or_dry ssh -o ConnectTimeout=5 "root@${bm}" "shutdown now" 2>/dev/null || true
+  done
+fi
+
+# --- Phase 5: Wait ---
+if [[ ${#TARGET_VMS_SSH[@]} -gt 0 || ${#TARGET_VMS_QM[@]} -gt 0 || ${#TARGET_BARE[@]} -gt 0 ]]; then
+  if ! $DRY_RUN; then
+    info "Waiting for systems to shut down (k3s nodes draining via systemd)..."
+    sleep 90
+  fi
+fi
+
+# --- Phase 6: Shut down Proxmox hosts ---
+if [[ ${#TARGET_PROXMOX[@]} -gt 0 ]]; then
+  step "Shutting down Proxmox hosts..."
+  for px in "${TARGET_PROXMOX[@]}"; do
+    info "Shutting down $px"
+    run_or_dry ssh -o ConnectTimeout=5 "root@${px}" "shutdown now" 2>/dev/null || true
+  done
+fi
+
+echo ""
+info "Shutdown sequence complete."

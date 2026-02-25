@@ -32,6 +32,7 @@
     loginServer = "https://ts.dimensiondoor.xyz";
     authKeyFile = config.sops.secrets.tailscale_authkey.path;
     excludeFromMullvad = true;
+    operator = "ammar";
   };
   programs = {
 

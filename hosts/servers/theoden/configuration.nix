@@ -89,7 +89,7 @@ in
         group = "atticd";
         mode = "0400";
       };
-      # Buildbot (Codeberg/Gitea)
+      # Buildbot (Codeberg/Gitea + GitHub)
       codeberg_token = {
         owner = "buildbot";
         mode = "0400";
@@ -99,6 +99,14 @@ in
         mode = "0400";
       };
       codeberg_oauth_secret = {
+        owner = "buildbot";
+        mode = "0400";
+      };
+      github_app_secret = {
+        owner = "buildbot";
+        mode = "0400";
+      };
+      github_webhook_secret = {
         owner = "buildbot";
         mode = "0400";
       };
@@ -303,7 +311,7 @@ in
         database.url = "postgresql:///atticd?host=/run/postgresql";
         storage = {
           type = "local";
-          path = "/var/lib/atticd/storage";
+          path = "/srv/nfs/attic";
         };
         chunking = {
           nar-size-threshold = 65536;
@@ -314,12 +322,12 @@ in
         compression.type = "zstd";
         garbage-collection = {
           interval = "12 hours";
-          default-retention-period = "3 months";
+          default-retention-period = "1 month";
         };
       };
     };
 
-    # Buildbot-nix CI/CD (Codeberg/Gitea)
+    # Buildbot-nix CI/CD (Codeberg/Gitea + GitHub)
     buildbot-nix.master = {
       enable = true;
       domain = "ci.dimensiondoor.xyz";
@@ -336,6 +344,13 @@ in
         webhookSecretFile = config.sops.secrets.codeberg_webhook_secret.path;
         oauthId = "3c068786-8f5c-44b6-abe8-153394049c91";
         oauthSecretFile = config.sops.secrets.codeberg_oauth_secret.path;
+        topic = "buildbot-nix";
+      };
+      github = {
+        enable = true;
+        appId = 2918119;
+        appSecretKeyFile = config.sops.secrets.github_app_secret.path;
+        webhookSecretFile = config.sops.secrets.github_webhook_secret.path;
         topic = "buildbot-nix";
       };
       admins = [ "ananjiani" ];
@@ -360,7 +375,7 @@ in
     ]);
     buildbot-master.reporters = [ "reporters.Prometheus(port=9101)" ];
 
-    # Cloudflare Tunnel for external webhooks
+    # Cloudflare Tunnel for external access (webhooks, binary cache)
     cloudflared = {
       enable = true;
       tunnels = {
@@ -368,6 +383,7 @@ in
           credentialsFile = config.sops.secrets.cloudflared_tunnel_creds.path;
           default = "http_status:404";
           ingress = {
+            "attic.dimensiondoor.xyz" = "http://localhost:8080";
             "ci.dimensiondoor.xyz" = "http://localhost:8010";
             "voicemail.dimensiondoor.xyz" = {
               service = "https://192.168.1.52";

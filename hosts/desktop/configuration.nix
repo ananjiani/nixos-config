@@ -49,6 +49,7 @@ in
       authKeyFile = config.sops.secrets.tailscale_authkey.path;
       excludeFromMullvad = true;
       acceptDns = false; # Use AdGuard directly, avoid DNS conflicts with Mullvad
+      operator = "ammar";
     };
 
     # Mullvad custom DNS (AdGuard instances + fallback)

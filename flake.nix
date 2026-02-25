@@ -430,6 +430,12 @@
         home-ammars-pc = self.homeConfigurations."ammar@ammars-pc".activationPackage;
         home-framework13 = self.homeConfigurations."ammar@framework13".activationPackage;
 
+        # Documentation (validates mkdocs build pre-merge, cached for Codeberg Pages deploy)
+        docs = self.packages.${system}.documentation;
+
+        # DevShell (cached in Attic for faster `nix develop` across machines)
+        devshell = self.devShells.${system}.default;
+
         pre-commit-check = inputs.git-hooks.lib.${system}.run {
           src = ./.;
           hooks = {
@@ -506,10 +512,15 @@
 
       # Development shell with pre-commit hooks and deploy-rs
       devShells.${system}.default = pkgs.mkShell {
-        inherit (self.checks.${system}.pre-commit-check) shellHook;
+        shellHook = self.checks.${system}.pre-commit-check.shellHook + ''
+          export KUBECONFIG="$PWD/kubeconfig"
+          export PATH="$PWD/scripts:$PATH"
+        '';
         buildInputs = self.checks.${system}.pre-commit-check.enabledPackages ++ [
           pkgs.opentofu
           pkgs.ansible
+          pkgs.kubectl
+          pkgs.wakeonlan
           inputs.nvfetcher.packages.${system}.default
           deploy-rs.packages.${system}.default
         ];

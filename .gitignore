@@ -8,6 +8,9 @@ result
 # Unencrypted secrets for testing (NEVER commit these!)
 secrets/*-unencrypted.yaml
 
+# Kubeconfig (contains client certs)
+kubeconfig
+
 # Backups
 portainer-backup*
 backups/
