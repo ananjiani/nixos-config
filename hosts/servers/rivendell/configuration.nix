@@ -111,15 +111,30 @@
     }; # Kodi HTPC (advancedsettings.xml)
   };
 
-  # Prometheus node exporter for monitoring
-  services.prometheus.exporters.node = {
-    enable = true;
-    port = 9100;
-    openFirewall = true;
-    enabledCollectors = [
-      "systemd"
-      "processes"
-    ];
+  # NFS client — required for Zot registry PVC (k8s NFS volume mount)
+  # Enables rpcbind + nfs-utils userspace helpers so kubelet can mount NFS volumes
+  boot.supportedFilesystems = [ "nfs" ];
+
+  services = {
+    rpcbind.enable = true;
+
+    # Prometheus node exporter for monitoring
+    prometheus.exporters.node = {
+      enable = true;
+      port = 9100;
+      openFirewall = true;
+      enabledCollectors = [
+        "systemd"
+        "processes"
+      ];
+    };
+
+    # Realtek RTL8168 (r8169 driver) NIC stability fixes — disable hw offloading
+    # See: https://forum.proxmox.com/threads/lots-of-missed-packets-with-realtek-nic-r8168-r8169.168792/
+    udev.extraRules = ''
+      ACTION=="add", SUBSYSTEM=="net", KERNEL=="enp1s0", RUN+="${pkgs.bash}/bin/bash -c '${pkgs.ethtool}/bin/ethtool --set-eee enp1s0 eee off; ${pkgs.ethtool}/bin/ethtool -K enp1s0 rx off tx off sg off tso off gro off gso off'"
+      ACTION=="add", SUBSYSTEM=="pci", DRIVER=="r8169", ATTR{power/control}="on"
+    '';
   };
 
   # Boot configuration (bare metal EFI)
@@ -144,12 +159,7 @@
   # - pcie_aspm=off: disable PCIe link-level power states (see boot.kernelParams)
   # - PCI runtime PM: force power/control=on via udev to prevent D3 suspend
   # - ethtool: disable EEE + all hardware offloading (rx/tx/sg/tso/gro/gso)
-  # See: https://forum.proxmox.com/threads/lots-of-missed-packets-with-realtek-nic-r8168-r8169.168792/
   environment.systemPackages = [ pkgs.ethtool ];
-  services.udev.extraRules = ''
-    ACTION=="add", SUBSYSTEM=="net", KERNEL=="enp1s0", RUN+="${pkgs.bash}/bin/bash -c '${pkgs.ethtool}/bin/ethtool --set-eee enp1s0 eee off; ${pkgs.ethtool}/bin/ethtool -K enp1s0 rx off tx off sg off tso off gro off gso off'"
-    ACTION=="add", SUBSYSTEM=="pci", DRIVER=="r8169", ATTR{power/control}="on"
-  '';
   systemd.services.nic-offloading = {
     description = "Disable hardware offloading on Realtek RTL8168 NIC";
     after = [ "network-addresses-enp1s0.service" ];

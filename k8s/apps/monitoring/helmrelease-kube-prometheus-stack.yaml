@@ -432,6 +432,45 @@ spec:
                 annotations:
                   summary: "NVIDIA GPU exporter is down on {{ $labels.instance }}"
                   description: "GPU metrics exporter has been unreachable for 5 minutes."
+      k8s-pod-health-alerts:
+        groups:
+          - name: k8s-pod-health
+            rules:
+              # Faster than the default KubeContainerWaiting (which fires after 1h).
+              # Catches ContainerCreating failures (e.g. missing NFS client, bad image)
+              # within 15 minutes instead of waiting an hour.
+              - alert: PodStuckInContainerCreating
+                expr: |
+                  kube_pod_container_status_waiting_reason{
+                    job="kube-state-metrics",
+                    reason="ContainerCreating"
+                  } == 1
+                for: 15m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} stuck in ContainerCreating"
+                  description: >-
+                    Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }}
+                    has been waiting in ContainerCreating for >15 minutes.
+                    Common causes: missing volume drivers, bad image pull secrets, NFS client not installed.
+              # Catches pods that are scheduled but cannot start for any reason
+              # (insufficient resources, unresolvable PVCs, node taints, etc.)
+              - alert: PodStuckPending
+                expr: |
+                  kube_pod_status_phase{
+                    job="kube-state-metrics",
+                    phase="Pending"
+                  } == 1
+                for: 15m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} stuck in Pending"
+                  description: >-
+                    Pod {{ $labels.namespace }}/{{ $labels.pod }} has been in Pending phase
+                    for >15 minutes. Check node resources, PVC availability, and scheduling constraints.
+
       attic-alerts:
         groups:
           - name: attic-cache
