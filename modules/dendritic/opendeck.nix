@@ -9,7 +9,12 @@ let
     pkgs:
     let
       sources = import ../../_sources/generated.nix {
-        inherit (pkgs) fetchurl;
+        inherit (pkgs)
+          fetchurl
+          fetchFromGitHub
+          fetchgit
+          dockerTools
+          ;
       };
       unwrapped = pkgs.appimageTools.wrapType2 {
         pname = "opendeck";

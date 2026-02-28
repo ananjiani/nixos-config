@@ -448,6 +448,7 @@
               # Apply fixes automatically
               entry = "${pkgs.deadnix}/bin/deadnix --edit";
               pass_filenames = true;
+              excludes = [ "_sources/.*\\.nix" ];
             };
             statix = {
               enable = true;

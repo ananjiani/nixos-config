@@ -13,24 +13,27 @@
 
 let
   cfg = config.modules.htpc;
+  sources = import ../../_sources/generated.nix {
+    inherit (pkgs)
+      fetchurl
+      fetchFromGitHub
+      fetchgit
+      dockerTools
+      ;
+  };
 
   # Must use kodi-gbm.packages (not pkgs.kodiPackages) so that addons are
   # tagged with kodiAddonFor = kodi-gbm. Using the wrong kodiPackages causes
   # withPackages to silently filter out the addon.
   gbmKodiPackages = pkgs.kodi-gbm.packages;
 
-  # Jacktook — debrid streaming addon (not in nixpkgs)
-  jacktook = gbmKodiPackages.buildKodiAddon rec {
+  # Jacktook — debrid streaming addon (not in nixpkgs, tracked by nvfetcher)
+  jacktook = gbmKodiPackages.buildKodiAddon {
     pname = "jacktook";
     namespace = "plugin.video.jacktook";
-    version = "0.24.0";
+    version = sources.jacktook.date;
 
-    src = pkgs.fetchFromGitHub {
-      owner = "Sam-Max";
-      repo = "plugin.video.jacktook";
-      rev = "2173568d144455d1c4928e23b4b142d51c63e111";
-      hash = "sha256-AJXMOt6p3qqjaLV+U/gg38R2fFuClLQGojOn0OA5YsU=";
-    };
+    inherit (sources.jacktook) src;
 
     propagatedBuildInputs = with gbmKodiPackages; [
       requests
