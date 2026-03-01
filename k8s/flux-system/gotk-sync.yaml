@@ -11,6 +11,10 @@ spec:
   ref:
     branch: main
   url: https://codeberg.org/ananjiani/infra
+  depth: 1
+  ignore: |
+    /*
+    !/k8s
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
