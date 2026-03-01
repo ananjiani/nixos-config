@@ -26,6 +26,7 @@ let
       hash = "sha256-sM95bktdQiwgQ8+GARWq/qXESrMrJQQ5E6YLyflqO0A=";
     };
     dependencies = with buildbotPackages.python.pkgs; [
+      (toPythonModule buildbotPackages.buildbot)
       prometheus-client
       twisted
     ];
