@@ -36,9 +36,10 @@ spec:
             - name: DATABASE_URL
               value: "postgres:$(POSTGRES_PASSWORD)@postgres:5432/comet"
 
-            # Proxy streaming - routes debrid traffic through cluster's stable connection
+            # Proxy streaming disabled — rivendell is on ethernet now so no need
+            # to proxy through the cluster (was needed for WiFi micro-drop workaround)
             - name: PROXY_DEBRID_STREAM
-              value: "True"
+              value: "False"
             - name: PROXY_DEBRID_STREAM_PASSWORD
               valueFrom:
                 secretKeyRef:
