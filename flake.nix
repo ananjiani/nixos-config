@@ -521,6 +521,7 @@
           pkgs.opentofu
           pkgs.ansible
           pkgs.kubectl
+          pkgs.fluxcd
           pkgs.wakeonlan
           inputs.nvfetcher.packages.${system}.default
           deploy-rs.packages.${system}.default

@@ -35,6 +35,31 @@ let
 
     inherit (sources.jacktook) src;
 
+    # Fix 2-minute playback startup delay: Kodi's InputStream does a GetDirectory
+    # probe on URLs before treating them as streams, which hangs for 120s on Comet
+    # /playback/ URLs. Fix by resolving the redirect in Python (via GET+stream)
+    # so Kodi receives the final CDN URL (e.g. https://cdn.torbox.app/...mkv)
+    # which it can open directly without probing.
+    # Note: HEAD returns 405 on Comet, so we use GET with stream=True and close
+    # immediately to follow the redirect chain without downloading the body.
+    postPatch = ''
+      sed -i '/IndexerType.STREMIO_DEBRID\]:/a\        data["url"] = _resolve_stremio_redirect(data.get("url", ""))' lib/utils/player/utils.py
+      sed -i '1a\
+      def _resolve_stremio_redirect(url):\
+          """Follow redirects on Stremio addon playback URLs to get the direct CDN URL."""\
+          try:\
+              import requests as _req\
+              resp = _req.get(url, stream=True, timeout=15)\
+              resp.close()\
+              if resp.url != url:\
+                  from lib.jacktook.utils import kodilog as _log\
+                  _log(f"Resolved redirect: {resp.url[:80]}")\
+              return resp.url\
+          except Exception:\
+              return url\
+      ' lib/utils/player/utils.py
+    '';
+
     propagatedBuildInputs = with gbmKodiPackages; [
       requests
       routing
