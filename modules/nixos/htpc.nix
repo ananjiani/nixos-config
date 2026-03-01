@@ -37,24 +37,25 @@ let
 
     # Fix 2-minute playback startup delay: Kodi's InputStream does a GetDirectory
     # probe on URLs before treating them as streams, which hangs for 120s on Comet
-    # /playback/ URLs. Fix by resolving the redirect in Python (via GET+stream)
-    # so Kodi receives the final CDN URL (e.g. https://cdn.torbox.app/...mkv)
-    # which it can open directly without probing.
-    # Note: HEAD returns 405 on Comet, so we use GET with stream=True and close
-    # immediately to follow the redirect chain without downloading the body.
+    # /playback/ URLs. Fix by checking for a 302 redirect without following it
+    # (allow_redirects=False), so we get the CDN URL from the Location header
+    # without consuming the stream. If Comet returns 200 (proxy mode), we pass
+    # the original URL through unchanged to avoid invalidating it.
     postPatch = ''
       sed -i '/IndexerType.STREMIO_DEBRID\]:/a\        data["url"] = _resolve_stremio_redirect(data.get("url", ""))' lib/utils/player/utils.py
       sed -i '1a\
       def _resolve_stremio_redirect(url):\
-          """Follow redirects on Stremio addon playback URLs to get the direct CDN URL."""\
+          """Resolve Stremio addon 302 redirects to get the direct CDN URL."""\
           try:\
               import requests as _req\
-              resp = _req.get(url, stream=True, timeout=15)\
+              resp = _req.get(url, stream=True, allow_redirects=False, timeout=15)\
               resp.close()\
-              if resp.url != url:\
+              if resp.status_code in (301, 302, 303, 307, 308):\
+                  cdn_url = resp.headers.get("Location", url)\
                   from lib.jacktook.utils import kodilog as _log\
-                  _log(f"Resolved redirect: {resp.url[:80]}")\
-              return resp.url\
+                  _log(f"Resolved redirect: {cdn_url[:80]}")\
+                  return cdn_url\
+              return url\
           except Exception:\
               return url\
       ' lib/utils/player/utils.py
