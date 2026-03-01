@@ -20,7 +20,7 @@ spec:
     # The official image (ghcr.io/juanfont/headscale) requires a config file
     image:
       repository: headscale/headscale
-      tag: latest
+      tag: 0.27.1
 
     # Configuration via environment variables
     env:

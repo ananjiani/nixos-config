@@ -35,17 +35,21 @@ spec:
               cpu: "100m"
             limits:
               memory: "2Gi"
+          startupProbe:
+            httpGet:
+              path: /v2/
+              port: 5000
+            failureThreshold: 30
+            periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /v2/
               port: 5000
-            initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /v2/
               port: 5000
-            initialDelaySeconds: 10
             periodSeconds: 30
       volumes:
         - name: config

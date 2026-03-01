@@ -11,7 +11,6 @@ spec:
   ref:
     branch: main
   url: https://codeberg.org/ananjiani/infra
-  depth: 1
   ignore: |
     /*
     !/k8s

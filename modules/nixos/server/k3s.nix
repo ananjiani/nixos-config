@@ -151,6 +151,55 @@ in
           '';
         };
 
+        # Workaround: the cni0 bridge retains the MTU from when it was first created.
+        # If flannel's backend changed (e.g. VXLAN 1450 → host-gw 1500), the bridge
+        # keeps the old MTU until manually corrected. This reads the correct MTU from
+        # flannel's subnet.env and applies it to cni0 and all attached veth interfaces.
+        k3s-flannel-mtu = {
+          description = "Ensure cni0 bridge MTU matches flannel config";
+          after = [ "k3s.service" ];
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          };
+          path = [ pkgs.iproute2 ];
+          script = ''
+            # Wait for cni0 to exist (up to 2 minutes)
+            for i in $(seq 1 24); do
+              if ip link show cni0 &>/dev/null; then
+                break
+              fi
+              sleep 5
+            done
+
+            if ! ip link show cni0 &>/dev/null; then
+              echo "cni0 not found, skipping MTU fix"
+              exit 0
+            fi
+
+            # Read MTU from flannel config
+            if [ -f /run/flannel/subnet.env ]; then
+              . /run/flannel/subnet.env
+              DESIRED_MTU=''${FLANNEL_MTU:-1500}
+            else
+              DESIRED_MTU=1500
+            fi
+
+            CURRENT_MTU=$(cat /sys/class/net/cni0/mtu)
+            if [ "$CURRENT_MTU" != "$DESIRED_MTU" ]; then
+              echo "Fixing cni0 MTU: $CURRENT_MTU → $DESIRED_MTU"
+              ip link set cni0 mtu "$DESIRED_MTU"
+              # Update all veth interfaces attached to cni0
+              for veth in $(ip link show master cni0 | grep -oP '^\d+: \K[^@]+'); do
+                ip link set "$veth" mtu "$DESIRED_MTU"
+              done
+            else
+              echo "cni0 MTU already correct: $CURRENT_MTU"
+            fi
+          '';
+        };
+
         k3s-flannel-backup = {
           description = "Backup flannel subnet.env to persistent storage";
           after = [ "k3s.service" ];
