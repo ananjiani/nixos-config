@@ -44,7 +44,7 @@
       role = "agent";
       serverAddr = "https://192.168.1.21:6443"; # boromir
       tokenFile = config.sops.secrets.k3s_token.path;
-      extraFlags = [ "--node-ip=192.168.1.29,2603:8081:1400:451:2e0:9dff:fe87:1de4" ];
+      extraFlags = [ "--node-ip=192.168.1.29" ];
     };
 
     # Keepalived + AdGuard for HA DNS

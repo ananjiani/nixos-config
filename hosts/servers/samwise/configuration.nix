@@ -55,7 +55,7 @@
       clusterInit = false;
       serverAddr = "https://192.168.1.21:6443"; # boromir
       tokenFile = config.sops.secrets.k3s_token.path;
-      extraFlags = [ "--node-ip=192.168.1.26,2603:8081:1400:451:be24:11ff:fe00:103" ];
+      extraFlags = [ "--node-ip=192.168.1.26" ];
     };
 
     # Tailscale client - exit node + subnet router for remote access

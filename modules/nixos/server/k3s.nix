@@ -59,7 +59,8 @@ in
         "ip_vs_wrr"
         "ip_vs_sh"
       ];
-      # IPv6 forwarding required for dual-stack pod networking
+      # IPv6 forwarding (needed by Tailscale exit nodes; will also be needed
+      # when dual-stack pod networking is enabled)
       kernel.sysctl."net.ipv6.conf.all.forwarding" = 1;
     };
 
@@ -276,13 +277,11 @@ in
           # Gives pods full 1500-byte MTU — avoids the VXLAN overhead that caused
           # repeated HTTP/2 + TLS framing failures (see postmortem 2026-02-01-0445).
           "--flannel-backend=host-gw"
-          # Dual-stack: give pods both IPv4 and IPv6. Pods default to IPv4-only
-          # flannel, but the host has fast IPv6 (ISP provides native v6). Without
-          # dual-stack, pod egress to non-CDN IPv4 destinations crawls at ~20 KB/s
-          # due to upstream path MTU issues, while IPv6 gets full line rate.
-          "--cluster-cidr=10.42.0.0/16,fd42::/48"
-          "--service-cidr=10.43.0.0/16,fd43::/48"
-          "--flannel-ipv6-masq" # NAT66 for pod IPv6 egress via ULA addresses
+          # TODO: Enable dual-stack IPv6 for pods (fd42::/48, fd43::/48).
+          # Blocked by k3s flannel bug: single-stack → dual-stack migration causes
+          # nil pointer panic in WriteSubnetFile (github.com/k3s-io/k3s#10726).
+          # Requires deleting all node objects and restarting simultaneously.
+          # For now, pods remain IPv4-only; host IPv6 egress works via hostNetwork.
         ]
         # Flags for all nodes (server + agent)
         ++ [
