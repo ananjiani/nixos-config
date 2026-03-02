@@ -142,7 +142,7 @@ in
       clusterInit = false;
       serverAddr = "https://192.168.1.21:6443"; # boromir
       tokenFile = config.sops.secrets.k3s_token.path;
-      extraFlags = [ "--node-ip=192.168.1.27" ]; # Force IPv4 for etcd cluster consistency
+      extraFlags = [ "--node-ip=192.168.1.27,2603:8081:1400:451:be24:11ff:fe00:104" ];
     };
     tailscale = {
       enable = true;

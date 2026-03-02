@@ -67,7 +67,7 @@
       role = "server";
       clusterInit = true; # First node initializes the cluster
       tokenFile = config.sops.secrets.k3s_token.path;
-      extraFlags = [ "--node-ip=192.168.1.21" ]; # Force IPv4 for etcd cluster consistency
+      extraFlags = [ "--node-ip=192.168.1.21,2603:8081:1400:451:be24:11ff:fef9:372e" ];
     };
   };
 
