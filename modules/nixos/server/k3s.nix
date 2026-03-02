@@ -51,6 +51,18 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    boot = {
+      # IPVS kernel modules for kube-proxy IPVS mode
+      kernelModules = [
+        "ip_vs"
+        "ip_vs_rr"
+        "ip_vs_wrr"
+        "ip_vs_sh"
+      ];
+      # IPv6 forwarding required for dual-stack pod networking
+      kernel.sysctl."net.ipv6.conf.all.forwarding" = 1;
+    };
+
     # Longhorn requirements
     services.openiscsi = {
       enable = true;
@@ -230,6 +242,7 @@ in
         kubectl
         kubernetes-helm
         fluxcd
+        ipvsadm # IPVS management for kube-proxy IPVS mode
       ];
 
       # Set KUBECONFIG for all users on server nodes
@@ -263,6 +276,20 @@ in
           # Gives pods full 1500-byte MTU — avoids the VXLAN overhead that caused
           # repeated HTTP/2 + TLS framing failures (see postmortem 2026-02-01-0445).
           "--flannel-backend=host-gw"
+          # Dual-stack: give pods both IPv4 and IPv6. Pods default to IPv4-only
+          # flannel, but the host has fast IPv6 (ISP provides native v6). Without
+          # dual-stack, pod egress to non-CDN IPv4 destinations crawls at ~20 KB/s
+          # due to upstream path MTU issues, while IPv6 gets full line rate.
+          "--cluster-cidr=10.42.0.0/16,fd42::/48"
+          "--service-cidr=10.43.0.0/16,fd43::/48"
+          "--flannel-ipv6-masq" # NAT66 for pod IPv6 egress via ULA addresses
+        ]
+        # Flags for all nodes (server + agent)
+        ++ [
+          # IPVS proxy mode: O(1) hash-table lookups instead of O(n) iptables
+          # chain traversal. With 61 services generating ~1300 iptables rules,
+          # this significantly reduces per-packet CPU overhead.
+          "--kube-proxy-arg=proxy-mode=ipvs"
         ]
         ++ cfg.extraFlags
       );
