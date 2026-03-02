@@ -55,7 +55,8 @@
       clusterInit = false;
       serverAddr = "https://192.168.1.21:6443"; # boromir
       tokenFile = config.sops.secrets.k3s_token.path;
-      extraFlags = [ "--node-ip=192.168.1.26" ];
+      nodeIp = "192.168.1.26";
+      flannelIface = "ens18"; # Prevent flannel from picking up keepalived VIPs
     };
 
     # Tailscale client - exit node + subnet router for remote access

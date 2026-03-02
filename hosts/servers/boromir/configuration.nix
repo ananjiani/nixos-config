@@ -67,7 +67,8 @@
       role = "server";
       clusterInit = true; # First node initializes the cluster
       tokenFile = config.sops.secrets.k3s_token.path;
-      extraFlags = [ "--node-ip=192.168.1.21" ];
+      nodeIp = "192.168.1.21";
+      flannelIface = "ens18"; # Prevent flannel from picking up keepalived VIPs
     };
   };
 

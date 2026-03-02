@@ -43,6 +43,22 @@ in
       description = "Path to file containing the k3s cluster token";
     };
 
+    nodeIp = lib.mkOption {
+      type = lib.types.str;
+      description = "Primary IPv4 address of this node (used for --node-ip)";
+    };
+
+    flannelIface = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        Network interface for flannel inter-host communication.
+        Set this on nodes with keepalived VIPs to prevent flannel from
+        picking up a VIP as its public-ip (corrupts host-gw routes).
+        When null, flannel auto-detects (safe if no VIPs on the interface).
+      '';
+    };
+
     extraFlags = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
@@ -277,6 +293,10 @@ in
           # Gives pods full 1500-byte MTU — avoids the VXLAN overhead that caused
           # repeated HTTP/2 + TLS framing failures (see postmortem 2026-02-01-0445).
           "--flannel-backend=host-gw"
+          # Use node external IPs for flannel inter-node routing.
+          # With --node-external-ip set to the real node IP, this forces flannel
+          # to use that IP instead of auto-detecting (which picks up keepalived VIPs).
+          "--flannel-external-ip"
           # TODO: Enable dual-stack IPv6 for pods (fd42::/48, fd43::/48).
           # Blocked by k3s flannel bug: single-stack → dual-stack migration causes
           # nil pointer panic in WriteSubnetFile (github.com/k3s-io/k3s#10726).
@@ -289,7 +309,17 @@ in
           # chain traversal. With 61 services generating ~1300 iptables rules,
           # this significantly reduces per-packet CPU overhead.
           "--kube-proxy-arg=proxy-mode=ipvs"
+          "--node-ip=${cfg.nodeIp}"
+          # Also set --node-external-ip to trigger the k3s CCM to annotate the
+          # node with flannel.alpha.coreos.com/public-ip-overwrite. Without this,
+          # flannel auto-detects the IP from the interface and may pick up a
+          # keepalived VIP instead of the real node IP.
+          "--node-external-ip=${cfg.nodeIp}"
         ]
+        # Pin flannel to a specific interface — prevents keepalived VIPs
+        # (bound to the same interface) from being used as flannel public-ip,
+        # which corrupts host-gw routes across the cluster.
+        ++ lib.optional (cfg.flannelIface != null) "--flannel-iface=${cfg.flannelIface}"
         ++ cfg.extraFlags
       );
     };
@@ -310,6 +340,17 @@ in
       allowedUDPPorts = [
         7946 # MetalLB speaker memberlist
       ];
+
+      # IPVS mode: pod→ClusterIP traffic arrives on INPUT chain via cni0 bridge.
+      # Without this, NixOS firewall drops it before IPVS can intercept.
+      # (In iptables kube-proxy mode, traffic was DNAT'd in PREROUTING so this
+      # wasn't needed.)
+      extraCommands = ''
+        iptables -I nixos-fw 1 -i cni0 -s 10.42.0.0/16 -d 10.43.0.0/16 -j nixos-fw-accept
+      '';
+      extraStopCommands = ''
+        iptables -D nixos-fw -i cni0 -s 10.42.0.0/16 -d 10.43.0.0/16 -j nixos-fw-accept 2>/dev/null || true
+      '';
     };
 
     # Create kubeconfig symlink for easier access

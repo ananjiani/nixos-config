@@ -142,7 +142,8 @@ in
       clusterInit = false;
       serverAddr = "https://192.168.1.21:6443"; # boromir
       tokenFile = config.sops.secrets.k3s_token.path;
-      extraFlags = [ "--node-ip=192.168.1.27" ];
+      nodeIp = "192.168.1.27";
+      flannelIface = "ens18"; # Prevent flannel from picking up keepalived VIPs
     };
     tailscale = {
       enable = true;
