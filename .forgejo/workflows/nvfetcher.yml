@@ -42,6 +42,11 @@ jobs:
           BRANCH="nvfetcher/update-$(date +%Y%m%d)"
           git checkout -b "$BRANCH"
           git add _sources/
+
+          # Run pre-commit hooks so fixers (e.g. end-of-file-fixer) apply before committing
+          nix develop --command pre-commit run --files _sources/* || true
+          git add _sources/
+
           git commit -m "chore(deps): update nvfetcher sources
 
           $(nix develop --command nvfetcher 2>&1 | grep '^[a-z].*→' || echo 'Updated sources')"
