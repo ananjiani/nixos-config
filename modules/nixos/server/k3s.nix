@@ -75,9 +75,21 @@ in
         "ip_vs_wrr"
         "ip_vs_sh"
       ];
-      # IPv6 forwarding (needed by Tailscale exit nodes; will also be needed
-      # when dual-stack pod networking is enabled)
-      kernel.sysctl."net.ipv6.conf.all.forwarding" = 1;
+      kernel.sysctl = {
+        # IPv6 forwarding (needed by Tailscale exit nodes; will also be needed
+        # when dual-stack pod networking is enabled)
+        "net.ipv6.conf.all.forwarding" = 1;
+
+        # IPVS ARP suppression: kube-proxy IPVS mode binds all LoadBalancer and
+        # ClusterIP addresses to the kube-ipvs0 dummy interface on every node.
+        # Without these sysctls, every node responds to ARP for those IPs,
+        # causing traffic to land on the wrong node (whichever wins the ARP race)
+        # instead of the MetalLB L2 speaker that should own the IP.
+        #   arp_ignore=1:  only respond if the target IP is on the incoming interface
+        #   arp_announce=2: use the best local address matching the destination subnet
+        "net.ipv4.conf.all.arp_ignore" = 1;
+        "net.ipv4.conf.all.arp_announce" = 2;
+      };
     };
 
     # Longhorn requirements
@@ -345,11 +357,18 @@ in
       # Without this, NixOS firewall drops it before IPVS can intercept.
       # (In iptables kube-proxy mode, traffic was DNAT'd in PREROUTING so this
       # wasn't needed.)
+      #
+      # MetalLB LoadBalancer IPs (192.168.1.52-62) are bound to kube-ipvs0,
+      # so external LAN traffic to these IPs also enters the INPUT chain.
+      # Without this rule, the firewall drops it before IPVS can forward
+      # to the backend pods (e.g. Traefik on ports 80/443).
       extraCommands = ''
         iptables -I nixos-fw 1 -i cni0 -s 10.42.0.0/16 -d 10.43.0.0/16 -j nixos-fw-accept
+        iptables -I nixos-fw 2 -d 192.168.1.52/28 -j nixos-fw-accept
       '';
       extraStopCommands = ''
         iptables -D nixos-fw -i cni0 -s 10.42.0.0/16 -d 10.43.0.0/16 -j nixos-fw-accept 2>/dev/null || true
+        iptables -D nixos-fw -d 192.168.1.52/28 -j nixos-fw-accept 2>/dev/null || true
       '';
     };
 

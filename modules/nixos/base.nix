@@ -15,7 +15,16 @@
 
   programs = {
     fish.enable = true;
-    nix-ld.enable = true;
+    nix-ld = {
+      enable = true;
+      libraries = with pkgs; [
+        SDL2
+        glew
+        curl
+        zlib
+        mesa
+      ];
+    };
   };
 
   nix = {

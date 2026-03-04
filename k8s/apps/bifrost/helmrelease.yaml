@@ -62,7 +62,6 @@ spec:
         enableLogging: true
         disableContentLogging: false
         logRetentionDays: 365
-        enableGovernance: true
         enforceGovernanceHeader: false
         allowDirectKeys: false
         maxRequestBodySizeMb: 100
