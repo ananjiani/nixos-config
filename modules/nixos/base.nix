@@ -91,7 +91,11 @@
   # NIX_SSL_CERT_FILE points to the raw Mozilla bundle in /nix/store,
   # which doesn't include custom CAs from security.pki. Override it to
   # use the merged system bundle so Node.js and other tools trust our CA.
-  environment.variables.NIX_SSL_CERT_FILE = "/etc/ssl/certs/ca-certificates.crt";
+  # NODE_EXTRA_CA_CERTS is needed for Bun-based tools (e.g. Claude Code).
+  environment.variables = {
+    NIX_SSL_CERT_FILE = "/etc/ssl/certs/ca-certificates.crt";
+    NODE_EXTRA_CA_CERTS = "/etc/ssl/certs/ca-certificates.crt";
+  };
 
   networking.firewall = {
     enable = true;
