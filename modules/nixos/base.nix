@@ -88,6 +88,11 @@
   # Trust the homelab LAN CA for .lan domain TLS certificates
   security.pki.certificateFiles = [ ../../certs/lan-ca.crt ];
 
+  # NIX_SSL_CERT_FILE points to the raw Mozilla bundle in /nix/store,
+  # which doesn't include custom CAs from security.pki. Override it to
+  # use the merged system bundle so Node.js and other tools trust our CA.
+  environment.variables.NIX_SSL_CERT_FILE = "/etc/ssl/certs/ca-certificates.crt";
+
   networking.firewall = {
     enable = true;
     allowPing = true;
