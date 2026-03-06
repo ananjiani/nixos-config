@@ -5,3 +5,4 @@ resources:
   # This secret is SOPS-encrypted; FluxCD decrypts it automatically
   - cloudflare-secret.yaml
   - clusterissuer.yaml
+  - lan-ca.yaml

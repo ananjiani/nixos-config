@@ -85,6 +85,9 @@
     LC_TIME = "en_US.UTF-8";
   };
 
+  # Trust the homelab LAN CA for .lan domain TLS certificates
+  security.pki.certificateFiles = [ ../../certs/lan-ca.crt ];
+
   networking.firewall = {
     enable = true;
     allowPing = true;

@@ -28,3 +28,5 @@ spec:
       services:
         - name: persona-mcp
           port: 8080
+  tls:
+    secretName: persona-mcp-tls

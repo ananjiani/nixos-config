@@ -2,12 +2,13 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: ntfy-tls
-  namespace: ntfy
+  name: persona-mcp-tls
+  namespace: persona-mcp
 spec:
-  secretName: ntfy-tls
+  secretName: persona-mcp-tls
   issuerRef:
     name: lan-ca
     kind: ClusterIssuer
   dnsNames:
-    - ntfy.lan
+    - persona.lan
+    - mcp.persona.lan

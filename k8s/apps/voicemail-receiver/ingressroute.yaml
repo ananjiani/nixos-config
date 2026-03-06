@@ -42,4 +42,4 @@ spec:
         - name: voicemail-receiver
           port: 8080
   tls:
-    secretName: voicemail-tls
+    secretName: voicemail-lan-tls

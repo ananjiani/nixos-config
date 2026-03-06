@@ -9,4 +9,5 @@ resources:
   - service.yaml
   - ingressroute.yaml
   - certificate.yaml
+  - certificate-lan.yaml
   # Cloudflare Tunnel handled by theoden's cloudflared (NixOS service)

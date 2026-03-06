@@ -10,7 +10,7 @@ metadata:
     gethomepage.dev/group: "Infrastructure"
     gethomepage.dev/icon: "grafana.png"
     gethomepage.dev/description: "Monitoring & Observability"
-    gethomepage.dev/href: "https://grafana.dimensiondoor.xyz"
+    gethomepage.dev/href: "https://grafana.lan"
     gethomepage.dev/pod-selector: "app.kubernetes.io/name=grafana"
     gethomepage.dev/siteMonitor: "http://kube-prometheus-stack-grafana.monitoring.svc:80"
 spec:
@@ -18,7 +18,7 @@ spec:
     - web
     - websecure
   routes:
-    - match: Host(`grafana.dimensiondoor.xyz`) || Host(`grafana.lan`)
+    - match: Host(`grafana.lan`)
       kind: Rule
       services:
         - name: kube-prometheus-stack-grafana
