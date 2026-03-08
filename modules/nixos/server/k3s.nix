@@ -81,6 +81,10 @@ in
 
   config = lib.mkIf cfg.enable {
     boot = {
+      # NFS client support — ensures mount.nfs is available so kubelet can
+      # mount NFS-backed PersistentVolumes on any k3s node.
+      supportedFilesystems = [ "nfs" ];
+
       # IPVS kernel modules for kube-proxy IPVS mode
       kernelModules = [
         "ip_vs"
