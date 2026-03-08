@@ -93,8 +93,12 @@ in
         "ip_vs_sh"
       ];
       kernel.sysctl = {
-        # IPv6 forwarding (needed by Tailscale exit nodes; will also be needed
-        # when dual-stack pod networking is enabled)
+        # IP forwarding — required for flannel to route cross-node pod traffic.
+        # Without this, packets arriving on the host destined for the pod CIDR
+        # are dropped instead of being forwarded to the cni0 bridge.
+        # (Server nodes often get this from the Tailscale module, but agent
+        # nodes like rivendell with Tailscale disabled need it explicitly.)
+        "net.ipv4.ip_forward" = 1;
         "net.ipv6.conf.all.forwarding" = 1;
 
         # IPVS ARP suppression: kube-proxy IPVS mode binds all LoadBalancer and
