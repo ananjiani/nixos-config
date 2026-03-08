@@ -68,6 +68,7 @@
       clusterInit = true; # First node initializes the cluster
       tokenFile = config.sops.secrets.k3s_token.path;
       nodeIp = "192.168.1.21";
+      podCidr = "10.42.1.0/24";
       flannelIface = "ens18"; # Prevent flannel from picking up keepalived VIPs
     };
   };

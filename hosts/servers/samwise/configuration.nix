@@ -56,6 +56,7 @@
       serverAddr = "https://192.168.1.21:6443"; # boromir
       tokenFile = config.sops.secrets.k3s_token.path;
       nodeIp = "192.168.1.26";
+      podCidr = "10.42.2.0/24";
       flannelIface = "ens18"; # Prevent flannel from picking up keepalived VIPs
     };
 

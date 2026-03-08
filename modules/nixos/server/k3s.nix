@@ -59,6 +59,19 @@ in
       '';
     };
 
+    podCidr = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "10.42.1.0/24";
+      description = ''
+        Pod CIDR assigned to this node by the k3s API server.
+        Used as a fallback to generate /run/flannel/subnet.env when
+        no persistent backup exists (e.g. after power loss or first
+        deploy with host-gw backend). Check with:
+          kubectl get node <name> -o jsonpath='{.spec.podCIDR}'
+      '';
+    };
+
     extraFlags = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
@@ -180,16 +193,34 @@ in
             Type = "oneshot";
             RemainAfterExit = true;
           };
-          script = ''
-            mkdir -p /run/flannel
-            BACKUP="/var/lib/rancher/k3s/flannel-subnet.env"
-            if [ -f "$BACKUP" ]; then
-              cp "$BACKUP" /run/flannel/subnet.env
-              echo "Restored flannel subnet.env from $BACKUP"
-            else
-              echo "No flannel backup found at $BACKUP — first boot or backup missing"
-            fi
-          '';
+          script =
+            let
+              # Derive the gateway IP (.1) from the podCidr (e.g. 10.42.1.0/24 → 10.42.1.1/24)
+              fallbackScript = lib.optionalString (cfg.podCidr != null) ''
+                elif [ ! -f /run/flannel/subnet.env ]; then
+                  # Generate from declarative podCidr — covers first boot, power loss,
+                  # or any scenario where the backup is missing.
+                  SUBNET=$(echo "${cfg.podCidr}" | sed 's|\.[0-9]*/|.1/|')
+                  printf '%s\n' \
+                    "FLANNEL_NETWORK=10.42.0.0/16" \
+                    "FLANNEL_SUBNET=$SUBNET" \
+                    "FLANNEL_MTU=1500" \
+                    "FLANNEL_IPMASQ=true" \
+                    > /run/flannel/subnet.env
+                  echo "Generated flannel subnet.env from declared podCidr ${cfg.podCidr}"
+              '';
+            in
+            ''
+              mkdir -p /run/flannel
+              BACKUP="/var/lib/rancher/k3s/flannel-subnet.env"
+              if [ -f "$BACKUP" ]; then
+                cp "$BACKUP" /run/flannel/subnet.env
+                echo "Restored flannel subnet.env from $BACKUP"
+              ${fallbackScript}
+              else
+                echo "No flannel backup found at $BACKUP — first boot or backup missing"
+              fi
+            '';
         };
 
         # Workaround: the cni0 bridge retains the MTU from when it was first created.
