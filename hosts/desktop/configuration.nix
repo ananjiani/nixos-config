@@ -50,6 +50,7 @@ in
       excludeFromMullvad = true;
       acceptDns = false; # Use AdGuard directly, avoid DNS conflicts with Mullvad
       operator = "ammar";
+      useExitNode = null; # Don't route through exit node (Mullvad handles VPN)
     };
 
     # Mullvad custom DNS (AdGuard instances + fallback)
