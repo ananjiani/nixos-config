@@ -55,6 +55,8 @@ spec:
               path: /v2/
               port: 5000
             periodSeconds: 30
+      nodeSelector:
+        kubernetes.io/hostname: rivendell
       volumes:
         - name: config
           configMap:
