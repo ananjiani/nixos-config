@@ -8,7 +8,8 @@ data:
   config.json: |
     {
       "storage": {
-        "rootDirectory": "/var/lib/zot"
+        "rootDirectory": "/var/lib/zot",
+        "dedupe": false
       },
       "http": {
         "address": "0.0.0.0",
