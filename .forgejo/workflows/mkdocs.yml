@@ -40,8 +40,9 @@ jobs:
       - name: Prepare site for deploy
         run: cp -rL result _site
 
-      - uses: https://codeberg.org/git-pages/action@v1
+      - uses: https://codeberg.org/git-pages/action@v2
+        if: ${{ forge.ref == 'refs/heads/main' }}
         with:
-          site: https://ananjiani.codeberg.page/infra
+          site: "https://${{ forge.repository_owner }}.codeberg.page/infra/"
+          token: ${{ forge.token }}
           source: _site
-          token: ${{ secrets.GITEATOKEN }}
