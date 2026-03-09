@@ -188,6 +188,44 @@ in
           '';
         };
 
+        # Scale CoreDNS to 2 replicas spread across nodes for DNS resilience.
+        # k3s deploys CoreDNS as an Addon (not HelmChart), so HelmChartConfig
+        # doesn't work. This runs after k3s starts to patch the deployment.
+        k3s-coredns-ha = lib.mkIf (cfg.role == "server") {
+          description = "Scale CoreDNS to 2 replicas across nodes";
+          after = [ "k3s.service" ];
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          };
+          path = [ pkgs.kubectl ];
+          script = ''
+            export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+
+            # Wait for CoreDNS deployment to exist (up to 5 min)
+            for i in $(seq 1 60); do
+              if kubectl get deploy coredns -n kube-system &>/dev/null; then
+                break
+              fi
+              sleep 5
+            done
+
+            if ! kubectl get deploy coredns -n kube-system &>/dev/null; then
+              echo "CoreDNS deployment not found, skipping"
+              exit 0
+            fi
+
+            CURRENT=$(kubectl get deploy coredns -n kube-system -o jsonpath='{.spec.replicas}')
+            if [ "$CURRENT" != "2" ]; then
+              echo "Scaling CoreDNS: $CURRENT → 2 replicas"
+              kubectl scale deploy coredns -n kube-system --replicas=2
+            else
+              echo "CoreDNS already at 2 replicas"
+            fi
+          '';
+        };
+
         # Workaround: k3s's embedded flannel can fail to regenerate /run/flannel/subnet.env
         # after a reboot (/run is tmpfs). Without this file, the flannel CNI plugin cannot
         # assign pod IPs and no pods can start. We persist a backup to disk and restore it
