@@ -48,6 +48,7 @@ in
       loginServer = "https://ts.dimensiondoor.xyz";
       authKeyFile = config.sops.secrets.tailscale_authkey.path;
       excludeFromMullvad = true;
+      acceptRoutes = false; # Already on LAN — don't accept subnet routes (avoids routing 192.168.1.0/24 through Tailscale)
       acceptDns = false; # Use AdGuard directly, avoid DNS conflicts with Mullvad
       operator = "ammar";
       useExitNode = null; # Don't route through exit node (Mullvad handles VPN)
