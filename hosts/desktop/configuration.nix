@@ -63,7 +63,7 @@ in
 
   networking = {
     hostName = "ammars-pc";
-    nameservers = dns.servers;
+    nameservers = [ (builtins.head dns.servers) ]; # AdGuard VIP only — router fallback is in services.resolved.fallbackDns
     # Allow Tailscale traffic (100.64.0.0/10) to bypass Mullvad VPN
     # Mullvad's LAN sharing only covers RFC1918 ranges, not CGNAT
     nftables.tables.mullvad-tailscale-bypass = {

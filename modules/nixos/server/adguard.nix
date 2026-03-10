@@ -314,6 +314,10 @@ _: {
             answer = "192.168.1.52";
           }
           {
+            domain = "bifrost.lan";
+            answer = "192.168.1.52";
+          }
+          {
             domain = "zot.lan";
             answer = "192.168.1.56";
           }
