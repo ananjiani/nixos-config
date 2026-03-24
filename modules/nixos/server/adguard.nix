@@ -278,10 +278,6 @@ _: {
             answer = "192.168.1.52";
           }
           {
-            domain = "ntfy.dimensiondoor.xyz";
-            answer = "192.168.1.52";
-          }
-          {
             domain = "ntfy.lan";
             answer = "192.168.1.52";
           }

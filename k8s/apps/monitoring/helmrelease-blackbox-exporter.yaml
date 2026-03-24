@@ -148,7 +148,7 @@ spec:
         - name: external-authentik
           url: https://auth.dimensiondoor.xyz
         - name: external-ntfy
-          url: https://ntfy.dimensiondoor.xyz
+          url: https://ntfy.lan
         - name: external-home-assistant
           url: https://ha.dimensiondoor.xyz
         - name: external-homepage
