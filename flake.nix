@@ -262,6 +262,16 @@
           ];
         };
 
+        # Minas-tirith - Hetzner VPS (OpenBao secrets manager)
+        erebor = lib.nixosSystem {
+          inherit system specialArgs;
+          modules = [
+            ./hosts/servers/erebor/configuration.nix
+            inputs.sops-nix.nixosModules.sops
+            inputs.disko.nixosModules.disko
+          ];
+        };
+
       };
 
       # deploy-rs deployment configuration
@@ -304,6 +314,14 @@
             user = "root";
             sshUser = "root";
             path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.rivendell;
+          };
+        };
+        erebor = {
+          hostname = "erebor"; # Resolved via Tailscale MagicDNS (VPS, not on LAN)
+          profiles.system = {
+            user = "root";
+            sshUser = "root";
+            path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.erebor;
           };
         };
       };
@@ -425,6 +443,7 @@
         nixos-theoden = self.nixosConfigurations.theoden.config.system.build.toplevel;
         nixos-pippin = self.nixosConfigurations.pippin.config.system.build.toplevel;
         nixos-rivendell = self.nixosConfigurations.rivendell.config.system.build.toplevel;
+        nixos-erebor = self.nixosConfigurations.erebor.config.system.build.toplevel;
 
         # Home Manager builds (for CI caching)
         home-ammars-pc = self.homeConfigurations."ammar@ammars-pc".activationPackage;
