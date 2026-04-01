@@ -14,6 +14,46 @@
 }:
 
 let
+  inherit (inputs.buildbot-nix.lib) interpolate;
+  deploy-rs-pkg = inputs.deploy-rs.packages.x86_64-linux.default;
+
+  # Deploy wrapper: runs after each successful nix-build in CI.
+  # Only deploys server configs built on the main branch.
+  sshConfig = pkgs.writeText "buildbot-ssh-config" ''
+    Host *.lan
+      StrictHostKeyChecking accept-new
+      UserKnownHostsFile /var/lib/buildbot/deploy-known-hosts
+      IdentityFile ${config.sops.secrets.buildbot_deploy_ssh_key.path}
+      User root
+      ConnectTimeout 30
+      BatchMode yes
+  '';
+
+  deployScript = pkgs.writeShellScript "buildbot-deploy" ''
+    set -euo pipefail
+
+    if [ "$BRANCH" != "main" ]; then
+      echo "Skipping deploy: not on main branch (branch=$BRANCH)"
+      exit 0
+    fi
+
+    SERVER=''${ATTR#nixos-}
+    case "$SERVER" in
+      boromir|samwise|theoden|pippin|rivendell) ;;
+      *)
+        echo "Skipping deploy: $ATTR is not a server configuration"
+        exit 0
+        ;;
+    esac
+
+    export SSH_CONFIG_FILE="${sshConfig}"
+    echo "Deploying $SERVER..."
+    ${deploy-rs-pkg}/bin/deploy \
+      --skip-checks \
+      --ssh-opts "-F $SSH_CONFIG_FILE" \
+      ".#$SERVER"
+  '';
+
   # buildbot-prometheus: Exposes Buildbot metrics for Prometheus scraping.
   # Uses the same Python interpreter as buildbot-nix to ensure compatibility.
   buildbotPackages = config.services.buildbot-nix.packages;
@@ -117,6 +157,11 @@ in
       };
       buildbot_worker_password_plain = {
         owner = "buildbot-worker";
+        mode = "0400";
+      };
+      # deploy-rs SSH key for auto-deployment after CI builds
+      buildbot_deploy_ssh_key = {
+        owner = "buildbot";
         mode = "0400";
       };
       # Cloudflare Tunnel
@@ -359,6 +404,18 @@ in
         topic = "buildbot-nix";
       };
       admins = [ "ananjiani" ];
+      # Auto-deploy servers after successful builds on main
+      postBuildSteps = [
+        {
+          name = "Deploy to server";
+          environment = {
+            BRANCH = interpolate "%(prop:branch)s";
+            ATTR = interpolate "%(prop:attr)s";
+          };
+          command = [ (toString deployScript) ];
+          warnOnly = true;
+        }
+      ];
     };
 
     buildbot-nix.worker = {
