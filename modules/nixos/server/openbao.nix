@@ -42,7 +42,7 @@ in
 
     storagePath = lib.mkOption {
       type = lib.types.str;
-      default = "/var/lib/openbao/data";
+      default = "/var/lib/openbao";
       description = "Path for Raft integrated storage data";
     };
 
@@ -105,10 +105,7 @@ in
         serviceConfig.EnvironmentFile = cfg.awsCredentialsFile;
       };
 
-      # Ensure storage directory exists
-      tmpfiles.rules = [
-        "d ${cfg.storagePath} 0700 openbao openbao -"
-      ];
+      # Storage directory managed by systemd StateDirectory (DynamicUser)
 
       # Daily Raft snapshot backup
       timers.openbao-backup = {

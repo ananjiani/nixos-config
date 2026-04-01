@@ -5,6 +5,7 @@
 {
   inputs,
   pkgs-stable,
+  config,
   modulesPath,
   ...
 }:
@@ -25,7 +26,7 @@
     tailscale = {
       enable = true;
       loginServer = "https://ts.dimensiondoor.xyz";
-      # authKeyFile = config.sops.secrets.tailscale_authkey.path;  # TODO: re-enable after placing age key
+      authKeyFile = config.sops.secrets.tailscale_authkey.path;
       acceptDns = false;
       acceptRoutes = false;
       useExitNode = null; # VPS has its own internet access
@@ -48,12 +49,11 @@
 
   # SOPS secrets — minimal, only for bootstrapping
   # Once vault-agent is set up, this can be removed
-  # TODO: re-enable after placing age key on server (/var/lib/sops-nix/key.txt)
-  # sops = {
-  #   defaultSopsFile = ../../../secrets/secrets.yaml;
-  #   age.keyFile = "/var/lib/sops-nix/key.txt";
-  #   secrets.tailscale_authkey = { };
-  # };
+  sops = {
+    defaultSopsFile = ../../../secrets/secrets.yaml;
+    age.keyFile = "/var/lib/sops-nix/key.txt";
+    secrets.tailscale_authkey = { };
+  };
 
   networking = {
     hostName = "erebor";
