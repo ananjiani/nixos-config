@@ -5,12 +5,13 @@
 {
   inputs,
   pkgs-stable,
-  config,
+  modulesPath,
   ...
 }:
 
 {
   imports = [
+    (modulesPath + "/profiles/qemu-guest.nix")
     ./disk-config.nix
     inputs.home-manager-unstable.nixosModules.home-manager
     ../../../modules/nixos/base.nix
@@ -24,7 +25,7 @@
     tailscale = {
       enable = true;
       loginServer = "https://ts.dimensiondoor.xyz";
-      authKeyFile = config.sops.secrets.tailscale_authkey.path;
+      # authKeyFile = config.sops.secrets.tailscale_authkey.path;  # TODO: re-enable after placing age key
       acceptDns = false;
       acceptRoutes = false;
       useExitNode = null; # VPS has its own internet access
@@ -47,16 +48,12 @@
 
   # SOPS secrets — minimal, only for bootstrapping
   # Once vault-agent is set up, this can be removed
-  sops = {
-    defaultSopsFile = ../../../secrets/secrets.yaml;
-    age.keyFile = "/var/lib/sops-nix/key.txt";
-    secrets.tailscale_authkey = { };
-    # Uncomment after adding AWS KMS credentials to secrets.yaml:
-    # secrets.aws_kms_credentials = {
-    #   format = "dotenv";
-    #   # Contains: AWS_ACCESS_KEY_ID=... and AWS_SECRET_ACCESS_KEY=...
-    # };
-  };
+  # TODO: re-enable after placing age key on server (/var/lib/sops-nix/key.txt)
+  # sops = {
+  #   defaultSopsFile = ../../../secrets/secrets.yaml;
+  #   age.keyFile = "/var/lib/sops-nix/key.txt";
+  #   secrets.tailscale_authkey = { };
+  # };
 
   networking = {
     hostName = "erebor";
@@ -86,10 +83,12 @@
     ];
   };
 
-  # Boot configuration — Hetzner uses UEFI by default for cloud instances
-  boot.loader = {
-    systemd-boot.enable = true;
-    efi.canTouchEfiVariables = true;
+  # Boot: GRUB for BIOS boot (Hetzner CX-series uses SeaBIOS)
+  # Device is set automatically by disko via the EF02 partition
+  boot.loader.grub = {
+    enable = true;
+    efiSupport = true;
+    efiInstallAsRemovable = true;
   };
 
   system.stateVersion = "25.11";
