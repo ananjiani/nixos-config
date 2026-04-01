@@ -70,6 +70,9 @@
       "/k8s/apps/.+\\.yaml$/"
     ]
   },
+  "nix": {
+    "enabled": true
+  },
   "terraform": {
     "managerFilePatterns": [
       "/terraform/.+\\.tf$/"
