@@ -33,3 +33,22 @@ output "zone_id" {
   value       = local.zone_id
   sensitive   = true
 }
+
+# =============================================================================
+# Hetzner Cloud
+# =============================================================================
+
+output "erebor_ipv4" {
+  description = "Erebor VPS public IPv4 address"
+  value       = hcloud_server.erebor.ipv4_address
+}
+
+output "erebor_ipv6" {
+  description = "Erebor VPS public IPv6 network"
+  value       = hcloud_server.erebor.ipv6_network
+}
+
+output "erebor_ssh" {
+  description = "SSH command to connect to erebor"
+  value       = "ssh root@${hcloud_server.erebor.ipv4_address}"
+}

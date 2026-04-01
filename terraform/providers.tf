@@ -18,6 +18,10 @@ terraform {
       source  = "carlpett/sops"
       version = "~> 1.0"
     }
+    hcloud = {
+      source  = "hetznercloud/hcloud"
+      version = "~> 1.49"
+    }
   }
 }
 
@@ -40,6 +44,11 @@ provider "opnsense" {
   api_key        = data.sops_file.secrets.data["opnsense_api_key"]
   api_secret     = data.sops_file.secrets.data["opnsense_api_secret"]
   allow_insecure = true # Self-signed cert on fresh install
+}
+
+# Hetzner Cloud provider configuration
+provider "hcloud" {
+  token = data.sops_file.secrets.data["hcloud_token"]
 }
 
 # Proxmox provider configuration

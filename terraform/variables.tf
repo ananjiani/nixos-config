@@ -188,3 +188,25 @@ variable "faramir_parity_id" {
   type        = string
   default     = "ata-WDC_WD1002FAEX-00Z3A0_WD-WCATRA312386"
 }
+
+# =============================================================================
+# Hetzner Cloud Configuration
+# =============================================================================
+
+variable "hetzner_server_type" {
+  description = "Hetzner server type for erebor VPS"
+  type        = string
+  default     = "cx22" # 2 vCPU, 4GB RAM, 40GB disk (~EUR 4/month)
+}
+
+variable "hetzner_location" {
+  description = "Hetzner datacenter location"
+  type        = string
+  default     = "fsn1" # Falkenstein, Germany (eu-central)
+}
+
+variable "ssh_public_key_path" {
+  description = "Path to SSH public key file"
+  type        = string
+  default     = "~/.ssh/id_ed25519.pub"
+}
