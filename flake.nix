@@ -22,7 +22,7 @@
       url = "github:k3d3/claude-desktop-linux-flake/b2b040cb68231d2118906507d9cc8fd181ca6308";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
-    claude-code.url = "github:sadjow/claude-code-nix";
+    claude-code.url = "github:sadjow/claude-code-nix?ref=v2.1.68"; # pinned: prompt cache regression in 2.1.69+ (#34629)
     whisper-dictation.url = "github:ananjiani/whisper-dictation";
     git-hooks = {
       url = "github:cachix/git-hooks.nix";
