@@ -37,7 +37,9 @@ let
       exit 0
     fi
 
-    SERVER=''${ATTR#nixos-}
+    # Attr format is "x86_64-linux.nixos-<server>" — strip system prefix and "nixos-"
+    STRIPPED=''${ATTR#*.}
+    SERVER=''${STRIPPED#nixos-}
     case "$SERVER" in
       boromir|samwise|theoden|pippin|rivendell) ;;
       *)
