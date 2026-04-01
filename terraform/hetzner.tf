@@ -22,7 +22,7 @@ resource "hcloud_ssh_key" "default" {
 
 resource "hcloud_server" "erebor" {
   name        = "erebor"
-  image       = "ubuntu-24.04" # Initial image — replaced with NixOS via nixos-infect
+  image       = "ubuntu-24.04" # Throwaway — replaced by nixos-anywhere before use
   server_type = var.hetzner_server_type
   location    = var.hetzner_location
   ssh_keys    = [hcloud_ssh_key.default.id]
@@ -38,18 +38,15 @@ resource "hcloud_server" "erebor" {
     ipv6_enabled = true
   }
 
-  # NixOS installation via nixos-infect (runs on first boot)
-  # After first deploy, this user_data is ignored on subsequent boots
-  user_data = <<-EOT
-    #!/bin/bash
-    curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | \
-      PROVIDER=hetznercloud NIX_CHANNEL=nixos-25.11 bash 2>&1 | tee /tmp/nixos-infect.log
-  EOT
+  # NixOS installation: after `terraform apply`, run nixos-anywhere to install
+  # the full NixOS config (with disko partitioning) in one shot:
+  #
+  #   nix run github:nix-community/nixos-anywhere -- --flake .#erebor root@<ipv4>
+  #
+  # This kexec's into NixOS, partitions via disko, and deploys the erebor config.
 
   lifecycle {
-    # Prevent recreation when user_data changes (nixos-infect is one-time)
     ignore_changes = [
-      user_data,
       image,
       ssh_keys,
     ]
