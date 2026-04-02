@@ -41,9 +41,10 @@
       enable = true;
       apiAddr = "http://erebor.ts:8200";
       enableUI = true;
-      # AWS KMS auto-unseal — set after creating KMS key
-      # awsKmsKeyId = "arn:aws:kms:eu-central-1:ACCOUNT:key/KEY-ID";
-      # awsCredentialsFile = config.sops.secrets.aws_kms_credentials.path;
+      # AWS KMS auto-unseal
+      awsKmsKeyId = "PLACEHOLDER"; # Set to ARN from: tofu output kms_key_arn
+      awsKmsRegion = "eu-central-1";
+      awsCredentialsFile = "/var/lib/openbao/aws-kms-env";
     };
   };
 

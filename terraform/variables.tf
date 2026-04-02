@@ -169,6 +169,16 @@ variable "openbao_address" {
 }
 
 # =============================================================================
+# AWS Configuration (KMS auto-unseal)
+# =============================================================================
+
+variable "aws_region" {
+  description = "AWS region for KMS auto-unseal key"
+  type        = string
+  default     = "eu-central-1" # Frankfurt (closest to Hetzner Falkenstein)
+}
+
+# =============================================================================
 # Hetzner Cloud Configuration
 # =============================================================================
 

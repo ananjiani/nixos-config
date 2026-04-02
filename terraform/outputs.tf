@@ -67,3 +67,23 @@ output "approle_secret_ids" {
   value       = { for k, v in vault_approle_auth_backend_role_secret_id.hosts : k => v.secret_id }
   sensitive   = true
 }
+
+# =============================================================================
+# AWS KMS (OpenBao auto-unseal)
+# =============================================================================
+
+output "kms_key_arn" {
+  description = "AWS KMS key ARN for OpenBao auto-unseal (use in erebor NixOS config)"
+  value       = aws_kms_key.openbao_unseal.arn
+}
+
+output "openbao_unseal_access_key_id" {
+  description = "IAM access key ID for OpenBao unseal user"
+  value       = aws_iam_access_key.openbao_unseal.id
+}
+
+output "openbao_unseal_secret_access_key" {
+  description = "IAM secret access key for OpenBao unseal user"
+  value       = aws_iam_access_key.openbao_unseal.secret
+  sensitive   = true
+}

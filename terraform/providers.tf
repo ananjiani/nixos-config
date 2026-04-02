@@ -26,6 +26,10 @@ terraform {
       source  = "hashicorp/vault"
       version = "~> 4.0"
     }
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
   }
 }
 
@@ -59,6 +63,13 @@ provider "hcloud" {
 provider "vault" {
   address = var.openbao_address
   token   = data.sops_file.secrets.data["bao_root_token"]
+}
+
+# AWS provider configuration (KMS auto-unseal for OpenBao)
+provider "aws" {
+  region     = var.aws_region
+  access_key = data.sops_file.secrets.data["aws_access_key_id"]
+  secret_key = data.sops_file.secrets.data["aws_secret_access_key"]
 }
 
 # Proxmox provider configuration
