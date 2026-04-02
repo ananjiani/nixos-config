@@ -74,9 +74,22 @@ Rohan specifically is the weakest host (i5-3570K, 24GB RAM, oldest hardware), ye
 ## Action Items
 
 - [x] Reduce theoden RAM from 22GB to 20GB (done: Terraform config + live `qm set`)
-- [ ] Consider enabling memory ballooning (`balloon: 1`) so theoden can return unused memory to rohan under pressure
-- [ ] Add node_exporter or PSI-based alerting for Proxmox hosts (rohan, gondor, the-shire) — the Ansible `proxmox-monitoring` role deploys node_exporter but alerts may not be configured
-- [ ] Evaluate whether Zot should have a fallback (remove nodeSelector, or add a toleration for theoden being unavailable) so CI isn't blocked by a single node failure
+- [x] Enable memory ballooning on theoden so unused guest RAM is returned to rohan (done: Terraform `floating = 20480` + live `qm set`)
+- [x] Add PSI-based alerting for Proxmox hosts — IO pressure >10% warning, >30% critical, memory pressure >5% warning (done: `proxmox-pressure-alerts` in kube-prometheus-stack)
+- [x] Remove Zot nodeSelector to allow failover from theoden (done — see rationale below)
+
+### Zot nodeSelector removal rationale
+
+The original logic for pinning Zot to theoden was: since Zot's NFS storage lives on theoden (`192.168.1.27:/srv/nfs/zot`), it needs theoden to be up anyway, so pinning avoids an unnecessary network hop for NFS.
+
+That reasoning is sound for the happy path, but it conflates two failure modes:
+
+1. **theoden OS is running but k3s/kubelet is unhealthy** — NFS still serves, but the nodeSelector prevents Zot from rescheduling to a healthy node. This is exactly what happened in this incident: theoden was alive enough to serve network traffic but its kubelet couldn't post heartbeats.
+2. **theoden is fully down** — NFS is unavailable regardless of where Zot is scheduled, so the nodeSelector doesn't matter.
+
+Removing the nodeSelector helps with case 1 (which is the more common failure mode under resource pressure) at zero cost for case 2. The NFS network hop from another node adds negligible latency for a registry mirror doing on-demand pulls from upstream.
+
+If the NFS locality ever matters for performance, a `preferredDuringSchedulingIgnoredDuringExecution` node affinity can express "prefer theoden but don't require it."
 
 ## Lessons
 
