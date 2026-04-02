@@ -199,6 +199,7 @@ resource "proxmox_virtual_environment_vm" "theoden" {
 
   memory {
     dedicated = 20480 # 20GB, leaving ~4GB for Proxmox host
+    floating  = 20480 # Enable ballooning — guest returns unused RAM to host
   }
 
   boot_order = ["scsi0", "ide2", "net0"]
