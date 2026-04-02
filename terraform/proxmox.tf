@@ -198,7 +198,7 @@ resource "proxmox_virtual_environment_vm" "theoden" {
   }
 
   memory {
-    dedicated = 22528 # 22GB, leaving ~2GB for Proxmox host
+    dedicated = 20480 # 20GB, leaving ~4GB for Proxmox host
   }
 
   boot_order = ["scsi0", "ide2", "net0"]
