@@ -22,6 +22,10 @@ terraform {
       source  = "hetznercloud/hcloud"
       version = "~> 1.49"
     }
+    vault = {
+      source  = "hashicorp/vault"
+      version = "~> 4.0"
+    }
   }
 }
 
@@ -49,6 +53,12 @@ provider "opnsense" {
 # Hetzner Cloud provider configuration
 provider "hcloud" {
   token = data.sops_file.secrets.data["hcloud_token"]
+}
+
+# OpenBao (Vault-compatible) provider configuration
+provider "vault" {
+  address = var.openbao_address
+  token   = data.sops_file.secrets.data["bao_root_token"]
 }
 
 # Proxmox provider configuration
