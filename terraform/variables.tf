@@ -163,9 +163,9 @@ variable "proxmox_datastore" {
 # =============================================================================
 
 variable "openbao_address" {
-  description = "OpenBao server address"
+  description = "OpenBao server address (use SSH tunnel: ssh -L 8200:127.0.0.1:8200 root@91.99.82.115)"
   type        = string
-  default     = "http://91.99.82.115:8200"
+  default     = "http://127.0.0.1:8200"
 }
 
 # =============================================================================
