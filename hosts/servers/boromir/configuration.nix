@@ -3,7 +3,6 @@
   inputs,
   pkgs,
   pkgs-stable,
-  config,
   ...
 }:
 
@@ -17,6 +16,7 @@
     ../../../modules/nixos/nfs-client.nix
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/tailscale.nix
+    ../../../modules/nixos/vault-agent.nix
     ../../../modules/nixos/server/k3s.nix
     ../../../modules/nixos/nvidia.nix # GPU support for Ollama
     ../../../modules/nixos/server/attic-watch-store.nix
@@ -36,7 +36,7 @@
     tailscale = {
       enable = true;
       loginServer = "https://ts.dimensiondoor.xyz";
-      authKeyFile = config.sops.secrets.tailscale_authkey.path;
+      authKeyFile = "/run/secrets/tailscale_authkey";
       exitNode = true;
       useExitNode = null; # Don't route through self (this IS the exit node)
       subnetRoutes = [ "192.168.1.0/24" ]; # Expose local network to Tailnet
@@ -61,24 +61,39 @@
       ];
     };
 
+    # Vault agent — fetches secrets from OpenBao on erebor
+    vault-agent = {
+      enable = true;
+      address = "http://100.64.0.21:8200"; # Tailscale IP (MagicDNS disabled on boromir)
+      secrets = {
+        tailscale_authkey = {
+          path = "secret/nixos/tailscale";
+          field = "authkey";
+        };
+        k3s_token = {
+          path = "secret/nixos/k3s";
+          field = "token";
+        };
+      };
+    };
+
     # k3s cluster initializer (first server node)
     k3s = {
       enable = true;
       role = "server";
       clusterInit = true; # First node initializes the cluster
-      tokenFile = config.sops.secrets.k3s_token.path;
+      tokenFile = "/run/secrets/k3s_token";
       nodeIp = "192.168.1.21";
       podCidr = "10.42.1.0/24";
       flannelIface = "ens18"; # Prevent flannel from picking up keepalived VIPs
     };
   };
 
-  # SOPS secrets configuration
+  # SOPS — minimal config for modules that still use sops.secrets directly
+  # (e.g., attic-watch-store). Secrets managed by vault-agent are above.
   sops = {
     defaultSopsFile = ../../../secrets/secrets.yaml;
     age.keyFile = "/var/lib/sops-nix/key.txt";
-    secrets.k3s_token = { };
-    secrets.tailscale_authkey = { };
   };
 
   # Keepalived notify scripts for Wyoming Whisper failover
