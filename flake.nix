@@ -317,7 +317,7 @@
           };
         };
         erebor = {
-          hostname = "erebor"; # Resolved via Tailscale MagicDNS (VPS, not on LAN)
+          hostname = "91.99.82.115"; # Hetzner public IP (VPS, not on LAN)
           profiles.system = {
             user = "root";
             sshUser = "root";
