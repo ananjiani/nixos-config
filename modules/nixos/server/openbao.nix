@@ -100,9 +100,14 @@ in
     ];
 
     systemd = {
-      # Inject AWS credentials for KMS auto-unseal
-      services.openbao = lib.mkIf (cfg.awsCredentialsFile != null) {
-        serviceConfig.EnvironmentFile = cfg.awsCredentialsFile;
+      # KMS auto-unseal: wait for network + DNS, inject AWS credentials
+      services.openbao = lib.mkIf (cfg.awsKmsKeyId != null) {
+        after = [ "network-online.target" ];
+        wants = [ "network-online.target" ];
+        serviceConfig = {
+          EnvironmentFile = lib.mkIf (cfg.awsCredentialsFile != null) cfg.awsCredentialsFile;
+          RestartSec = 5;
+        };
       };
 
       # Storage directory managed by systemd StateDirectory (DynamicUser)

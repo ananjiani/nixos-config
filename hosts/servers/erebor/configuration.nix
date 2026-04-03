@@ -42,7 +42,7 @@
       apiAddr = "http://erebor.ts:8200";
       enableUI = true;
       # AWS KMS auto-unseal
-      awsKmsKeyId = "PLACEHOLDER"; # Set to ARN from: tofu output kms_key_arn
+      awsKmsKeyId = "arn:aws:kms:eu-central-1:017562255035:key/76bd5390-cdbf-462d-bd9b-c45069d9e54f";
       awsKmsRegion = "eu-central-1";
       awsCredentialsFile = "/var/lib/openbao/aws-kms-env";
     };
