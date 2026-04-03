@@ -89,13 +89,6 @@
     };
   };
 
-  # SOPS — minimal config for modules that still use sops.secrets directly
-  # (e.g., attic-watch-store). Secrets managed by vault-agent are above.
-  sops = {
-    defaultSopsFile = ../../../secrets/secrets.yaml;
-    age.keyFile = "/var/lib/sops-nix/key.txt";
-  };
-
   # Keepalived notify scripts for Wyoming Whisper failover
   # These start/stop the wyoming-whisper service when VIP ownership changes
   # NOTE: Must use pkgs.bash for NixOS - /bin/bash doesn't exist
@@ -157,7 +150,11 @@
   services = {
     # Proxmox VM integration and Attic cache
     qemuGuest.enable = true;
-    attic-watch-store.enable = true;
+    attic-watch-store = {
+      enable = true;
+      useSops = false;
+      tokenFile = "/run/secrets/attic_push_token";
+    };
 
     # Second VRRP instance for Wyoming Whisper HA (alongside adguard_vip from module)
     # Rohan (192.168.1.24) is MASTER with priority 100
