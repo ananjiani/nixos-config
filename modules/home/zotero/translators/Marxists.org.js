@@ -30,25 +30,46 @@ function detectWeb(doc, url) {
 		return false;
 	}
 
-	// Author archive listing pages (e.g., /archive/marx/works/index.htm)
-	// These list multiple works — look for pages with many links to .htm files
-	var infoSpans = doc.querySelectorAll('span.info');
-	var title = doc.querySelector('title');
+	// Letters/correspondence
+	if (url.match(/\/letters?\//i)) {
+		return "letter";
+	}
 
-	// Index pages with publication metadata are full "book" records
+	// Glossary and encyclopedia entries
+	if (url.match(/\/(glossary|encyclopedia)\//i)) {
+		return "encyclopediaArticle";
+	}
+
+	var infoSpans = doc.querySelectorAll('span.info');
+	var authorMeta = doc.querySelector('meta[name="author"], meta[name="AUTHOR"], meta[name="Author"]');
+
+	// Index pages with publication metadata — check if it's a multi-chapter work
 	if (infoSpans.length > 0) {
-		return "book";
+		// Look for links to chapters (ch01.htm, ch02.htm, etc.)
+		var chapterLinks = doc.querySelectorAll('a[href*="ch0"], a[href*="ch1"], a[href*="ch2"], a[href*="ch3"]');
+		if (chapterLinks.length > 1) {
+			return "book";
+		}
+		// Single-page works with info spans (pamphlets, short essays, speeches)
+		return "document";
 	}
 
 	// Chapter/article pages within /archive/ that have an author meta tag
-	var authorMeta = doc.querySelector('meta[name="author"], meta[name="AUTHOR"], meta[name="Author"]');
 	if (authorMeta && url.match(/\/archive\//i)) {
-		return "bookSection";
+		// Check if this page is a chapter within a larger work (breadcrumb has index link)
+		var breadcrumb = doc.querySelector('p.title');
+		if (breadcrumb) {
+			var indexLink = breadcrumb.querySelector('a[href*="index.htm"]');
+			if (indexLink) {
+				return "bookSection";
+			}
+		}
+		return "document";
 	}
 
-	// Reference section pages (e.g., /reference/archive/)
+	// Reference section pages
 	if (authorMeta && url.match(/\/reference\//i)) {
-		return "bookSection";
+		return "document";
 	}
 
 	return false;
@@ -58,11 +79,50 @@ function doWeb(doc, url) {
 	scrape(doc, url);
 }
 
+function parseSource(item, value) {
+	// Always preserve the full source string in Extra
+	item.extra = (item.extra ? item.extra + '\n' : '') + 'Source: ' + value;
+
+	// Extract volume: "Vol. One", "Vol. I", "Volume 3", etc.
+	var volMatch = value.match(/Vol(?:ume)?\.?\s+(\w+)/i);
+	if (volMatch) {
+		item.volume = volMatch[1];
+	}
+
+	// Extract edition: "English Edition of 1871", "2nd Edition", "Fourth Edition", etc.
+	var editionMatch = value.match(/(.+?\s+Edition(?:\s+of\s+\d{4})?)/i);
+	if (editionMatch) {
+		item.edition = editionMatch[1].trim();
+		return; // Edition-style sources are simple, don't try to parse further
+	}
+
+	// Extract page range: "pp. 98-137" or "p. 42"
+	var ppMatch = value.match(/pp?\.\s*([\d\-–]+)/);
+	if (ppMatch) {
+		item.pages = ppMatch[1];
+	}
+
+	// Try to extract publisher, place, and year from structured source strings
+	// Pattern: "..., Publisher, Place, Year, ..."
+	var pubMatch = value.match(/,\s*([^,]+?),\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?),\s*(\d{4})/);
+	if (pubMatch) {
+		item.publisher = pubMatch[1].trim();
+		item.place = pubMatch[2].trim();
+	}
+
+	// Extract series name if in parentheses at the start
+	var seriesMatch = value.match(/^\(([^)]+)\)/);
+	if (seriesMatch) {
+		item.series = seriesMatch[1].trim();
+	}
+}
+
 function scrape(doc, url) {
-	// Determine item type based on presence of <span class="info"> metadata
+	var itemType = detectWeb(doc, url);
+	if (!itemType) return;
+
 	var infoSpans = doc.querySelectorAll('span.info');
 	var isIndexPage = infoSpans.length > 0;
-	var itemType = isIndexPage ? "book" : "bookSection";
 
 	var item = new Zotero.Item(itemType);
 
@@ -87,8 +147,16 @@ function scrape(doc, url) {
 		item.title = fullTitle;
 	}
 
+	// --- Letter-specific: extract recipient from title ---
+	// Titles like "Letters: Marx to J. Weydemeyer in New York"
+	if (itemType === "letter" && item.title) {
+		var recipientMatch = item.title.match(/\bto\s+(.+?)(?:\s+in\s+.+)?(?:\s*\[|$)/i);
+		if (recipientMatch) {
+			item.creators.push(Zotero.Utilities.cleanAuthor(recipientMatch[1].trim(), "recipient"));
+		}
+	}
+
 	// If this is a bookSection, try to extract the book title from breadcrumb
-	// and use the chapter heading as the section title
 	if (itemType === "bookSection") {
 		var breadcrumb = doc.querySelector('p.title');
 		if (breadcrumb) {
@@ -132,6 +200,10 @@ function scrape(doc, url) {
 
 				switch (label) {
 					case 'written':
+						// Preserve "Written" date in Extra for scholarly context
+						if (value) {
+							item.extra = (item.extra ? item.extra + '\n' : '') + 'Written: ' + value;
+						}
 						if (!item.date) {
 							item.date = value;
 						}
@@ -140,17 +212,7 @@ function scrape(doc, url) {
 						item.date = value;
 						break;
 					case 'source':
-						// Parse source like "Marx/Engels Selected Works, Vol. One, Progress Publishers, Moscow, 1969, pp. 98-137"
-						item.extra = (item.extra ? item.extra + '\n' : '') + 'Source: ' + value;
-						// Try to extract publisher and place from source string
-						var sourceMatch = value.match(/(.+?),\s*(\d{4})/);
-						if (sourceMatch) {
-							var sourceParts = sourceMatch[1].split(',');
-							if (sourceParts.length >= 2) {
-								item.publisher = sourceParts[sourceParts.length - 2].trim();
-								item.place = sourceParts[sourceParts.length - 1].trim();
-							}
-						}
+						parseSource(item, value);
 						break;
 					case 'translated':
 						var translators = value.split(/\s+in cooperation with\s+|,\s*/);
@@ -158,6 +220,29 @@ function scrape(doc, url) {
 							var tName = translators[j].trim();
 							if (tName) {
 								item.creators.push(Zotero.Utilities.cleanAuthor(tName, "translator"));
+							}
+						}
+						break;
+					case 'transcription/markup':
+					case 'transcription/html markup':
+						var transcribers = value.split(/\s*[&,]\s*|\s+and\s+|;\s*/);
+						for (var j = 0; j < transcribers.length; j++) {
+							var trName = transcribers[j].trim();
+							if (trName) {
+								item.creators.push(Zotero.Utilities.cleanAuthor(trName, "contributor"));
+							}
+						}
+						break;
+					case 'proofed':
+						// Strip common prefixes: "and corrected by X 2009", "and corrected against ... by X 2004"
+						var proofed = value.replace(/^and\s+corrected\s+(?:against\s+.+?\s+)?by\s+/i, '').replace(/\s+\d{4}\.?$/, '').trim();
+						if (proofed) {
+							var proofers = proofed.split(/\s*[&,]\s*|\s+and\s+|;\s*/);
+							for (var j = 0; j < proofers.length; j++) {
+								var prName = proofers[j].trim();
+								if (prName) {
+									item.creators.push(Zotero.Utilities.cleanAuthor(prName, "contributor"));
+								}
 							}
 						}
 						break;
@@ -200,14 +285,14 @@ function scrape(doc, url) {
 	// --- URL and access date ---
 	item.url = url;
 	item.accessDate = 'CURRENT_TIMESTAMP';
-	item.libraryCatalog = 'Marxists Internet Archive';
+	item.archive = 'Marxists Internet Archive';
 
 	// --- Abstract from meta description ---
 	var descMeta = doc.querySelector('meta[name="description"], meta[name="Description"]');
 	if (descMeta) {
 		var desc = descMeta.getAttribute('content').trim();
 		// Only use as abstract if it's substantive (not just a repeat of the title)
-		if (desc.length > 20 && desc !== item.title) {
+		if (desc.length > 20 && desc !== item.title && !desc.match(/^\*/)) {
 			item.abstractNote = desc;
 		}
 	}
@@ -239,7 +324,7 @@ var testCases = [
 					}
 				],
 				"date": "February 1848",
-				"libraryCatalog": "Marxists Internet Archive",
+				"archive": "Marxists Internet Archive",
 				"url": "https://www.marxists.org/archive/marx/works/1848/communist-manifesto/index.htm"
 			}
 		]
@@ -259,7 +344,7 @@ var testCases = [
 					}
 				],
 				"date": "1867",
-				"libraryCatalog": "Marxists Internet Archive",
+				"archive": "Marxists Internet Archive",
 				"url": "https://www.marxists.org/archive/marx/works/1867-c1/ch01.htm"
 			}
 		]
@@ -279,7 +364,7 @@ var testCases = [
 					}
 				],
 				"date": "1917",
-				"libraryCatalog": "Marxists Internet Archive",
+				"archive": "Marxists Internet Archive",
 				"url": "https://www.marxists.org/archive/lenin/works/1917/staterev/ch01.htm"
 			}
 		]
@@ -299,7 +384,7 @@ var testCases = [
 					}
 				],
 				"date": "1913",
-				"libraryCatalog": "Marxists Internet Archive",
+				"archive": "Marxists Internet Archive",
 				"url": "https://www.marxists.org/archive/luxemburg/1913/accumulation-capital/ch01.htm"
 			}
 		]
@@ -318,7 +403,7 @@ var testCases = [
 						"creatorType": "author"
 					}
 				],
-				"libraryCatalog": "Marxists Internet Archive",
+				"archive": "Marxists Internet Archive",
 				"url": "https://www.marxists.org/archive/gramsci/prison_notebooks/problems/intellectuals.htm"
 			}
 		]
