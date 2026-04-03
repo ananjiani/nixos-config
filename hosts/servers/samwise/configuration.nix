@@ -8,7 +8,6 @@
 {
   inputs,
   pkgs-stable,
-  config,
   ...
 }:
 
@@ -25,6 +24,7 @@
     ../../../modules/nixos/server/attic-watch-store.nix
     ../../../modules/nixos/server/adguard.nix
     ../../../modules/nixos/server/keepalived.nix
+    ../../../modules/nixos/vault-agent.nix
   ];
 
   networking = {
@@ -39,22 +39,33 @@
     ];
   };
 
-  # SOPS secrets configuration
-  sops = {
-    defaultSopsFile = ../../../secrets/secrets.yaml;
-    age.keyFile = "/var/lib/sops-nix/key.txt";
-    secrets.k3s_token = { };
-    secrets.tailscale_authkey = { };
-  };
-
   modules = {
     # k3s server node (joins existing cluster)
+    vault-agent = {
+      enable = true;
+      address = "http://100.64.0.21:8200"; # Tailscale IP (MagicDNS disabled)
+      secrets = {
+        tailscale_authkey = {
+          path = "secret/nixos/tailscale";
+          field = "authkey";
+        };
+        k3s_token = {
+          path = "secret/nixos/k3s";
+          field = "token";
+        };
+        attic_push_token = {
+          path = "secret/nixos/attic";
+          field = "push_token";
+        };
+      };
+    };
+
     k3s = {
       enable = true;
       role = "server";
       clusterInit = false;
       serverAddr = "https://192.168.1.21:6443"; # boromir
-      tokenFile = config.sops.secrets.k3s_token.path;
+      tokenFile = "/run/secrets/k3s_token";
       nodeIp = "192.168.1.26";
       podCidr = "10.42.2.0/24";
       flannelIface = "ens18"; # Prevent flannel from picking up keepalived VIPs
@@ -64,7 +75,7 @@
     tailscale = {
       enable = true;
       loginServer = "https://ts.dimensiondoor.xyz";
-      authKeyFile = config.sops.secrets.tailscale_authkey.path;
+      authKeyFile = "/run/secrets/tailscale_authkey";
       exitNode = true;
       useExitNode = null; # Can't use exit node while being one
       subnetRoutes = [ "192.168.1.0/24" ]; # Expose local network to Tailnet
@@ -111,7 +122,11 @@
   services = {
     # Proxmox VM integration and Attic cache
     qemuGuest.enable = true;
-    attic-watch-store.enable = true;
+    attic-watch-store = {
+      enable = true;
+      useSops = false;
+      tokenFile = "/run/secrets/attic_push_token";
+    };
 
     # Prometheus node exporter for VM-level monitoring
     prometheus.exporters.node = {
