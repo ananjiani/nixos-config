@@ -23,7 +23,7 @@ let
     Host *.lan
       StrictHostKeyChecking accept-new
       UserKnownHostsFile /var/lib/buildbot/deploy-known-hosts
-      IdentityFile ${config.sops.secrets.buildbot_deploy_ssh_key.path}
+      IdentityFile /run/secrets/buildbot_deploy_ssh_key
       User root
       ConnectTimeout 30
       BatchMode yes
@@ -88,6 +88,7 @@ in
     ../../../modules/nixos/server/attic-watch-store.nix
     ../../../modules/nixos/server/adguard.nix
     ../../../modules/nixos/server/keepalived.nix
+    ../../../modules/nixos/vault-agent.nix
   ];
 
   networking = {
@@ -119,76 +120,91 @@ in
     };
   };
 
-  # SOPS secrets configuration
-  sops = {
-    defaultSopsFile = ../../../secrets/secrets.yaml;
-    age.keyFile = "/var/lib/sops-nix/key.txt";
-    secrets = {
-      k3s_token = { };
-      tailscale_authkey = { };
-      # Attic binary cache
-      attic_server_token_key = {
-        owner = "atticd";
-        group = "atticd";
-        mode = "0400";
-      };
-      # Buildbot (Codeberg/Gitea + GitHub)
-      codeberg_token = {
-        owner = "buildbot";
-        mode = "0400";
-      };
-      codeberg_webhook_secret = {
-        owner = "buildbot";
-        mode = "0400";
-      };
-      codeberg_oauth_secret = {
-        owner = "buildbot";
-        mode = "0400";
-      };
-      github_app_secret = {
-        owner = "buildbot";
-        mode = "0400";
-      };
-      github_webhook_secret = {
-        owner = "buildbot";
-        mode = "0400";
-      };
-      buildbot_worker_password = {
-        owner = "buildbot";
-        mode = "0400";
-      };
-      buildbot_worker_password_plain = {
-        owner = "buildbot-worker";
-        mode = "0400";
-      };
-      # deploy-rs SSH key for auto-deployment after CI builds
-      buildbot_deploy_ssh_key = {
-        owner = "buildbot";
-        mode = "0400";
-      };
-      # Cloudflare Tunnel
-      cloudflared_tunnel_creds = {
-        owner = "cloudflared";
-        group = "cloudflared";
-        mode = "0400";
-      };
-      # Immich secrets (OAuth client secret)
-      immich_secrets = {
-        owner = "immich";
-        group = "immich";
-        mode = "0400";
-      };
-    };
-  };
-
   # Custom modules configuration
   modules = {
+    vault-agent = {
+      enable = true;
+      address = "http://100.64.0.21:8200"; # Tailscale IP (MagicDNS disabled)
+      secrets = {
+        tailscale_authkey = {
+          path = "secret/nixos/tailscale";
+          field = "authkey";
+        };
+        k3s_token = {
+          path = "secret/nixos/k3s";
+          field = "token";
+        };
+        attic_push_token = {
+          path = "secret/nixos/attic";
+          field = "push_token";
+        };
+        attic_server_token_key = {
+          path = "secret/nixos/attic";
+          field = "server_token_key";
+          owner = "atticd";
+          group = "atticd";
+        };
+        buildbot_worker_password = {
+          path = "secret/nixos/buildbot";
+          field = "worker_password";
+          owner = "buildbot";
+        };
+        buildbot_worker_password_plain = {
+          path = "secret/nixos/buildbot";
+          field = "worker_password_plain";
+          owner = "buildbot-worker";
+        };
+        buildbot_deploy_ssh_key = {
+          path = "secret/nixos/buildbot";
+          field = "deploy_ssh_key";
+          owner = "buildbot";
+        };
+        codeberg_token = {
+          path = "secret/nixos/codeberg";
+          field = "token";
+          owner = "buildbot";
+        };
+        codeberg_webhook_secret = {
+          path = "secret/nixos/codeberg";
+          field = "webhook_secret";
+          owner = "buildbot";
+        };
+        codeberg_oauth_secret = {
+          path = "secret/nixos/codeberg";
+          field = "oauth_secret";
+          owner = "buildbot";
+        };
+        github_app_secret = {
+          path = "secret/nixos/github";
+          field = "app_secret";
+          owner = "buildbot";
+        };
+        github_webhook_secret = {
+          path = "secret/nixos/github";
+          field = "webhook_secret";
+          owner = "buildbot";
+        };
+        cloudflared_tunnel_creds = {
+          path = "secret/nixos/cloudflared";
+          field = "tunnel_creds";
+          owner = "cloudflared";
+          group = "cloudflared";
+        };
+        immich_secrets = {
+          path = "secret/nixos/immich";
+          field = "secrets";
+          owner = "immich";
+          group = "immich";
+        };
+      };
+    };
+
     k3s = {
       enable = true;
       role = "server";
       clusterInit = false;
       serverAddr = "https://192.168.1.21:6443"; # boromir
-      tokenFile = config.sops.secrets.k3s_token.path;
+      tokenFile = "/run/secrets/k3s_token";
       nodeIp = "192.168.1.27";
       podCidr = "10.42.3.0/24";
       flannelIface = "ens18"; # Prevent flannel from picking up keepalived VIPs
@@ -196,7 +212,7 @@ in
     tailscale = {
       enable = true;
       loginServer = "https://ts.dimensiondoor.xyz";
-      authKeyFile = config.sops.secrets.tailscale_authkey.path;
+      authKeyFile = "/run/secrets/tailscale_authkey";
       exitNode = true;
       useExitNode = null; # Can't use exit node while being one
       subnetRoutes = [ "192.168.1.0/24" ];
@@ -259,7 +275,11 @@ in
 
   services = {
     qemuGuest.enable = true;
-    attic-watch-store.enable = true;
+    attic-watch-store = {
+      enable = true;
+      useSops = false;
+      tokenFile = "/run/secrets/attic_push_token";
+    };
 
     # Prometheus node exporter for VM-level monitoring
     prometheus.exporters.node = {
@@ -357,7 +377,7 @@ in
     # Attic binary cache
     atticd = {
       enable = true;
-      environmentFile = config.sops.secrets.attic_server_token_key.path;
+      environmentFile = "/run/secrets/attic_server_token_key";
       settings = {
         listen = "[::]:8080";
         database.url = "postgresql:///atticd?host=/run/postgresql";
@@ -385,24 +405,24 @@ in
       domain = "ci.dimensiondoor.xyz";
       useHTTPS = true; # Behind Cloudflare Tunnel
       authBackend = "gitea";
-      workersFile = config.sops.secrets.buildbot_worker_password.path;
+      workersFile = "/run/secrets/buildbot_worker_password";
       buildSystems = [ "x86_64-linux" ];
       evalMaxMemorySize = 2048;
       evalWorkerCount = 2;
       gitea = {
         enable = true;
         instanceUrl = "https://codeberg.org";
-        tokenFile = config.sops.secrets.codeberg_token.path;
-        webhookSecretFile = config.sops.secrets.codeberg_webhook_secret.path;
+        tokenFile = "/run/secrets/codeberg_token";
+        webhookSecretFile = "/run/secrets/codeberg_webhook_secret";
         oauthId = "3c068786-8f5c-44b6-abe8-153394049c91";
-        oauthSecretFile = config.sops.secrets.codeberg_oauth_secret.path;
+        oauthSecretFile = "/run/secrets/codeberg_oauth_secret";
         topic = "buildbot-nix";
       };
       github = {
         enable = true;
         appId = 2918119;
-        appSecretKeyFile = config.sops.secrets.github_app_secret.path;
-        webhookSecretFile = config.sops.secrets.github_webhook_secret.path;
+        appSecretKeyFile = "/run/secrets/github_app_secret";
+        webhookSecretFile = "/run/secrets/github_webhook_secret";
         topic = "buildbot-nix";
       };
       admins = [ "ananjiani" ];
@@ -422,7 +442,7 @@ in
 
     buildbot-nix.worker = {
       enable = true;
-      workerPasswordFile = config.sops.secrets.buildbot_worker_password_plain.path;
+      workerPasswordFile = "/run/secrets/buildbot_worker_password_plain";
     };
 
     # Buildbot Prometheus metrics exporter (port 9101, node_exporter uses 9100)
@@ -444,7 +464,7 @@ in
       enable = true;
       tunnels = {
         "b33ec739-7324-4c6f-b6fa-daedbe0828c8" = {
-          credentialsFile = config.sops.secrets.cloudflared_tunnel_creds.path;
+          credentialsFile = "/run/secrets/cloudflared_tunnel_creds";
           default = "http_status:404";
           ingress = {
             "attic.dimensiondoor.xyz" = "http://localhost:8080";
@@ -466,7 +486,7 @@ in
       host = "0.0.0.0";
       mediaLocation = "/srv/nfs/immich";
       database.createDB = false; # Using ensureDBOwnership above
-      secretsFile = config.sops.secrets.immich_secrets.path;
+      secretsFile = "/run/secrets/immich_secrets";
       settings = {
         machineLearning = {
           urls = [ "http://192.168.1.24:3003" ]; # rohan ML endpoint
