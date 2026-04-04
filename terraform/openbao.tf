@@ -137,8 +137,9 @@ resource "vault_approle_auth_backend_role_secret_id" "eso" {
 # -----------------------------------------------------------------------------
 # Secret Values — bridged from SOPS into OpenBao KV v2
 #
-# SOPS remains the source of truth; OpenBao is the distribution layer.
-# vault-agent on each host reads from these paths.
+# Only secrets that are ALSO consumed directly via SOPS on hosts that don't
+# use vault-agent (desktop, framework13, erebor, pippin, rivendell).
+# Secrets consumed exclusively via vault-agent live only in OpenBao.
 # -----------------------------------------------------------------------------
 
 resource "vault_kv_secret_v2" "tailscale" {
@@ -154,59 +155,6 @@ resource "vault_kv_secret_v2" "k3s" {
   name  = "nixos/k3s"
   data_json = jsonencode({
     token = data.sops_file.secrets.data["k3s_token"]
-  })
-}
-
-resource "vault_kv_secret_v2" "buildbot" {
-  mount = vault_mount.secret.path
-  name  = "nixos/buildbot"
-  data_json = jsonencode({
-    worker_password       = data.sops_file.secrets.data["buildbot_worker_password"]
-    worker_password_plain = data.sops_file.secrets.data["buildbot_worker_password_plain"]
-    deploy_ssh_key        = data.sops_file.secrets.data["buildbot_deploy_ssh_key"]
-  })
-}
-
-resource "vault_kv_secret_v2" "codeberg" {
-  mount = vault_mount.secret.path
-  name  = "nixos/codeberg"
-  data_json = jsonencode({
-    token          = data.sops_file.secrets.data["codeberg_token"]
-    webhook_secret = data.sops_file.secrets.data["codeberg_webhook_secret"]
-    oauth_secret   = data.sops_file.secrets.data["codeberg_oauth_secret"]
-  })
-}
-
-resource "vault_kv_secret_v2" "github" {
-  mount = vault_mount.secret.path
-  name  = "nixos/github"
-  data_json = jsonencode({
-    app_secret     = data.sops_file.secrets.data["github_app_secret"]
-    webhook_secret = data.sops_file.secrets.data["github_webhook_secret"]
-  })
-}
-
-resource "vault_kv_secret_v2" "attic" {
-  mount = vault_mount.secret.path
-  name  = "nixos/attic"
-  data_json = jsonencode({
-    server_token_key = data.sops_file.secrets.data["attic_server_token_key"]
-  })
-}
-
-resource "vault_kv_secret_v2" "cloudflared" {
-  mount = vault_mount.secret.path
-  name  = "nixos/cloudflared"
-  data_json = jsonencode({
-    tunnel_creds = data.sops_file.secrets.data["cloudflared_tunnel_creds"]
-  })
-}
-
-resource "vault_kv_secret_v2" "immich" {
-  mount = vault_mount.secret.path
-  name  = "nixos/immich"
-  data_json = jsonencode({
-    secrets = data.sops_file.secrets.data["immich_secrets"]
   })
 }
 
