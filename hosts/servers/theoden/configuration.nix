@@ -15,7 +15,6 @@
 
 let
   inherit (inputs.buildbot-nix.lib) interpolate;
-  deploy-rs-pkg = inputs.deploy-rs.packages.x86_64-linux.default;
 
   # Deploy wrapper: runs after each successful nix-build in CI.
   # Only deploys server configs built on the main branch.
@@ -48,12 +47,24 @@ let
         ;;
     esac
 
-    export SSH_CONFIG_FILE="${sshConfig}"
-    echo "Deploying $SERVER..."
-    ${deploy-rs-pkg}/bin/deploy \
-      --skip-checks \
-      --ssh-opts "-F $SSH_CONFIG_FILE" \
-      ".#$SERVER"
+    if [ -z "$OUT_PATH" ]; then
+      echo "No OUT_PATH set, cannot deploy"
+      exit 1
+    fi
+
+    SSH_OPTS="-F ${sshConfig}"
+    HOST="$SERVER.lan"
+
+    echo "Deploying $SERVER from $OUT_PATH..."
+
+    # Copy the closure to the target host
+    NIX_SSHOPTS="$SSH_OPTS" nix copy --to "ssh://root@$HOST" "$OUT_PATH"
+
+    # Activate: set system profile and switch
+    ssh $SSH_OPTS "root@$HOST" \
+      "nix-env -p /nix/var/nix/profiles/system --set '$OUT_PATH' && '$OUT_PATH/bin/switch-to-configuration' switch"
+
+    echo "Deploy to $SERVER complete"
   '';
 
   # buildbot-prometheus: Exposes Buildbot metrics for Prometheus scraping.
@@ -433,6 +444,7 @@ in
           environment = {
             BRANCH = interpolate "%(prop:branch)s";
             ATTR = interpolate "%(prop:attr)s";
+            OUT_PATH = interpolate "%(prop:out_path)s";
           };
           command = [ (toString deployScript) ];
           warnOnly = true;
