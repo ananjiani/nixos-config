@@ -120,6 +120,20 @@ resource "vault_approle_auth_backend_role_secret_id" "hosts" {
   role_name = vault_approle_auth_backend_role.hosts[each.key].role_name
 }
 
+# ESO (External Secrets Operator) — separate role with "eso" policy for k8s secrets
+resource "vault_approle_auth_backend_role" "eso" {
+  backend        = vault_auth_backend.approle.path
+  role_name      = "eso"
+  token_policies = ["eso"]
+  token_ttl      = 86400  # 24h
+  token_max_ttl  = 604800 # 7d
+}
+
+resource "vault_approle_auth_backend_role_secret_id" "eso" {
+  backend   = vault_auth_backend.approle.path
+  role_name = vault_approle_auth_backend_role.eso.role_name
+}
+
 # -----------------------------------------------------------------------------
 # Secret Values — bridged from SOPS into OpenBao KV v2
 #

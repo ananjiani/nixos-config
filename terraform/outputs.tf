@@ -69,6 +69,21 @@ output "approle_secret_ids" {
 }
 
 # =============================================================================
+# External Secrets Operator (ESO)
+# =============================================================================
+
+output "eso_approle_role_id" {
+  description = "AppRole role ID for External Secrets Operator (place in k8s bootstrap secret)"
+  value       = vault_approle_auth_backend_role.eso.role_id
+}
+
+output "eso_approle_secret_id" {
+  description = "AppRole secret ID for External Secrets Operator (place in k8s bootstrap secret)"
+  value       = vault_approle_auth_backend_role_secret_id.eso.secret_id
+  sensitive   = true
+}
+
+# =============================================================================
 # AWS KMS (OpenBao auto-unseal)
 # =============================================================================
 

@@ -4,5 +4,5 @@ namespace: codeberg-runner
 resources:
   - namespace.yaml
   - configmap.yaml
-  - secret.yaml
+  - externalsecret.yaml
   - deployment.yaml
