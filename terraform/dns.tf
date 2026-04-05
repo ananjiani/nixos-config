@@ -1,6 +1,6 @@
-# Get the zone ID from SOPS secrets
+# Get the zone ID from OpenBao
 locals {
-  zone_id = data.sops_file.secrets.data["cloudflare_zone_id"]
+  zone_id = data.vault_kv_secret_v2.cloudflare_zone.data["zone_id"]
 }
 
 # Root domain A record
