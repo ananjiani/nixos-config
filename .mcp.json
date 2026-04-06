@@ -26,6 +26,10 @@
         "@modelcontextprotocol/server-sequential-thinking"
       ],
       "type": "stdio"
+    },
+    "vault": {
+      "type": "http",
+      "url": "http://127.0.0.1:8282/mcp"
     }
   }
 }
