@@ -65,14 +65,22 @@ in
     hostName = "ammars-pc";
     nameservers = [ (builtins.head dns.servers) ]; # AdGuard VIP only — router fallback is in services.resolved.fallbackDns
     # Allow Tailscale traffic (100.64.0.0/10) to bypass Mullvad VPN
-    # Mullvad's LAN sharing only covers RFC1918 ranges, not CGNAT
+    # Uses Mullvad's split-tunnel ct mark (0x00000f41) so its firewall
+    # treats Tailscale traffic like an excluded app, plus the routing
+    # fwmark (0x6d6f6c65) to skip Mullvad's routing table.
     nftables.tables.mullvad-tailscale-bypass = {
       family = "inet";
       content = ''
         chain output {
-          type route hook output priority -150; policy accept;
-          ip daddr 100.64.0.0/10 mark set 0x6d6f6c65
-          ip6 daddr fd7a:115c:a1e0::/48 mark set 0x6d6f6c65
+          type route hook output priority 0; policy accept;
+          ip daddr 100.64.0.0/10 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
+          ip6 daddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
+        }
+
+        chain input {
+          type filter hook input priority -100; policy accept;
+          ip saddr 100.64.0.0/10 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
+          ip6 saddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
         }
       '';
     };

@@ -7,7 +7,7 @@ variable "domain" {
 variable "homeserver_ip" {
   description = "Public IP address of the homeserver"
   type        = string
-  default     = "72.182.230.42"
+  default     = "70.119.78.245"
 }
 
 variable "cloudflare_proxied" {
@@ -163,9 +163,9 @@ variable "proxmox_datastore" {
 # =============================================================================
 
 variable "openbao_address" {
-  description = "OpenBao server address (use SSH tunnel: ssh -L 8200:127.0.0.1:8200 root@91.99.82.115)"
+  description = "OpenBao server address (via Tailscale on erebor)"
   type        = string
-  default     = "http://127.0.0.1:8200"
+  default     = "http://100.64.0.21:8200"
 }
 
 # =============================================================================
