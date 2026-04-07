@@ -21,7 +21,7 @@ let
   sshConfig = pkgs.writeText "buildbot-ssh-config" ''
     Host *.lan
       StrictHostKeyChecking accept-new
-      UserKnownHostsFile /var/lib/buildbot/deploy-known-hosts
+      UserKnownHostsFile /var/lib/buildbot-worker/deploy-known-hosts
       IdentityFile /run/secrets/buildbot_deploy_ssh_key
       User root
       ConnectTimeout 30
@@ -178,7 +178,7 @@ in
         buildbot_deploy_ssh_key = {
           path = "secret/nixos/buildbot";
           field = "deploy_ssh_key";
-          owner = "buildbot";
+          owner = "buildbot-worker";
         };
         codeberg_token = {
           path = "secret/nixos/codeberg";
