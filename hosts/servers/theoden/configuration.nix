@@ -542,53 +542,73 @@ in
       "d /var/lib/attic-monitor 0755 atticd atticd -"
     ];
 
-    services.attic-chunk-check = {
-      description = "Check Attic binary cache chunk integrity";
-      after = [
-        "atticd.service"
-        "postgresql.service"
-      ];
-      path = [
-        config.services.postgresql.package
-        pkgs.findutils
-      ];
-      serviceConfig = {
-        Type = "oneshot";
-        User = "atticd";
+    # Services that consume vault-agent secrets must wait for rendering
+    services = {
+      buildbot-master = {
+        after = [ "vault-agent-default.service" ];
+        wants = [ "vault-agent-default.service" ];
       };
-      script =
-        let
-          checkScript = pkgs.writeShellScript "attic-chunk-check" ''
-            set -euo pipefail
-            STORAGE_PATH="/srv/nfs/attic"
-            OUTFILE="/var/lib/attic-monitor/attic.prom"
-            DB_LIST=$(mktemp)
-            FS_LIST=$(mktemp)
-            trap 'rm -f "$DB_LIST" "$FS_LIST"' EXIT
+      buildbot-worker = {
+        after = [ "vault-agent-default.service" ];
+        wants = [ "vault-agent-default.service" ];
+      };
+      cloudflared-tunnel-b33ec739-7324-4c6f-b6fa-daedbe0828c8 = {
+        after = [ "vault-agent-default.service" ];
+        wants = [ "vault-agent-default.service" ];
+      };
+      immich-server = {
+        after = [ "vault-agent-default.service" ];
+        wants = [ "vault-agent-default.service" ];
+      };
 
-            # All valid chunk filenames expected by DB (strip "local:" prefix, sort)
-            psql -U atticd -d atticd -t -A \
-              -c "SELECT remote_file_id FROM chunk WHERE state = 'V'" \
-              | sed 's/^local://' | sort > "$DB_LIST"
+      attic-chunk-check = {
+        description = "Check Attic binary cache chunk integrity";
+        after = [
+          "atticd.service"
+          "postgresql.service"
+        ];
+        path = [
+          config.services.postgresql.package
+          pkgs.findutils
+        ];
+        serviceConfig = {
+          Type = "oneshot";
+          User = "atticd";
+        };
+        script =
+          let
+            checkScript = pkgs.writeShellScript "attic-chunk-check" ''
+              set -euo pipefail
+              STORAGE_PATH="/srv/nfs/attic"
+              OUTFILE="/var/lib/attic-monitor/attic.prom"
+              DB_LIST=$(mktemp)
+              FS_LIST=$(mktemp)
+              trap 'rm -f "$DB_LIST" "$FS_LIST"' EXIT
 
-            # All chunk files actually present on disk (just filename, sort)
-            find "$STORAGE_PATH" -name '*.chunk' -printf '%f\n' | sort > "$FS_LIST"
+              # All valid chunk filenames expected by DB (strip "local:" prefix, sort)
+              psql -U atticd -d atticd -t -A \
+                -c "SELECT remote_file_id FROM chunk WHERE state = 'V'" \
+                | sed 's/^local://' | sort > "$DB_LIST"
 
-            # Chunks in DB but missing on disk
-            orphaned=$(comm -23 "$DB_LIST" "$FS_LIST" | wc -l)
-            total=$(wc -l < "$DB_LIST")
+              # All chunk files actually present on disk (just filename, sort)
+              find "$STORAGE_PATH" -name '*.chunk' -printf '%f\n' | sort > "$FS_LIST"
 
-            cat > "$OUTFILE" <<EOF
-            # HELP attic_orphaned_chunks Chunk DB records with no corresponding file on disk
-            # TYPE attic_orphaned_chunks gauge
-            attic_orphaned_chunks $orphaned
-            # HELP attic_chunks_total Total valid chunk records in Attic database
-            # TYPE attic_chunks_total gauge
-            attic_chunks_total $total
-            EOF
-          '';
-        in
-        "${checkScript}";
+              # Chunks in DB but missing on disk
+              orphaned=$(comm -23 "$DB_LIST" "$FS_LIST" | wc -l)
+              total=$(wc -l < "$DB_LIST")
+
+              cat > "$OUTFILE" <<EOF
+              # HELP attic_orphaned_chunks Chunk DB records with no corresponding file on disk
+              # TYPE attic_orphaned_chunks gauge
+              attic_orphaned_chunks $orphaned
+              # HELP attic_chunks_total Total valid chunk records in Attic database
+              # TYPE attic_chunks_total gauge
+              attic_chunks_total $total
+              EOF
+            '';
+          in
+          "${checkScript}";
+      };
     };
 
     timers.attic-chunk-check = {
