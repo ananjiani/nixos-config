@@ -3,6 +3,7 @@
   inputs,
   pkgs,
   pkgs-stable,
+  config,
   ...
 }:
 
@@ -24,6 +25,14 @@
     ../../../modules/nixos/server/keepalived.nix
     ./ai.nix
   ];
+
+  # SOPS bootstraps vault-agent credentials
+  sops = {
+    defaultSopsFile = ../../../secrets/secrets.yaml;
+    age.keyFile = "/var/lib/sops-nix/key.txt";
+    secrets.vault_role_id_server = { };
+    secrets.vault_secret_id_server = { };
+  };
 
   modules = {
     # Mount NFS share from theoden (use IP since we ARE the DNS server)
@@ -65,6 +74,8 @@
     vault-agent = {
       enable = true;
       address = "http://100.64.0.21:8200"; # Tailscale IP (MagicDNS disabled on boromir)
+      roleIdFile = config.sops.secrets.vault_role_id_server.path;
+      secretIdFile = config.sops.secrets.vault_secret_id_server.path;
       secrets = {
         tailscale_authkey = {
           path = "secret/nixos/tailscale";
@@ -73,6 +84,10 @@
         k3s_token = {
           path = "secret/nixos/k3s";
           field = "token";
+        };
+        attic_push_token = {
+          path = "secret/nixos/attic";
+          field = "push_token";
         };
       };
     };

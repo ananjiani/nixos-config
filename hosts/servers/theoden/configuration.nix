@@ -131,11 +131,21 @@ in
     };
   };
 
+  # SOPS bootstraps vault-agent credentials
+  sops = {
+    defaultSopsFile = ../../../secrets/secrets.yaml;
+    age.keyFile = "/var/lib/sops-nix/key.txt";
+    secrets.vault_role_id_server = { };
+    secrets.vault_secret_id_server = { };
+  };
+
   # Custom modules configuration
   modules = {
     vault-agent = {
       enable = true;
       address = "http://100.64.0.21:8200"; # Tailscale IP (MagicDNS disabled)
+      roleIdFile = config.sops.secrets.vault_role_id_server.path;
+      secretIdFile = config.sops.secrets.vault_secret_id_server.path;
       secrets = {
         tailscale_authkey = {
           path = "secret/nixos/tailscale";
