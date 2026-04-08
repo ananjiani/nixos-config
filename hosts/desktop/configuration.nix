@@ -84,27 +84,42 @@ in
   networking = {
     hostName = "ammars-pc";
     nameservers = [ (builtins.head dns.servers) ]; # AdGuard VIP only — router fallback is in services.resolved.fallbackDns
-    # Allow Tailscale traffic (100.64.0.0/10) to bypass Mullvad VPN
-    # Uses Mullvad's split-tunnel ct mark (0x00000f41) so its firewall
-    # treats Tailscale traffic like an excluded app, plus the routing
-    # fwmark (0x6d6f6c65) to skip Mullvad's routing table.
-    nftables.tables.mullvad-tailscale-bypass = {
-      family = "inet";
-      content = ''
-        chain output {
-          type route hook output priority 0; policy accept;
-          ip daddr 100.64.0.0/10 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
-          ip6 daddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
-        }
+    # Tailscale bypass is loaded via systemd (see systemd.services.mullvad-tailscale-bypass)
+    # because networking.nftables.tables requires networking.nftables.enable which
+    # switches the entire firewall backend and breaks iptables-nft rules (Docker, Tailscale).
+  };
+  # Allow Tailscale traffic (100.64.0.0/10) to bypass Mullvad VPN
+  # Uses Mullvad's split-tunnel ct mark (0x00000f41) so its firewall
+  # treats Tailscale traffic like an excluded app, plus the routing
+  # fwmark (0x6d6f6c65) to skip Mullvad's routing table.
+  # Loaded via nft directly because networking.nftables.tables requires
+  # networking.nftables.enable which switches the firewall backend.
+  systemd.services.mullvad-tailscale-bypass = {
+    description = "nftables bypass for Tailscale traffic through Mullvad";
+    after = [ "network.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.nftables}/bin/nft -f ${pkgs.writeText "mullvad-tailscale-bypass.nft" ''
+        table inet mullvad-tailscale-bypass {
+          chain output {
+            type route hook output priority -10; policy accept;
+            ip daddr 100.64.0.0/10 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
+            ip6 daddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
+          }
 
-        chain input {
-          type filter hook input priority -100; policy accept;
-          ip saddr 100.64.0.0/10 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
-          ip6 saddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
+          chain input {
+            type filter hook input priority -100; policy accept;
+            ip saddr 100.64.0.0/10 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
+            ip6 saddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
+          }
         }
-      '';
+      ''}";
+      ExecStop = "${pkgs.nftables}/bin/nft delete table inet mullvad-tailscale-bypass";
     };
   };
+
   environment.systemPackages = with pkgs; [
     signal-desktop
     cifs-utils
