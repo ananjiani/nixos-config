@@ -361,6 +361,34 @@ spec:
                 annotations:
                   summary: "Buildbot build running > 1 hour"
                   description: "A build has been running for more than 1 hour."
+      proxmox-pressure-alerts:
+        groups:
+          - name: proxmox-pressure
+            rules:
+              - alert: ProxmoxIOPressureHigh
+                expr: rate(node_pressure_io_stalled_seconds_total{job="proxmox-node-exporter"}[5m]) > 0.10
+                for: 5m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "IO pressure on Proxmox host {{ $labels.instance }}"
+                  description: "IO full pressure exceeds 10% on {{ $labels.instance }} for 5 minutes. Processes are stalling on disk IO."
+              - alert: ProxmoxIOPressureCritical
+                expr: rate(node_pressure_io_stalled_seconds_total{job="proxmox-node-exporter"}[5m]) > 0.30
+                for: 2m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Severe IO pressure on Proxmox host {{ $labels.instance }}"
+                  description: "IO full pressure exceeds 30% on {{ $labels.instance }} for 2 minutes. System is likely unresponsive."
+              - alert: ProxmoxMemoryPressure
+                expr: rate(node_pressure_memory_stalled_seconds_total{job="proxmox-node-exporter"}[5m]) > 0.05
+                for: 5m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Memory pressure on Proxmox host {{ $labels.instance }}"
+                  description: "Memory full pressure exceeds 5% on {{ $labels.instance }} for 5 minutes. Host may be swapping."
       proxmox-alerts:
         groups:
           - name: proxmox

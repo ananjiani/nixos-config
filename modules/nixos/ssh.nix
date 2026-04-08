@@ -18,6 +18,9 @@ let
 
     # pixel9 phone
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDkUoUykJOFGBRc1ACtGi9guIMMT8Tq/S/Pos6XANJ6H pixel9"
+
+    # buildbot CI/CD deploy key (theoden)
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELJQcvgQUWAJl2gGXJwodH7TLhIWHJ4mcIaqpFeY5bC buildbot@theoden"
   ];
 in
 {

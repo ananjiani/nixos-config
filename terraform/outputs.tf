@@ -33,3 +33,72 @@ output "zone_id" {
   value       = local.zone_id
   sensitive   = true
 }
+
+# =============================================================================
+# Hetzner Cloud
+# =============================================================================
+
+output "erebor_ipv4" {
+  description = "Erebor VPS public IPv4 address"
+  value       = hcloud_server.erebor.ipv4_address
+}
+
+output "erebor_ipv6" {
+  description = "Erebor VPS public IPv6 network"
+  value       = hcloud_server.erebor.ipv6_network
+}
+
+output "erebor_ssh" {
+  description = "SSH command to connect to erebor"
+  value       = "ssh root@${hcloud_server.erebor.ipv4_address}"
+}
+
+# =============================================================================
+# OpenBao
+# =============================================================================
+
+output "approle_role_ids" {
+  description = "AppRole role IDs for each NixOS host (place in /var/lib/vault-agent/role-id)"
+  value       = { for k, v in vault_approle_auth_backend_role.hosts : k => v.role_id }
+}
+
+output "approle_secret_ids" {
+  description = "AppRole secret IDs for each NixOS host (place in /var/lib/vault-agent/secret-id)"
+  value       = { for k, v in vault_approle_auth_backend_role_secret_id.hosts : k => v.secret_id }
+  sensitive   = true
+}
+
+# =============================================================================
+# External Secrets Operator (ESO)
+# =============================================================================
+
+output "eso_approle_role_id" {
+  description = "AppRole role ID for External Secrets Operator (place in k8s bootstrap secret)"
+  value       = vault_approle_auth_backend_role.eso.role_id
+}
+
+output "eso_approle_secret_id" {
+  description = "AppRole secret ID for External Secrets Operator (place in k8s bootstrap secret)"
+  value       = vault_approle_auth_backend_role_secret_id.eso.secret_id
+  sensitive   = true
+}
+
+# =============================================================================
+# AWS KMS (OpenBao auto-unseal)
+# =============================================================================
+
+output "kms_key_arn" {
+  description = "AWS KMS key ARN for OpenBao auto-unseal (use in erebor NixOS config)"
+  value       = aws_kms_key.openbao_unseal.arn
+}
+
+output "openbao_unseal_access_key_id" {
+  description = "IAM access key ID for OpenBao unseal user"
+  value       = aws_iam_access_key.openbao_unseal.id
+}
+
+output "openbao_unseal_secret_access_key" {
+  description = "IAM secret access key for OpenBao unseal user"
+  value       = aws_iam_access_key.openbao_unseal.secret
+  sensitive   = true
+}

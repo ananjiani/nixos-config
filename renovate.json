@@ -70,6 +70,9 @@
       "/k8s/apps/.+\\.yaml$/"
     ]
   },
+  "nix": {
+    "enabled": true
+  },
   "terraform": {
     "managerFilePatterns": [
       "/terraform/.+\\.tf$/"
@@ -77,7 +80,7 @@
   },
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 6am every day"],
+    "schedule": ["before 6am"],
     "automerge": true
   }
 }

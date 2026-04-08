@@ -33,7 +33,7 @@ jobs:
 
           ./kubeconform \
             -schema-location 'default' \
-            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceVersion}}.json' \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
             -kubernetes-version 1.31.0 \
             -strict \
             -ignore-missing-schemas \
