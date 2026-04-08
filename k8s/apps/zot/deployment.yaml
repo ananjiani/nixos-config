@@ -55,8 +55,6 @@ spec:
               path: /v2/
               port: 5000
             periodSeconds: 30
-      nodeSelector:
-        kubernetes.io/hostname: theoden
       volumes:
         - name: config
           configMap:

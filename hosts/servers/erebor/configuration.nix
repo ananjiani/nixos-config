@@ -20,6 +20,7 @@
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/openbao.nix
+    ../../../modules/nixos/server/vault-mcp-server.nix
   ];
 
   modules = {
@@ -41,9 +42,15 @@
       enable = true;
       apiAddr = "http://erebor.ts:8200";
       enableUI = true;
-      # AWS KMS auto-unseal — set after creating KMS key
-      # awsKmsKeyId = "arn:aws:kms:eu-central-1:ACCOUNT:key/KEY-ID";
-      # awsCredentialsFile = config.sops.secrets.aws_kms_credentials.path;
+      # AWS KMS auto-unseal
+      awsKmsKeyId = "arn:aws:kms:eu-central-1:017562255035:key/76bd5390-cdbf-462d-bd9b-c45069d9e54f";
+      awsKmsRegion = "eu-central-1";
+      awsCredentialsFile = "/var/lib/openbao/aws-kms-env";
+    };
+
+    vault-mcp-server = {
+      enable = true;
+      tokenFile = "/var/lib/openbao/mcp-token";
     };
   };
 

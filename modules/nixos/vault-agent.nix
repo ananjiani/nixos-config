@@ -138,24 +138,43 @@ in
       "d /var/lib/vault-agent 0700 root root -"
     ];
 
-    # Fix ownership after template rendering (vault-agent creates files as root,
-    # but services may need them owned by specific users)
+    # Wait for all secrets to be rendered, then fix ownership.
+    # vault-agent is Type=simple so systemd considers it started immediately.
+    # This ExecStartPost blocks until templates exist, ensuring that any
+    # service with After=vault-agent-default.service gets valid secrets.
     systemd.services.vault-agent-default.serviceConfig.ExecStartPost =
-      lib.mkIf (lib.any (s: s.owner != "root" || s.group != "root") (lib.attrValues cfg.secrets))
-        (
-          let
-            ownershipScript = pkgs.writeShellScript "vault-agent-fix-ownership" (
-              lib.concatStringsSep "\n" (
-                lib.mapAttrsToList (
-                  name: secret:
-                  lib.optionalString (
-                    secret.owner != "root" || secret.group != "root"
-                  ) "chown ${secret.owner}:${secret.group} /run/secrets/${name} 2>/dev/null || true"
-                ) cfg.secrets
-              )
-            );
-          in
-          [ "+${ownershipScript}" ]
+      let
+        secretNames = lib.attrNames cfg.secrets;
+        waitScript = pkgs.writeShellScript "vault-agent-wait-secrets" ''
+          for i in $(seq 1 60); do
+            all_exist=true
+            ${lib.concatMapStringsSep "\n" (name: ''
+              [ -f /run/secrets/${name} ] || all_exist=false
+            '') secretNames}
+            if $all_exist; then
+              break
+            fi
+            sleep 1
+          done
+          if ! $all_exist; then
+            echo "vault-agent: timed out waiting for secrets" >&2
+            exit 1
+          fi
+        '';
+        ownershipScript = pkgs.writeShellScript "vault-agent-fix-ownership" (
+          lib.concatStringsSep "\n" (
+            lib.mapAttrsToList (
+              name: secret:
+              lib.optionalString (
+                secret.owner != "root" || secret.group != "root"
+              ) "chown ${secret.owner}:${secret.group} /run/secrets/${name}"
+            ) cfg.secrets
+          )
         );
+      in
+      [ "+${waitScript}" ]
+      ++ lib.optional (lib.any (s: s.owner != "root" || s.group != "root") (
+        lib.attrValues cfg.secrets
+      )) "+${ownershipScript}";
   };
 }

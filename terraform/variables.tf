@@ -7,7 +7,7 @@ variable "domain" {
 variable "homeserver_ip" {
   description = "Public IP address of the homeserver"
   type        = string
-  default     = "72.182.230.42"
+  default     = "70.119.78.245"
 }
 
 variable "cloudflare_proxied" {
@@ -156,6 +156,26 @@ variable "proxmox_datastore" {
   description = "Default datastore for VM disks"
   type        = string
   default     = "local-lvm"
+}
+
+# =============================================================================
+# OpenBao Configuration
+# =============================================================================
+
+variable "openbao_address" {
+  description = "OpenBao server address (via Tailscale on erebor)"
+  type        = string
+  default     = "http://100.64.0.21:8200"
+}
+
+# =============================================================================
+# AWS Configuration (KMS auto-unseal)
+# =============================================================================
+
+variable "aws_region" {
+  description = "AWS region for KMS auto-unseal key"
+  type        = string
+  default     = "eu-central-1" # Frankfurt (closest to Hetzner Falkenstein)
 }
 
 # =============================================================================

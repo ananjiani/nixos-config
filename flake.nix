@@ -526,6 +526,8 @@
         '';
         buildInputs = self.checks.${system}.pre-commit-check.enabledPackages ++ [
           pkgs.opentofu
+          pkgs.openbao
+          pkgs.yq-go
           pkgs.ansible
           pkgs.kubectl
           pkgs.fluxcd
