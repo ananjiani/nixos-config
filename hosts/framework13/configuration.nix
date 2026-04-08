@@ -9,8 +9,6 @@
     ./hardware-configuration.nix
     ../profiles/workstation/configuration.nix
     ../../modules/nixos/bluetooth.nix
-    ../../modules/nixos/wm.nix
-    ../../modules/nixos/utils.nix
     # ../../modules/nixos/openconnect.nix
     ../../modules/nixos/docker.nix
     ../../modules/nixos/tailscale.nix
