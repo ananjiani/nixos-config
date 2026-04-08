@@ -484,8 +484,7 @@
             };
           };
         };
-      }
-      // deploy-rs.lib.${system}.deployChecks self.deploy;
+      };
 
       # Packages from documentationFlake (mkdocs-flake) plus utilities
       packages.${system} = (documentationFlake.packages.${system} or { }) // {

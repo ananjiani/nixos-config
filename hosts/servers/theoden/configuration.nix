@@ -428,7 +428,7 @@ in
       authBackend = "gitea";
       workersFile = "/run/secrets/buildbot_worker_password";
       buildSystems = [ "x86_64-linux" ];
-      evalMaxMemorySize = 2048;
+      evalMaxMemorySize = 4096;
       evalWorkerCount = 2;
       gitea = {
         enable = true;
