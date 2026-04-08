@@ -7,35 +7,24 @@
 
 {
   imports = [
-    ./disk-config.nix
+    ../proxmox-disk-config.nix
     ../../profiles/server.nix
     inputs.quadlet-nix.nixosModules.quadlet
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/nfs-client.nix
     ../../../modules/nixos/networking.nix
-    ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/k3s.nix
     ../../../modules/nixos/nvidia.nix # GPU support for Ollama
-    ../../../modules/nixos/server/adguard.nix
-    ../../../modules/nixos/server/keepalived.nix
     ./ai.nix
   ];
 
   modules = {
-    # Mount NFS share from theoden (use IP since we ARE the DNS server)
-    proxmoxGuest = true;
-
     nfs-client = {
       enable = true;
-      server = "192.168.1.27";
+      server = "192.168.1.27"; # theoden (use IP since we ARE the DNS server)
     };
 
-    # Tailscale client - exit node + subnet router for remote access
-    tailscale = {
-      enable = true;
-      exitNode = true;
-      subnetRoutes = [ "192.168.1.0/24" ];
-    };
+    adguard.enable = true;
 
     # Keepalived for HA DNS - boromir is secondary
     keepalived = {
@@ -55,7 +44,6 @@
       clusterInit = true; # First node initializes the cluster
       nodeIp = "192.168.1.21";
       podCidr = "10.42.1.0/24";
-      flannelIface = "ens18"; # Prevent flannel from picking up keepalived VIPs
     };
   };
 

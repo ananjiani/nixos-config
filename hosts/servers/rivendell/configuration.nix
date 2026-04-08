@@ -14,15 +14,16 @@
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/htpc.nix
     ../../../modules/nixos/networking.nix
-    ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/k3s.nix
-    ../../../modules/nixos/server/adguard.nix
-    ../../../modules/nixos/server/keepalived.nix
   ];
 
   modules = {
+    proxmoxGuest = false; # Bare metal (Trycoo WI6 N100)
+
     # Kodi HTPC (greetd auto-login, ALSA audio, CEC, Intel graphics)
     htpc.enable = true;
+
+    adguard.enable = true;
 
     # Tailscale — PERMANENTLY DISABLED
     # Tailscale netfilter modifications trigger r8169 driver bug causing

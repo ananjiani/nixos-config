@@ -87,15 +87,12 @@ let
 in
 {
   imports = [
-    ./disk-config.nix
+    ../proxmox-disk-config.nix
     ./storage.nix
     ../../profiles/server.nix
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/networking.nix
-    ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/k3s.nix
-    ../../../modules/nixos/server/adguard.nix
-    ../../../modules/nixos/server/keepalived.nix
   ];
 
   networking = {
@@ -124,7 +121,7 @@ in
 
   # Custom modules configuration
   modules = {
-    proxmoxGuest = true;
+    adguard.enable = true;
 
     # Additional vault-agent secrets (base.nix provides tailscale_authkey + attic_push_token,
     # k3s.nix provides k3s_token)
@@ -196,12 +193,6 @@ in
       serverAddr = "https://192.168.1.21:6443"; # boromir
       nodeIp = "192.168.1.27";
       podCidr = "10.42.3.0/24";
-      flannelIface = "ens18"; # Prevent flannel from picking up keepalived VIPs
-    };
-    tailscale = {
-      enable = true;
-      exitNode = true;
-      subnetRoutes = [ "192.168.1.0/24" ];
     };
 
     # Keepalived for HA DNS - theoden is primary

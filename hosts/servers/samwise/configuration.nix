@@ -11,15 +11,12 @@
 
 {
   imports = [
-    ./disk-config.nix
+    ../proxmox-disk-config.nix
     ../../profiles/server.nix
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/networking.nix
-    ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/zigbee2mqtt.nix
     ../../../modules/nixos/server/k3s.nix
-    ../../../modules/nixos/server/adguard.nix
-    ../../../modules/nixos/server/keepalived.nix
   ];
 
   networking = {
@@ -30,7 +27,7 @@
   };
 
   modules = {
-    proxmoxGuest = true;
+    adguard.enable = true;
 
     # k3s server node (joins existing cluster)
     k3s = {
@@ -40,14 +37,6 @@
       serverAddr = "https://192.168.1.21:6443"; # boromir
       nodeIp = "192.168.1.26";
       podCidr = "10.42.2.0/24";
-      flannelIface = "ens18"; # Prevent flannel from picking up keepalived VIPs
-    };
-
-    # Tailscale client - exit node + subnet router for remote access
-    tailscale = {
-      enable = true;
-      exitNode = true;
-      subnetRoutes = [ "192.168.1.0/24" ];
     };
 
     # Zigbee2MQTT configuration

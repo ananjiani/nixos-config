@@ -14,13 +14,19 @@
     ../../profiles/server.nix
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/networking.nix
-    ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/openbao.nix
     ../../../modules/nixos/server/vault-mcp-server.nix
   ];
 
   modules = {
-    tailscale.enable = true;
+    proxmoxGuest = false; # Hetzner VPS, not a Proxmox VM
+
+    # Tailscale without exit node or subnet routes (not on homelab LAN)
+    tailscale = {
+      enable = true;
+      exitNode = false;
+      subnetRoutes = [ ];
+    };
 
     openbao = {
       enable = true;

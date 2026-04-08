@@ -50,12 +50,13 @@ in
 
     flannelIface = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
-      default = null;
+      default = "ens18";
       description = ''
         Network interface for flannel inter-host communication.
-        Set this on nodes with keepalived VIPs to prevent flannel from
-        picking up a VIP as its public-ip (corrupts host-gw routes).
-        When null, flannel auto-detects (safe if no VIPs on the interface).
+        Defaults to "ens18" (Proxmox virtio NIC). Override for bare metal.
+        Prevents flannel from picking up keepalived VIPs as its public-ip,
+        which corrupts host-gw routes across the cluster.
+        Set to null to let flannel auto-detect (safe if no VIPs on the interface).
       '';
     };
 
