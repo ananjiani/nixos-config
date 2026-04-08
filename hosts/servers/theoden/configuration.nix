@@ -129,6 +129,8 @@ in
 
   # Custom modules configuration
   modules = {
+    proxmoxGuest = true;
+
     # Additional vault-agent secrets (base.nix provides tailscale_authkey + attic_push_token,
     # k3s.nix provides k3s_token)
     vault-agent.secrets = {
@@ -219,17 +221,6 @@ in
     };
   };
 
-  boot = {
-    loader.grub.enable = true;
-    initrd.availableKernelModules = [
-      "virtio_pci"
-      "virtio_scsi"
-      "virtio_blk"
-      "virtio_net"
-      "sd_mod"
-    ];
-  };
-
   # Pre-create service users so SOPS can set secret ownership during activation
   users = {
     users = {
@@ -256,8 +247,6 @@ in
   };
 
   services = {
-    qemuGuest.enable = true;
-
     # Prometheus postgres exporter for database metrics
     prometheus.exporters.postgres = {
       enable = true;

@@ -35,6 +35,8 @@
   };
 
   modules = {
+    proxmoxGuest = true;
+
     # k3s server node (joins existing cluster)
     k3s = {
       enable = true;
@@ -76,9 +78,6 @@
   };
 
   services = {
-    # Proxmox VM integration
-    qemuGuest.enable = true;
-
     # Prometheus MQTT exporter for Mosquitto metrics
     # TODO: Re-enable when Zigbee devices are added to the network
     prometheus.exporters.mqtt = {
@@ -100,18 +99,6 @@
         }
       ];
     };
-  };
-
-  # Boot configuration (GRUB for BIOS)
-  boot = {
-    loader.grub.enable = true;
-    initrd.availableKernelModules = [
-      "virtio_pci"
-      "virtio_scsi"
-      "virtio_blk"
-      "virtio_net"
-      "sd_mod"
-    ];
   };
 
   # USB/serial access for Zigbee dongle

@@ -23,6 +23,8 @@
 
   modules = {
     # Mount NFS share from theoden (use IP since we ARE the DNS server)
+    proxmoxGuest = true;
+
     nfs-client = {
       enable = true;
       server = "192.168.1.27";
@@ -108,9 +110,6 @@
   };
 
   services = {
-    # Proxmox VM integration
-    qemuGuest.enable = true;
-
     # Second VRRP instance for Wyoming Whisper HA (alongside adguard_vip from module)
     # Rohan (192.168.1.24) is MASTER with priority 100
     # Boromir (this host) is BACKUP with priority 50
@@ -128,20 +127,6 @@
         notify_fault "/etc/keepalived/whisper-backup.sh"
       '';
     };
-  };
-
-  # Boot configuration (GRUB for BIOS)
-  # Note: disko sets grub.devices automatically from disk-config.nix
-  boot = {
-    loader.grub.enable = true;
-    # Virtio modules for Proxmox
-    initrd.availableKernelModules = [
-      "virtio_pci"
-      "virtio_scsi"
-      "virtio_blk"
-      "virtio_net"
-      "sd_mod"
-    ];
   };
 
   # Enable CUDA support for packages (needed for WhisperX with GPU acceleration)
