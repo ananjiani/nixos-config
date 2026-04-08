@@ -21,6 +21,7 @@
     ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/openbao.nix
     ../../../modules/nixos/server/vault-mcp-server.nix
+    ../../../modules/nixos/vault-agent.nix
   ];
 
   modules = {
@@ -52,14 +53,27 @@
       enable = true;
       tokenFile = "/var/lib/openbao/mcp-token";
     };
+
+    # Vault agent — fetches secrets from local OpenBao
+    vault-agent = {
+      enable = true;
+      address = "http://127.0.0.1:8200"; # localhost (OpenBao runs on this machine)
+      roleIdFile = config.sops.secrets.vault_role_id_server.path;
+      secretIdFile = config.sops.secrets.vault_secret_id_server.path;
+      # Secrets will be declared here as services are added (ntfy, Gatus, Headscale, etc.)
+      secrets = { };
+    };
   };
 
-  # SOPS secrets — minimal, only for bootstrapping
-  # Once vault-agent is set up, this can be removed
+  # SOPS bootstraps vault-agent credentials + Tailscale auth
   sops = {
     defaultSopsFile = ../../../secrets/secrets.yaml;
     age.keyFile = "/var/lib/sops-nix/key.txt";
-    secrets.tailscale_authkey = { };
+    secrets = {
+      tailscale_authkey = { };
+      vault_role_id_server = { };
+      vault_secret_id_server = { };
+    };
   };
 
   networking = {
@@ -89,6 +103,15 @@
       "processes"
     ];
   };
+
+  # vault-agent must wait for local OpenBao to be ready (unique to erebor)
+  systemd.services.vault-agent-default = {
+    after = [ "openbao.service" ];
+    wants = [ "openbao.service" ];
+  };
+
+  # Use Attic binary cache via Cloudflare Tunnel (erebor can't reach theoden.lan)
+  nix.settings.extra-substituters = [ "https://attic.dimensiondoor.xyz/middle-earth" ];
 
   # Boot: GRUB for BIOS boot (Hetzner CX-series uses SeaBIOS)
   # Device is set automatically by disko via the EF02 partition
