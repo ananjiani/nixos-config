@@ -11,7 +11,6 @@
 
 let
   cfg = config.modules.k3s;
-  dns = import ../../../lib/dns.nix;
 in
 {
   options.modules.k3s = {
@@ -413,9 +412,6 @@ in
         ++ cfg.extraFlags
       );
     };
-
-    # DNS servers for cluster nodes (AdGuard instances + fallback)
-    networking.nameservers = dns.servers;
 
     # Firewall rules for k3s cluster
     networking.firewall = {

@@ -100,11 +100,6 @@ in
 
   networking = {
     hostName = "theoden";
-    useDHCP = true;
-    nameservers = [
-      "192.168.1.1"
-      "9.9.9.9"
-    ]; # Router + Quad9 fallback (avoid chicken-and-egg with in-cluster DNS)
     firewall = {
       allowedTCPPorts = [
         111 # rpcbind/portmapper

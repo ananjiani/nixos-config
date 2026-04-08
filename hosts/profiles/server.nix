@@ -48,6 +48,9 @@
     };
     services.qemuGuest.enable = lib.mkDefault config.modules.proxmoxGuest;
 
+    # Default networking: DHCP with Kea reservations (all servers have static leases)
+    networking.useDHCP = lib.mkDefault true;
+
     system.stateVersion = "25.11";
   };
 }

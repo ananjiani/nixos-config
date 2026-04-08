@@ -6,6 +6,9 @@
   ...
 }:
 
+let
+  dns = import ../../lib/dns.nix;
+in
 {
   imports = [
     ./ssh.nix
@@ -152,6 +155,9 @@
     NIX_SSL_CERT_FILE = "/etc/ssl/certs/ca-certificates.crt";
     NODE_EXTRA_CA_CERTS = "/etc/ssl/certs/ca-certificates.crt";
   };
+
+  # DNS: AdGuard VIP → router → Quad9 (erebor overrides with public DNS)
+  networking.nameservers = lib.mkDefault dns.servers;
 
   networking.firewall = {
     enable = true;

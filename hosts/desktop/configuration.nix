@@ -45,7 +45,6 @@ in
 
   networking = {
     hostName = "ammars-pc";
-    nameservers = [ (builtins.head dns.servers) ]; # AdGuard VIP only — router fallback is in services.resolved.fallbackDns
     # Tailscale bypass is loaded via systemd (see systemd.services.mullvad-tailscale-bypass)
     # because networking.nftables.tables requires networking.nftables.enable which
     # switches the entire firewall backend and breaks iptables-nft rules (Docker, Tailscale).

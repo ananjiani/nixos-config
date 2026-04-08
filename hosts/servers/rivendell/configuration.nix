@@ -80,21 +80,7 @@
     traktClientSecret = config.sops.secrets.trakt_client_secret.path;
   };
 
-  networking = {
-    hostName = "rivendell";
-    useDHCP = false;
-    interfaces.enp1s0.ipv4.addresses = [
-      {
-        address = "192.168.1.29";
-        prefixLength = 24;
-      }
-    ];
-    defaultGateway = "192.168.1.1";
-    nameservers = [
-      "192.168.1.53" # AdGuard Home VIP
-      "9.9.9.9" # Quad9 fallback
-    ];
-  };
+  networking.hostName = "rivendell";
 
   # Kodi HTPC user (server profile handles ammar via shared home.nix)
   home-manager.users.kodi = {
@@ -141,12 +127,9 @@
   environment.systemPackages = [ pkgs.ethtool ];
   systemd.services.nic-offloading = {
     description = "Disable hardware offloading on Realtek RTL8168 NIC";
-    after = [ "network-addresses-enp1s0.service" ];
-    requires = [ "network-addresses-enp1s0.service" ];
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
-    # PartOf ensures this restarts whenever scripted networking restarts the
-    # address service (e.g. during deploy-rs nixos-switch activations)
-    partOf = [ "network-addresses-enp1s0.service" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
