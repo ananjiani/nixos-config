@@ -92,7 +92,6 @@ in
     ../../profiles/server.nix
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/networking.nix
-    ../../../modules/nixos/server/k3s.nix
   ];
 
   networking = {

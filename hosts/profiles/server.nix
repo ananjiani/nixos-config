@@ -16,12 +16,17 @@
     ../../modules/nixos/tailscale.nix
     ../../modules/nixos/server/adguard.nix
     ../../modules/nixos/server/keepalived.nix
+    ../../modules/nixos/server/k3s.nix
   ];
 
   config = {
     # Server defaults — override per-host as needed
     modules = {
       proxmoxGuest = lib.mkDefault true;
+
+      # Proxmox VMs use ens18 (virtio NIC) for flannel and VRRP
+      k3s.flannelIface = lib.mkIf config.modules.proxmoxGuest (lib.mkDefault "ens18");
+      keepalived.interface = lib.mkIf config.modules.proxmoxGuest (lib.mkDefault "ens18");
 
       # Most servers are Tailscale exit nodes with LAN subnet routing
       tailscale = {

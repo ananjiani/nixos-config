@@ -13,7 +13,6 @@
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/nfs-client.nix
     ../../../modules/nixos/networking.nix
-    ../../../modules/nixos/server/k3s.nix
     ../../../modules/nixos/nvidia.nix # GPU support for Ollama
     ./ai.nix
   ];

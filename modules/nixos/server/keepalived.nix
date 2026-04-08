@@ -19,8 +19,7 @@ in
 
     interface = lib.mkOption {
       type = lib.types.str;
-      default = "ens18";
-      description = "Network interface for VRRP";
+      description = "Network interface for VRRP. Typically set via the server profile based on proxmoxGuest.";
     };
 
     virtualIp = lib.mkOption {

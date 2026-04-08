@@ -14,7 +14,6 @@
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/htpc.nix
     ../../../modules/nixos/networking.nix
-    ../../../modules/nixos/server/k3s.nix
   ];
 
   modules = {
