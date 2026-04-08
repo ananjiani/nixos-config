@@ -21,6 +21,7 @@
     ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/openbao.nix
     ../../../modules/nixos/server/vault-mcp-server.nix
+    ../../../modules/nixos/server/attic-watch-store.nix
     ../../../modules/nixos/vault-agent.nix
   ];
 
@@ -60,8 +61,12 @@
       address = "http://127.0.0.1:8200"; # localhost (OpenBao runs on this machine)
       roleIdFile = config.sops.secrets.vault_role_id_server.path;
       secretIdFile = config.sops.secrets.vault_secret_id_server.path;
-      # Secrets will be declared here as services are added (ntfy, Gatus, Headscale, etc.)
-      secrets = { };
+      secrets = {
+        attic_push_token = {
+          path = "secret/nixos/attic";
+          field = "push_token";
+        };
+      };
     };
   };
 
@@ -104,10 +109,21 @@
     ];
   };
 
-  # vault-agent must wait for local OpenBao to be ready (unique to erebor)
+  services.attic-watch-store = {
+    enable = true;
+    useSops = false;
+    tokenFile = "/run/secrets/attic_push_token";
+  };
+
+  # Systemd ordering unique to erebor: OpenBao is local, so vault-agent
+  # must wait for it, and attic-watch-store must wait for vault-agent
   systemd.services.vault-agent-default = {
     after = [ "openbao.service" ];
     wants = [ "openbao.service" ];
+  };
+  systemd.services.attic-watch-store = {
+    after = [ "vault-agent-default.service" ];
+    wants = [ "vault-agent-default.service" ];
   };
 
   # Use Attic binary cache via Cloudflare Tunnel (erebor can't reach theoden.lan)
