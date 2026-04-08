@@ -35,13 +35,8 @@ in
     # Tailscale client (not exit node - Mullvad handles regular traffic)
     tailscale = {
       enable = true;
-      loginServer = "https://ts.dimensiondoor.xyz";
-      authKeyFile = "/run/secrets/tailscale_authkey";
       excludeFromMullvad = true;
-      acceptRoutes = false; # Already on LAN — don't accept subnet routes (avoids routing 192.168.1.0/24 through Tailscale)
-      acceptDns = false; # Use AdGuard directly, avoid DNS conflicts with Mullvad
       operator = "ammar";
-      useExitNode = null; # Don't route through exit node (Mullvad handles VPN)
     };
 
     # Mullvad custom DNS (AdGuard instances + fallback)

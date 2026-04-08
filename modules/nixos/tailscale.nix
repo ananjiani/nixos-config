@@ -15,12 +15,13 @@ in
 
     loginServer = lib.mkOption {
       type = lib.types.str;
-      description = "Headscale server URL (e.g., https://ts.example.com)";
+      default = "https://ts.dimensiondoor.xyz";
+      description = "Headscale server URL";
     };
 
     authKeyFile = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
-      default = null;
+      default = "/run/secrets/tailscale_authkey";
       description = "Path to file containing auth key for automatic registration";
     };
 
@@ -48,19 +49,19 @@ in
 
     acceptDns = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = "Accept DNS configuration from Tailscale/Headscale (MagicDNS)";
     };
 
     acceptRoutes = lib.mkOption {
       type = lib.types.bool;
-      default = true;
-      description = "Accept subnet routes advertised by other nodes. Disable on nodes that are already on the LAN and advertise subnet routes to avoid circular routing.";
+      default = false;
+      description = "Accept subnet routes advertised by other nodes. Enable only on nodes that are NOT on the LAN to avoid circular routing.";
     };
 
     useExitNode = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
-      default = "boromir";
+      default = null;
       description = "Use specified node as exit node (hostname or IP). Set to null to disable.";
       example = "boromir";
     };

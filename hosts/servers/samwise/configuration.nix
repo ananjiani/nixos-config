@@ -56,13 +56,8 @@
     # Tailscale client - exit node + subnet router for remote access
     tailscale = {
       enable = true;
-      loginServer = "https://ts.dimensiondoor.xyz";
-      authKeyFile = "/run/secrets/tailscale_authkey";
       exitNode = true;
-      useExitNode = null; # Can't use exit node while being one
-      subnetRoutes = [ "192.168.1.0/24" ]; # Expose local network to Tailnet
-      acceptDns = false; # Don't use Magic DNS (depends on in-cluster Headscale)
-      acceptRoutes = false; # Don't accept subnet routes (we're already on the LAN)
+      subnetRoutes = [ "192.168.1.0/24" ];
     };
 
     # Zigbee2MQTT configuration

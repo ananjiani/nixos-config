@@ -19,8 +19,6 @@
 
   modules.tailscale = {
     enable = true;
-    loginServer = "https://ts.dimensiondoor.xyz";
-    authKeyFile = "/run/secrets/tailscale_authkey";
     excludeFromMullvad = true;
     operator = "ammar";
   };

@@ -20,14 +20,7 @@
   ];
 
   modules = {
-    tailscale = {
-      enable = true;
-      loginServer = "https://ts.dimensiondoor.xyz";
-      authKeyFile = "/run/secrets/tailscale_authkey";
-      acceptDns = false;
-      acceptRoutes = false;
-      useExitNode = null; # VPS has its own internet access
-    };
+    tailscale.enable = true;
 
     openbao = {
       enable = true;
