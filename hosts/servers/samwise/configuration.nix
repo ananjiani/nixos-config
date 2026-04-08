@@ -6,26 +6,20 @@
 #
 # Home Assistant (frodo) connects to Mosquitto for device control via MQTT.
 {
-  inputs,
-  pkgs-stable,
-  config,
   ...
 }:
 
 {
   imports = [
     ./disk-config.nix
-    inputs.home-manager-unstable.nixosModules.home-manager
+    ../../profiles/server.nix
     ../../../modules/nixos/base.nix
-    ../../../modules/nixos/ssh.nix
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/zigbee2mqtt.nix
     ../../../modules/nixos/server/k3s.nix
-    ../../../modules/nixos/server/attic-watch-store.nix
     ../../../modules/nixos/server/adguard.nix
     ../../../modules/nixos/server/keepalived.nix
-    ../../../modules/nixos/vault-agent.nix
   ];
 
   networking = {
@@ -40,37 +34,14 @@
     ];
   };
 
-  # SOPS bootstraps vault-agent credentials
-  sops = {
-    defaultSopsFile = ../../../secrets/secrets.yaml;
-    age.keyFile = "/var/lib/sops-nix/key.txt";
-    secrets.vault_role_id_server = { };
-    secrets.vault_secret_id_server = { };
-  };
-
   modules = {
-    # k3s server node (joins existing cluster)
-    vault-agent = {
-      enable = true;
-      address = "http://100.64.0.21:8200"; # Tailscale IP (MagicDNS disabled)
-      roleIdFile = config.sops.secrets.vault_role_id_server.path;
-      secretIdFile = config.sops.secrets.vault_secret_id_server.path;
-      secrets = {
-        tailscale_authkey = {
-          path = "secret/nixos/tailscale";
-          field = "authkey";
-        };
-        k3s_token = {
-          path = "secret/nixos/k3s";
-          field = "token";
-        };
-        attic_push_token = {
-          path = "secret/nixos/attic";
-          field = "push_token";
-        };
-      };
+    # Additional vault-agent secret (base.nix provides tailscale_authkey + attic_push_token)
+    vault-agent.secrets.k3s_token = {
+      path = "secret/nixos/k3s";
+      field = "token";
     };
 
+    # k3s server node (joins existing cluster)
     k3s = {
       enable = true;
       role = "server";
@@ -104,12 +75,6 @@
       adapter = "ember"; # For SONOFF ZBDongle-E (V2) with EFR32MG21
     };
 
-    # SSH server
-    ssh = {
-      enable = true;
-      permitRootLogin = "prohibit-password";
-    };
-
     # Keepalived for HA DNS - samwise is tertiary
     keepalived = {
       enable = true;
@@ -122,33 +87,9 @@
     };
   };
 
-  # Home Manager integration
-  home-manager = {
-    useGlobalPkgs = true;
-    useUserPackages = true;
-    extraSpecialArgs = { inherit inputs pkgs-stable; };
-    users.ammar = import ./home.nix;
-  };
-
   services = {
-    # Proxmox VM integration and Attic cache
+    # Proxmox VM integration
     qemuGuest.enable = true;
-    attic-watch-store = {
-      enable = true;
-      useSops = false;
-      tokenFile = "/run/secrets/attic_push_token";
-    };
-
-    # Prometheus node exporter for VM-level monitoring
-    prometheus.exporters.node = {
-      enable = true;
-      port = 9100;
-      openFirewall = true;
-      enabledCollectors = [
-        "systemd"
-        "processes"
-      ];
-    };
 
     # Prometheus MQTT exporter for Mosquitto metrics
     # TODO: Re-enable when Zigbee devices are added to the network
@@ -187,7 +128,4 @@
 
   # USB/serial access for Zigbee dongle
   users.users.ammar.extraGroups = [ "dialout" ];
-
-  system.stateVersion = "25.11";
-  nixpkgs.hostPlatform = "x86_64-linux";
 }

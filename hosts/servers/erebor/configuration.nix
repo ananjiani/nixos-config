@@ -3,9 +3,6 @@
 # External VPS hosting OpenBao for centralized secrets management.
 # Accessed exclusively over Tailscale (no public API exposure).
 {
-  inputs,
-  pkgs-stable,
-  config,
   modulesPath,
   ...
 }:
@@ -14,30 +11,22 @@
   imports = [
     (modulesPath + "/profiles/qemu-guest.nix")
     ./disk-config.nix
-    inputs.home-manager-unstable.nixosModules.home-manager
+    ../../profiles/server.nix
     ../../../modules/nixos/base.nix
-    ../../../modules/nixos/ssh.nix
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/openbao.nix
     ../../../modules/nixos/server/vault-mcp-server.nix
-    ../../../modules/nixos/server/attic-watch-store.nix
-    ../../../modules/nixos/vault-agent.nix
   ];
 
   modules = {
     tailscale = {
       enable = true;
       loginServer = "https://ts.dimensiondoor.xyz";
-      authKeyFile = config.sops.secrets.tailscale_authkey.path;
+      authKeyFile = "/run/secrets/tailscale_authkey";
       acceptDns = false;
       acceptRoutes = false;
       useExitNode = null; # VPS has its own internet access
-    };
-
-    ssh = {
-      enable = true;
-      permitRootLogin = "prohibit-password";
     };
 
     openbao = {
@@ -55,30 +44,8 @@
       tokenFile = "/var/lib/openbao/mcp-token";
     };
 
-    # Vault agent — fetches secrets from local OpenBao
-    vault-agent = {
-      enable = true;
-      address = "http://127.0.0.1:8200"; # localhost (OpenBao runs on this machine)
-      roleIdFile = config.sops.secrets.vault_role_id_server.path;
-      secretIdFile = config.sops.secrets.vault_secret_id_server.path;
-      secrets = {
-        attic_push_token = {
-          path = "secret/nixos/attic";
-          field = "push_token";
-        };
-      };
-    };
-  };
-
-  # SOPS bootstraps vault-agent credentials + Tailscale auth
-  sops = {
-    defaultSopsFile = ../../../secrets/secrets.yaml;
-    age.keyFile = "/var/lib/sops-nix/key.txt";
-    secrets = {
-      tailscale_authkey = { };
-      vault_role_id_server = { };
-      vault_secret_id_server = { };
-    };
+    # Override vault-agent to use local OpenBao (base.nix defaults to erebor's Tailscale IP)
+    vault-agent.address = "http://127.0.0.1:8200";
   };
 
   networking = {
@@ -88,31 +55,6 @@
       "1.1.1.1" # Cloudflare (public VPS, not on homelab LAN)
       "9.9.9.9" # Quad9 fallback
     ];
-  };
-
-  # Home Manager integration
-  home-manager = {
-    useGlobalPkgs = true;
-    useUserPackages = true;
-    extraSpecialArgs = { inherit inputs pkgs-stable; };
-    users.ammar = import ./home.nix;
-  };
-
-  # Prometheus node exporter for monitoring
-  services.prometheus.exporters.node = {
-    enable = true;
-    port = 9100;
-    openFirewall = true;
-    enabledCollectors = [
-      "systemd"
-      "processes"
-    ];
-  };
-
-  services.attic-watch-store = {
-    enable = true;
-    useSops = false;
-    tokenFile = "/run/secrets/attic_push_token";
   };
 
   # Systemd ordering unique to erebor: OpenBao is local, so vault-agent
@@ -136,7 +78,4 @@
     efiSupport = true;
     efiInstallAsRemovable = true;
   };
-
-  system.stateVersion = "25.11";
-  nixpkgs.hostPlatform = "x86_64-linux";
 }

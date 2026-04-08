@@ -6,7 +6,6 @@
 # Immich ML offloaded to rohan (Proxmox host) with GPU acceleration.
 {
   inputs,
-  pkgs-stable,
   pkgs,
   config,
   lib,
@@ -90,16 +89,13 @@ in
   imports = [
     ./disk-config.nix
     ./storage.nix
-    inputs.home-manager-unstable.nixosModules.home-manager
+    ../../profiles/server.nix
     ../../../modules/nixos/base.nix
-    ../../../modules/nixos/ssh.nix
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/k3s.nix
-    ../../../modules/nixos/server/attic-watch-store.nix
     ../../../modules/nixos/server/adguard.nix
     ../../../modules/nixos/server/keepalived.nix
-    ../../../modules/nixos/vault-agent.nix
   ];
 
   networking = {
@@ -131,92 +127,71 @@ in
     };
   };
 
-  # SOPS bootstraps vault-agent credentials
-  sops = {
-    defaultSopsFile = ../../../secrets/secrets.yaml;
-    age.keyFile = "/var/lib/sops-nix/key.txt";
-    secrets.vault_role_id_server = { };
-    secrets.vault_secret_id_server = { };
-  };
-
   # Custom modules configuration
   modules = {
-    vault-agent = {
-      enable = true;
-      address = "http://100.64.0.21:8200"; # Tailscale IP (MagicDNS disabled)
-      roleIdFile = config.sops.secrets.vault_role_id_server.path;
-      secretIdFile = config.sops.secrets.vault_secret_id_server.path;
-      secrets = {
-        tailscale_authkey = {
-          path = "secret/nixos/tailscale";
-          field = "authkey";
-        };
-        k3s_token = {
-          path = "secret/nixos/k3s";
-          field = "token";
-        };
-        attic_push_token = {
-          path = "secret/nixos/attic";
-          field = "push_token";
-        };
-        attic_server_token_key = {
-          path = "secret/nixos/attic";
-          field = "server_token_key";
-          owner = "atticd";
-          group = "atticd";
-        };
-        buildbot_worker_password = {
-          path = "secret/nixos/buildbot";
-          field = "worker_password";
-          owner = "buildbot";
-        };
-        buildbot_worker_password_plain = {
-          path = "secret/nixos/buildbot";
-          field = "worker_password_plain";
-          owner = "buildbot-worker";
-        };
-        buildbot_deploy_ssh_key = {
-          path = "secret/nixos/buildbot";
-          field = "deploy_ssh_key";
-          owner = "buildbot-worker";
-        };
-        codeberg_token = {
-          path = "secret/nixos/codeberg";
-          field = "token";
-          owner = "buildbot";
-        };
-        codeberg_webhook_secret = {
-          path = "secret/nixos/codeberg";
-          field = "webhook_secret";
-          owner = "buildbot";
-        };
-        codeberg_oauth_secret = {
-          path = "secret/nixos/codeberg";
-          field = "oauth_secret";
-          owner = "buildbot";
-        };
-        github_app_secret = {
-          path = "secret/nixos/github";
-          field = "app_secret";
-          owner = "buildbot";
-        };
-        github_webhook_secret = {
-          path = "secret/nixos/github";
-          field = "webhook_secret";
-          owner = "buildbot";
-        };
-        cloudflared_tunnel_creds = {
-          path = "secret/nixos/cloudflared";
-          field = "tunnel_creds";
-          owner = "cloudflared";
-          group = "cloudflared";
-        };
-        immich_secrets = {
-          path = "secret/nixos/immich";
-          field = "secrets";
-          owner = "immich";
-          group = "immich";
-        };
+    # Additional vault-agent secrets (base.nix provides tailscale_authkey + attic_push_token)
+    vault-agent.secrets = {
+      k3s_token = {
+        path = "secret/nixos/k3s";
+        field = "token";
+      };
+      attic_server_token_key = {
+        path = "secret/nixos/attic";
+        field = "server_token_key";
+        owner = "atticd";
+        group = "atticd";
+      };
+      buildbot_worker_password = {
+        path = "secret/nixos/buildbot";
+        field = "worker_password";
+        owner = "buildbot";
+      };
+      buildbot_worker_password_plain = {
+        path = "secret/nixos/buildbot";
+        field = "worker_password_plain";
+        owner = "buildbot-worker";
+      };
+      buildbot_deploy_ssh_key = {
+        path = "secret/nixos/buildbot";
+        field = "deploy_ssh_key";
+        owner = "buildbot-worker";
+      };
+      codeberg_token = {
+        path = "secret/nixos/codeberg";
+        field = "token";
+        owner = "buildbot";
+      };
+      codeberg_webhook_secret = {
+        path = "secret/nixos/codeberg";
+        field = "webhook_secret";
+        owner = "buildbot";
+      };
+      codeberg_oauth_secret = {
+        path = "secret/nixos/codeberg";
+        field = "oauth_secret";
+        owner = "buildbot";
+      };
+      github_app_secret = {
+        path = "secret/nixos/github";
+        field = "app_secret";
+        owner = "buildbot";
+      };
+      github_webhook_secret = {
+        path = "secret/nixos/github";
+        field = "webhook_secret";
+        owner = "buildbot";
+      };
+      cloudflared_tunnel_creds = {
+        path = "secret/nixos/cloudflared";
+        field = "tunnel_creds";
+        owner = "cloudflared";
+        group = "cloudflared";
+      };
+      immich_secrets = {
+        path = "secret/nixos/immich";
+        field = "secrets";
+        owner = "immich";
+        group = "immich";
       };
     };
 
@@ -240,10 +215,6 @@ in
       acceptDns = false; # Don't use Magic DNS (depends on in-cluster Headscale)
       acceptRoutes = false; # Don't accept subnet routes (we're already on the LAN)
     };
-    ssh = {
-      enable = true;
-      permitRootLogin = "prohibit-password";
-    };
 
     # Keepalived for HA DNS - theoden is primary
     keepalived = {
@@ -255,13 +226,6 @@ in
         "192.168.1.29" # rivendell
       ];
     };
-  };
-
-  home-manager = {
-    useGlobalPkgs = true;
-    useUserPackages = true;
-    extraSpecialArgs = { inherit inputs pkgs-stable; };
-    users.ammar = import ./home.nix;
   };
 
   boot = {
@@ -294,26 +258,14 @@ in
     };
   };
 
+  # Theoden has extra node exporter collectors (textfile for Attic chunk checks)
+  services.prometheus.exporters.node = {
+    enabledCollectors = [ "textfile" ];
+    extraFlags = [ "--collector.textfile.directory=/var/lib/attic-monitor" ];
+  };
+
   services = {
     qemuGuest.enable = true;
-    attic-watch-store = {
-      enable = true;
-      useSops = false;
-      tokenFile = "/run/secrets/attic_push_token";
-    };
-
-    # Prometheus node exporter for VM-level monitoring
-    prometheus.exporters.node = {
-      enable = true;
-      port = 9100;
-      openFirewall = true;
-      enabledCollectors = [
-        "systemd"
-        "processes"
-        "textfile"
-      ];
-      extraFlags = [ "--collector.textfile.directory=/var/lib/attic-monitor" ];
-    };
 
     # Prometheus postgres exporter for database metrics
     prometheus.exporters.postgres = {
@@ -621,7 +573,4 @@ in
       };
     };
   };
-
-  system.stateVersion = "25.11";
-  nixpkgs.hostPlatform = "x86_64-linux";
 }

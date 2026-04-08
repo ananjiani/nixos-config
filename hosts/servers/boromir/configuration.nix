@@ -1,38 +1,25 @@
-# Boromir - Proxmox VM (minimal base)
+# Boromir - Proxmox VM (k3s server, exit node, AI workloads)
 {
   inputs,
   pkgs,
-  pkgs-stable,
-  config,
   ...
 }:
 
 {
   imports = [
     ./disk-config.nix
-    inputs.home-manager-unstable.nixosModules.home-manager
+    ../../profiles/server.nix
     inputs.quadlet-nix.nixosModules.quadlet
     ../../../modules/nixos/base.nix
-    ../../../modules/nixos/ssh.nix
     ../../../modules/nixos/nfs-client.nix
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/tailscale.nix
-    ../../../modules/nixos/vault-agent.nix
     ../../../modules/nixos/server/k3s.nix
     ../../../modules/nixos/nvidia.nix # GPU support for Ollama
-    ../../../modules/nixos/server/attic-watch-store.nix
     ../../../modules/nixos/server/adguard.nix
     ../../../modules/nixos/server/keepalived.nix
     ./ai.nix
   ];
-
-  # SOPS bootstraps vault-agent credentials
-  sops = {
-    defaultSopsFile = ../../../secrets/secrets.yaml;
-    age.keyFile = "/var/lib/sops-nix/key.txt";
-    secrets.vault_role_id_server = { };
-    secrets.vault_secret_id_server = { };
-  };
 
   modules = {
     # Mount NFS share from theoden (use IP since we ARE the DNS server)
@@ -53,12 +40,6 @@
       acceptRoutes = false; # Don't accept subnet routes (we're already on the LAN)
     };
 
-    # SSH server
-    ssh = {
-      enable = true;
-      permitRootLogin = "prohibit-password";
-    };
-
     # Keepalived for HA DNS - boromir is secondary
     keepalived = {
       enable = true;
@@ -70,26 +51,10 @@
       ];
     };
 
-    # Vault agent — fetches secrets from OpenBao on erebor
-    vault-agent = {
-      enable = true;
-      address = "http://100.64.0.21:8200"; # Tailscale IP (MagicDNS disabled on boromir)
-      roleIdFile = config.sops.secrets.vault_role_id_server.path;
-      secretIdFile = config.sops.secrets.vault_secret_id_server.path;
-      secrets = {
-        tailscale_authkey = {
-          path = "secret/nixos/tailscale";
-          field = "authkey";
-        };
-        k3s_token = {
-          path = "secret/nixos/k3s";
-          field = "token";
-        };
-        attic_push_token = {
-          path = "secret/nixos/attic";
-          field = "push_token";
-        };
-      };
+    # Additional vault-agent secret (base.nix provides tailscale_authkey + attic_push_token)
+    vault-agent.secrets.k3s_token = {
+      path = "secret/nixos/k3s";
+      field = "token";
     };
 
     # k3s cluster initializer (first server node)
@@ -154,22 +119,9 @@
     ]; # Ollama API + ComfyUI
   };
 
-  # Home Manager integration
-  home-manager = {
-    useGlobalPkgs = true;
-    useUserPackages = true;
-    extraSpecialArgs = { inherit inputs pkgs-stable; };
-    users.ammar = import ./home.nix;
-  };
-
   services = {
-    # Proxmox VM integration and Attic cache
+    # Proxmox VM integration
     qemuGuest.enable = true;
-    attic-watch-store = {
-      enable = true;
-      useSops = false;
-      tokenFile = "/run/secrets/attic_push_token";
-    };
 
     # Second VRRP instance for Wyoming Whisper HA (alongside adguard_vip from module)
     # Rohan (192.168.1.24) is MASTER with priority 100
@@ -188,17 +140,6 @@
         notify_fault "/etc/keepalived/whisper-backup.sh"
       '';
     };
-
-    # Prometheus node exporter for VM-level monitoring
-    prometheus.exporters.node = {
-      enable = true;
-      port = 9100;
-      openFirewall = true;
-      enabledCollectors = [
-        "systemd"
-        "processes"
-      ];
-    };
   };
 
   # Boot configuration (GRUB for BIOS)
@@ -215,9 +156,6 @@
     ];
   };
 
-  system.stateVersion = "25.11";
-  nixpkgs.hostPlatform = "x86_64-linux";
-
-  # # Enable CUDA support for packages (needed for WhisperX with GPU acceleration)
+  # Enable CUDA support for packages (needed for WhisperX with GPU acceleration)
   nixpkgs.config.cudaSupport = true;
 }

@@ -1,11 +1,7 @@
-# Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running `nixos-help`).
-
+# ammars-pc — Primary desktop workstation
 {
   pkgs,
   inputs,
-  config,
   ...
 }:
 
@@ -19,7 +15,6 @@ in
     ./samba.nix
     ../../modules/nixos/gaming.nix
     ../../modules/nixos/amd.nix
-    ../../modules/nixos/ssh.nix
     ../../modules/nixos/bluetooth.nix
     ../../modules/nixos/android.nix
     ../../modules/nixos/nfs-client.nix
@@ -27,38 +22,13 @@ in
     ../../modules/nixos/networking.nix
     ../../modules/nixos/tailscale.nix
     inputs.play-nix.nixosModules.play
-    ../../modules/nixos/server/attic-watch-store.nix
-    ../../modules/nixos/vault-agent.nix
   ];
 
-  # SOPS bootstraps vault-agent credentials; vault-agent fetches application secrets
-  sops = {
-    defaultSopsFile = ../../secrets/secrets.yaml;
-    age.keyFile = "/home/ammar/.config/sops/age/keys.txt";
-    secrets.vault_role_id = { };
-    secrets.vault_secret_id = { };
-  };
+  # Desktop uses age key from home directory (servers use /var/lib/sops-nix/)
+  sops.age.keyFile = "/home/ammar/.config/sops/age/keys.txt";
 
   # Custom modules configuration
   modules = {
-    # Vault agent for OpenBao secret retrieval
-    vault-agent = {
-      enable = true;
-      address = "http://100.64.0.21:8200"; # Tailscale IP (MagicDNS disabled on desktop)
-      roleIdFile = config.sops.secrets.vault_role_id.path;
-      secretIdFile = config.sops.secrets.vault_secret_id.path;
-      secrets = {
-        tailscale_authkey = {
-          path = "secret/nixos/tailscale";
-          field = "authkey";
-        };
-        attic_push_token = {
-          path = "secret/nixos/attic";
-          field = "push_token";
-        };
-      };
-    };
-
     # Mount NFS share from theoden
     nfs-client.enable = true;
 
@@ -76,9 +46,6 @@ in
 
     # Mullvad custom DNS (AdGuard instances + fallback)
     privacy.mullvadCustomDns = dns.servers;
-
-    # SSH server
-    ssh.enable = true;
   };
 
   networking = {
@@ -127,19 +94,12 @@ in
 
   virtualisation.docker.enable = true;
 
-  services = {
-    attic-watch-store = {
-      enable = true;
-      useSops = false;
-      tokenFile = "/run/secrets/attic_push_token";
-    };
-    udev.enable = true;
-    sunshine = {
-      enable = true;
-      autoStart = true;
-      capSysAdmin = true;
-      openFirewall = true;
-    };
+  services.udev.enable = true;
+  services.sunshine = {
+    enable = true;
+    autoStart = true;
+    capSysAdmin = true;
+    openFirewall = true;
   };
 
   moondeck = {

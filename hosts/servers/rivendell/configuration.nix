@@ -2,9 +2,7 @@
 # Kodi-GBM media center with CEC remote, connected to LG OLED
 {
   config,
-  inputs,
   pkgs,
-  pkgs-stable,
   ...
 }:
 
@@ -12,10 +10,9 @@
   imports = [
     ./hardware-configuration.nix
     ./disk-config.nix
-    inputs.home-manager-unstable.nixosModules.home-manager
+    ../../profiles/server.nix
     ../../../modules/nixos/base.nix
     ../../../modules/nixos/htpc.nix
-    ../../../modules/nixos/ssh.nix
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/tailscale.nix
     ../../../modules/nixos/server/k3s.nix
@@ -27,16 +24,13 @@
     # Kodi HTPC (greetd auto-login, ALSA audio, CEC, Intel graphics)
     htpc.enable = true;
 
-    # SSH for remote maintenance
-    ssh = {
-      enable = true;
-      permitRootLogin = "prohibit-password";
-    };
-
     # Tailscale — PERMANENTLY DISABLED
     # Tailscale netfilter modifications trigger r8169 driver bug causing
     # complete inbound packet loss at ~11 min (see postmortem 2026-02-13)
     tailscale.enable = false;
+
+    # Vault agent — DISABLED (can't reach OpenBao without Tailscale)
+    vault-agent.enable = false;
 
     # k3s agent node — verified: iptables rules do NOT trigger r8169 NIC bug
     k3s = {
@@ -62,22 +56,22 @@
     };
   };
 
-  # SOPS secrets
-  sops = {
-    defaultSopsFile = ../../../secrets/secrets.yaml;
-    age.keyFile = "/var/lib/sops-nix/key.txt";
-    secrets = {
-      k3s_token = { };
-      trakt_client_id = {
-        owner = "kodi";
-        mode = "0400";
-      };
-      trakt_client_secret = {
-        owner = "kodi";
-        mode = "0400";
-      };
+  # SOPS secrets — rivendell can't use vault-agent (no Tailscale → no OpenBao access)
+  sops.secrets = {
+    k3s_token = { };
+    attic_push_token = { };
+    trakt_client_id = {
+      owner = "kodi";
+      mode = "0400";
+    };
+    trakt_client_secret = {
+      owner = "kodi";
+      mode = "0400";
     };
   };
+
+  # Attic watch-store: use SOPS token since vault-agent is disabled
+  services.attic-watch-store.useSops = true;
 
   # Dendritic kodi module — inject Jacktook Trakt secrets
   # Debrid (TorBox) is handled by Comet Stremio addon, no API key needed here
@@ -102,15 +96,9 @@
     ];
   };
 
-  # Home Manager
-  home-manager = {
-    useGlobalPkgs = true;
-    useUserPackages = true;
-    extraSpecialArgs = { inherit inputs pkgs-stable; };
-    users.ammar = import ./home.nix; # SSH maintenance user
-    users.kodi = {
-      imports = [ ./kodi-home.nix ];
-    }; # Kodi HTPC (advancedsettings.xml)
+  # Kodi HTPC user (server profile handles ammar via shared home.nix)
+  home-manager.users.kodi = {
+    imports = [ ./kodi-home.nix ];
   };
 
   # NFS client — required for Zot registry PVC (k8s NFS volume mount)
@@ -119,17 +107,6 @@
 
   services = {
     rpcbind.enable = true;
-
-    # Prometheus node exporter for monitoring
-    prometheus.exporters.node = {
-      enable = true;
-      port = 9100;
-      openFirewall = true;
-      enabledCollectors = [
-        "systemd"
-        "processes"
-      ];
-    };
 
     # Realtek RTL8168 (r8169 driver) NIC stability fixes — disable hw offloading
     # See: https://forum.proxmox.com/threads/lots-of-missed-packets-with-realtek-nic-r8168-r8169.168792/
@@ -182,6 +159,4 @@
       echo on > /sys/bus/pci/devices/$pci_dev/power/control
     '';
   };
-
-  system.stateVersion = "25.11";
 }
