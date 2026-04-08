@@ -200,10 +200,6 @@ _: {
             answer = "192.168.1.27";
           }
           {
-            domain = "pippin.lan";
-            answer = "192.168.1.28";
-          }
-          {
             domain = "rivendell.lan";
             answer = "192.168.1.29";
           }

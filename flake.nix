@@ -83,10 +83,6 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
-    nix-openclaw = {
-      url = "github:openclaw/nix-openclaw";
-      inputs.nixpkgs.follows = "nixpkgs-unstable";
-    };
     mkdocs-flake = {
       url = "github:applicative-systems/mkdocs-flake";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
@@ -231,16 +227,6 @@
           ];
         };
 
-        # Pippin - Clawdbot AI Assistant (Proxmox VM on the-shire)
-        pippin = lib.nixosSystem {
-          inherit system specialArgs;
-          modules = [
-            ./hosts/servers/pippin/configuration.nix
-            inputs.sops-nix.nixosModules.sops
-            inputs.disko.nixosModules.disko
-          ];
-        };
-
         # Rivendell - HTPC (Intel N100 bare metal)
         rivendell = lib.nixosSystem {
           inherit system specialArgs;
@@ -298,14 +284,6 @@
             user = "root";
             sshUser = "root";
             path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.theoden;
-          };
-        };
-        pippin = {
-          hostname = "pippin.lan";
-          profiles.system = {
-            user = "root";
-            sshUser = "root";
-            path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.pippin;
           };
         };
         rivendell = {
@@ -441,7 +419,6 @@
         nixos-boromir = self.nixosConfigurations.boromir.config.system.build.toplevel;
         nixos-samwise = self.nixosConfigurations.samwise.config.system.build.toplevel;
         nixos-theoden = self.nixosConfigurations.theoden.config.system.build.toplevel;
-        nixos-pippin = self.nixosConfigurations.pippin.config.system.build.toplevel;
         nixos-rivendell = self.nixosConfigurations.rivendell.config.system.build.toplevel;
         nixos-erebor = self.nixosConfigurations.erebor.config.system.build.toplevel;
 

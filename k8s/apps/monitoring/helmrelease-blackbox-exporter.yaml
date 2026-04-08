@@ -115,8 +115,6 @@ spec:
         # ── Internal service probes (cluster DNS, no external dependency) ──
         - name: bifrost
           url: http://bifrost.bifrost.svc:8080
-        - name: clawd
-          url: http://clawdbot-external.clawdbot.svc:18789
         - name: ntfy
           url: http://ntfy.ntfy.svc:80
         - name: open-webui

@@ -7,14 +7,13 @@
 declare -A PROXMOX_VMS=(
   [gondor]="boromir"
   [rohan]="theoden"
-  [the-shire]="samwise pippin frodo"
+  [the-shire]="samwise frodo"
 )
 
 declare -A VM_HOST=(
   [boromir]=gondor
   [theoden]=rohan
   [samwise]=the-shire
-  [pippin]=the-shire
   [frodo]=the-shire
 )
 
@@ -22,7 +21,6 @@ declare -A VM_ID=(
   [boromir]=100
   [theoden]=104
   [samwise]=103
-  [pippin]=105
   [frodo]=102
 )
 
@@ -36,7 +34,7 @@ declare -A K3S_ROLE=(
 declare -A CAN_SSH=(
   [gondor]=1 [rohan]=1 [the-shire]=1
   [boromir]=1 [samwise]=1 [theoden]=1
-  [pippin]=1 [rivendell]=1
+  [rivendell]=1
   # frodo (HAOS) has no SSH
 )
 
@@ -48,7 +46,7 @@ declare -A MAC_ADDR=(
 )
 
 ALL_PROXMOX=(gondor rohan the-shire)
-ALL_VMS=(boromir samwise theoden pippin frodo)
+ALL_VMS=(boromir samwise theoden frodo)
 ALL_K3S=(boromir samwise theoden rivendell)
 ALL_BARE=(rivendell)
 
@@ -225,7 +223,6 @@ Topology:
   gondor ──── boromir  (k3s server)
   rohan ───── theoden  (k3s server)
   the-shire ┬ samwise  (k3s server)
-            ├ pippin   (plain VM)
             └ frodo    (Home Assistant, no SSH)
   rivendell   (bare metal HTPC, k3s agent)
 TOPO
@@ -236,14 +233,13 @@ show_common_options() {
 Targets (mix and match):
   gondor, rohan, the-shire    Proxmox hosts (auto-includes their VMs)
   boromir, samwise, theoden   k3s server VMs
-  pippin                      Plain VM
   frodo                       Home Assistant OS VM (no SSH)
   rivendell                   Bare metal HTPC + k3s agent
 
 Groups:
   --all       Everything
   --k3s       All k3s nodes (boromir, samwise, theoden, rivendell)
-  --vms       All VMs (boromir, samwise, theoden, pippin, frodo)
+  --vms       All VMs (boromir, samwise, theoden, frodo)
   --proxmox   All Proxmox hosts + their VMs
 
 Options:

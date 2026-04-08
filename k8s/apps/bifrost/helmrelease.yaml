@@ -144,7 +144,7 @@ spec:
         virtualKeys:
           - id: "default"
             name: "Default Virtual Key"
-            description: "Default key for all services (openclaw, lobechat, etc.)"
+            description: "Default key for all services (lobechat, holmesgpt, etc.)"
             value: "env.BIFROST_DEFAULT_VK"
             is_active: true
 

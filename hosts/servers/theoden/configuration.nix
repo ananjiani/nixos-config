@@ -40,7 +40,7 @@ let
     STRIPPED=''${ATTR#*.}
     SERVER=''${STRIPPED#nixos-}
     case "$SERVER" in
-      boromir|samwise|theoden|pippin|rivendell) ;;
+      boromir|samwise|theoden|rivendell) ;;
       *)
         echo "Skipping deploy: $ATTR is not a server configuration"
         exit 0

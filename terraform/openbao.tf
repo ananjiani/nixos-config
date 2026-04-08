@@ -95,7 +95,6 @@ locals {
     boromir   = ["vault-agent"]
     samwise   = ["vault-agent"]
     theoden   = ["vault-agent"]
-    pippin    = ["vault-agent"]
     rivendell = ["vault-agent"]
     erebor    = ["vault-agent"]
   }
@@ -138,7 +137,7 @@ resource "vault_approle_auth_backend_role_secret_id" "eso" {
 # Secret Values — bridged from SOPS into OpenBao KV v2
 #
 # Only secrets that are ALSO consumed directly via SOPS on hosts that don't
-# use vault-agent (desktop, framework13, erebor, pippin, rivendell).
+# use vault-agent (desktop, framework13, erebor, rivendell).
 # Secrets consumed exclusively via vault-agent live only in OpenBao.
 # -----------------------------------------------------------------------------
 

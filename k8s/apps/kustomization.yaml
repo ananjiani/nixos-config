@@ -21,7 +21,6 @@ resources:
   - lobechat
   - monitoring
   - renovate
-  - clawdbot
   - zot
   - persona-mcp
   - holmesgpt
