@@ -29,7 +29,10 @@
     adguard.enable = true;
 
     # k3s server node (joins existing cluster)
-    k3s.podCidr = "10.42.2.0/24";
+    k3s = {
+      enable = true;
+      podCidr = "10.42.2.0/24";
+    };
 
     # Zigbee2MQTT configuration
     zigbee2mqtt = {

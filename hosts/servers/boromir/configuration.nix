@@ -33,6 +33,7 @@
 
     # k3s cluster initializer (first server node)
     k3s = {
+      enable = true;
       clusterInit = true;
       podCidr = "10.42.1.0/24";
     };

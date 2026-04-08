@@ -34,6 +34,7 @@
 
     # k3s agent node — verified: iptables rules do NOT trigger r8169 NIC bug
     k3s = {
+      enable = true;
       role = "agent";
       tokenFile = config.sops.secrets.k3s_token.path;
       podCidr = "10.42.0.0/24";
