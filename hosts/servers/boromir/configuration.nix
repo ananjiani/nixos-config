@@ -35,8 +35,7 @@
     # k3s cluster initializer (first server node)
     k3s = {
       enable = true;
-      role = "server";
-      clusterInit = true; # First node initializes the cluster
+      clusterInit = true;
       nodeIp = "192.168.1.21";
       podCidr = "10.42.1.0/24";
     };

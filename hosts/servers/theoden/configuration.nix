@@ -188,7 +188,6 @@ in
 
     k3s = {
       enable = true;
-      role = "server";
       nodeIp = "192.168.1.27";
       podCidr = "10.42.3.0/24";
     };
