@@ -15,7 +15,16 @@
 
   programs = {
     fish.enable = true;
-    nix-ld.enable = true;
+    nix-ld = {
+      enable = true;
+      libraries = with pkgs; [
+        SDL2
+        glew
+        curl
+        zlib
+        mesa
+      ];
+    };
   };
 
   nix = {
@@ -35,6 +44,7 @@
         "https://comfyui.cachix.org"
         "https://cache.nixos-cuda.org"
         "https://cache.garnix.io"
+        "https://cache.flox.dev"
         "https://pre-commit-hooks.cachix.org"
         # "https://attic.dimensiondoor.xyz/middle-earth" # Attic via Traefik (disabled until K8s routing ready)
         "http://theoden.lan:8080/middle-earth" # Attic direct
@@ -46,6 +56,7 @@
         "comfyui.cachix.org-1:33mf9VzoIjzVbp0zwj+fT51HG0y31ZTK3nzYZAX0rec="
         "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M="
         "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
+        "flox-cache-public-1:7F4OyH7ZCnFhcze3fJdfyXYLQw/aV7GEed86nQ7IsOs="
         "pre-commit-hooks.cachix.org-1:Fh9gmh3LNW5ql37bCKCQ3UPE7AXrBVOeHLiuTJfV7Jo="
         "middle-earth:QJM6g097RUDyZA0OG00fXc7JxFMOXN3J5ZBX8j+QfFI="
       ];
@@ -74,6 +85,18 @@
     LC_PAPER = "en_US.UTF-8";
     LC_TELEPHONE = "en_US.UTF-8";
     LC_TIME = "en_US.UTF-8";
+  };
+
+  # Trust the homelab LAN CA for .lan domain TLS certificates
+  security.pki.certificateFiles = [ ../../certs/lan-ca.crt ];
+
+  # NIX_SSL_CERT_FILE points to the raw Mozilla bundle in /nix/store,
+  # which doesn't include custom CAs from security.pki. Override it to
+  # use the merged system bundle so Node.js and other tools trust our CA.
+  # NODE_EXTRA_CA_CERTS is needed for Bun-based tools (e.g. Claude Code).
+  environment.variables = {
+    NIX_SSL_CERT_FILE = "/etc/ssl/certs/ca-certificates.crt";
+    NODE_EXTRA_CA_CERTS = "/etc/ssl/certs/ca-certificates.crt";
   };
 
   networking.firewall = {

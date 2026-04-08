@@ -9,13 +9,13 @@ metadata:
     gethomepage.dev/name: "ntfy"
     gethomepage.dev/group: "Services"
     gethomepage.dev/icon: "ntfy.png"
-    gethomepage.dev/href: "https://ntfy.dimensiondoor.xyz"
+    gethomepage.dev/href: "https://ntfy.lan"
 spec:
   entryPoints:
     - web
     - websecure
   routes:
-    - match: Host(`ntfy.dimensiondoor.xyz`) || Host(`ntfy.lan`)
+    - match: Host(`ntfy.lan`)
       kind: Rule
       services:
         - name: ntfy

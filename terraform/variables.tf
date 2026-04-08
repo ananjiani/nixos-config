@@ -7,7 +7,7 @@ variable "domain" {
 variable "homeserver_ip" {
   description = "Public IP address of the homeserver"
   type        = string
-  default     = "72.182.230.42"
+  default     = "70.119.78.245"
 }
 
 variable "cloudflare_proxied" {
@@ -158,33 +158,44 @@ variable "proxmox_datastore" {
   default     = "local-lvm"
 }
 
-variable "proxmox_nodes" {
-  description = "Proxmox cluster nodes (middle-earth)"
-  type = map(object({
-    host = string
-  }))
-  default = {
-    gondor    = { host = "192.168.1.20" }
-    the-shire = { host = "192.168.1.23" }
-    rohan     = { host = "192.168.1.24" }
-  }
+# =============================================================================
+# OpenBao Configuration
+# =============================================================================
+
+variable "openbao_address" {
+  description = "OpenBao server address (via Tailscale on erebor)"
+  type        = string
+  default     = "http://100.64.0.21:8200"
 }
 
-# Disk IDs for faramir passthrough (get from: ls -la /dev/disk/by-id/ on Proxmox host)
-variable "faramir_disk1_id" {
-  description = "Disk ID for faramir data disk 1 (UUID: dc5e54fd-6474-4b88-a757-c31f62c37138)"
+# =============================================================================
+# AWS Configuration (KMS auto-unseal)
+# =============================================================================
+
+variable "aws_region" {
+  description = "AWS region for KMS auto-unseal key"
   type        = string
-  default     = "ata-ST2000DM008-2FR102_ZFL4ERX1"
+  default     = "eu-central-1" # Frankfurt (closest to Hetzner Falkenstein)
 }
 
-variable "faramir_disk2_id" {
-  description = "Disk ID for faramir data disk 2 (UUID: 18cee265-e408-43bc-b6fe-c5edde8cb354)"
+# =============================================================================
+# Hetzner Cloud Configuration
+# =============================================================================
+
+variable "hetzner_server_type" {
+  description = "Hetzner server type for erebor VPS"
   type        = string
-  default     = "ata-ST8000DM004-2U9188_ZR15RMQZ"
+  default     = "cx23" # 2 vCPU, 4GB RAM, 40GB disk (~EUR 4/month)
 }
 
-variable "faramir_parity_id" {
-  description = "Disk ID for faramir parity disk (UUID: 15bc428e-291e-4380-a234-a2df4b4b0297)"
+variable "hetzner_location" {
+  description = "Hetzner datacenter location"
   type        = string
-  default     = "ata-WDC_WD1002FAEX-00Z3A0_WD-WCATRA312386"
+  default     = "fsn1" # Falkenstein, Germany (eu-central)
+}
+
+variable "ssh_public_key_path" {
+  description = "Path to SSH public key file"
+  type        = string
+  default     = "~/.ssh/id_ed25519.pub"
 }

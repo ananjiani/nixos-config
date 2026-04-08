@@ -20,7 +20,4 @@ spec:
   dependsOn:
     - name: metallb-config
     - name: cert-manager-config
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
+    - name: external-secrets-config

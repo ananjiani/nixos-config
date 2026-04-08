@@ -18,7 +18,7 @@ data:
       enabled: false
     container:
       network: host
-      privileged: false
+      privileged: true
       options: "--add-host=git.dimensiondoor.xyz:192.168.1.52"
       workdir_parent: /workspace
   daemon.json: |

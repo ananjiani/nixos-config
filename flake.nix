@@ -22,7 +22,7 @@
       url = "github:k3d3/claude-desktop-linux-flake/b2b040cb68231d2118906507d9cc8fd181ca6308";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
-    claude-code.url = "github:sadjow/claude-code-nix";
+    claude-code.url = "github:sadjow/claude-code-nix?ref=v2.1.68"; # pinned: prompt cache regression in 2.1.69+ (#34629)
     whisper-dictation.url = "github:ananjiani/whisper-dictation";
     git-hooks = {
       url = "github:cachix/git-hooks.nix";
@@ -262,6 +262,16 @@
           ];
         };
 
+        # Minas-tirith - Hetzner VPS (OpenBao secrets manager)
+        erebor = lib.nixosSystem {
+          inherit system specialArgs;
+          modules = [
+            ./hosts/servers/erebor/configuration.nix
+            inputs.sops-nix.nixosModules.sops
+            inputs.disko.nixosModules.disko
+          ];
+        };
+
       };
 
       # deploy-rs deployment configuration
@@ -304,6 +314,14 @@
             user = "root";
             sshUser = "root";
             path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.rivendell;
+          };
+        };
+        erebor = {
+          hostname = "91.99.82.115"; # Hetzner public IP (VPS, not on LAN)
+          profiles.system = {
+            user = "root";
+            sshUser = "root";
+            path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.erebor;
           };
         };
       };
@@ -425,6 +443,7 @@
         nixos-theoden = self.nixosConfigurations.theoden.config.system.build.toplevel;
         nixos-pippin = self.nixosConfigurations.pippin.config.system.build.toplevel;
         nixos-rivendell = self.nixosConfigurations.rivendell.config.system.build.toplevel;
+        nixos-erebor = self.nixosConfigurations.erebor.config.system.build.toplevel;
 
         # Home Manager builds (for CI caching)
         home-ammars-pc = self.homeConfigurations."ammar@ammars-pc".activationPackage;
@@ -486,18 +505,6 @@
               enable = true;
               settings.configPath = ".yamllint.yaml";
             };
-
-            # Kubernetes manifest validation
-            # Disabled: kubeconform requires network to download schemas,
-            # which doesn't work in Nix sandbox. Run manually if needed:
-            # nix-shell -p kubeconform --run "kubeconform -ignore-missing-schemas -summary k8s/"
-            # kubeconform = {
-            #   enable = true;
-            #   name = "kubeconform";
-            #   entry = "${pkgs.kubeconform}/bin/kubeconform -ignore-missing-schemas -summary";
-            #   files = "^k8s/.*\\.yaml$";
-            #   pass_filenames = true;
-            # };
           };
         };
       }
@@ -519,6 +526,8 @@
         '';
         buildInputs = self.checks.${system}.pre-commit-check.enabledPackages ++ [
           pkgs.opentofu
+          pkgs.openbao
+          pkgs.yq-go
           pkgs.ansible
           pkgs.kubectl
           pkgs.fluxcd

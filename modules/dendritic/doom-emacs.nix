@@ -60,7 +60,7 @@ in
                 fd
                 ripgrep
                 nodejs
-                nodePackages.prettier
+                prettier
                 mermaid-cli
                 (aspellWithDicts (
                   d: with d; [
@@ -92,7 +92,7 @@ in
               xclip
               gzip
               findutils
-              nodePackages.vscode-json-languageserver
+              vscode-langservers-extracted
             ];
 
             programs.emacs = {

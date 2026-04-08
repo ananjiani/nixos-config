@@ -43,6 +43,35 @@ in
       description = "Path to file containing the k3s cluster token";
     };
 
+    nodeIp = lib.mkOption {
+      type = lib.types.str;
+      description = "Primary IPv4 address of this node (used for --node-ip)";
+    };
+
+    flannelIface = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        Network interface for flannel inter-host communication.
+        Set this on nodes with keepalived VIPs to prevent flannel from
+        picking up a VIP as its public-ip (corrupts host-gw routes).
+        When null, flannel auto-detects (safe if no VIPs on the interface).
+      '';
+    };
+
+    podCidr = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "10.42.1.0/24";
+      description = ''
+        Pod CIDR assigned to this node by the k3s API server.
+        Used as a fallback to generate /run/flannel/subnet.env when
+        no persistent backup exists (e.g. after power loss or first
+        deploy with host-gw backend). Check with:
+          kubectl get node <name> -o jsonpath='{.spec.podCIDR}'
+      '';
+    };
+
     extraFlags = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
@@ -51,6 +80,39 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    boot = {
+      # NFS client support — ensures mount.nfs is available so kubelet can
+      # mount NFS-backed PersistentVolumes on any k3s node.
+      supportedFilesystems = [ "nfs" ];
+
+      # IPVS kernel modules for kube-proxy IPVS mode
+      kernelModules = [
+        "ip_vs"
+        "ip_vs_rr"
+        "ip_vs_wrr"
+        "ip_vs_sh"
+      ];
+      kernel.sysctl = {
+        # IP forwarding — required for flannel to route cross-node pod traffic.
+        # Without this, packets arriving on the host destined for the pod CIDR
+        # are dropped instead of being forwarded to the cni0 bridge.
+        # (Server nodes often get this from the Tailscale module, but agent
+        # nodes like rivendell with Tailscale disabled need it explicitly.)
+        "net.ipv4.ip_forward" = lib.mkDefault 1;
+        "net.ipv6.conf.all.forwarding" = lib.mkDefault 1;
+
+        # IPVS ARP suppression: kube-proxy IPVS mode binds all LoadBalancer and
+        # ClusterIP addresses to the kube-ipvs0 dummy interface on every node.
+        # Without these sysctls, every node responds to ARP for those IPs,
+        # causing traffic to land on the wrong node (whichever wins the ARP race)
+        # instead of the MetalLB L2 speaker that should own the IP.
+        #   arp_ignore=1:  only respond if the target IP is on the incoming interface
+        #   arp_announce=2: use the best local address matching the destination subnet
+        "net.ipv4.conf.all.arp_ignore" = 1;
+        "net.ipv4.conf.all.arp_announce" = 2;
+      };
+    };
+
     # Longhorn requirements
     services.openiscsi = {
       enable = true;
@@ -126,6 +188,44 @@ in
           '';
         };
 
+        # Scale CoreDNS to 2 replicas spread across nodes for DNS resilience.
+        # k3s deploys CoreDNS as an Addon (not HelmChart), so HelmChartConfig
+        # doesn't work. This runs after k3s starts to patch the deployment.
+        k3s-coredns-ha = lib.mkIf (cfg.role == "server") {
+          description = "Scale CoreDNS to 2 replicas across nodes";
+          after = [ "k3s.service" ];
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          };
+          path = [ pkgs.kubectl ];
+          script = ''
+            export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+
+            # Wait for CoreDNS deployment to exist (up to 5 min)
+            for i in $(seq 1 60); do
+              if kubectl get deploy coredns -n kube-system &>/dev/null; then
+                break
+              fi
+              sleep 5
+            done
+
+            if ! kubectl get deploy coredns -n kube-system &>/dev/null; then
+              echo "CoreDNS deployment not found, skipping"
+              exit 0
+            fi
+
+            CURRENT=$(kubectl get deploy coredns -n kube-system -o jsonpath='{.spec.replicas}')
+            if [ "$CURRENT" != "2" ]; then
+              echo "Scaling CoreDNS: $CURRENT → 2 replicas"
+              kubectl scale deploy coredns -n kube-system --replicas=2
+            else
+              echo "CoreDNS already at 2 replicas"
+            fi
+          '';
+        };
+
         # Workaround: k3s's embedded flannel can fail to regenerate /run/flannel/subnet.env
         # after a reboot (/run is tmpfs). Without this file, the flannel CNI plugin cannot
         # assign pod IPs and no pods can start. We persist a backup to disk and restore it
@@ -139,16 +239,34 @@ in
             Type = "oneshot";
             RemainAfterExit = true;
           };
-          script = ''
-            mkdir -p /run/flannel
-            BACKUP="/var/lib/rancher/k3s/flannel-subnet.env"
-            if [ -f "$BACKUP" ]; then
-              cp "$BACKUP" /run/flannel/subnet.env
-              echo "Restored flannel subnet.env from $BACKUP"
-            else
-              echo "No flannel backup found at $BACKUP — first boot or backup missing"
-            fi
-          '';
+          script =
+            let
+              # Derive the gateway IP (.1) from the podCidr (e.g. 10.42.1.0/24 → 10.42.1.1/24)
+              fallbackScript = lib.optionalString (cfg.podCidr != null) ''
+                elif [ ! -f /run/flannel/subnet.env ]; then
+                  # Generate from declarative podCidr — covers first boot, power loss,
+                  # or any scenario where the backup is missing.
+                  SUBNET=$(echo "${cfg.podCidr}" | sed 's|\.[0-9]*/|.1/|')
+                  printf '%s\n' \
+                    "FLANNEL_NETWORK=10.42.0.0/16" \
+                    "FLANNEL_SUBNET=$SUBNET" \
+                    "FLANNEL_MTU=1500" \
+                    "FLANNEL_IPMASQ=true" \
+                    > /run/flannel/subnet.env
+                  echo "Generated flannel subnet.env from declared podCidr ${cfg.podCidr}"
+              '';
+            in
+            ''
+              mkdir -p /run/flannel
+              BACKUP="/var/lib/rancher/k3s/flannel-subnet.env"
+              if [ -f "$BACKUP" ]; then
+                cp "$BACKUP" /run/flannel/subnet.env
+                echo "Restored flannel subnet.env from $BACKUP"
+              ${fallbackScript}
+              else
+                echo "No flannel backup found at $BACKUP — first boot or backup missing"
+              fi
+            '';
         };
 
         # Workaround: the cni0 bridge retains the MTU from when it was first created.
@@ -230,6 +348,7 @@ in
         kubectl
         kubernetes-helm
         fluxcd
+        ipvsadm # IPVS management for kube-proxy IPVS mode
       ];
 
       # Set KUBECONFIG for all users on server nodes
@@ -263,7 +382,33 @@ in
           # Gives pods full 1500-byte MTU — avoids the VXLAN overhead that caused
           # repeated HTTP/2 + TLS framing failures (see postmortem 2026-02-01-0445).
           "--flannel-backend=host-gw"
+          # Use node external IPs for flannel inter-node routing.
+          # With --node-external-ip set to the real node IP, this forces flannel
+          # to use that IP instead of auto-detecting (which picks up keepalived VIPs).
+          "--flannel-external-ip"
+          # TODO: Enable dual-stack IPv6 for pods (fd42::/48, fd43::/48).
+          # Blocked by k3s flannel bug: single-stack → dual-stack migration causes
+          # nil pointer panic in WriteSubnetFile (github.com/k3s-io/k3s#10726).
+          # Requires deleting all node objects and restarting simultaneously.
+          # For now, pods remain IPv4-only; host IPv6 egress works via hostNetwork.
         ]
+        # Flags for all nodes (server + agent)
+        ++ [
+          # IPVS proxy mode: O(1) hash-table lookups instead of O(n) iptables
+          # chain traversal. With 61 services generating ~1300 iptables rules,
+          # this significantly reduces per-packet CPU overhead.
+          "--kube-proxy-arg=proxy-mode=ipvs"
+          "--node-ip=${cfg.nodeIp}"
+          # Also set --node-external-ip to trigger the k3s CCM to annotate the
+          # node with flannel.alpha.coreos.com/public-ip-overwrite. Without this,
+          # flannel auto-detects the IP from the interface and may pick up a
+          # keepalived VIP instead of the real node IP.
+          "--node-external-ip=${cfg.nodeIp}"
+        ]
+        # Pin flannel to a specific interface — prevents keepalived VIPs
+        # (bound to the same interface) from being used as flannel public-ip,
+        # which corrupts host-gw routes across the cluster.
+        ++ lib.optional (cfg.flannelIface != null) "--flannel-iface=${cfg.flannelIface}"
         ++ cfg.extraFlags
       );
     };
@@ -284,6 +429,24 @@ in
       allowedUDPPorts = [
         7946 # MetalLB speaker memberlist
       ];
+
+      # IPVS mode: pod→ClusterIP traffic arrives on INPUT chain via cni0 bridge.
+      # Without this, NixOS firewall drops it before IPVS can intercept.
+      # (In iptables kube-proxy mode, traffic was DNAT'd in PREROUTING so this
+      # wasn't needed.)
+      #
+      # MetalLB LoadBalancer IPs (192.168.1.52-62) are bound to kube-ipvs0,
+      # so external LAN traffic to these IPs also enters the INPUT chain.
+      # Without this rule, the firewall drops it before IPVS can forward
+      # to the backend pods (e.g. Traefik on ports 80/443).
+      extraCommands = ''
+        iptables -I nixos-fw 1 -i cni0 -s 10.42.0.0/16 -d 10.43.0.0/16 -j nixos-fw-accept
+        iptables -I nixos-fw 2 -d 192.168.1.52/28 -j nixos-fw-accept
+      '';
+      extraStopCommands = ''
+        iptables -D nixos-fw -i cni0 -s 10.42.0.0/16 -d 10.43.0.0/16 -j nixos-fw-accept 2>/dev/null || true
+        iptables -D nixos-fw -d 192.168.1.52/28 -j nixos-fw-accept 2>/dev/null || true
+      '';
     };
 
     # Create kubeconfig symlink for easier access

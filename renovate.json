@@ -35,6 +35,14 @@
     },
     {
       "matchUpdateTypes": [
+        "minor"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "ignoreTests": false
+    },
+    {
+      "matchUpdateTypes": [
         "major"
       ],
       "labels": [
@@ -44,30 +52,12 @@
       ]
     },
     {
-      "description": "Auto-merge minor Helm chart updates (Flux handles rollback)",
-      "matchManagers": ["flux"],
-      "matchUpdateTypes": ["minor"],
-      "automerge": true,
-      "automergeType": "pr",
-      "ignoreTests": false
-    },
-    {
       "description": "Postgres major upgrades require pg_dump/restore - never automerge",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["postgres"],
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "labels": ["dependencies", "automated", "manual-upgrade-required"]
-    },
-    {
-      "matchManagers": [
-        "nix"
-      ],
-      "groupName": "nix flake inputs",
-      "description": "Group all Nix flake input updates together",
-      "automerge": true,
-      "automergeType": "pr",
-      "ignoreTests": false
     }
   ],
   "flux": {
@@ -80,16 +70,17 @@
       "/k8s/apps/.+\\.yaml$/"
     ]
   },
+  "nix": {
+    "enabled": true
+  },
   "terraform": {
     "managerFilePatterns": [
       "/terraform/.+\\.tf$/"
     ]
   },
-  "nix": {
-    "enabled": true
-  },
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 6am every day"]
+    "schedule": ["before 6am"],
+    "automerge": true
   }
 }

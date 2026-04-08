@@ -14,11 +14,24 @@ in
 {
   options.services.attic-watch-store = {
     enable = lib.mkEnableOption "Attic watch-store service to push builds to binary cache";
+
+    tokenFile = lib.mkOption {
+      type = lib.types.path;
+      description = "Path to file containing the Attic push token";
+      default = config.sops.secrets.attic_push_token.path;
+      defaultText = lib.literalExpression "config.sops.secrets.attic_push_token.path";
+    };
+
+    useSops = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether to declare the SOPS secret for the push token. Set to false if using vault-agent.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
-    # Ensure the push token secret exists
-    sops.secrets.attic_push_token = {
+    # Declare SOPS secret only if useSops is true
+    sops.secrets.attic_push_token = lib.mkIf cfg.useSops {
       mode = "0400";
     };
 
@@ -40,7 +53,7 @@ in
 
         [servers.local]
         endpoint = "${endpoint}"
-        token = "$(cat ${config.sops.secrets.attic_push_token.path})"
+        token = "$(cat ${cfg.tokenFile})"
         EOF
         chmod 600 ~/.config/attic/config.toml
 
