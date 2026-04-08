@@ -185,10 +185,7 @@ in
       };
     };
 
-    k3s = {
-      enable = true;
-      podCidr = "10.42.3.0/24";
-    };
+    k3s.podCidr = "10.42.3.0/24";
 
     # Keepalived for HA DNS - theoden is primary
     keepalived = {

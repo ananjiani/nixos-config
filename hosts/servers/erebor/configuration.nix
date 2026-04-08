@@ -20,6 +20,7 @@
 
   modules = {
     proxmoxGuest = false; # Hetzner VPS, not a Proxmox VM
+    k3s.enable = false; # OpenBao-only host, not part of the k3s cluster
 
     # Tailscale without exit node or subnet routes (not on homelab LAN)
     tailscale = {

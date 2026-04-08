@@ -24,6 +24,8 @@
     modules = {
       proxmoxGuest = lib.mkDefault true;
 
+      # Most servers run k3s; override per-host as needed (e.g. erebor)
+      k3s.enable = lib.mkDefault true;
       # Proxmox VMs use ens18 (virtio NIC) for flannel and VRRP
       k3s.flannelIface = lib.mkIf config.modules.proxmoxGuest (lib.mkDefault "ens18");
       keepalived.interface = lib.mkIf config.modules.proxmoxGuest (lib.mkDefault "ens18");
