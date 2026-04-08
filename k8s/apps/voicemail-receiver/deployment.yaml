@@ -57,6 +57,5 @@ spec:
             periodSeconds: 10
       volumes:
         - name: voicemail-storage
-          nfs:
-            server: 192.168.1.27  # theoden
-            path: /srv/nfs
+          persistentVolumeClaim:
+            claimName: voicemail-data

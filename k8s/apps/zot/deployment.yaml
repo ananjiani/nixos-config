@@ -47,14 +47,15 @@ spec:
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /v2/
+              path: /v2/_catalog?n=1
               port: 5000
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /v2/
+              path: /v2/_catalog?n=1
               port: 5000
             periodSeconds: 30
+            failureThreshold: 3
       volumes:
         - name: config
           configMap:
@@ -63,6 +64,5 @@ spec:
           secret:
             secretName: zot-credentials
         - name: data
-          nfs:
-            server: 192.168.1.27
-            path: /srv/nfs/zot
+          persistentVolumeClaim:
+            claimName: zot-data

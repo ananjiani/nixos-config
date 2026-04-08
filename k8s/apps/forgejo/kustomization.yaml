@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - externalsecret.yaml
+  - pv.yaml
   - helmrelease.yaml
   - certificate.yaml
   - ingressroute.yaml

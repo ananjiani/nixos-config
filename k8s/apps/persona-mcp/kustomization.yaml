@@ -5,6 +5,7 @@ resources:
   - namespace.yaml
   - externalsecret.yaml
   - rbac.yaml
+  - pv.yaml
   - deployment.yaml
   - service.yaml
   - ingressroute.yaml

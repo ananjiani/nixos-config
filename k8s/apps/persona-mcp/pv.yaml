@@ -1,0 +1,33 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: persona-mcp-nfs
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  mountOptions:
+    - nfsvers=4.1
+    - hard
+    - noresvport
+  nfs:
+    server: 192.168.1.27
+    path: /persona-mcp
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: persona-mcp-data
+  namespace: persona-mcp
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ""
+  volumeName: persona-mcp-nfs
+  resources:
+    requests:
+      storage: 1Gi

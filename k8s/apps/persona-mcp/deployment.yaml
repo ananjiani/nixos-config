@@ -67,6 +67,5 @@ spec:
             timeoutSeconds: 5
       volumes:
         - name: personas
-          nfs:
-            server: 192.168.1.27
-            path: /srv/nfs/persona-mcp
+          persistentVolumeClaim:
+            claimName: persona-mcp-data
