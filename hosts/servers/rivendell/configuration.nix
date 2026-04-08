@@ -49,11 +49,6 @@
       enable = true;
       interface = "enp1s0";
       priority = 70; # Lowest — prefer VMs (theoden=100, boromir=90, samwise=80)
-      unicastPeers = [
-        "192.168.1.27" # theoden
-        "192.168.1.21" # boromir
-        "192.168.1.26" # samwise
-      ];
     };
   };
 

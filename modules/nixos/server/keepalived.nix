@@ -39,9 +39,15 @@ in
       description = "VRRP virtual router ID (1-255)";
     };
 
-    unicastPeers = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      description = "List of peer IP addresses for unicast VRRP (required for Proxmox VMs)";
+    allPeers = lib.mkOption {
+      type = lib.types.attrsOf lib.types.str;
+      default = {
+        boromir = "192.168.1.21";
+        samwise = "192.168.1.26";
+        theoden = "192.168.1.27";
+        rivendell = "192.168.1.29";
+      };
+      description = "Map of hostname → IP for all keepalived peers. Each host automatically excludes itself.";
     };
   };
 
@@ -69,7 +75,8 @@ in
       };
 
       vrrpInstances.adguard_vip = {
-        inherit (cfg) interface priority unicastPeers;
+        inherit (cfg) interface priority;
+        unicastPeers = lib.attrValues (removeAttrs cfg.allPeers [ config.networking.hostName ]);
         state = "BACKUP";
         virtualRouterId = cfg.routerId;
         noPreempt = false;

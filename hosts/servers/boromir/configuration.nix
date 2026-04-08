@@ -30,11 +30,6 @@
     keepalived = {
       enable = true;
       priority = 90;
-      unicastPeers = [
-        "192.168.1.27" # theoden
-        "192.168.1.26" # samwise
-        "192.168.1.29" # rivendell
-      ];
     };
 
     # k3s cluster initializer (first server node)
