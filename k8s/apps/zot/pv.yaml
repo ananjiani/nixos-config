@@ -13,7 +13,6 @@ spec:
   mountOptions:
     - nfsvers=4.1
     - hard
-    - noresvport
   nfs:
     server: 192.168.1.27
     path: /zot
