@@ -3,7 +3,6 @@
 
 let
   cfg = config.modules.headscale;
-  dns = import ../lib/dns.nix;
 in
 {
   options.modules.headscale = {
@@ -39,8 +38,8 @@ in
         dns = {
           base_domain = cfg.baseDomain;
           magic_dns = true;
-          # Use AdGuard Home for .lan resolution
-          nameservers.global = dns.servers;
+          # Use same DNS as the host (AdGuard VIP → router → Quad9)
+          nameservers.global = config.networking.nameservers;
         };
 
         prefixes = {

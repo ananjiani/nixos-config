@@ -6,9 +6,6 @@
   ...
 }:
 
-let
-  dns = import ../../lib/dns.nix;
-in
 {
   imports = [
     ./ssh.nix
@@ -157,7 +154,11 @@ in
   };
 
   # DNS: AdGuard VIP → router → Quad9 (erebor overrides with public DNS)
-  networking.nameservers = lib.mkDefault dns.servers;
+  networking.nameservers = lib.mkDefault [
+    "192.168.1.53" # HA VIP (keepalived AdGuard)
+    "192.168.1.1" # OPNsense router
+    "9.9.9.9" # Quad9 public fallback
+  ];
 
   networking.firewall = {
     enable = true;

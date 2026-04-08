@@ -1,13 +1,11 @@
 # ammars-pc — Primary desktop workstation
 {
+  config,
   pkgs,
   inputs,
   ...
 }:
 
-let
-  dns = import ../../lib/dns.nix;
-in
 {
   imports = [
     ./hardware-configuration.nix
@@ -39,8 +37,8 @@ in
       operator = "ammar";
     };
 
-    # Mullvad custom DNS (AdGuard instances + fallback)
-    privacy.mullvadCustomDns = dns.servers;
+    # Mullvad custom DNS (same nameservers as the host)
+    privacy.mullvadCustomDns = config.networking.nameservers;
   };
 
   networking = {
