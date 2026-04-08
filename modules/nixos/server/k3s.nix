@@ -11,6 +11,7 @@
 
 let
   cfg = config.modules.k3s;
+  lanHosts = import ../../../lib/hosts.nix;
 in
 {
   options.modules.k3s = {
@@ -33,8 +34,8 @@ in
 
     serverAddr = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
-      default = if cfg.clusterInit then null else "https://192.168.1.21:6443";
-      defaultText = lib.literalExpression ''if cfg.clusterInit then null else "https://192.168.1.21:6443"'';
+      default = if cfg.clusterInit then null else "https://${lanHosts.boromir}:6443";
+      defaultText = lib.literalExpression ''if cfg.clusterInit then null else "https://''${lanHosts.boromir}:6443"'';
       description = "URL of existing server to join. Null when clusterInit is true, otherwise defaults to boromir.";
     };
 
@@ -46,7 +47,9 @@ in
 
     nodeIp = lib.mkOption {
       type = lib.types.str;
-      description = "Primary IPv4 address of this node (used for --node-ip)";
+      default = lanHosts.${config.networking.hostName};
+      defaultText = lib.literalExpression "lanHosts.\${config.networking.hostName}";
+      description = "Primary IPv4 address of this node (used for --node-ip). Defaults to lookup from lib/hosts.nix.";
     };
 
     flannelIface = lib.mkOption {

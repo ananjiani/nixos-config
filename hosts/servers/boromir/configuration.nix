@@ -36,7 +36,6 @@
     k3s = {
       enable = true;
       clusterInit = true;
-      nodeIp = "192.168.1.21";
       podCidr = "10.42.1.0/24";
     };
   };

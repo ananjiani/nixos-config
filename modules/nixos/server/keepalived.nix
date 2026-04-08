@@ -11,6 +11,7 @@
 
 let
   cfg = config.modules.keepalived;
+  lanHosts = import ../../../lib/hosts.nix;
 in
 {
   options.modules.keepalived = {
@@ -41,12 +42,7 @@ in
 
     allPeers = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
-      default = {
-        boromir = "192.168.1.21";
-        samwise = "192.168.1.26";
-        theoden = "192.168.1.27";
-        rivendell = "192.168.1.29";
-      };
+      default = lib.getAttrs [ "boromir" "samwise" "theoden" "rivendell" ] lanHosts;
       description = "Map of hostname → IP for all keepalived peers. Each host automatically excludes itself.";
     };
   };

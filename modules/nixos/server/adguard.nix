@@ -3,6 +3,9 @@
 # Replicates the k8s AdGuard configuration for consistency.
 { config, lib, ... }:
 
+let
+  lanHosts = import ../../../lib/hosts.nix;
+in
 {
   options.modules.adguard.enable = lib.mkEnableOption "AdGuard Home DNS ad blocker";
 
@@ -165,171 +168,131 @@
             "||dns.adguard-dns.com^$important"
           ];
 
-          rewrites = [
-            # Local infrastructure
-            {
-              domain = "router.lan";
-              answer = "192.168.1.1";
-            }
-            {
-              domain = "gondor.lan";
-              answer = "192.168.1.20";
-            }
-            {
-              domain = "boromir.lan";
-              answer = "192.168.1.21";
-            }
-            {
-              domain = "faramir.lan";
-              answer = "192.168.1.22";
-            }
-            {
-              domain = "the-shire.lan";
-              answer = "192.168.1.23";
-            }
-            {
-              domain = "rohan.lan";
-              answer = "192.168.1.24";
-            }
-            {
-              domain = "frodo.lan";
-              answer = "192.168.1.25";
-            }
-            {
-              domain = "samwise.lan";
-              answer = "192.168.1.26";
-            }
-            {
-              domain = "theoden.lan";
-              answer = "192.168.1.27";
-            }
-            {
-              domain = "rivendell.lan";
-              answer = "192.168.1.29";
-            }
-            {
-              domain = "ammars-pc.lan";
-              answer = "192.168.1.50";
-            }
+          rewrites =
+            # Local infrastructure (generated from lib/hosts.nix)
+            lib.mapAttrsToList (name: ip: {
+              domain = "${name}.lan";
+              answer = ip;
+            }) lanHosts
+            ++ [
+              # K8s services (Traefik ingress at 192.168.1.52)
+              {
+                domain = "ts.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "auth.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "immich.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "ai.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "home.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "bifrost.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "ha.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "git.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "adguard.lan";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "cliproxy.lan";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "stremio.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "comet.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "prowlarr.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "attic.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "lobe.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "clawd.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "ntfy.lan";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "voicemail.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "voicemail.lan";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "persona.lan";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "mcp.persona.lan";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "grafana.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "grafana.lan";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "holmes.lan";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "bifrost.lan";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "zot.lan";
+                answer = "192.168.1.56";
+              }
 
-            # K8s services (Traefik ingress at 192.168.1.52)
-            {
-              domain = "ts.dimensiondoor.xyz";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "auth.dimensiondoor.xyz";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "immich.dimensiondoor.xyz";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "ai.dimensiondoor.xyz";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "home.dimensiondoor.xyz";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "bifrost.dimensiondoor.xyz";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "ha.dimensiondoor.xyz";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "git.dimensiondoor.xyz";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "adguard.lan";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "cliproxy.lan";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "stremio.dimensiondoor.xyz";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "comet.dimensiondoor.xyz";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "prowlarr.dimensiondoor.xyz";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "attic.dimensiondoor.xyz";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "lobe.dimensiondoor.xyz";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "clawd.dimensiondoor.xyz";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "ntfy.lan";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "voicemail.dimensiondoor.xyz";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "voicemail.lan";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "persona.lan";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "mcp.persona.lan";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "grafana.dimensiondoor.xyz";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "grafana.lan";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "holmes.lan";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "bifrost.lan";
-              answer = "192.168.1.52";
-            }
-            {
-              domain = "zot.lan";
-              answer = "192.168.1.56";
-            }
+              # Wyoming Whisper (Keepalived VIP - rohan primary, boromir backup)
+              {
+                domain = "whisper.lan";
+                answer = "192.168.1.54";
+              }
 
-            # Wyoming Whisper (Keepalived VIP - rohan primary, boromir backup)
-            {
-              domain = "whisper.lan";
-              answer = "192.168.1.54";
-            }
-
-            # Forgejo SSH
-            {
-              domain = "ssh.git.dimensiondoor.xyz";
-              answer = "192.168.1.55";
-            }
-          ];
+              # Forgejo SSH
+              {
+                domain = "ssh.git.dimensiondoor.xyz";
+                answer = "192.168.1.55";
+              }
+            ];
         };
 
         clients = {

@@ -32,7 +32,6 @@
     # k3s server node (joins existing cluster)
     k3s = {
       enable = true;
-      nodeIp = "192.168.1.26";
       podCidr = "10.42.2.0/24";
     };
 

@@ -38,7 +38,6 @@
       enable = true;
       role = "agent";
       tokenFile = config.sops.secrets.k3s_token.path;
-      nodeIp = "192.168.1.29";
       podCidr = "10.42.0.0/24";
       flannelIface = "enp1s0"; # Prevent flannel from picking up keepalived VIPs
     };
