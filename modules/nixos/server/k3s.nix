@@ -40,6 +40,7 @@ in
 
     tokenFile = lib.mkOption {
       type = lib.types.path;
+      default = "/run/secrets/k3s_token";
       description = "Path to file containing the k3s cluster token";
     };
 
@@ -458,5 +459,11 @@ in
         chmod 600 /home/ammar/.kube/config
       fi
     '';
+
+    # Auto-register k3s token with vault-agent when both are enabled
+    modules.vault-agent.secrets.k3s_token = lib.mkIf config.modules.vault-agent.enable {
+      path = "secret/nixos/k3s";
+      field = "token";
+    };
   };
 }

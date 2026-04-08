@@ -35,19 +35,12 @@
   };
 
   modules = {
-    # Additional vault-agent secret (base.nix provides tailscale_authkey + attic_push_token)
-    vault-agent.secrets.k3s_token = {
-      path = "secret/nixos/k3s";
-      field = "token";
-    };
-
     # k3s server node (joins existing cluster)
     k3s = {
       enable = true;
       role = "server";
       clusterInit = false;
       serverAddr = "https://192.168.1.21:6443"; # boromir
-      tokenFile = "/run/secrets/k3s_token";
       nodeIp = "192.168.1.26";
       podCidr = "10.42.2.0/24";
       flannelIface = "ens18"; # Prevent flannel from picking up keepalived VIPs
