@@ -18,14 +18,18 @@ spec:
     spec:
       containers:
         - name: zot
-          image: ghcr.io/project-zot/zot-linux-amd64:v2.1.14
+          image: ghcr.io/project-zot/zot-linux-amd64:v2.1.15
           args: ["serve", "/etc/zot/config.json"]
           ports:
             - containerPort: 5000
               name: http
           volumeMounts:
             - name: config
-              mountPath: /etc/zot
+              mountPath: /etc/zot/config.json
+              subPath: config.json
+              readOnly: true
+            - name: credentials
+              mountPath: /etc/zot/credentials
               readOnly: true
             - name: data
               mountPath: /var/lib/zot
@@ -35,22 +39,29 @@ spec:
               cpu: "100m"
             limits:
               memory: "2Gi"
+          startupProbe:
+            httpGet:
+              path: /v2/
+              port: 5000
+            failureThreshold: 60
+            periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /v2/
               port: 5000
-            initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /v2/
               port: 5000
-            initialDelaySeconds: 10
             periodSeconds: 30
       volumes:
         - name: config
           configMap:
             name: zot-config
+        - name: credentials
+          secret:
+            secretName: zot-credentials
         - name: data
           nfs:
             server: 192.168.1.27

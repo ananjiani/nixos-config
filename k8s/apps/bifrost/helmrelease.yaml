@@ -26,6 +26,16 @@ spec:
               spec:
                 strategy:
                   type: Recreate
+                template:
+                  spec:
+                    containers:
+                      - name: bifrost
+                        livenessProbe:
+                          httpGet:
+                            path: /health
+                        readinessProbe:
+                          httpGet:
+                            path: /health
             target:
               kind: Deployment
               name: bifrost
@@ -33,7 +43,7 @@ spec:
     image:
       repository: docker.io/maximhq/bifrost
       pullPolicy: IfNotPresent
-      tag: "latest"
+      tag: "v1.4.19"
 
     service:
       type: ClusterIP
@@ -62,7 +72,6 @@ spec:
         enableLogging: true
         disableContentLogging: false
         logRetentionDays: 365
-        enableGovernance: true
         enforceGovernanceHeader: false
         allowDirectKeys: false
         maxRequestBodySizeMb: 100
@@ -93,6 +102,7 @@ spec:
               weight: 1.0
               models:
                 - "glm-4.7"
+                - "glm-5"
         cliproxy:
           network_config:
             base_url: "http://cliproxy.cliproxy.svc:8317"
@@ -127,7 +137,7 @@ spec:
       governance:
         authConfig:
           isEnabled: true
-          disableAuthOnInference: false
+          disableAuthOnInference: true
           existingSecret: bifrost-secrets
           usernameKey: admin-username
           passwordKey: admin-password

@@ -11,4 +11,6 @@ resources:
   - metallb-config.yaml
   - cert-manager-config.yaml
   - k8sgpt-config.yaml
+  - external-secrets-config.yaml
   - apps.yaml
+  - notifications.yaml

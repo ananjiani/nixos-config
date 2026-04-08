@@ -1,0 +1,47 @@
+#!/bin/bash
+# NUT shutdown script: gracefully stop all VMs, then power off host
+# Called by upsmon SHUTDOWNCMD on low battery
+
+TIMEOUT={{ nut_vm_shutdown_timeout }}
+
+logger -t nut-shutdown "UPS low battery: shutting down VMs on $(hostname)"
+
+# Get list of running VMs
+RUNNING_VMS=$(qm list 2>/dev/null | awk 'NR>1 && $3=="running" {print $1}')
+
+if [ -z "$RUNNING_VMS" ]; then
+  logger -t nut-shutdown "No running VMs, proceeding to host shutdown"
+  /sbin/shutdown -h +0
+  exit 0
+fi
+
+# Send ACPI shutdown to all running VMs
+for VMID in $RUNNING_VMS; do
+  logger -t nut-shutdown "Sending ACPI shutdown to VM $VMID"
+  qm shutdown "$VMID" --timeout "$TIMEOUT" &
+done
+
+# Wait for all VMs to stop
+ELAPSED=0
+while [ $ELAPSED -lt $TIMEOUT ]; do
+  STILL_RUNNING=$(qm list 2>/dev/null | awk 'NR>1 && $3=="running" {print $1}')
+  if [ -z "$STILL_RUNNING" ]; then
+    logger -t nut-shutdown "All VMs stopped gracefully"
+    break
+  fi
+  sleep 5
+  ELAPSED=$((ELAPSED + 5))
+done
+
+# Force-stop any remaining VMs
+STILL_RUNNING=$(qm list 2>/dev/null | awk 'NR>1 && $3=="running" {print $1}')
+if [ -n "$STILL_RUNNING" ]; then
+  for VMID in $STILL_RUNNING; do
+    logger -t nut-shutdown "Force-stopping VM $VMID (timeout reached)"
+    qm stop "$VMID"
+  done
+  sleep 5
+fi
+
+logger -t nut-shutdown "All VMs stopped, shutting down host"
+/sbin/shutdown -h +0

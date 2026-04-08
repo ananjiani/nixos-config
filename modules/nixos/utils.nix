@@ -23,7 +23,7 @@
   };
 
   environment.systemPackages = with pkgs; [
-    neofetch
+    fastfetch
   ];
 
   # Add claude-code cache (nix-community is in base.nix)

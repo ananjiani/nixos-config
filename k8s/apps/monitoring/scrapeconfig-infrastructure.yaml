@@ -27,6 +27,7 @@ spec:
         - "192.168.1.26:9100" # samwise
         - "192.168.1.27:9100" # theoden
         - "192.168.1.28:9100" # pippin
+        - "192.168.1.29:9100" # rivendell
       labels:
         job: nixos-node-exporter
 ---

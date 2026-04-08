@@ -23,3 +23,5 @@ spec:
       services:
         - name: cliproxy
           port: 8317
+  tls:
+    secretName: cliproxy-tls

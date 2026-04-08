@@ -8,7 +8,8 @@ data:
   config.json: |
     {
       "storage": {
-        "rootDirectory": "/var/lib/zot"
+        "rootDirectory": "/var/lib/zot",
+        "dedupe": false
       },
       "http": {
         "address": "0.0.0.0",
@@ -20,6 +21,7 @@ data:
       "extensions": {
         "sync": {
           "enable": true,
+          "credentialsFile": "/etc/zot/credentials/credentials.json",
           "registries": [
             {
               "urls": ["https://registry-1.docker.io"],
@@ -31,7 +33,11 @@ data:
               "urls": ["https://ghcr.io"],
               "onDemand": true,
               "tlsVerify": true,
-              "content": [{ "prefix": "**" }]
+              "pollInterval": "6h",
+              "content": [
+                { "prefix": "catthehacker/ubuntu", "tags": { "regex": "^act-latest$" } },
+                { "prefix": "**" }
+              ]
             },
             {
               "urls": ["https://code.forgejo.org"],

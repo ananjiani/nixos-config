@@ -204,6 +204,10 @@ _: {
             answer = "192.168.1.28";
           }
           {
+            domain = "rivendell.lan";
+            answer = "192.168.1.29";
+          }
+          {
             domain = "ammars-pc.lan";
             answer = "192.168.1.50";
           }
@@ -274,10 +278,6 @@ _: {
             answer = "192.168.1.52";
           }
           {
-            domain = "ntfy.dimensiondoor.xyz";
-            answer = "192.168.1.52";
-          }
-          {
             domain = "ntfy.lan";
             answer = "192.168.1.52";
           }
@@ -303,6 +303,14 @@ _: {
           }
           {
             domain = "grafana.lan";
+            answer = "192.168.1.52";
+          }
+          {
+            domain = "holmes.lan";
+            answer = "192.168.1.52";
+          }
+          {
+            domain = "bifrost.lan";
             answer = "192.168.1.52";
           }
           {

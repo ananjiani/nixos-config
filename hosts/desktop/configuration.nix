@@ -23,21 +23,42 @@ in
     ../../modules/nixos/bluetooth.nix
     ../../modules/nixos/android.nix
     ../../modules/nixos/nfs-client.nix
+    ../../modules/nixos/openconnect.nix
     ../../modules/nixos/networking.nix
     ../../modules/nixos/tailscale.nix
     inputs.play-nix.nixosModules.play
     ../../modules/nixos/server/attic-watch-store.nix
+    ../../modules/nixos/vault-agent.nix
   ];
 
-  # SOPS secrets configuration
+  # SOPS bootstraps vault-agent credentials; vault-agent fetches application secrets
   sops = {
     defaultSopsFile = ../../secrets/secrets.yaml;
     age.keyFile = "/home/ammar/.config/sops/age/keys.txt";
-    secrets.tailscale_authkey = { };
+    secrets.vault_role_id = { };
+    secrets.vault_secret_id = { };
   };
 
   # Custom modules configuration
   modules = {
+    # Vault agent for OpenBao secret retrieval
+    vault-agent = {
+      enable = true;
+      address = "http://100.64.0.21:8200"; # Tailscale IP (MagicDNS disabled on desktop)
+      roleIdFile = config.sops.secrets.vault_role_id.path;
+      secretIdFile = config.sops.secrets.vault_secret_id.path;
+      secrets = {
+        tailscale_authkey = {
+          path = "secret/nixos/tailscale";
+          field = "authkey";
+        };
+        attic_push_token = {
+          path = "secret/nixos/attic";
+          field = "push_token";
+        };
+      };
+    };
+
     # Mount NFS share from theoden
     nfs-client.enable = true;
 
@@ -45,9 +66,12 @@ in
     tailscale = {
       enable = true;
       loginServer = "https://ts.dimensiondoor.xyz";
-      authKeyFile = config.sops.secrets.tailscale_authkey.path;
+      authKeyFile = "/run/secrets/tailscale_authkey";
       excludeFromMullvad = true;
+      acceptRoutes = false; # Already on LAN — don't accept subnet routes (avoids routing 192.168.1.0/24 through Tailscale)
       acceptDns = false; # Use AdGuard directly, avoid DNS conflicts with Mullvad
+      operator = "ammar";
+      useExitNode = null; # Don't route through exit node (Mullvad handles VPN)
     };
 
     # Mullvad custom DNS (AdGuard instances + fallback)
@@ -59,26 +83,41 @@ in
 
   networking = {
     hostName = "ammars-pc";
-    nameservers = dns.servers;
+    nameservers = [ (builtins.head dns.servers) ]; # AdGuard VIP only — router fallback is in services.resolved.fallbackDns
     # Allow Tailscale traffic (100.64.0.0/10) to bypass Mullvad VPN
-    # Mullvad's LAN sharing only covers RFC1918 ranges, not CGNAT
+    # Uses Mullvad's split-tunnel ct mark (0x00000f41) so its firewall
+    # treats Tailscale traffic like an excluded app, plus the routing
+    # fwmark (0x6d6f6c65) to skip Mullvad's routing table.
     nftables.tables.mullvad-tailscale-bypass = {
       family = "inet";
       content = ''
         chain output {
-          type route hook output priority -150; policy accept;
-          ip daddr 100.64.0.0/10 mark set 0x6d6f6c65
-          ip6 daddr fd7a:115c:a1e0::/48 mark set 0x6d6f6c65
+          type route hook output priority 0; policy accept;
+          ip daddr 100.64.0.0/10 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
+          ip6 daddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
+        }
+
+        chain input {
+          type filter hook input priority -100; policy accept;
+          ip saddr 100.64.0.0/10 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
+          ip6 saddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
         }
       '';
     };
   };
-  environment.systemPackages = with pkgs; [ signal-desktop ];
+  environment.systemPackages = with pkgs; [
+    signal-desktop
+    cifs-utils
+  ];
 
   virtualisation.docker.enable = true;
 
   services = {
-    attic-watch-store.enable = true;
+    attic-watch-store = {
+      enable = true;
+      useSops = false;
+      tokenFile = "/run/secrets/attic_push_token";
+    };
     udev.enable = true;
     sunshine = {
       enable = true;
@@ -91,6 +130,49 @@ in
   moondeck = {
     enable = true;
     sunshine.enable = true;
+  };
+
+  programs.ssh.knownHosts = {
+    "theoden.lan".publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINAzH8WouJOjPIrJH3ngAxWaSEw6YLDREAbFxIgr7mjX";
+    "boromir.lan".publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEsPlw7G8qNx5esED6AHc6EQhZk0nuLxfwh1IlZ1k5Nb";
+  };
+
+  nix = {
+    distributedBuilds = true;
+    settings = {
+      max-jobs = 0;
+      builders-use-substitutes = true;
+    };
+    buildMachines = [
+      {
+        hostName = "theoden.lan";
+        systems = [ "x86_64-linux" ];
+        sshUser = "root";
+        sshKey = "/home/ammar/.ssh/id_ed25519";
+        maxJobs = 4;
+        speedFactor = 2;
+        supportedFeatures = [
+          "nixos-test"
+          "big-parallel"
+          "kvm"
+        ];
+      }
+      {
+        hostName = "boromir.lan";
+        systems = [ "x86_64-linux" ];
+        sshUser = "root";
+        sshKey = "/home/ammar/.ssh/id_ed25519";
+        maxJobs = 3;
+        speedFactor = 2;
+        supportedFeatures = [
+          "nixos-test"
+          "big-parallel"
+          "kvm"
+        ];
+      }
+    ];
   };
 
   opendeck.enable = true;

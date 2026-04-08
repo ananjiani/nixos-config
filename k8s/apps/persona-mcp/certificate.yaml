@@ -1,0 +1,14 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: persona-mcp-tls
+  namespace: persona-mcp
+spec:
+  secretName: persona-mcp-tls
+  issuerRef:
+    name: lan-ca
+    kind: ClusterIssuer
+  dnsNames:
+    - persona.lan
+    - mcp.persona.lan

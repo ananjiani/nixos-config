@@ -22,5 +22,7 @@ locals {
     # VMs on rohan
     theoden = "BC:24:11:00:01:04" # k3s server VM
     pippin  = "BC:24:11:00:01:05" # Clawdbot VM
+    # Bare metal
+    rivendell = "00:e0:9d:87:1d:e4" # HTPC (Trycoo WI6 N100)
   }
 }

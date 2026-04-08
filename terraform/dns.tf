@@ -1,6 +1,6 @@
-# Get the zone ID from SOPS secrets
+# Get the zone ID from OpenBao
 locals {
-  zone_id = data.sops_file.secrets.data["cloudflare_zone_id"]
+  zone_id = data.vault_kv_secret_v2.cloudflare_zone.data["zone_id"]
 }
 
 # Root domain A record
@@ -197,6 +197,17 @@ resource "cloudflare_dns_record" "clawdbot" {
 # =============================================================================
 # Cloudflare Tunnel Services
 # =============================================================================
+
+# Attic binary cache (via Cloudflare Tunnel for GitHub Actions)
+resource "cloudflare_dns_record" "attic" {
+  zone_id = local.zone_id
+  name    = "attic"
+  content = "b33ec739-7324-4c6f-b6fa-daedbe0828c8.cfargotunnel.com"
+  type    = "CNAME"
+  proxied = true # Must be proxied for Cloudflare Tunnel
+  ttl     = 1    # Auto when proxied
+  comment = "Attic binary cache (Cloudflare Tunnel) - managed by Terraform"
+}
 
 # Buildbot CI/CD (via Cloudflare Tunnel for Codeberg webhooks)
 resource "cloudflare_dns_record" "buildbot" {

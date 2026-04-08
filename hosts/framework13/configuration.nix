@@ -19,19 +19,36 @@
     # ../../modules/nixos/openconnect.nix
     ../../modules/nixos/docker.nix
     ../../modules/nixos/tailscale.nix
+    ../../modules/nixos/vault-agent.nix
   ];
 
+  # SOPS bootstraps vault-agent credentials; vault-agent fetches application secrets
   sops = {
     defaultSopsFile = ../../secrets/secrets.yaml;
     age.keyFile = "/home/ammar/.config/sops/age/keys.txt";
-    secrets.tailscale_authkey = { };
+    secrets.vault_role_id = { };
+    secrets.vault_secret_id = { };
+  };
+
+  modules.vault-agent = {
+    enable = true;
+    address = "http://100.64.0.21:8200"; # Tailscale IP (MagicDNS disabled)
+    roleIdFile = config.sops.secrets.vault_role_id.path;
+    secretIdFile = config.sops.secrets.vault_secret_id.path;
+    secrets = {
+      tailscale_authkey = {
+        path = "secret/nixos/tailscale";
+        field = "authkey";
+      };
+    };
   };
 
   modules.tailscale = {
     enable = true;
     loginServer = "https://ts.dimensiondoor.xyz";
-    authKeyFile = config.sops.secrets.tailscale_authkey.path;
+    authKeyFile = "/run/secrets/tailscale_authkey";
     excludeFromMullvad = true;
+    operator = "ammar";
   };
   programs = {
 

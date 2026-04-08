@@ -17,9 +17,9 @@
 resource "opnsense_wireguard_client" "mullvad_peer" {
   name           = "mullvad-server"
   enabled        = true
-  public_key     = data.sops_file.secrets.data["mullvad_server_pubkey"]
+  public_key     = data.vault_kv_secret_v2.mullvad.data["server_pubkey"]
   tunnel_address = ["0.0.0.0/0"] # Route all traffic
-  server_address = data.sops_file.secrets.data["mullvad_server"]
+  server_address = data.vault_kv_secret_v2.mullvad.data["server"]
   server_port    = 51820
   keep_alive     = 25
 }
@@ -27,12 +27,12 @@ resource "opnsense_wireguard_client" "mullvad_peer" {
 resource "opnsense_wireguard_server" "mullvad" {
   name           = "mullvad"
   enabled        = true
-  private_key    = data.sops_file.secrets.data["mullvad_private_key"]
-  public_key     = data.sops_file.secrets.data["mullvad_public_key"]
-  tunnel_address = [data.sops_file.secrets.data["mullvad_address"]]
+  private_key    = data.vault_kv_secret_v2.mullvad.data["private_key"]
+  public_key     = data.vault_kv_secret_v2.mullvad.data["public_key"]
+  tunnel_address = [data.vault_kv_secret_v2.mullvad.data["address"]]
   peers          = [opnsense_wireguard_client.mullvad_peer.id]
   port           = 51820
-  mtu            = 1280 # Lower MTU for WireGuard overhead
+  mtu            = 1420 # WireGuard overhead is ~60-80 bytes (1500 - 80 = 1420)
   disable_routes = true # Required for policy-based routing
 }
 
@@ -441,6 +441,14 @@ resource "opnsense_kea_reservation" "pippin" {
   mac_address = local.mac_addresses.pippin
   hostname    = "pippin"
   description = "Clawdbot AI assistant VM"
+}
+
+resource "opnsense_kea_reservation" "rivendell" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.29"
+  mac_address = local.mac_addresses.rivendell
+  hostname    = "rivendell"
+  description = "HTPC (Trycoo WI6 N100)"
 }
 
 # =============================================================================

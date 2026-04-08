@@ -68,8 +68,8 @@
     extraPackages = with pkgs; [
       nil
       nixpkgs-fmt
-      nodePackages.pyright
-      nodePackages.vscode-json-languageserver
+      pyright
+      vscode-langservers-extracted
       taplo
       taplo-cli
       taplo-lsp

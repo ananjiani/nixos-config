@@ -35,6 +35,14 @@
     },
     {
       "matchUpdateTypes": [
+        "minor"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "ignoreTests": false
+    },
+    {
+      "matchUpdateTypes": [
         "major"
       ],
       "labels": [
@@ -50,16 +58,6 @@
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "labels": ["dependencies", "automated", "manual-upgrade-required"]
-    },
-    {
-      "matchManagers": [
-        "nix"
-      ],
-      "groupName": "nix flake inputs",
-      "description": "Group all Nix flake input updates together",
-      "automerge": true,
-      "automergeType": "pr",
-      "ignoreTests": false
     }
   ],
   "flux": {
@@ -72,12 +70,17 @@
       "/k8s/apps/.+\\.yaml$/"
     ]
   },
+  "nix": {
+    "enabled": true
+  },
   "terraform": {
     "managerFilePatterns": [
       "/terraform/.+\\.tf$/"
     ]
   },
-  "nix": {
-    "enabled": true
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am"],
+    "automerge": true
   }
 }

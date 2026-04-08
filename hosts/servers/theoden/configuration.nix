@@ -14,6 +14,59 @@
 }:
 
 let
+  inherit (inputs.buildbot-nix.lib) interpolate;
+
+  # Deploy wrapper: runs after each successful nix-build in CI.
+  # Only deploys server configs built on the main branch.
+  sshConfig = pkgs.writeText "buildbot-ssh-config" ''
+    Host *.lan
+      StrictHostKeyChecking accept-new
+      UserKnownHostsFile /var/lib/buildbot-worker/deploy-known-hosts
+      IdentityFile /run/secrets/buildbot_deploy_ssh_key
+      User root
+      ConnectTimeout 30
+      BatchMode yes
+  '';
+
+  deployScript = pkgs.writeShellScript "buildbot-deploy" ''
+    set -euo pipefail
+
+    if [ "$BRANCH" != "main" ]; then
+      echo "Skipping deploy: not on main branch (branch=$BRANCH)"
+      exit 0
+    fi
+
+    # Attr format is "x86_64-linux.nixos-<server>" — strip system prefix and "nixos-"
+    STRIPPED=''${ATTR#*.}
+    SERVER=''${STRIPPED#nixos-}
+    case "$SERVER" in
+      boromir|samwise|theoden|pippin|rivendell) ;;
+      *)
+        echo "Skipping deploy: $ATTR is not a server configuration"
+        exit 0
+        ;;
+    esac
+
+    if [ -z "$OUT_PATH" ]; then
+      echo "No OUT_PATH set, cannot deploy"
+      exit 1
+    fi
+
+    SSH_OPTS="-F ${sshConfig}"
+    HOST="$SERVER.lan"
+
+    echo "Deploying $SERVER from $OUT_PATH..."
+
+    # Copy the closure to the target host
+    NIX_SSHOPTS="$SSH_OPTS" nix copy --to "ssh://root@$HOST" "$OUT_PATH"
+
+    # Activate: set system profile and switch
+    ssh $SSH_OPTS "root@$HOST" \
+      "nix-env -p /nix/var/nix/profiles/system --set '$OUT_PATH' && '$OUT_PATH/bin/switch-to-configuration' switch"
+
+    echo "Deploy to $SERVER complete"
+  '';
+
   # buildbot-prometheus: Exposes Buildbot metrics for Prometheus scraping.
   # Uses the same Python interpreter as buildbot-nix to ensure compatibility.
   buildbotPackages = config.services.buildbot-nix.packages;
@@ -26,6 +79,7 @@ let
       hash = "sha256-sM95bktdQiwgQ8+GARWq/qXESrMrJQQ5E6YLyflqO0A=";
     };
     dependencies = with buildbotPackages.python.pkgs; [
+      (toPythonModule buildbotPackages.buildbot)
       prometheus-client
       twisted
     ];
@@ -45,6 +99,7 @@ in
     ../../../modules/nixos/server/attic-watch-store.nix
     ../../../modules/nixos/server/adguard.nix
     ../../../modules/nixos/server/keepalived.nix
+    ../../../modules/nixos/vault-agent.nix
   ];
 
   networking = {
@@ -76,69 +131,109 @@ in
     };
   };
 
-  # SOPS secrets configuration
+  # SOPS bootstraps vault-agent credentials
   sops = {
     defaultSopsFile = ../../../secrets/secrets.yaml;
     age.keyFile = "/var/lib/sops-nix/key.txt";
-    secrets = {
-      k3s_token = { };
-      tailscale_authkey = { };
-      # Attic binary cache
-      attic_server_token_key = {
-        owner = "atticd";
-        group = "atticd";
-        mode = "0400";
-      };
-      # Buildbot (Codeberg/Gitea)
-      codeberg_token = {
-        owner = "buildbot";
-        mode = "0400";
-      };
-      codeberg_webhook_secret = {
-        owner = "buildbot";
-        mode = "0400";
-      };
-      codeberg_oauth_secret = {
-        owner = "buildbot";
-        mode = "0400";
-      };
-      buildbot_worker_password = {
-        owner = "buildbot";
-        mode = "0400";
-      };
-      buildbot_worker_password_plain = {
-        owner = "buildbot-worker";
-        mode = "0400";
-      };
-      # Cloudflare Tunnel
-      cloudflared_tunnel_creds = {
-        owner = "cloudflared";
-        group = "cloudflared";
-        mode = "0400";
-      };
-      # Immich secrets (OAuth client secret)
-      immich_secrets = {
-        owner = "immich";
-        group = "immich";
-        mode = "0400";
-      };
-    };
+    secrets.vault_role_id_server = { };
+    secrets.vault_secret_id_server = { };
   };
 
   # Custom modules configuration
   modules = {
+    vault-agent = {
+      enable = true;
+      address = "http://100.64.0.21:8200"; # Tailscale IP (MagicDNS disabled)
+      roleIdFile = config.sops.secrets.vault_role_id_server.path;
+      secretIdFile = config.sops.secrets.vault_secret_id_server.path;
+      secrets = {
+        tailscale_authkey = {
+          path = "secret/nixos/tailscale";
+          field = "authkey";
+        };
+        k3s_token = {
+          path = "secret/nixos/k3s";
+          field = "token";
+        };
+        attic_push_token = {
+          path = "secret/nixos/attic";
+          field = "push_token";
+        };
+        attic_server_token_key = {
+          path = "secret/nixos/attic";
+          field = "server_token_key";
+          owner = "atticd";
+          group = "atticd";
+        };
+        buildbot_worker_password = {
+          path = "secret/nixos/buildbot";
+          field = "worker_password";
+          owner = "buildbot";
+        };
+        buildbot_worker_password_plain = {
+          path = "secret/nixos/buildbot";
+          field = "worker_password_plain";
+          owner = "buildbot-worker";
+        };
+        buildbot_deploy_ssh_key = {
+          path = "secret/nixos/buildbot";
+          field = "deploy_ssh_key";
+          owner = "buildbot-worker";
+        };
+        codeberg_token = {
+          path = "secret/nixos/codeberg";
+          field = "token";
+          owner = "buildbot";
+        };
+        codeberg_webhook_secret = {
+          path = "secret/nixos/codeberg";
+          field = "webhook_secret";
+          owner = "buildbot";
+        };
+        codeberg_oauth_secret = {
+          path = "secret/nixos/codeberg";
+          field = "oauth_secret";
+          owner = "buildbot";
+        };
+        github_app_secret = {
+          path = "secret/nixos/github";
+          field = "app_secret";
+          owner = "buildbot";
+        };
+        github_webhook_secret = {
+          path = "secret/nixos/github";
+          field = "webhook_secret";
+          owner = "buildbot";
+        };
+        cloudflared_tunnel_creds = {
+          path = "secret/nixos/cloudflared";
+          field = "tunnel_creds";
+          owner = "cloudflared";
+          group = "cloudflared";
+        };
+        immich_secrets = {
+          path = "secret/nixos/immich";
+          field = "secrets";
+          owner = "immich";
+          group = "immich";
+        };
+      };
+    };
+
     k3s = {
       enable = true;
       role = "server";
       clusterInit = false;
       serverAddr = "https://192.168.1.21:6443"; # boromir
-      tokenFile = config.sops.secrets.k3s_token.path;
-      extraFlags = [ "--node-ip=192.168.1.27" ]; # Force IPv4 for etcd cluster consistency
+      tokenFile = "/run/secrets/k3s_token";
+      nodeIp = "192.168.1.27";
+      podCidr = "10.42.3.0/24";
+      flannelIface = "ens18"; # Prevent flannel from picking up keepalived VIPs
     };
     tailscale = {
       enable = true;
       loginServer = "https://ts.dimensiondoor.xyz";
-      authKeyFile = config.sops.secrets.tailscale_authkey.path;
+      authKeyFile = "/run/secrets/tailscale_authkey";
       exitNode = true;
       useExitNode = null; # Can't use exit node while being one
       subnetRoutes = [ "192.168.1.0/24" ];
@@ -157,6 +252,7 @@ in
       unicastPeers = [
         "192.168.1.21" # boromir
         "192.168.1.26" # samwise
+        "192.168.1.29" # rivendell
       ];
     };
   };
@@ -200,7 +296,11 @@ in
 
   services = {
     qemuGuest.enable = true;
-    attic-watch-store.enable = true;
+    attic-watch-store = {
+      enable = true;
+      useSops = false;
+      tokenFile = "/run/secrets/attic_push_token";
+    };
 
     # Prometheus node exporter for VM-level monitoring
     prometheus.exporters.node = {
@@ -210,7 +310,9 @@ in
       enabledCollectors = [
         "systemd"
         "processes"
+        "textfile"
       ];
+      extraFlags = [ "--collector.textfile.directory=/var/lib/attic-monitor" ];
     };
 
     # Prometheus postgres exporter for database metrics
@@ -296,13 +398,13 @@ in
     # Attic binary cache
     atticd = {
       enable = true;
-      environmentFile = config.sops.secrets.attic_server_token_key.path;
+      environmentFile = "/run/secrets/attic_server_token_key";
       settings = {
         listen = "[::]:8080";
         database.url = "postgresql:///atticd?host=/run/postgresql";
         storage = {
           type = "local";
-          path = "/var/lib/atticd/storage";
+          path = "/srv/nfs/attic";
         };
         chunking = {
           nar-size-threshold = 65536;
@@ -313,36 +415,56 @@ in
         compression.type = "zstd";
         garbage-collection = {
           interval = "12 hours";
-          default-retention-period = "3 months";
+          default-retention-period = "1 month";
         };
       };
     };
 
-    # Buildbot-nix CI/CD (Codeberg/Gitea)
+    # Buildbot-nix CI/CD (Codeberg/Gitea + GitHub)
     buildbot-nix.master = {
       enable = true;
       domain = "ci.dimensiondoor.xyz";
       useHTTPS = true; # Behind Cloudflare Tunnel
       authBackend = "gitea";
-      workersFile = config.sops.secrets.buildbot_worker_password.path;
+      workersFile = "/run/secrets/buildbot_worker_password";
       buildSystems = [ "x86_64-linux" ];
       evalMaxMemorySize = 2048;
       evalWorkerCount = 2;
       gitea = {
         enable = true;
         instanceUrl = "https://codeberg.org";
-        tokenFile = config.sops.secrets.codeberg_token.path;
-        webhookSecretFile = config.sops.secrets.codeberg_webhook_secret.path;
+        tokenFile = "/run/secrets/codeberg_token";
+        webhookSecretFile = "/run/secrets/codeberg_webhook_secret";
         oauthId = "3c068786-8f5c-44b6-abe8-153394049c91";
-        oauthSecretFile = config.sops.secrets.codeberg_oauth_secret.path;
+        oauthSecretFile = "/run/secrets/codeberg_oauth_secret";
+        topic = "buildbot-nix";
+      };
+      github = {
+        enable = true;
+        appId = 2918119;
+        appSecretKeyFile = "/run/secrets/github_app_secret";
+        webhookSecretFile = "/run/secrets/github_webhook_secret";
         topic = "buildbot-nix";
       };
       admins = [ "ananjiani" ];
+      # Auto-deploy servers after successful builds on main
+      postBuildSteps = [
+        {
+          name = "Deploy to server";
+          environment = {
+            BRANCH = interpolate "%(prop:branch)s";
+            ATTR = interpolate "%(prop:attr)s";
+            OUT_PATH = interpolate "%(prop:out_path)s";
+          };
+          command = [ (toString deployScript) ];
+          warnOnly = true;
+        }
+      ];
     };
 
     buildbot-nix.worker = {
       enable = true;
-      workerPasswordFile = config.sops.secrets.buildbot_worker_password_plain.path;
+      workerPasswordFile = "/run/secrets/buildbot_worker_password_plain";
     };
 
     # Buildbot Prometheus metrics exporter (port 9101, node_exporter uses 9100)
@@ -359,14 +481,15 @@ in
     ]);
     buildbot-master.reporters = [ "reporters.Prometheus(port=9101)" ];
 
-    # Cloudflare Tunnel for external webhooks
+    # Cloudflare Tunnel for external access (webhooks, binary cache)
     cloudflared = {
       enable = true;
       tunnels = {
         "b33ec739-7324-4c6f-b6fa-daedbe0828c8" = {
-          credentialsFile = config.sops.secrets.cloudflared_tunnel_creds.path;
+          credentialsFile = "/run/secrets/cloudflared_tunnel_creds";
           default = "http_status:404";
           ingress = {
+            "attic.dimensiondoor.xyz" = "http://localhost:8080";
             "ci.dimensiondoor.xyz" = "http://localhost:8010";
             "voicemail.dimensiondoor.xyz" = {
               service = "https://192.168.1.52";
@@ -385,7 +508,7 @@ in
       host = "0.0.0.0";
       mediaLocation = "/srv/nfs/immich";
       database.createDB = false; # Using ensureDBOwnership above
-      secretsFile = config.sops.secrets.immich_secrets.path;
+      secretsFile = "/run/secrets/immich_secrets";
       settings = {
         machineLearning = {
           urls = [ "http://192.168.1.24:3003" ]; # rohan ML endpoint
@@ -410,6 +533,93 @@ in
   # Immich user needs storage group for NFS write access
   users.users.immich = {
     extraGroups = [ "storage" ];
+  };
+
+  # Attic chunk integrity check: detects DB records with missing chunk files on disk.
+  # Runs daily and writes a Prometheus textfile metric picked up by node_exporter.
+  systemd = {
+    tmpfiles.rules = [
+      "d /var/lib/attic-monitor 0755 atticd atticd -"
+    ];
+
+    # Services that consume vault-agent secrets must wait for rendering
+    services = {
+      buildbot-master = {
+        after = [ "vault-agent-default.service" ];
+        wants = [ "vault-agent-default.service" ];
+      };
+      buildbot-worker = {
+        after = [ "vault-agent-default.service" ];
+        wants = [ "vault-agent-default.service" ];
+      };
+      cloudflared-tunnel-b33ec739-7324-4c6f-b6fa-daedbe0828c8 = {
+        after = [ "vault-agent-default.service" ];
+        wants = [ "vault-agent-default.service" ];
+      };
+      immich-server = {
+        after = [ "vault-agent-default.service" ];
+        wants = [ "vault-agent-default.service" ];
+      };
+
+      attic-chunk-check = {
+        description = "Check Attic binary cache chunk integrity";
+        after = [
+          "atticd.service"
+          "postgresql.service"
+        ];
+        path = [
+          config.services.postgresql.package
+          pkgs.findutils
+        ];
+        serviceConfig = {
+          Type = "oneshot";
+          User = "atticd";
+        };
+        script =
+          let
+            checkScript = pkgs.writeShellScript "attic-chunk-check" ''
+              set -euo pipefail
+              STORAGE_PATH="/srv/nfs/attic"
+              OUTFILE="/var/lib/attic-monitor/attic.prom"
+              DB_LIST=$(mktemp)
+              FS_LIST=$(mktemp)
+              trap 'rm -f "$DB_LIST" "$FS_LIST"' EXIT
+
+              # All valid chunk filenames expected by DB (strip "local:" prefix, sort)
+              psql -U atticd -d atticd -t -A \
+                -c "SELECT remote_file_id FROM chunk WHERE state = 'V'" \
+                | sed 's/^local://' | sort > "$DB_LIST"
+
+              # All chunk files actually present on disk (just filename, sort)
+              find "$STORAGE_PATH" -name '*.chunk' -printf '%f\n' | sort > "$FS_LIST"
+
+              # Chunks in DB but missing on disk
+              orphaned=$(comm -23 "$DB_LIST" "$FS_LIST" | wc -l)
+              total=$(wc -l < "$DB_LIST")
+
+              cat > "$OUTFILE" <<EOF
+              # HELP attic_orphaned_chunks Chunk DB records with no corresponding file on disk
+              # TYPE attic_orphaned_chunks gauge
+              attic_orphaned_chunks $orphaned
+              # HELP attic_chunks_total Total valid chunk records in Attic database
+              # TYPE attic_chunks_total gauge
+              attic_chunks_total $total
+              EOF
+            '';
+          in
+          "${checkScript}";
+      };
+    };
+
+    timers.attic-chunk-check = {
+      description = "Run Attic chunk integrity check daily";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "daily";
+        OnBootSec = "15min";
+        RandomizedDelaySec = "1h";
+      };
+    };
   };
 
   system.stateVersion = "25.11";

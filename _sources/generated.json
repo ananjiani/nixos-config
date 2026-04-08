@@ -8,11 +8,32 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-ST23UulcaAZXbqOU7plVdh6VkEs1fAwveXoNnIdHID4=",
+            "sha256": "sha256-MENigwkVIx89dWUjb84tv9XRdWkXDpIlK4eHdv3RQJE=",
             "type": "url",
-            "url": "https://github.com/cake-tech/cake_wallet/releases/download/v5.6.0/Cake_Wallet_v5.6.0_Linux.tar.xz"
+            "url": "https://github.com/cake-tech/cake_wallet/releases/download/v5.9.0/Cake_Wallet_v5.9.0_Linux.tar.xz"
         },
-        "version": "v5.6.0"
+        "version": "v5.9.0"
+    },
+    "jacktook": {
+        "cargoLock": null,
+        "date": "2026-02-26",
+        "extract": null,
+        "name": "jacktook",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "deepClone": false,
+            "fetchSubmodules": false,
+            "leaveDotGit": false,
+            "name": null,
+            "owner": "Sam-Max",
+            "repo": "plugin.video.jacktook",
+            "rev": "3b8a60fbd35629dcbd741ba2127ec6d96f4b978a",
+            "sha256": "sha256-+GjBvjjmn4ax43arap8OHGN3EbyIUAnGI9SesY8PCsk=",
+            "sparseCheckout": [],
+            "type": "github"
+        },
+        "version": "3b8a60fbd35629dcbd741ba2127ec6d96f4b978a"
     },
     "moondeck-buddy": {
         "cargoLock": null,
@@ -23,11 +44,11 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-XHVQ3rWg5AFNO3A8OgK5BOecj0DwI6RkhRWEdk2ZXPw=",
+            "sha256": "sha256-SfaqrBJJZlJwhSPLPUlwfvZ8RxIWrbwY6uys8ziRvek=",
             "type": "url",
-            "url": "https://github.com/FrogTheFrog/moondeck-buddy/releases/download/v1.9.1/MoonDeckBuddy-1.9.1-x86_64.AppImage"
+            "url": "https://github.com/FrogTheFrog/moondeck-buddy/releases/download/v1.9.2/MoonDeckBuddy-1.9.2-x86_64.AppImage"
         },
-        "version": "1.9.1"
+        "version": "1.9.2"
     },
     "opendeck": {
         "cargoLock": null,
@@ -38,10 +59,10 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-DkVjoIwp1/tJJzlUkaJwEYagT7BkEMlnBf7ViPJety0=",
+            "sha256": "sha256-9PTViEMTBBkUWmuHbeWSIGL6AjiSXIGxTT399JyPXzs=",
             "type": "url",
-            "url": "https://github.com/nekename/OpenDeck/releases/download/v2.7.0/opendeck_2.7.0_amd64.AppImage"
+            "url": "https://github.com/nekename/OpenDeck/releases/download/v2.9.1/opendeck_2.9.1_amd64.AppImage"
         },
-        "version": "2.7.0"
+        "version": "2.9.1"
     }
 }
