@@ -41,6 +41,7 @@ in
 
     file = {
       ".config/vale/.vale.ini".source = ./.vale.ini;
+      "Zotero/translators/Marxists.org.js".source = ./zotero/translators/Marxists.org.js;
     };
 
     activation.valeSync = lib.hm.dag.entryAfter [ "installPackages" ] ''

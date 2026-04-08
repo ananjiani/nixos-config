@@ -3,10 +3,14 @@ secrets/emacs/emacs.pub
 secrets/work-vpn-d.conf
 result
 .direnv
+.envrc
 .pre-commit-config.yaml
 
 # Unencrypted secrets for testing (NEVER commit these!)
 secrets/*-unencrypted.yaml
+
+# Kubeconfig (contains client certs)
+kubeconfig
 
 # Backups
 portainer-backup*

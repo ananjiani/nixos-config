@@ -13,24 +13,53 @@
 
 let
   cfg = config.modules.htpc;
+  sources = import ../../_sources/generated.nix {
+    inherit (pkgs)
+      fetchurl
+      fetchFromGitHub
+      fetchgit
+      dockerTools
+      ;
+  };
 
   # Must use kodi-gbm.packages (not pkgs.kodiPackages) so that addons are
   # tagged with kodiAddonFor = kodi-gbm. Using the wrong kodiPackages causes
   # withPackages to silently filter out the addon.
   gbmKodiPackages = pkgs.kodi-gbm.packages;
 
-  # Jacktook — debrid streaming addon (not in nixpkgs)
-  jacktook = gbmKodiPackages.buildKodiAddon rec {
+  # Jacktook — debrid streaming addon (not in nixpkgs, tracked by nvfetcher)
+  jacktook = gbmKodiPackages.buildKodiAddon {
     pname = "jacktook";
     namespace = "plugin.video.jacktook";
-    version = "0.24.0";
+    version = sources.jacktook.date;
 
-    src = pkgs.fetchFromGitHub {
-      owner = "Sam-Max";
-      repo = "plugin.video.jacktook";
-      rev = "2173568d144455d1c4928e23b4b142d51c63e111";
-      hash = "sha256-AJXMOt6p3qqjaLV+U/gg38R2fFuClLQGojOn0OA5YsU=";
-    };
+    inherit (sources.jacktook) src;
+
+    # Fix 2-minute playback startup delay: Kodi's InputStream does a GetDirectory
+    # probe on URLs before treating them as streams, which hangs for 120s on Comet
+    # /playback/ URLs. Fix by checking for a 302 redirect without following it
+    # (allow_redirects=False), so we get the CDN URL from the Location header
+    # without consuming the stream. If Comet returns 200 (proxy mode), we pass
+    # the original URL through unchanged to avoid invalidating it.
+    postPatch = ''
+      sed -i '/IndexerType.STREMIO_DEBRID\]:/a\        data["url"] = _resolve_stremio_redirect(data.get("url", ""))' lib/utils/player/utils.py
+      sed -i '1a\
+      def _resolve_stremio_redirect(url):\
+          """Resolve Stremio addon 302 redirects to get the direct CDN URL."""\
+          try:\
+              import requests as _req\
+              resp = _req.get(url, stream=True, allow_redirects=False, timeout=15)\
+              resp.close()\
+              if resp.status_code in (301, 302, 303, 307, 308):\
+                  cdn_url = resp.headers.get("Location", url)\
+                  from lib.jacktook.utils import kodilog as _log\
+                  _log(f"Resolved redirect: {cdn_url[:80]}")\
+                  return cdn_url\
+              return url\
+          except Exception:\
+              return url\
+      ' lib/utils/player/utils.py
+    '';
 
     propagatedBuildInputs = with gbmKodiPackages; [
       requests

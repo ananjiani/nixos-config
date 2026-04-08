@@ -17,8 +17,3 @@ spec:
   prune: true
   dependsOn:
     - name: infrastructure
-  # SOPS decryption for encrypted secrets
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age

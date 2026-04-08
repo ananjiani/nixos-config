@@ -17,6 +17,7 @@
     ../../../modules/nixos/nfs-client.nix
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/tailscale.nix
+    ../../../modules/nixos/vault-agent.nix
     ../../../modules/nixos/server/k3s.nix
     ../../../modules/nixos/nvidia.nix # GPU support for Ollama
     ../../../modules/nixos/server/attic-watch-store.nix
@@ -24,6 +25,14 @@
     ../../../modules/nixos/server/keepalived.nix
     ./ai.nix
   ];
+
+  # SOPS bootstraps vault-agent credentials
+  sops = {
+    defaultSopsFile = ../../../secrets/secrets.yaml;
+    age.keyFile = "/var/lib/sops-nix/key.txt";
+    secrets.vault_role_id_server = { };
+    secrets.vault_secret_id_server = { };
+  };
 
   modules = {
     # Mount NFS share from theoden (use IP since we ARE the DNS server)
@@ -36,7 +45,7 @@
     tailscale = {
       enable = true;
       loginServer = "https://ts.dimensiondoor.xyz";
-      authKeyFile = config.sops.secrets.tailscale_authkey.path;
+      authKeyFile = "/run/secrets/tailscale_authkey";
       exitNode = true;
       useExitNode = null; # Don't route through self (this IS the exit node)
       subnetRoutes = [ "192.168.1.0/24" ]; # Expose local network to Tailnet
@@ -61,22 +70,38 @@
       ];
     };
 
+    # Vault agent — fetches secrets from OpenBao on erebor
+    vault-agent = {
+      enable = true;
+      address = "http://100.64.0.21:8200"; # Tailscale IP (MagicDNS disabled on boromir)
+      roleIdFile = config.sops.secrets.vault_role_id_server.path;
+      secretIdFile = config.sops.secrets.vault_secret_id_server.path;
+      secrets = {
+        tailscale_authkey = {
+          path = "secret/nixos/tailscale";
+          field = "authkey";
+        };
+        k3s_token = {
+          path = "secret/nixos/k3s";
+          field = "token";
+        };
+        attic_push_token = {
+          path = "secret/nixos/attic";
+          field = "push_token";
+        };
+      };
+    };
+
     # k3s cluster initializer (first server node)
     k3s = {
       enable = true;
       role = "server";
       clusterInit = true; # First node initializes the cluster
-      tokenFile = config.sops.secrets.k3s_token.path;
-      extraFlags = [ "--node-ip=192.168.1.21" ]; # Force IPv4 for etcd cluster consistency
+      tokenFile = "/run/secrets/k3s_token";
+      nodeIp = "192.168.1.21";
+      podCidr = "10.42.1.0/24";
+      flannelIface = "ens18"; # Prevent flannel from picking up keepalived VIPs
     };
-  };
-
-  # SOPS secrets configuration
-  sops = {
-    defaultSopsFile = ../../../secrets/secrets.yaml;
-    age.keyFile = "/var/lib/sops-nix/key.txt";
-    secrets.k3s_token = { };
-    secrets.tailscale_authkey = { };
   };
 
   # Keepalived notify scripts for Wyoming Whisper failover
@@ -140,7 +165,11 @@
   services = {
     # Proxmox VM integration and Attic cache
     qemuGuest.enable = true;
-    attic-watch-store.enable = true;
+    attic-watch-store = {
+      enable = true;
+      useSops = false;
+      tokenFile = "/run/secrets/attic_push_token";
+    };
 
     # Second VRRP instance for Wyoming Whisper HA (alongside adguard_vip from module)
     # Rohan (192.168.1.24) is MASTER with priority 100

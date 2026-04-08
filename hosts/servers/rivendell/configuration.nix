@@ -1,6 +1,7 @@
 # Rivendell — HTPC (Trycoo WI6 N100 bare metal)
 # Kodi-GBM media center with CEC remote, connected to LG OLED
 {
+  config,
   inputs,
   pkgs,
   pkgs-stable,
@@ -32,26 +33,57 @@
       permitRootLogin = "prohibit-password";
     };
 
-    # Tailscale — TEMPORARILY DISABLED for NIC stability testing
-    # Tailscale modifies routing/netfilter and retries auth periodically;
-    # testing whether this causes the ~12 min NIC death
+    # Tailscale — PERMANENTLY DISABLED
+    # Tailscale netfilter modifications trigger r8169 driver bug causing
+    # complete inbound packet loss at ~11 min (see postmortem 2026-02-13)
     tailscale.enable = false;
 
-    # k3s agent node — TEMPORARILY DISABLED for NIC stability testing
-    # k3s iptables/nftables rules are suspected of causing NIC death at ~12 min
-    # Re-enable once NIC stability is confirmed without k3s
-    k3s.enable = false;
+    # k3s agent node — verified: iptables rules do NOT trigger r8169 NIC bug
+    k3s = {
+      enable = true;
+      role = "agent";
+      serverAddr = "https://192.168.1.21:6443"; # boromir
+      tokenFile = config.sops.secrets.k3s_token.path;
+      nodeIp = "192.168.1.29";
+      podCidr = "10.42.0.0/24";
+      flannelIface = "enp1s0"; # Prevent flannel from picking up keepalived VIPs
+    };
 
-    # Keepalived for HA DNS — TEMPORARILY DISABLED for NIC stability testing
-    # Re-enable once NIC stability is confirmed
-    keepalived.enable = false;
+    # Keepalived + AdGuard for HA DNS
+    keepalived = {
+      enable = true;
+      interface = "enp1s0";
+      priority = 70; # Lowest — prefer VMs (theoden=100, boromir=90, samwise=80)
+      unicastPeers = [
+        "192.168.1.27" # theoden
+        "192.168.1.21" # boromir
+        "192.168.1.26" # samwise
+      ];
+    };
   };
 
   # SOPS secrets
   sops = {
     defaultSopsFile = ../../../secrets/secrets.yaml;
     age.keyFile = "/var/lib/sops-nix/key.txt";
-    # tailscale_authkey and k3s_token removed while services are disabled for NIC stability testing
+    secrets = {
+      k3s_token = { };
+      trakt_client_id = {
+        owner = "kodi";
+        mode = "0400";
+      };
+      trakt_client_secret = {
+        owner = "kodi";
+        mode = "0400";
+      };
+    };
+  };
+
+  # Dendritic kodi module — inject Jacktook Trakt secrets
+  # Debrid (TorBox) is handled by Comet Stremio addon, no API key needed here
+  kodi.secrets = {
+    traktClientId = config.sops.secrets.trakt_client_id.path;
+    traktClientSecret = config.sops.secrets.trakt_client_secret.path;
   };
 
   networking = {
@@ -70,23 +102,41 @@
     ];
   };
 
-  # Home Manager for ammar (SSH maintenance user)
+  # Home Manager
   home-manager = {
     useGlobalPkgs = true;
     useUserPackages = true;
     extraSpecialArgs = { inherit inputs pkgs-stable; };
-    users.ammar = import ./home.nix;
+    users.ammar = import ./home.nix; # SSH maintenance user
+    users.kodi = {
+      imports = [ ./kodi-home.nix ];
+    }; # Kodi HTPC (advancedsettings.xml)
   };
 
-  # Prometheus node exporter for monitoring
-  services.prometheus.exporters.node = {
-    enable = true;
-    port = 9100;
-    openFirewall = true;
-    enabledCollectors = [
-      "systemd"
-      "processes"
-    ];
+  # NFS client — required for Zot registry PVC (k8s NFS volume mount)
+  # Enables rpcbind + nfs-utils userspace helpers so kubelet can mount NFS volumes
+  boot.supportedFilesystems = [ "nfs" ];
+
+  services = {
+    rpcbind.enable = true;
+
+    # Prometheus node exporter for monitoring
+    prometheus.exporters.node = {
+      enable = true;
+      port = 9100;
+      openFirewall = true;
+      enabledCollectors = [
+        "systemd"
+        "processes"
+      ];
+    };
+
+    # Realtek RTL8168 (r8169 driver) NIC stability fixes — disable hw offloading
+    # See: https://forum.proxmox.com/threads/lots-of-missed-packets-with-realtek-nic-r8168-r8169.168792/
+    udev.extraRules = ''
+      ACTION=="add", SUBSYSTEM=="net", KERNEL=="enp1s0", RUN+="${pkgs.bash}/bin/bash -c '${pkgs.ethtool}/bin/ethtool --set-eee enp1s0 eee off; ${pkgs.ethtool}/bin/ethtool -K enp1s0 rx off tx off sg off tso off gro off gso off'"
+      ACTION=="add", SUBSYSTEM=="pci", DRIVER=="r8169", ATTR{power/control}="on"
+    '';
   };
 
   # Boot configuration (bare metal EFI)
@@ -104,29 +154,14 @@
   };
 
   # Realtek RTL8168 (r8169 driver) NIC stability fixes:
-  # This NIC loses inbound connectivity ~10-12 min after boot. Prometheus data across
-  # 5 boots shows: rx_fifo=0 (no HW overflow), rx_err=0, carrier never drops, then
-  # instant death (scrape 0.05s→10s timeout in one step). Thermal ruled out (54°C at
-  # death vs 58°C survived for 69 min). k3s iptables ruled out (died without k3s).
-  # Root cause: PCI runtime power management (D3hot) — separate from ASPM. The kernel
-  # suspends idle PCI devices via /sys/devices/.../power/control=auto. The r8169 driver
-  # supports runtime PM but PME wake from D3 is broken on many Realtek chips.
-  # Four mitigations applied:
-  # 1. pcie_aspm=off: disable PCIe link-level power states (see boot.kernelParams)
-  # 2. PCI runtime PM: force power/control=on via udev to prevent D3 suspend
-  # 3. ethtool: disable EEE (Energy Efficient Ethernet)
-  # 4. ethtool: disable hardware offloading (rx/tx/sg/tso/gro/gso)
-  # Two application methods (belt-and-suspenders):
-  # - udev rule: fires on NIC/PCI add events (driver reload, interface cycling)
-  # - systemd service: runs after network-addresses configures the interface,
-  #   with PartOf to re-apply on every nixos-switch / deploy-rs activation
-  # See: https://forum.proxmox.com/threads/lots-of-missed-packets-with-realtek-nic-r8168-r8169.168792/
-  # See: https://bugs.archlinux.org/task/59090
+  # Two root causes identified (see postmortem 2026-02-13):
+  # 1. Hardware offloading causes RX buffer overflow at ~7 min (256-entry max ring buffer)
+  # 2. Tailscale netfilter modifications trigger driver bug at ~11 min (Tailscale disabled)
+  # Mitigations:
+  # - pcie_aspm=off: disable PCIe link-level power states (see boot.kernelParams)
+  # - PCI runtime PM: force power/control=on via udev to prevent D3 suspend
+  # - ethtool: disable EEE + all hardware offloading (rx/tx/sg/tso/gro/gso)
   environment.systemPackages = [ pkgs.ethtool ];
-  services.udev.extraRules = ''
-    ACTION=="add", SUBSYSTEM=="net", KERNEL=="enp1s0", RUN+="${pkgs.bash}/bin/bash -c '${pkgs.ethtool}/bin/ethtool --set-eee enp1s0 eee off; ${pkgs.ethtool}/bin/ethtool -K enp1s0 rx off tx off sg off tso off gro off gso off'"
-    ACTION=="add", SUBSYSTEM=="pci", DRIVER=="r8169", ATTR{power/control}="on"
-  '';
   systemd.services.nic-offloading = {
     description = "Disable hardware offloading on Realtek RTL8168 NIC";
     after = [ "network-addresses-enp1s0.service" ];

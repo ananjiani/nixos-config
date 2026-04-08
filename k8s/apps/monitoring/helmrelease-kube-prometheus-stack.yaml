@@ -24,6 +24,7 @@ spec:
     prometheus:
       prometheusSpec:
         retention: 5d
+        retentionSize: 9GB
         storageSpec:
           volumeClaimTemplate:
             spec:
@@ -360,6 +361,34 @@ spec:
                 annotations:
                   summary: "Buildbot build running > 1 hour"
                   description: "A build has been running for more than 1 hour."
+      proxmox-pressure-alerts:
+        groups:
+          - name: proxmox-pressure
+            rules:
+              - alert: ProxmoxIOPressureHigh
+                expr: rate(node_pressure_io_stalled_seconds_total{job="proxmox-node-exporter"}[5m]) > 0.10
+                for: 5m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "IO pressure on Proxmox host {{ $labels.instance }}"
+                  description: "IO full pressure exceeds 10% on {{ $labels.instance }} for 5 minutes. Processes are stalling on disk IO."
+              - alert: ProxmoxIOPressureCritical
+                expr: rate(node_pressure_io_stalled_seconds_total{job="proxmox-node-exporter"}[5m]) > 0.30
+                for: 2m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Severe IO pressure on Proxmox host {{ $labels.instance }}"
+                  description: "IO full pressure exceeds 30% on {{ $labels.instance }} for 2 minutes. System is likely unresponsive."
+              - alert: ProxmoxMemoryPressure
+                expr: rate(node_pressure_memory_stalled_seconds_total{job="proxmox-node-exporter"}[5m]) > 0.05
+                for: 5m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Memory pressure on Proxmox host {{ $labels.instance }}"
+                  description: "Memory full pressure exceeds 5% on {{ $labels.instance }} for 5 minutes. Host may be swapping."
       proxmox-alerts:
         groups:
           - name: proxmox
@@ -432,3 +461,58 @@ spec:
                 annotations:
                   summary: "NVIDIA GPU exporter is down on {{ $labels.instance }}"
                   description: "GPU metrics exporter has been unreachable for 5 minutes."
+      k8s-pod-health-alerts:
+        groups:
+          - name: k8s-pod-health
+            rules:
+              # Faster than the default KubeContainerWaiting (which fires after 1h).
+              # Catches ContainerCreating failures (e.g. missing NFS client, bad image)
+              # within 15 minutes instead of waiting an hour.
+              - alert: PodStuckInContainerCreating
+                expr: |
+                  kube_pod_container_status_waiting_reason{
+                    job="kube-state-metrics",
+                    reason="ContainerCreating"
+                  } == 1
+                for: 15m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} stuck in ContainerCreating"
+                  description: >-
+                    Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }}
+                    has been waiting in ContainerCreating for >15 minutes.
+                    Common causes: missing volume drivers, bad image pull secrets, NFS client not installed.
+              # Catches pods that are scheduled but cannot start for any reason
+              # (insufficient resources, unresolvable PVCs, node taints, etc.)
+              - alert: PodStuckPending
+                expr: |
+                  kube_pod_status_phase{
+                    job="kube-state-metrics",
+                    phase="Pending"
+                  } == 1
+                for: 15m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} stuck in Pending"
+                  description: >-
+                    Pod {{ $labels.namespace }}/{{ $labels.pod }} has been in Pending phase
+                    for >15 minutes. Check node resources, PVC availability, and scheduling constraints.
+
+      attic-alerts:
+        groups:
+          - name: attic-cache
+            rules:
+              - alert: AtticOrphanedChunks
+                expr: attic_orphaned_chunks{instance="192.168.1.27:9100"} > 0
+                for: 1h
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Attic cache has {{ $value }} orphaned chunk(s)"
+                  description: >-
+                    Attic binary cache has chunk records in the database with no corresponding
+                    file on disk. Fetching these paths returns HTTP 500 and blocks deploys.
+                    Fix: delete orphaned DB rows (nar/chunk/chunkref/object) then re-push via
+                    attic push middle-earth <store-path>.

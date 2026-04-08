@@ -128,36 +128,34 @@
     qemuGuest.enable = true;
     attic-watch-store.enable = true;
 
-    promtail = {
+    alloy = {
       enable = true;
-      configuration = {
-        server = {
-          http_listen_port = 3031;
-          grpc_listen_port = 0;
-        };
-        positions.filename = "/tmp/positions.yaml";
-        clients = [
-          { url = "http://192.168.1.21:31080/loki/api/v1/push"; }
-        ];
-        scrape_configs = [
-          {
-            job_name = "journal";
-            journal = {
-              max_age = "12h";
-              labels = {
-                job = "nixos-journal";
-                host = "pippin";
-              };
-            };
-            relabel_configs = [
-              {
-                source_labels = [ "__journal__systemd_unit" ];
-                target_label = "unit";
-              }
-            ];
+      extraFlags = [ "--stability.level=generally-available" ];
+      configPath = pkgs.writeTextDir "config.alloy" ''
+        loki.source.journal "nixos" {
+          max_age    = "12h"
+          forward_to = [loki.write.default.receiver]
+          labels     = {
+            job  = "nixos-journal",
+            host = "pippin",
           }
-        ];
-      };
+          relabel_rules = loki.relabel.journal.rules
+        }
+
+        loki.relabel "journal" {
+          forward_to = []
+          rule {
+            source_labels = ["__journal__systemd_unit"]
+            target_label  = "unit"
+          }
+        }
+
+        loki.write "default" {
+          endpoint {
+            url = "http://192.168.1.21:31080/loki/api/v1/push"
+          }
+        }
+      '';
     };
   };
 

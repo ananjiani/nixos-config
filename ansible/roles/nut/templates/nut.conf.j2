@@ -1,0 +1,5 @@
+{% if inventory_hostname == nut_master_host %}
+MODE=netserver
+{% else %}
+MODE=netclient
+{% endif %}

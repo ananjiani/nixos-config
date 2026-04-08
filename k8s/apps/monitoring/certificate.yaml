@@ -7,7 +7,7 @@ metadata:
 spec:
   secretName: grafana-tls
   issuerRef:
-    name: letsencrypt-prod
+    name: lan-ca
     kind: ClusterIssuer
   dnsNames:
-    - grafana.dimensiondoor.xyz
+    - grafana.lan

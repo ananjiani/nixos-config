@@ -1,0 +1,76 @@
+name: Update nvfetcher sources
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 5 * * 1" # Weekly Monday 5:30am (offset from Renovate's daily 5am)
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - uses: https://github.com/cachix/install-nix-action@v30
+        with:
+          extra_nix_config: |
+            substituters = https://cache.nixos.org http://192.168.1.27:8080/middle-earth
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= middle-earth:QJM6g097RUDyZA0OG00fXc7JxFMOXN3J5ZBX8j+QfFI=
+
+      - name: Run nvfetcher
+        run: nix develop --command nvfetcher
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet _sources/; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create PR
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          FORGEJO_TOKEN: ${{ secrets.GITEATOKEN }}
+        run: |
+          git config user.name "nvfetcher"
+          git config user.email "ananjiani@noreply.codeberg.org"
+
+          BRANCH="nvfetcher/update-$(date +%Y%m%d)"
+          git checkout -b "$BRANCH"
+          git add _sources/
+
+          # Run pre-commit hooks so fixers (e.g. end-of-file-fixer) apply before committing
+          nix develop --command pre-commit run --files _sources/* || true
+          git add _sources/
+
+          git commit -m "chore(deps): update nvfetcher sources
+
+          $(nix develop --command nvfetcher 2>&1 | grep '^[a-z].*→' || echo 'Updated sources')"
+
+          git push origin "$BRANCH"
+
+          # Create PR via Forgejo API
+          PR_RESPONSE=$(curl -s -X POST \
+            -H "Authorization: token $FORGEJO_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://codeberg.org/api/v1/repos/ananjiani/infra/pulls" \
+            -d "{
+              \"title\": \"chore(deps): update nvfetcher sources\",
+              \"body\": \"Automated nvfetcher source update.\n\nThis PR was created by the nvfetcher CI workflow.\",
+              \"head\": \"$BRANCH\",
+              \"base\": \"main\",
+              \"labels\": [\"dependencies\", \"automated\"]
+            }")
+
+          PR_NUMBER=$(echo "$PR_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['number'])")
+
+          # Enable auto-merge after checks pass
+          curl -s -X POST \
+            -H "Authorization: token $FORGEJO_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://codeberg.org/api/v1/repos/ananjiani/infra/pulls/$PR_NUMBER/merge" \
+            -d '{"Do": "merge", "merge_when_checks_succeed": true}'

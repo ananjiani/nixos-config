@@ -7,7 +7,7 @@ metadata:
 spec:
   secretName: ntfy-tls
   issuerRef:
-    name: letsencrypt-prod
+    name: lan-ca
     kind: ClusterIssuer
   dnsNames:
-    - ntfy.dimensiondoor.xyz
+    - ntfy.lan

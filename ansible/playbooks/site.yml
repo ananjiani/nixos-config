@@ -5,6 +5,7 @@
   roles:
     - proxmox-base
     - proxmox-monitoring
+    - nut
 
 - name: Configure rohan-specific services (GPU, PVE exporter)
   hosts: rohan
