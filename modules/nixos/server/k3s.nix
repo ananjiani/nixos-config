@@ -33,8 +33,9 @@ in
 
     serverAddr = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
-      default = null;
-      description = "URL of existing server to join (e.g., https://192.168.1.21:6443)";
+      default = if cfg.clusterInit then null else "https://192.168.1.21:6443";
+      defaultText = lib.literalExpression ''if cfg.clusterInit then null else "https://192.168.1.21:6443"'';
+      description = "URL of existing server to join. Null when clusterInit is true, otherwise defaults to boromir.";
     };
 
     tokenFile = lib.mkOption {

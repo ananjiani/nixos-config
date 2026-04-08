@@ -33,8 +33,6 @@
     k3s = {
       enable = true;
       role = "server";
-      clusterInit = false;
-      serverAddr = "https://192.168.1.21:6443"; # boromir
       nodeIp = "192.168.1.26";
       podCidr = "10.42.2.0/24";
     };

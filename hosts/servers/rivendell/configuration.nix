@@ -37,7 +37,6 @@
     k3s = {
       enable = true;
       role = "agent";
-      serverAddr = "https://192.168.1.21:6443"; # boromir
       tokenFile = config.sops.secrets.k3s_token.path;
       nodeIp = "192.168.1.29";
       podCidr = "10.42.0.0/24";
