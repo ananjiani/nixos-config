@@ -14,10 +14,8 @@
     # ../../../modules/home/editors/lvim.nix
     #../../../modules/home/editors/vscode.nix
     ../../../modules/home/firefox.nix
-    ../../../modules/home/wm/wm.nix
     ../../../modules/home/writing.nix
     ../../../modules/home/programs.nix
-    ../../../modules/home/config/wallpaper.nix
     ../../../modules/home/terminal/gui-integration.nix
     ../../../modules/home/terminal/emulator/foot.nix
     ../../../modules/home/terminal/emulator/ghostty.nix
@@ -39,11 +37,14 @@
     secrets.enable = true;
   };
 
-  # Default wallpaper configuration
-  wallpaper = {
-    enable = lib.mkDefault true;
-    path = lib.mkDefault ./wallpapers/revachol.jpg;
-    mode = lib.mkDefault "fill";
+  # Desktop compositor and wallpaper via dendritic module
+  desktop = {
+    hyprland.enable = lib.mkDefault true;
+    wallpaper = {
+      enable = lib.mkDefault true;
+      path = lib.mkDefault ./wallpapers/revachol.jpg;
+      mode = lib.mkDefault "fill";
+    };
   };
 
   # Note: programs.home-manager.enable is already set in essentials

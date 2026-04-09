@@ -87,6 +87,10 @@
       url = "github:applicative-systems/mkdocs-flake";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+    niri = {
+      url = "github:sodiboo/niri-flake";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
   };
 
   outputs =
@@ -173,6 +177,10 @@
             )
             # Import dendritic brave NixOS module
             (if self._modules ? nixos && self._modules.nixos ? brave then self._modules.nixos.brave else { })
+            # Import dendritic desktop NixOS module
+            (
+              if self._modules ? nixos && self._modules.nixos ? desktop then self._modules.nixos.desktop else { }
+            )
           ];
         };
 
@@ -185,6 +193,10 @@
             inputs.sops-nix.nixosModules.sops
             # Import dendritic brave NixOS module
             (if self._modules ? nixos && self._modules.nixos ? brave then self._modules.nixos.brave else { })
+            # Import dendritic desktop NixOS module
+            (
+              if self._modules ? nixos && self._modules.nixos ? desktop then self._modules.nixos.desktop else { }
+            )
           ];
         };
 
@@ -358,6 +370,14 @@
                 (
                   if self._modules ? homeManager && self._modules.homeManager ? doom-emacs then
                     self._modules.homeManager.doom-emacs
+                  else
+                    { }
+                )
+
+                # Import dendritic desktop module
+                (
+                  if self._modules ? homeManager && self._modules.homeManager ? desktop then
+                    self._modules.homeManager.desktop
                   else
                     { }
                 )

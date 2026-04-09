@@ -142,6 +142,8 @@
     ];
   };
 
+  desktop.niri.enable = true;
+
   opendeck.enable = true;
 
   # Brave browser - disable DoH since OPNsense handles DNS with Mullvad DoT

@@ -2,6 +2,7 @@
 # Imports base.nix for universal foundation, adds workstation-specific config
 {
   pkgs,
+  lib,
   ...
 }:
 
@@ -9,10 +10,12 @@
   imports = [
     ../base.nix
     ../secrets.nix
-    ../../../modules/nixos/wm.nix
     ../../../modules/nixos/fonts.nix
     ../../../modules/nixos/privacy.nix
   ];
+
+  # Desktop compositor via dendritic module
+  desktop.hyprland.enable = lib.mkDefault true;
 
   programs = {
     nh = {

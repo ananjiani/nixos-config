@@ -16,13 +16,21 @@
     ../_profiles/workstation/home.nix
     ../../modules/home/gaming.nix
     # crypto.nix is now imported via dendritic pattern in flake.nix
-    ../../modules/home/config/wallpaper.nix
     ../../modules/home/config/sops.nix
   ];
 
-  wallpaper = {
-    enable = true;
-    mode = lib.mkForce "fit";
+  desktop.niri.enable = true;
+  desktop.wallpaper.mode = lib.mkForce "fit";
+
+  # Desktop-specific waybar persistent workspaces
+  programs.waybar.settings.hyprlandBar."hyprland/workspaces".persistent-workspaces = {
+    "DP-2" = [
+      1
+      2
+      3
+    ];
+    "HDMI-A-1" = [ 4 ];
+    "DP-1" = [ 5 ];
   };
 
   crypto = {
