@@ -10,7 +10,6 @@
     ../proxmox-disk-config.nix
     ../../profiles/server.nix
     inputs.quadlet-nix.nixosModules.quadlet
-    ../../../modules/nixos/base.nix
     ../../../modules/nixos/nfs-client.nix
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/nvidia.nix # GPU support for Ollama

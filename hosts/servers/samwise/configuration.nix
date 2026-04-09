@@ -13,7 +13,6 @@
   imports = [
     ../proxmox-disk-config.nix
     ../../profiles/server.nix
-    ../../../modules/nixos/base.nix
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/server/zigbee2mqtt.nix
   ];

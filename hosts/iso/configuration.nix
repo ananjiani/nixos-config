@@ -10,7 +10,7 @@
   imports = [
     "${modulesPath}/installer/cd-dvd/installation-cd-minimal.nix"
     "${modulesPath}/installer/cd-dvd/channel.nix"
-    ../../modules/nixos/base.nix
+    ../profiles/base.nix
     ../../modules/nixos/ssh.nix
     inputs.disko.nixosModules.disko
   ];

@@ -12,7 +12,6 @@
     (modulesPath + "/profiles/qemu-guest.nix")
     ./disk-config.nix
     ../../profiles/server.nix
-    ../../../modules/nixos/base.nix
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/server/openbao.nix
     ../../../modules/nixos/server/vault-mcp-server.nix

@@ -10,7 +10,7 @@
 
 {
   imports = [
-    ./ssh.nix
+    ../../modules/nixos/ssh.nix
   ];
 
   # SSH — all hosts use the same config

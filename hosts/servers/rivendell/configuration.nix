@@ -11,7 +11,6 @@
     ./hardware-configuration.nix
     ./disk-config.nix
     ../../profiles/server.nix
-    ../../../modules/nixos/base.nix
     ../../../modules/nixos/htpc.nix
     ../../../modules/nixos/networking.nix
   ];

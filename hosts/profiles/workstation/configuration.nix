@@ -7,8 +7,8 @@
 
 {
   imports = [
-    ../../../modules/nixos/base.nix
-    ../../../modules/nixos/secrets.nix
+    ../base.nix
+    ../secrets.nix
     ../../../modules/nixos/wm.nix
     ../../../modules/nixos/fonts.nix
     ../../../modules/nixos/privacy.nix

@@ -9,8 +9,8 @@
 
 {
   imports = [
-    ./vault-agent.nix
-    ./server/attic-watch-store.nix
+    ../../modules/nixos/vault-agent.nix
+    ../../modules/nixos/server/attic-watch-store.nix
   ];
 
   # SOPS — bootstrap vault-agent credentials

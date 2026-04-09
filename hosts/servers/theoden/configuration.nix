@@ -90,7 +90,6 @@ in
     ../proxmox-disk-config.nix
     ./storage.nix
     ../../profiles/server.nix
-    ../../../modules/nixos/base.nix
     ../../../modules/nixos/networking.nix
   ];
 
