@@ -13,6 +13,7 @@
 
   imports = [
     inputs.home-manager-unstable.nixosModules.home-manager
+    ../../modules/nixos/secrets.nix
     ../../modules/nixos/tailscale.nix
     ../../modules/nixos/server/adguard.nix
     ../../modules/nixos/server/keepalived.nix
