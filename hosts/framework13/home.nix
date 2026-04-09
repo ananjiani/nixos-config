@@ -5,7 +5,7 @@
 
 {
   imports = [
-    ../profiles/workstation/home.nix
+    ../_profiles/workstation/home.nix
     ../../modules/home/profiles/laptop.nix
     ../../modules/home/config/wallpaper.nix
     ../../modules/home/config/sops.nix

@@ -13,7 +13,7 @@
   home.sessionVariables.SSH_ASKPASS = "${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass";
 
   imports = [
-    ../profiles/workstation/home.nix
+    ../_profiles/workstation/home.nix
     ../../modules/home/gaming.nix
     # crypto.nix is now imported via dendritic pattern in flake.nix
     ../../modules/home/config/wallpaper.nix

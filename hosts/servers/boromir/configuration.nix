@@ -7,8 +7,8 @@
 
 {
   imports = [
-    ../proxmox-disk-config.nix
-    ../../profiles/server.nix
+    ../../_profiles/server/proxmox-disk-config.nix
+    ../../_profiles/server/configuration.nix
     inputs.quadlet-nix.nixosModules.quadlet
     ../../../modules/nixos/nfs-client.nix
     ../../../modules/nixos/networking.nix

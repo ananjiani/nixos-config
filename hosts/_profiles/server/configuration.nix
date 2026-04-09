@@ -13,12 +13,12 @@
 
   imports = [
     inputs.home-manager-unstable.nixosModules.home-manager
-    ./base.nix
-    ./secrets.nix
-    ../../modules/nixos/tailscale.nix
-    ../../modules/nixos/server/adguard.nix
-    ../../modules/nixos/server/keepalived.nix
-    ../../modules/nixos/server/k3s.nix
+    ../base.nix
+    ../secrets.nix
+    ../../../modules/nixos/tailscale.nix
+    ../../../modules/nixos/server/adguard.nix
+    ../../../modules/nixos/server/keepalived.nix
+    ../../../modules/nixos/server/k3s.nix
   ];
 
   config = {
@@ -53,7 +53,7 @@
       useGlobalPkgs = true;
       useUserPackages = true;
       extraSpecialArgs = { inherit inputs pkgs-stable; };
-      users.ammar = import ../servers/home.nix;
+      users.ammar = import ./home.nix;
     };
 
     # Proxmox VM: GRUB boot, virtio drivers, qemu-guest-agent

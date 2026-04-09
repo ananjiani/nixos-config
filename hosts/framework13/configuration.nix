@@ -7,7 +7,7 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ../profiles/workstation/configuration.nix
+    ../_profiles/workstation/configuration.nix
     ../../modules/nixos/bluetooth.nix
     # ../../modules/nixos/openconnect.nix
     ../../modules/nixos/docker.nix

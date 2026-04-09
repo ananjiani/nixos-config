@@ -87,9 +87,9 @@ let
 in
 {
   imports = [
-    ../proxmox-disk-config.nix
+    ../../_profiles/server/proxmox-disk-config.nix
     ./storage.nix
-    ../../profiles/server.nix
+    ../../_profiles/server/configuration.nix
     ../../../modules/nixos/networking.nix
   ];
 

@@ -11,7 +11,7 @@
   imports = [
     (modulesPath + "/profiles/qemu-guest.nix")
     ./disk-config.nix
-    ../../profiles/server.nix
+    ../../_profiles/server/configuration.nix
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/server/openbao.nix
     ../../../modules/nixos/server/vault-mcp-server.nix

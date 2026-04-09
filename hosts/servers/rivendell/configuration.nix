@@ -10,7 +10,7 @@
   imports = [
     ./hardware-configuration.nix
     ./disk-config.nix
-    ../../profiles/server.nix
+    ../../_profiles/server/configuration.nix
     ../../../modules/nixos/htpc.nix
     ../../../modules/nixos/networking.nix
   ];

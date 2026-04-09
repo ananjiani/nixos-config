@@ -11,8 +11,8 @@
 
 {
   imports = [
-    ../proxmox-disk-config.nix
-    ../../profiles/server.nix
+    ../../_profiles/server/proxmox-disk-config.nix
+    ../../_profiles/server/configuration.nix
     ../../../modules/nixos/networking.nix
     ../../../modules/nixos/server/zigbee2mqtt.nix
   ];
