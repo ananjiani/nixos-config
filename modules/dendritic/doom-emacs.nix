@@ -98,7 +98,14 @@ in
             programs.emacs = {
               enable = true;
               package = pkgs.emacs-pgtk;
-              extraPackages = epkgs: [ epkgs.vterm ];
+              extraPackages = epkgs: [
+                epkgs.vterm
+                (epkgs.treesit-grammars.with-grammars (
+                  grammars: with grammars; [
+                    tree-sitter-python
+                  ]
+                ))
+              ];
             };
 
             services.emacs = lib.mkIf config.doom-emacs.service.enable {
@@ -114,6 +121,13 @@ in
             programs.emacs = {
               enable = true;
               package = pkgs.emacs-nox;
+              extraPackages = epkgs: [
+                (epkgs.treesit-grammars.with-grammars (
+                  grammars: with grammars; [
+                    tree-sitter-python
+                  ]
+                ))
+              ];
             };
 
             services.emacs = lib.mkIf config.doom-emacs.service.enable {
