@@ -867,6 +867,42 @@ in
                     };
                   };
 
+                  window-rules = [
+                    # Terminal: narrow sidekick width
+                    {
+                      matches = [ { app-id = "^foot$"; } ];
+                      default-column-width.proportion = 1.0 / 4.0;
+                    }
+                    # Editor: main workhorse, half the screen
+                    {
+                      matches = [ { app-id = "^emacs$"; } ];
+                      default-column-width.proportion = 1.0 / 2.0;
+                    }
+                    # Browsers: half-width for comfortable reading
+                    {
+                      matches = [
+                        { app-id = "^brave-browser$"; }
+                        { app-id = "(?i)mullvad.browser"; }
+                        { app-id = "(?i)tor.browser"; }
+                      ];
+                      default-column-width.proportion = 1.0 / 2.0;
+                    }
+                    # Chat apps: always land on the chat workspace
+                    {
+                      matches = [
+                        { app-id = "(?i)^signal$"; }
+                        { app-id = "(?i)^element$"; }
+                        { app-id = "(?i)^vesktop$"; }
+                      ];
+                      open-on-workspace = "04-chat";
+                    }
+                    # copyq popup should float, not tile
+                    {
+                      matches = [ { app-id = "(?i)copyq"; } ];
+                      open-floating = true;
+                    }
+                  ];
+
                   spawn-at-startup =
                     (map (app: {
                       command = [
