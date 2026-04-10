@@ -1043,6 +1043,8 @@ in
 
                     # ─── Group: Monitor cross-navigation ─────────────────────
                     # Critical for the desktop host's 3-monitor layout.
+                    # Hierarchy: Shift=monitor axis, Ctrl=carry column,
+                    # Ctrl+Alt=carry whole workspace.
                     "Mod+Shift+H".action.focus-monitor-left = [ ];
                     "Mod+Shift+J".action.focus-monitor-down = [ ];
                     "Mod+Shift+K".action.focus-monitor-up = [ ];
@@ -1051,6 +1053,10 @@ in
                     "Mod+Shift+Ctrl+J".action.move-column-to-monitor-down = [ ];
                     "Mod+Shift+Ctrl+K".action.move-column-to-monitor-up = [ ];
                     "Mod+Shift+Ctrl+L".action.move-column-to-monitor-right = [ ];
+                    "Mod+Shift+Ctrl+Alt+H".action.move-workspace-to-monitor-left = [ ];
+                    "Mod+Shift+Ctrl+Alt+J".action.move-workspace-to-monitor-down = [ ];
+                    "Mod+Shift+Ctrl+Alt+K".action.move-workspace-to-monitor-up = [ ];
+                    "Mod+Shift+Ctrl+Alt+L".action.move-workspace-to-monitor-right = [ ];
 
                     # ─── Group: Workspaces 1–10 ──────────────────────────────
                     "Mod+1".action.focus-workspace = 1;
