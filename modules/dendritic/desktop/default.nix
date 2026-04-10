@@ -841,12 +841,14 @@ in
                     border = {
                       width = 2;
                     };
-                    # Tab indicator for Mod+W tabbed columns. Niri-native
-                    # minimal aesthetic: a thicker vertical bar on the left
-                    # edge, only visible when the column actually has tabs.
+                    # Tab indicator for Mod+W tabbed columns. Drawn inside
+                    # the column (so it's never clipped by the screen edge)
+                    # as a full-height 8px bar on the left.
                     tab-indicator = {
                       width = 8;
                       gap = 2;
+                      place-within-column = true;
+                      length.total-proportion = 1.0;
                       hide-when-single-tab = true;
                     };
                   };
