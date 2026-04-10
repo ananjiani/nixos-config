@@ -511,7 +511,9 @@ in
               in
               {
                 home.activation.reloadHyprland = lib.hm.dag.entryAfter [ "reloadSystemd" ] ''
-                  hyprctl reload
+                  if [ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+                    hyprctl reload
+                  fi
                 '';
 
                 wayland.windowManager.hyprland = {
