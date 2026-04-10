@@ -843,6 +843,18 @@ in
                     border = {
                       width = 2;
                     };
+                    # On the 32:9 ultrawide, a lone column otherwise
+                    # slams to the left edge. Auto-center it instead.
+                    always-center-single-column = true;
+                    # Mod+R cycles through these. The 1/4 and 3/4 extras
+                    # are useful on 32:9 where 1/3 is still quite wide.
+                    preset-column-widths = [
+                      { proportion = 1.0 / 4.0; }
+                      { proportion = 1.0 / 3.0; }
+                      { proportion = 1.0 / 2.0; }
+                      { proportion = 2.0 / 3.0; }
+                      { proportion = 3.0 / 4.0; }
+                    ];
                     # Tab indicator for Mod+W tabbed columns. Drawn inside
                     # the column (so it's never clipped by the screen edge)
                     # as a full-height 8px bar on the left.
@@ -912,6 +924,7 @@ in
                     "Mod+F".action.maximize-column = [ ];
                     "Mod+Shift+F".action.fullscreen-window = [ ];
                     "Mod+Ctrl+F".action.expand-column-to-available-width = [ ];
+                    "Mod+Shift+C".action.center-column = [ ];
                     "Mod+R".action.switch-preset-column-width = [ ];
                     "Mod+Shift+R".action.switch-preset-window-height = [ ];
                     "Mod+Ctrl+R".action.reset-window-height = [ ];
