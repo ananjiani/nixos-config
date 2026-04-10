@@ -331,6 +331,7 @@ in
               "claude-desktop"
               "pear-desktop"
               "vesktop"
+              "steam -silent"
             ];
             description = "Apps to launch on compositor startup";
           };
@@ -867,6 +868,14 @@ in
                     };
                   };
 
+                  # XWayland support for X11-only apps like Steam.
+                  # niri itself is pure Wayland; xwayland-satellite provides
+                  # a rootless X server and niri spawns it on startup.
+                  xwayland-satellite = {
+                    enable = true;
+                    path = lib.getExe pkgs.xwayland-satellite;
+                  };
+
                   window-rules = [
                     # Terminal: narrow sidekick width
                     {
@@ -900,6 +909,33 @@ in
                     {
                       matches = [ { app-id = "(?i)copyq"; } ];
                       open-floating = true;
+                    }
+                    # Steam: engage on-demand VRR for the main window
+                    {
+                      matches = [ { app-id = "^steam$"; } ];
+                      variable-refresh-rate = true;
+                    }
+                    # Steam notification toasts otherwise center on the
+                    # 32:9 ultrawide. Float them to the bottom-right.
+                    {
+                      matches = [
+                        {
+                          app-id = "^steam$";
+                          title = "^notificationtoasts_\\d+_desktop$";
+                        }
+                      ];
+                      open-floating = true;
+                      default-floating-position = {
+                        x = 10;
+                        y = 10;
+                        relative-to = "bottom-right";
+                      };
+                    }
+                    # gamescope: engage on-demand VRR so fullscreen games
+                    # get adaptive sync on DP-2.
+                    {
+                      matches = [ { app-id = "^gamescope$"; } ];
+                      variable-refresh-rate = true;
                     }
                   ];
 
