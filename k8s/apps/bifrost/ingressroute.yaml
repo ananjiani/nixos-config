@@ -17,7 +17,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`bifrost.dimensiondoor.xyz`)
+    - match: Host(`bifrost.dimensiondoor.xyz`) || Host(`bifrost.lan`)
       kind: Rule
       services:
         - name: bifrost

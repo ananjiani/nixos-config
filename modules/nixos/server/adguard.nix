@@ -210,7 +210,7 @@ in
               }
               {
                 domain = "adguard.lan";
-                answer = "192.168.1.52";
+                answer = "192.168.1.53"; # keepalived VIP (AdGuard UI on port 3000)
               }
               {
                 domain = "cliproxy.lan";
