@@ -977,13 +977,17 @@ in
                     "Mod+Shift+9".action.move-window-to-workspace = 9;
                     "Mod+Shift+0".action.move-column-to-workspace = 10;
 
-                    # ─── Group: Workspace stack scrolling (niri-native) ──────
-                    "Mod+U".action.focus-workspace-down = [ ];
-                    "Mod+I".action.focus-workspace-up = [ ];
+                    # ─── Group: Workspace stack scrolling ────────────────────
+                    # J/K chord convention: Alt axis = workspace. Matches the
+                    # existing hierarchy where Ctrl=carry and Shift=monitor.
+                    # Upstream niri uses U/I but those are positionally
+                    # meaningless on Engram.
+                    "Mod+Alt+J".action.focus-workspace-down = [ ];
+                    "Mod+Alt+K".action.focus-workspace-up = [ ];
+                    "Mod+Ctrl+Alt+J".action.move-column-to-workspace-down = [ ];
+                    "Mod+Ctrl+Alt+K".action.move-column-to-workspace-up = [ ];
                     "Mod+Page_Down".action.focus-workspace-down = [ ];
                     "Mod+Page_Up".action.focus-workspace-up = [ ];
-                    "Mod+Ctrl+U".action.move-column-to-workspace-down = [ ];
-                    "Mod+Ctrl+I".action.move-column-to-workspace-up = [ ];
                     "Mod+Ctrl+Page_Down".action.move-column-to-workspace-down = [ ];
                     "Mod+Ctrl+Page_Up".action.move-column-to-workspace-up = [ ];
                     "Mod+Shift+Page_Down".action.move-workspace-down = [ ];
