@@ -776,6 +776,55 @@ in
                   ];
                 };
                 niriBarFile = pkgs.writeText "waybar-niri-config.json" (builtins.toJSON niriBarSettings);
+
+                # Shared spawn argument lists so hardware media/brightness keys
+                # and their Mod+F-row keyboard aliases stay in lockstep.
+                volumeUp = [
+                  "wpctl"
+                  "set-volume"
+                  "@DEFAULT_AUDIO_SINK@"
+                  "5%+"
+                ];
+                volumeDown = [
+                  "wpctl"
+                  "set-volume"
+                  "@DEFAULT_AUDIO_SINK@"
+                  "5%-"
+                ];
+                volumeMute = [
+                  "wpctl"
+                  "set-mute"
+                  "@DEFAULT_AUDIO_SINK@"
+                  "toggle"
+                ];
+                micMute = [
+                  "wpctl"
+                  "set-mute"
+                  "@DEFAULT_AUDIO_SOURCE@"
+                  "toggle"
+                ];
+                brightnessUp = [
+                  "brightnessctl"
+                  "set"
+                  "+10%"
+                ];
+                brightnessDown = [
+                  "brightnessctl"
+                  "set"
+                  "10%-"
+                ];
+                playPause = [
+                  "playerctl"
+                  "play-pause"
+                ];
+                playerNext = [
+                  "playerctl"
+                  "next"
+                ];
+                playerPrev = [
+                  "playerctl"
+                  "previous"
+                ];
               in
               {
                 programs.niri.settings = {
@@ -813,8 +862,11 @@ in
                     };
 
                   binds = {
-                    "Mod+Return".action.spawn = "foot";
-                    "Mod+Shift+Return".action.spawn = [
+                    # ─── Group: Launchers & apps ─────────────────────────────
+                    # Mod+Q for terminal matches Hyprland muscle memory;
+                    # diverges from niri upstream (which uses Mod+Q for close).
+                    "Mod+Q".action.spawn = "foot";
+                    "Mod+Shift+Q".action.spawn = [
                       "foot"
                       "zellij"
                     ];
@@ -822,25 +874,88 @@ in
                       "emacsclient"
                       "-c"
                     ];
-                    "Mod+B".action.spawn = "claude-desktop";
-                    "Mod+R".action.spawn = "fuzzel";
-                    "Mod+F".action.spawn = "brave";
+                    "Mod+B".action.spawn = "brave";
+                    "Mod+Shift+B".action.spawn = "mullvad-browser";
+                    "Mod+Alt+B".action.spawn = "tor-browser";
+                    "Mod+D".action.spawn = "fuzzel"; # niri upstream default
+                    "Mod+Shift+D".action.spawn = [
+                      "bash"
+                      "${scriptsDir}/whisper-toggle.sh"
+                    ];
+                    "Mod+A".action.spawn = [
+                      "bash"
+                      "${scriptsDir}/audio-switch.sh"
+                    ];
+                    "Mod+G".action.spawn = [
+                      "bash"
+                      "${scriptsDir}/git-project-switcher.sh"
+                    ];
+
+                    # ─── Group: Window management (matches Hyprland) ─────────
                     "Mod+C".action.close-window = [ ];
                     "Mod+V".action.toggle-window-floating = [ ];
+                    "Mod+Shift+V".action.switch-focus-between-floating-and-tiling = [ ];
 
-                    # Focus movement
+                    # ─── Group: niri-native column/tiling operations ─────────
+                    "Mod+F".action.maximize-column = [ ];
+                    "Mod+Shift+F".action.fullscreen-window = [ ];
+                    "Mod+Ctrl+F".action.expand-column-to-available-width = [ ];
+                    "Mod+R".action.switch-preset-column-width = [ ];
+                    "Mod+Shift+R".action.switch-preset-window-height = [ ];
+                    "Mod+Ctrl+R".action.reset-window-height = [ ];
+                    "Mod+W".action.toggle-column-tabbed-display = [ ];
+                    "Mod+O".action.toggle-overview = [ ];
+                    "Mod+Equal".action.set-column-width = "+10%";
+                    "Mod+Minus".action.set-column-width = "-10%";
+                    "Mod+Shift+Equal".action.set-window-height = "+10%";
+                    "Mod+Shift+Minus".action.set-window-height = "-10%";
+                    "Mod+BracketLeft".action.consume-or-expel-window-left = [ ];
+                    "Mod+BracketRight".action.consume-or-expel-window-right = [ ];
+                    "Mod+Comma".action.consume-window-into-column = [ ];
+                    "Mod+Period".action.expel-window-from-column = [ ];
+
+                    # ─── Group: Focus movement (vim keys) ────────────────────
                     "Mod+H".action.focus-column-left = [ ];
                     "Mod+L".action.focus-column-right = [ ];
                     "Mod+K".action.focus-window-up = [ ];
                     "Mod+J".action.focus-window-down = [ ];
 
-                    # Move windows
+                    # ─── Group: Focus movement (arrow keys, niri default) ────
+                    "Mod+Left".action.focus-column-left = [ ];
+                    "Mod+Right".action.focus-column-right = [ ];
+                    "Mod+Up".action.focus-window-up = [ ];
+                    "Mod+Down".action.focus-window-down = [ ];
+
+                    # ─── Group: Move windows (vim keys) ──────────────────────
                     "Mod+Ctrl+H".action.move-column-left = [ ];
                     "Mod+Ctrl+L".action.move-column-right = [ ];
                     "Mod+Ctrl+K".action.move-window-up = [ ];
                     "Mod+Ctrl+J".action.move-window-down = [ ];
 
-                    # Workspaces
+                    # ─── Group: Move windows (arrow keys) ────────────────────
+                    "Mod+Ctrl+Left".action.move-column-left = [ ];
+                    "Mod+Ctrl+Right".action.move-column-right = [ ];
+                    "Mod+Ctrl+Up".action.move-window-up = [ ];
+                    "Mod+Ctrl+Down".action.move-window-down = [ ];
+
+                    # ─── Group: Home/End column navigation ───────────────────
+                    "Mod+Home".action.focus-column-first = [ ];
+                    "Mod+End".action.focus-column-last = [ ];
+                    "Mod+Ctrl+Home".action.move-column-to-first = [ ];
+                    "Mod+Ctrl+End".action.move-column-to-last = [ ];
+
+                    # ─── Group: Monitor cross-navigation ─────────────────────
+                    # Critical for the desktop host's 3-monitor layout.
+                    "Mod+Shift+H".action.focus-monitor-left = [ ];
+                    "Mod+Shift+J".action.focus-monitor-down = [ ];
+                    "Mod+Shift+K".action.focus-monitor-up = [ ];
+                    "Mod+Shift+L".action.focus-monitor-right = [ ];
+                    "Mod+Shift+Ctrl+H".action.move-column-to-monitor-left = [ ];
+                    "Mod+Shift+Ctrl+J".action.move-column-to-monitor-down = [ ];
+                    "Mod+Shift+Ctrl+K".action.move-column-to-monitor-up = [ ];
+                    "Mod+Shift+Ctrl+L".action.move-column-to-monitor-right = [ ];
+
+                    # ─── Group: Workspaces 1–10 ──────────────────────────────
                     "Mod+1".action.focus-workspace = 1;
                     "Mod+2".action.focus-workspace = 2;
                     "Mod+3".action.focus-workspace = 3;
@@ -850,6 +965,7 @@ in
                     "Mod+7".action.focus-workspace = 7;
                     "Mod+8".action.focus-workspace = 8;
                     "Mod+9".action.focus-workspace = 9;
+                    "Mod+0".action.focus-workspace = 10;
                     "Mod+Shift+1".action.move-window-to-workspace = 1;
                     "Mod+Shift+2".action.move-window-to-workspace = 2;
                     "Mod+Shift+3".action.move-window-to-workspace = 3;
@@ -859,61 +975,113 @@ in
                     "Mod+Shift+7".action.move-window-to-workspace = 7;
                     "Mod+Shift+8".action.move-window-to-workspace = 8;
                     "Mod+Shift+9".action.move-window-to-workspace = 9;
+                    "Mod+Shift+0".action.move-column-to-workspace = 10;
 
-                    # Screenshots
+                    # ─── Group: Workspace stack scrolling (niri-native) ──────
+                    "Mod+U".action.focus-workspace-down = [ ];
+                    "Mod+I".action.focus-workspace-up = [ ];
+                    "Mod+Page_Down".action.focus-workspace-down = [ ];
+                    "Mod+Page_Up".action.focus-workspace-up = [ ];
+                    "Mod+Ctrl+U".action.move-column-to-workspace-down = [ ];
+                    "Mod+Ctrl+I".action.move-column-to-workspace-up = [ ];
+                    "Mod+Ctrl+Page_Down".action.move-column-to-workspace-down = [ ];
+                    "Mod+Ctrl+Page_Up".action.move-column-to-workspace-up = [ ];
+                    "Mod+Shift+Page_Down".action.move-workspace-down = [ ];
+                    "Mod+Shift+Page_Up".action.move-workspace-up = [ ];
+                    "Mod+Tab".action.focus-workspace-previous = [ ]; # Hyprland parity
+
+                    # ─── Group: Mouse wheel (workspace + column scroll) ──────
+                    "Mod+WheelScrollDown" = {
+                      cooldown-ms = 150;
+                      action.focus-workspace-down = [ ];
+                    };
+                    "Mod+WheelScrollUp" = {
+                      cooldown-ms = 150;
+                      action.focus-workspace-up = [ ];
+                    };
+                    "Mod+Ctrl+WheelScrollDown" = {
+                      cooldown-ms = 150;
+                      action.move-column-to-workspace-down = [ ];
+                    };
+                    "Mod+Ctrl+WheelScrollUp" = {
+                      cooldown-ms = 150;
+                      action.move-column-to-workspace-up = [ ];
+                    };
+                    "Mod+WheelScrollRight".action.focus-column-right = [ ];
+                    "Mod+WheelScrollLeft".action.focus-column-left = [ ];
+                    "Mod+Ctrl+WheelScrollRight".action.move-column-right = [ ];
+                    "Mod+Ctrl+WheelScrollLeft".action.move-column-left = [ ];
+
+                    # ─── Group: Screenshots ──────────────────────────────────
                     "Print".action.screenshot = [ ];
-                    "Mod+Print".action.screenshot-window = [ ];
+                    "Ctrl+Print".action.screenshot-screen = [ ];
+                    "Alt+Print".action.screenshot-window = [ ];
+                    # Hyprland-parity: swappy clipboard annotator.
+                    "Mod+Print".action.spawn-sh = "wl-paste | swappy -f -";
 
-                    # Media controls
-                    "Mod+Space".action.spawn = [
-                      "playerctl"
-                      "play-pause"
-                    ];
-                    "Mod+BracketRight".action.spawn = [
-                      "playerctl"
-                      "next"
-                    ];
-                    "Mod+BracketLeft".action.spawn = [
-                      "playerctl"
-                      "previous"
-                    ];
+                    # ─── Group: Hardware media keys ──────────────────────────
+                    "XF86AudioRaiseVolume" = {
+                      allow-when-locked = true;
+                      action.spawn = volumeUp;
+                    };
+                    "XF86AudioLowerVolume" = {
+                      allow-when-locked = true;
+                      action.spawn = volumeDown;
+                    };
+                    "XF86AudioMute" = {
+                      allow-when-locked = true;
+                      action.spawn = volumeMute;
+                    };
+                    "XF86AudioMicMute" = {
+                      allow-when-locked = true;
+                      action.spawn = micMute;
+                    };
+                    "XF86AudioPlay".action.spawn = playPause;
+                    "XF86AudioNext".action.spawn = playerNext;
+                    "XF86AudioPrev".action.spawn = playerPrev;
+                    "XF86MonBrightnessUp" = {
+                      allow-when-locked = true;
+                      action.spawn = brightnessUp;
+                    };
+                    "XF86MonBrightnessDown" = {
+                      allow-when-locked = true;
+                      action.spawn = brightnessDown;
+                    };
 
-                    # Volume
-                    "Mod+Equal".action.spawn = [
-                      "wpctl"
-                      "set-volume"
-                      "@DEFAULT_AUDIO_SINK@"
-                      "5%+"
-                    ];
-                    "Mod+Minus".action.spawn = [
-                      "wpctl"
-                      "set-volume"
-                      "@DEFAULT_AUDIO_SINK@"
-                      "5%-"
-                    ];
-                    "Mod+0".action.spawn = [
-                      "wpctl"
-                      "set-mute"
-                      "@DEFAULT_AUDIO_SINK@"
-                      "toggle"
-                    ];
+                    # ─── Group: Media (keyboard) ─────────────────────────────
+                    # Mod+Space: play-pause; not a niri upstream default but
+                    # doesn't collide with anything else we care about.
+                    "Mod+Space".action.spawn = playPause;
+                    "Mod+Shift+BracketLeft".action.spawn = playerPrev;
+                    "Mod+Shift+BracketRight".action.spawn = playerNext;
 
-                    # Audio device switcher
-                    "Mod+A".action.spawn = [
-                      "bash"
-                      "${scriptsDir}/audio-switch.sh"
-                    ];
+                    # ─── Group: Volume keyboard aliases (desktop F-row) ──────
+                    # Desktop keyboard has no hardware volume keys; F1/F2/F3
+                    # mimic the universal laptop multimedia F-row layout.
+                    "Mod+F1".action.spawn = volumeMute;
+                    "Mod+F2".action.spawn = volumeDown;
+                    "Mod+F3".action.spawn = volumeUp;
 
-                    # Whisper dictation
-                    "Mod+D".action.spawn = [
-                      "bash"
-                      "${scriptsDir}/whisper-toggle.sh"
-                    ];
+                    # ─── Group: Discoverability & system control ─────────────
+                    "Mod+Shift+Slash".action.show-hotkey-overlay = [ ];
+                    "Mod+Shift+E".action.quit = [ ];
+                    "Ctrl+Alt+Delete".action.quit = [ ];
+                    "Mod+Shift+P".action.power-off-monitors = [ ];
+                    "Mod+Escape" = {
+                      allow-inhibiting = false;
+                      action.toggle-keyboard-shortcuts-inhibit = [ ];
+                    };
 
-                    # Git project switcher
-                    "Mod+G".action.spawn = [
-                      "bash"
-                      "${scriptsDir}/git-project-switcher.sh"
+                    # ─── Group: Notifications (swaync) ───────────────────────
+                    "Mod+N".action.spawn = [
+                      "swaync-client"
+                      "-t"
+                      "-sw"
+                    ];
+                    "Mod+Shift+N".action.spawn = [
+                      "swaync-client"
+                      "-C"
+                      "-sw"
                     ];
                   };
                 };
