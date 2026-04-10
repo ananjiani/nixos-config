@@ -101,8 +101,8 @@ spec:
               value: "env.ZAI_API_KEY"
               weight: 1.0
               models:
-                - "glm-4.7"
                 - "glm-5"
+                - "glm-5.1"
         cliproxy:
           network_config:
             base_url: "http://cliproxy.cliproxy.svc:8317"
