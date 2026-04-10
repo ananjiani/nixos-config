@@ -17,10 +17,28 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`bifrost.dimensiondoor.xyz`) || Host(`bifrost.lan`)
+    - match: Host(`bifrost.dimensiondoor.xyz`)
       kind: Rule
       services:
         - name: bifrost
           port: 8080
   tls:
     secretName: bifrost-tls
+---
+# Internal route (LAN only) - uses homelab lan-ca for trusted TLS from NixOS hosts
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: bifrost-lan
+  namespace: bifrost
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`bifrost.lan`)
+      kind: Rule
+      services:
+        - name: bifrost
+          port: 8080
+  tls:
+    secretName: bifrost-lan-tls

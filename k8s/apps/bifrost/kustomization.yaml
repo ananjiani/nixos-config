@@ -8,4 +8,5 @@ resources:
   - helmrelease.yaml
   - ollama-endpoints.yaml
   - certificate.yaml
+  - certificate-lan.yaml
   - ingressroute.yaml
