@@ -54,7 +54,13 @@
   services = {
     resolved = {
       enable = true;
-      domains = [ "~lan" ]; # Route .lan to fallback DNS
+      domains = [
+        "~lan" # Route .lan to fallback DNS
+        # Route ts.dimensiondoor.xyz and other dimensiondoor.xyz subdomains
+        # to AdGuard so split-DNS rewrites win over wg0-mullvad's `~.` catch-all.
+        # Defense in depth for the 2026-04-07/2026-04-10 Mullvad DNS saga.
+        "~dimensiondoor.xyz"
+      ];
       fallbackDns = [ "192.168.1.1" ]; # OPNsense for .lan resolution
     };
     pcscd.enable = true;
