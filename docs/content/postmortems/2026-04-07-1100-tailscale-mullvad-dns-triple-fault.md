@@ -91,7 +91,7 @@ This is the intersection of three systemic issues:
 - [x] Update `homeserver_ip` to current WAN IP in Terraform
 - [x] Fix nftables bypass: add `ct mark 0x00000f41` and input chain for return traffic
 - [x] Update `.mcp.json` and Terraform `openbao_address` to use Tailscale IP directly (no SSH tunnels)
-- [x] Set Mullvad custom DNS back to AdGuard
+- [x] Set Mullvad custom DNS back to AdGuard — **⚠️ regressed on 2026-04-08, see [2026-04-10 postmortem](2026-04-10-1315-mullvad-dns-dry-regression.md).** The symptom-level fix (setting the list to AdGuard) was made declarative, then innocuously DRY'd with `networking.nameservers` which contains a public fallback. The underlying invariant — *"Mullvad custom DNS must contain only tunnel-unreachable servers"* — was not encoded in code and so did not survive a later refactor.
 - [ ] Set up DDNS to auto-update Cloudflare DNS on WAN IP change (Codeberg issue #77)
 - [ ] Add Tailscale health check to monitoring (alert if control server unreachable)
 - [ ] Document the Mullvad+Tailscale nftables interaction in the repo (the `ct mark` requirement is non-obvious)

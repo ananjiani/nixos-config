@@ -1,6 +1,5 @@
 # ammars-pc — Primary desktop workstation
 {
-  config,
   pkgs,
   inputs,
   ...
@@ -37,8 +36,24 @@
       operator = "ammar";
     };
 
-    # Mullvad custom DNS (same nameservers as the host)
-    privacy.mullvadCustomDns = config.networking.nameservers;
+    # Mullvad custom DNS — LAN resolvers ONLY, never a public fallback.
+    #
+    # When Mullvad is handed a mix of LAN and public DNS servers, it filters
+    # the LAN ones out before publishing to systemd-resolved on wg0-mullvad
+    # (they aren't reachable via the WG tunnel) and keeps only the public one.
+    # Combined with wg0-mullvad's `~.` catch-all routing domain, that sends
+    # every DNS query to a public resolver, which bypasses AdGuard's
+    # split-DNS rewrite for ts.dimensiondoor.xyz — breaking Tailscale login
+    # because we'd then try to NAT-hairpin our own WAN IP (which OPNsense
+    # can't do). See postmortem 2026-04-07 and the 2026-04-10 regression.
+    #
+    # Do NOT re-point this at `config.networking.nameservers` — the two
+    # lists look alike but have opposite semantics (fault-tolerant fallback
+    # vs. must-exclude-tunnel-reachable).
+    privacy.mullvadCustomDns = [
+      "192.168.1.53" # AdGuard HA VIP
+      "192.168.1.1" # OPNsense router (AdGuard upstream)
+    ];
   };
 
   networking = {
