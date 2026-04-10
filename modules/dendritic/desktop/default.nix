@@ -299,7 +299,26 @@ in
         ];
 
         options.desktop = {
-          hyprland.enable = lib.mkEnableOption "Hyprland compositor";
+          hyprland = {
+            enable = lib.mkEnableOption "Hyprland compositor";
+            persistentWorkspaces = lib.mkOption {
+              type = lib.types.attrsOf (lib.types.listOf lib.types.int);
+              default = { };
+              example = {
+                "DP-2" = [
+                  1
+                  2
+                  3
+                ];
+                "HDMI-A-1" = [ 4 ];
+              };
+              description = ''
+                Waybar persistent workspaces pinned to specific Hyprland monitors.
+                Keys are monitor names; values are workspace numbers that should
+                always be visible on that monitor.
+              '';
+            };
+          };
           niri.enable = lib.mkEnableOption "niri compositor";
 
           startupApps = lib.mkOption {
@@ -430,6 +449,7 @@ in
                     disable-scroll = true;
                     all-outputs = false;
                     warp-on-scroll = false;
+                    persistent-workspaces = cfg.hyprland.persistentWorkspaces;
                     format = "{icon}";
                     format-icons = {
                       "1" = "1";

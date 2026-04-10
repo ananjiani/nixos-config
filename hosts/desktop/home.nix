@@ -19,18 +19,18 @@
     ../../modules/home/config/sops.nix
   ];
 
-  desktop.niri.enable = true;
-  desktop.wallpaper.mode = lib.mkForce "fit";
-
-  # Desktop-specific waybar persistent workspaces
-  programs.waybar.settings.hyprlandBar."hyprland/workspaces".persistent-workspaces = {
-    "DP-2" = [
-      1
-      2
-      3
-    ];
-    "HDMI-A-1" = [ 4 ];
-    "DP-1" = [ 5 ];
+  desktop = {
+    niri.enable = true;
+    wallpaper.mode = lib.mkForce "fit";
+    hyprland.persistentWorkspaces = {
+      "DP-2" = [
+        1
+        2
+        3
+      ];
+      "HDMI-A-1" = [ 4 ];
+      "DP-1" = [ 5 ];
+    };
   };
 
   crypto = {
@@ -152,5 +152,63 @@
       "corectrl"
       "steam -silent -cef-disable-gpu"
     ];
+  };
+
+  # niri output/workspace layout (mirrors the hyprland monitor/workspace block above)
+  programs.niri.settings = {
+    outputs = {
+      # Main ultrawide — 5120x1440 @ 240Hz, VRR fullscreen-only (matches hyprland's "vrr,2")
+      "DP-2" = {
+        mode = {
+          width = 5120;
+          height = 1440;
+          refresh = 239.761;
+        };
+        position = {
+          x = 0;
+          y = 1440;
+        };
+        scale = 1.0;
+        variable-refresh-rate = "on-demand";
+      };
+
+      # Right 4K @ scale 1.5 → 2560x1440 logical footprint, placed to the right of HDMI-A-1
+      "DP-1" = {
+        mode = {
+          width = 3840;
+          height = 2160;
+          refresh = 60.0;
+        };
+        position = {
+          x = 2560;
+          y = 0;
+        };
+        scale = 1.5;
+      };
+
+      # Left 1440p @ scale 1, top-left corner of the logical layout
+      "HDMI-A-1" = {
+        mode = {
+          width = 2560;
+          height = 1440;
+          refresh = 60.0;
+        };
+        position = {
+          x = 0;
+          y = 0;
+        };
+        scale = 1.0;
+      };
+    };
+
+    # Persistent workspaces pinned to monitors, matching hyprland's layout
+    # (1-3 on DP-2, 4 on HDMI-A-1, 5 on DP-1)
+    workspaces = {
+      "01-main-1".open-on-output = "DP-2";
+      "02-main-2".open-on-output = "DP-2";
+      "03-main-3".open-on-output = "DP-2";
+      "04-chat".open-on-output = "HDMI-A-1";
+      "05-media".open-on-output = "DP-1";
+    };
   };
 }
