@@ -91,23 +91,25 @@
         # Wrapper that routes Claude Code through the self-hosted Bifrost
         # LLM gateway, targeting cliproxy's Kimi-for-coding model.
         #
-        # Smoke-tested 2026-04-10: zai and deepseek 404 via Bifrost's
-        # Anthropic endpoint because Bifrost translates Messages API →
-        # OpenAI Responses API (/v1/responses), which those upstreams
-        # don't implement. cliproxy is a flexible passthrough so it works.
+        # Per Kimi Code docs: ENABLE_TOOL_SEARCH=false for Claude Code compatibility.
+        # Smoke-tested 2026-04-10: zai and deepseek 404 via Bifrost's Anthropic
+        # endpoint because Bifrost translates Messages API → OpenAI Responses API
+        # (/v1/responses), which those upstreams don't implement. cliproxy is a
+        # flexible passthrough so it works.
         #
         # Usage: claude-kimi [any claude args]
         claude-kimi = ''
           set -l vk_file /run/secrets/bifrost_api_key
           if not test -r $vk_file
-            echo "claude-kimi: $vk_file not readable — is sops-nix configured for this host?" >&2
+            echo "claude-kimi: $vk_file not readable — is vault-agent configured for this host?" >&2
             return 1
           end
           env \
             ANTHROPIC_BASE_URL=https://bifrost.lan/anthropic \
-            ANTHROPIC_AUTH_TOKEN=(cat $vk_file) \
+            ANTHROPIC_API_KEY=(cat $vk_file) \
             ANTHROPIC_MODEL=cliproxy/kimi-for-coding \
             ANTHROPIC_SMALL_FAST_MODEL=cliproxy/kimi-for-coding \
+            ENABLE_TOOL_SEARCH=false \
             claude $argv
         '';
       };
