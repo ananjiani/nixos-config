@@ -28,6 +28,17 @@
     mode = "0400";
   };
 
+  # z.ai API key for `claude-glm` fish wrapper. Same k8s-canonical secret
+  # path as bifrost (reused single source of truth) — Bifrost can't proxy
+  # z.ai's Anthropic endpoint (Responses-API translation mismatch), so the
+  # wrapper hits api.z.ai directly.
+  modules.vault-agent.secrets.zai_api_key = {
+    path = "secret/k8s/bifrost";
+    field = "zai-api-key";
+    owner = "ammar";
+    mode = "0400";
+  };
+
   programs = {
     nh = {
       enable = true;
