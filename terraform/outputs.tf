@@ -54,21 +54,6 @@ output "erebor_ssh" {
 }
 
 # =============================================================================
-# OpenBao
-# =============================================================================
-
-output "approle_role_ids" {
-  description = "AppRole role IDs for each NixOS host (place in /var/lib/vault-agent/role-id)"
-  value       = { for k, v in vault_approle_auth_backend_role.hosts : k => v.role_id }
-}
-
-output "approle_secret_ids" {
-  description = "AppRole secret IDs for each NixOS host (place in /var/lib/vault-agent/secret-id)"
-  value       = { for k, v in vault_approle_auth_backend_role_secret_id.hosts : k => v.secret_id }
-  sensitive   = true
-}
-
-# =============================================================================
 # External Secrets Operator (ESO)
 # =============================================================================
 

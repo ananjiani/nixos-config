@@ -94,34 +94,16 @@ resource "vault_auth_backend" "approle" {
   type = "approle"
 }
 
-# Per-host roles — each NixOS server gets its own AppRole identity
-locals {
-  approle_hosts = {
-    boromir   = ["vault-agent"]
-    samwise   = ["vault-agent"]
-    theoden   = ["vault-agent"]
-    rivendell = ["vault-agent"]
-    erebor    = ["vault-agent"]
-  }
-}
-
-resource "vault_approle_auth_backend_role" "hosts" {
-  for_each = local.approle_hosts
-
+# Shared vault-agent role — all NixOS hosts authenticate with the same
+# role_id/secret_id pair, bootstrapped from SOPS (see hosts/_profiles/secrets.nix).
+# Secret_id is managed imperatively; terraform only manages the role definition.
+resource "vault_approle_auth_backend_role" "vault_agent" {
   backend        = vault_auth_backend.approle.path
-  role_name      = each.key
-  token_policies = each.value
+  role_name      = "vault-agent"
+  token_policies = ["vault-agent"]
   # 24h token TTL, renewable up to 7 days
   token_ttl     = 86400
   token_max_ttl = 604800
-}
-
-# Generate a secret_id for each host (used during vault-agent bootstrap)
-resource "vault_approle_auth_backend_role_secret_id" "hosts" {
-  for_each = local.approle_hosts
-
-  backend   = vault_auth_backend.approle.path
-  role_name = vault_approle_auth_backend_role.hosts[each.key].role_name
 }
 
 # ESO (External Secrets Operator) — separate role with "eso" policy for k8s secrets
