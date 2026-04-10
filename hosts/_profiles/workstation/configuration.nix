@@ -17,6 +17,17 @@
   # Desktop compositor via dendritic module
   desktop.hyprland.enable = lib.mkDefault true;
 
+  # Bifrost default VK for `claude-kimi` fish wrapper. vault-agent reads
+  # directly from the k8s-canonical path (single source of truth).
+  # Requires the vault-agent policy to allow read on secret/data/k8s/bifrost
+  # (see terraform/openbao.tf vault_policy.vault_agent).
+  modules.vault-agent.secrets.bifrost_api_key = {
+    path = "secret/k8s/bifrost";
+    field = "default-virtual-key";
+    owner = "ammar";
+    mode = "0400";
+  };
+
   programs = {
     nh = {
       enable = true;

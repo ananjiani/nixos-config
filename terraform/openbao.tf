@@ -32,6 +32,11 @@ resource "vault_policy" "vault_agent" {
     path "secret/metadata/nixos/*" {
       capabilities = ["read", "list"]
     }
+    # Cross-boundary: Bifrost default VK used by claude-kimi fish wrapper
+    # on workstations. Single source of truth stays at k8s/bifrost.
+    path "secret/data/k8s/bifrost" {
+      capabilities = ["read"]
+    }
   EOT
 }
 

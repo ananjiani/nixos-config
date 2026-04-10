@@ -17,7 +17,7 @@ let
   secretTemplates = lib.mapAttrsToList (
     name: secret:
     let
-      templateContent = ''{{ with secret "${secret.path}" }}{{ .Data.data.${secret.field} }}{{ end }}'';
+      templateContent = ''{{ with secret "${secret.path}" }}{{ index .Data.data "${secret.field}" }}{{ end }}'';
     in
     {
       contents = templateContent;
