@@ -118,11 +118,17 @@
     NODE_EXTRA_CA_CERTS = "/etc/ssl/certs/ca-certificates.crt";
   };
 
-  # DNS: AdGuard VIP → router → Quad9 (erebor overrides with public DNS)
+  # DNS: LAN-only by default so AdGuard split-DNS rewrites always win.
+  # Mixing a public resolver (Quad9/Cloudflare) here poisons systemd-resolved's
+  # global scope: it can select the public server as "current", then NXDOMAIN
+  # answers for split-DNS names (e.g. ssh.git.dimensiondoor.xyz, ts.dimensiondoor.xyz)
+  # race ahead of AdGuard's rewrite and break things like git-over-SSH and
+  # Tailscale login. Erebor overrides this with public DNS because it's a VPS
+  # with no LAN reachability to AdGuard. See postmortems 2026-04-07 and
+  # 2026-04-10 for the Mullvad-DNS variant of this same footgun.
   networking.nameservers = lib.mkDefault [
     "192.168.1.53" # HA VIP (keepalived AdGuard)
-    "192.168.1.1" # OPNsense router
-    "9.9.9.9" # Quad9 public fallback
+    "192.168.1.1" # OPNsense router (AdGuard upstream)
   ];
 
   networking.firewall = {
