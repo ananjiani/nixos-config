@@ -910,18 +910,17 @@ in
                       ];
                       open-on-workspace = "04-chat";
                     }
-                    # Reading mode: route the Readwise Reader Brave window
-                    # to the reading workspace. Brave on Wayland ignores
-                    # --class, so we match on the URL fragment in the title
-                    # ("... | Readwise - Brave"). Column width for all three
-                    # reading-mode windows is set imperatively by
+                    # Reading mode: route the Readwise Reader Brave PWA
+                    # window to the reading workspace. Brave's --app=URL
+                    # mode generates a per-URL hashed app_id like
+                    # "brave-read.readwise.io__-Default", which is stable
+                    # and fires as soon as the window is mapped (no need
+                    # to wait for the page title). Column widths for all
+                    # three reading-mode windows are set imperatively by
                     # reading-mode.sh, not here.
                     {
                       matches = [
-                        {
-                          app-id = "^brave-browser$";
-                          title = "(?i)readwise";
-                        }
+                        { app-id = "^brave-read\\.readwise\\.io"; }
                       ];
                       open-on-workspace = "05-reading";
                     }

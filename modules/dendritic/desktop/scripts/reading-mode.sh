@@ -27,7 +27,7 @@ wait_focused() {
     local deadline=$(($(date +%s) + timeout))
     while [[ $(date +%s) -lt $deadline ]]; do
         if niri msg -j focused-window 2>/dev/null \
-            | grep -Eq "\"app_id\"[[:space:]]*:[[:space:]]*\"${app_re}\""; then
+            | grep -Eq "\"app_id\"[[:space:]]*:[[:space:]]*\"${app_re}[^\"]*\""; then
             return 0
         fi
         sleep 0.1
@@ -35,16 +35,18 @@ wait_focused() {
     return 1
 }
 
-# 1. Kick Brave off first so its cold-start runs in parallel with the
-#    workspace switch. The title-based window rule in default.nix routes
-#    the Readwise window to 05-reading as soon as its title updates.
-brave --app="https://read.readwise.io" >/dev/null 2>&1 &
-
-# Jump to the reading workspace so the remaining windows land here.
+# Jump to the reading workspace first so new windows land here. (Do NOT
+# launch Brave before this — if Brave's window appears before the
+# workspace switch, it stays on the old workspace, and wait_focused
+# below never sees a focused brave window on 05-reading.)
 niri msg action focus-workspace "$WORKSPACE"
 
-# Wait for Brave to show up, then size it to the left half.
-wait_focused "brave-browser" 10 || true
+# 1. Readwise Reader as a Brave PWA-style window (left half).
+#    Brave's --app=URL mode generates a per-URL hashed app_id of the form
+#    "brave-read.readwise.io__-Default", NOT "brave-browser". Match the
+#    stable "brave-read.readwise.io" prefix.
+brave --app="https://read.readwise.io" >/dev/null 2>&1 &
+wait_focused "brave-read\\.readwise\\.io" 10 || true
 niri msg action set-column-width "50%"
 
 # 2. Emacs frame from the running daemon (next quarter). -n returns
