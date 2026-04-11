@@ -370,7 +370,12 @@ in
                   size = 24;
                 };
                 polarity = "dark";
-                icons.enable = true;
+                icons = {
+                  enable = true;
+                  package = pkgs.papirus-icon-theme;
+                  dark = "Papirus-Dark";
+                  light = "Papirus-Light";
+                };
                 targets = {
                   foot.enable = false;
                   waybar.enable = false;
@@ -529,7 +534,6 @@ in
                       gaps_in = 5;
                       gaps_out = 20;
                       border_size = 2;
-                      "col.inactive_border" = "rgba(595959aa)";
                       "col.active_border" = lib.mkForce (
                         with config.lib.stylix.colors; "rgba(${base09}ee) rgba(${base0A}ee) 45deg"
                       );
@@ -558,7 +562,6 @@ in
                         enabled = true;
                         range = 4;
                         render_power = 3;
-                        color = "rgba(1a1a1aee)";
                       };
                     };
 
