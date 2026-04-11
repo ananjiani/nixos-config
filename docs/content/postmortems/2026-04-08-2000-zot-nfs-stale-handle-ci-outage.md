@@ -110,9 +110,30 @@ The forgejo deployment pod had been running for 2d4h with 0 restarts, liveness p
 - **`noresvport` was never actually applied.** Action item #1 listed `nfsvers=4.1, hard, noresvport` but only the first two were migrated. All four NFS PVs (`zot-nfs`, `forgejo-packages-nfs`, `persona-mcp-nfs`, `voicemail-nfs`) are missing `noresvport`. Whether `noresvport` would have prevented this specific failure is unclear — it mainly helps with port exhaustion after reconnects — but the action item was marked done while incomplete.
 - **The liveness probe audit ([#82](https://codeberg.org/ananjiani/infra/issues/82)) is now more urgent.** Forgejo's probe hits `/api/healthz` which doesn't touch `/data/packages`. A probe that exercised package storage would have caught this within minutes instead of 2d4h.
 
+## Applying `noresvport` doesn't take effect from a rollout restart
+
+While completing the "actually apply noresvport" action item, hit a second, unrelated NFSv4 gotcha worth capturing:
+
+1. Added `noresvport` to all four PVs in `k8s/apps/*/pv.yaml`, committed, pushed, Flux reconciled. Verified with `kubectl get pv forgejo-packages-nfs -o jsonpath='{.spec.mountOptions}'` → `["nfsvers=4.1","hard","noresvport"]`. Looks correct.
+2. Rolled out restart on all four deployments (`forgejo`, `zot`, `persona-mcp`, `voicemail-receiver`). All four came up 1/1 Ready with new pods on fresh kubelet-managed NFS mounts.
+3. Checked the actual mount on rivendell: `nfsstat -m` and `/proc/mounts` showed zero of 24 NFS entries containing `noresvport`. Not a display quirk — `noresvport` doesn't appear in either output on any of the new mounts.
+4. Authoritative test: `ss -tn state established dst 192.168.1.27` on rivendell showed **exactly one** NFS connection, `192.168.1.29:995 → 192.168.1.27:2049`. Source port 995 is a reserved port (<1024). If `noresvport` were in effect the source port would be ≥1024 (ephemeral).
+
+**Root cause**: the kernel NFSv4 client multiplexes all mounts from a single server over a single TCP connection. When kubelet mounts a new NFS volume to `192.168.1.27`, the kernel sees "I already have a connection to that server on source port 995" and reuses it instead of opening a new one. `noresvport` is a *connection creation* option, not a mount creation option — once the TCP connection is established, you can't change its source port. The existing connection was opened the first time any pod on rivendell mounted any volume from theoden, days or weeks ago.
+
+**Implication**: rolling-restarting pods (or even deleting-and-recreating PVs) does not apply `noresvport` on NFSv4. The only ways to actually take a fresh connection are:
+
+1. **Reboot the node.** Cleanest — kills all NFS client state, next mount opens a fresh connection with the current PV mountOptions.
+2. **Drain all NFS-consuming pods off the node simultaneously.** Once the last NFS mount is unmounted, the idle connection closes after its timeout. Any subsequent pod rescheduled back onto the node opens a fresh connection. Harder than it sounds because you need every pod with any NFS mount off the node at once, not just pods from one deployment.
+
+Since rebooting k3s nodes for a hygiene improvement isn't worth the disruption, `noresvport` was left in the committed spec and will silently take effect on each node's next planned reboot (NixOS rebuild, kernel update, maintenance window). The PV objects are already correct; nothing else needs to change when the reboot happens.
+
+This is an easy footgun to fall into: the spec looks right, the pods restart cleanly, the cluster reports healthy, and the option simply doesn't apply. The only reliable way to verify `noresvport` is in effect is to check the TCP source port of the NFS connection, not the PV spec, not the kubelet mount output, not the `nfsstat` flags list.
+
 ## Reopened / New Action Items
 
-- [ ] Apply `noresvport` to all four NFS PVs (the original action item, actually completed this time)
+- [x] Apply `noresvport` to all four NFS PVs in the manifests (committed `b1bcaf7`) — **but not yet in effect; see section above**
+- [ ] Actually take `noresvport` into effect by rebooting each k3s node on its next maintenance window
 - [ ] Add a forgejo liveness probe that exercises `/data/packages` (or change the probe path to one that does)
 - [ ] Investigate *why* theoden's NFS exports are invalidating handles — is it a re-export, a filesystem change, ZFS snapshot rollover, kernel upgrade? NFSv4.1 shouldn't drop handles on its own.
 - [ ] Evaluate moving `forgejo-packages` off NFS entirely. It's RWO and only mounted by one pod — the only reason it's not on Longhorn is historical. Losing git hosting because of a packages volume stale handle is a bad coupling. ([#83-followup](https://codeberg.org/ananjiani/infra/issues/))
@@ -122,3 +143,4 @@ The forgejo deployment pod had been running for 2d4h with 0 restarts, liveness p
 
 - **"Migrate to nfs4.1" is a mitigation, not a fix.** Two incidents in three days on the same NFS server prove that v4.1 with `hard` still drops handles under whatever's happening on theoden. The structural answer is either "fix theoden's exports" or "stop using NFS for k8s volumes."
 - **Marked-done action items deserve re-verification after a recurrence.** The `noresvport` omission went unnoticed for three days because nobody diffed the live PVs against what the postmortem said was applied. Treat an action item as verified only after confirming the state on the live system, not after the PR merges.
+- **PV spec correctness ≠ mount correctness on NFSv4.** The kernel NFS client shares a single TCP connection per (client, server) tuple across all mountpoints, so connection-level options like `noresvport` are locked in at the first mount and can't be changed by any subsequent mount. Verify such options with `ss -tn dst <nfs-server>` and check the source port range, not with `nfsstat -m` or `/proc/mounts`. Rolling-restart deployments won't change these — only a node reboot (or a full drain that closes the last NFS connection) will.
