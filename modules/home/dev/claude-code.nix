@@ -9,6 +9,14 @@ let
   # at exec time, then execs the real MCP server. Keeps the secret out of
   # the nix store and out of `ps` argv. Mirrors the claude-kimi/claude-glm
   # /run/secrets/... pattern.
+  #
+  # Tavily (via Cloudflare) rate-limits / blocks Mullvad exit IPs, so when
+  # the setuid mullvad-exclude wrapper is available the MCP server is
+  # launched in the `mullvad-exclusions` cgroup to bypass the VPN and use
+  # the real WAN connection. Same cgroup trick already used for tailscaled
+  # on ammars-pc and framework13 (see modules/nixos/tailscale.nix). Falls
+  # back to direct exec on hosts without the wrapper so this stays host-
+  # agnostic.
   tavilyMcpShim = pkgs.writeShellScript "tavily-mcp-shim" ''
     set -eu
     key_file=/run/secrets/tavily_api_key
@@ -17,7 +25,12 @@ let
       exit 1
     fi
     export TAVILY_API_KEY="$(cat "$key_file")"
-    exec ${pkgs.nodejs}/bin/npx -y tavily-mcp@latest
+    mullvad_exclude=/run/wrappers/bin/mullvad-exclude
+    if [ -x "$mullvad_exclude" ]; then
+      exec "$mullvad_exclude" ${pkgs.nodejs}/bin/npx -y tavily-mcp@latest
+    else
+      exec ${pkgs.nodejs}/bin/npx -y tavily-mcp@latest
+    fi
   '';
 
   # Static MCP config consumed by claude-kimi and claude-glm via
