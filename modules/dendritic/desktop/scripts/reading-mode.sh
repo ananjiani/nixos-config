@@ -35,11 +35,15 @@ wait_focused() {
     return 1
 }
 
-# Jump to the reading workspace first so every new window lands here.
+# 1. Kick Brave off first so its cold-start runs in parallel with the
+#    workspace switch. The title-based window rule in default.nix routes
+#    the Readwise window to 05-reading as soon as its title updates.
+brave --app="https://read.readwise.io" >/dev/null 2>&1 &
+
+# Jump to the reading workspace so the remaining windows land here.
 niri msg action focus-workspace "$WORKSPACE"
 
-# 1. Readwise Reader as a Brave PWA-style window (left half).
-brave --app="https://read.readwise.io" >/dev/null 2>&1 &
+# Wait for Brave to show up, then size it to the left half.
 wait_focused "brave-browser" 10 || true
 niri msg action set-column-width "50%"
 
