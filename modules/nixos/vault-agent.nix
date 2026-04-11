@@ -13,7 +13,10 @@
 let
   cfg = config.modules.vault-agent;
 
-  # Build Consul Template snippets for each secret
+  # Build Consul Template snippets for each secret.
+  # `user`/`group` are re-applied by Consul Template on every render
+  # (including lease-renewal re-renders), which is why we can't rely on
+  # a one-shot ExecStartPost chown — that only runs at service start.
   secretTemplates = lib.mapAttrsToList (
     name: secret:
     let
@@ -23,6 +26,8 @@ let
       contents = templateContent;
       destination = "/run/secrets/${name}";
       perms = secret.mode;
+      user = secret.owner;
+      inherit (secret) group;
     }
   ) cfg.secrets;
 in
@@ -138,10 +143,13 @@ in
       "d /var/lib/vault-agent 0700 root root -"
     ];
 
-    # Wait for all secrets to be rendered, then fix ownership.
-    # vault-agent is Type=simple so systemd considers it started immediately.
-    # This ExecStartPost blocks until templates exist, ensuring that any
-    # service with After=vault-agent-default.service gets valid secrets.
+    # Wait for all secrets to be rendered before considering the unit
+    # started. vault-agent is Type=simple so systemd would otherwise
+    # consider it up before the first template render completes. Any
+    # service with After=vault-agent-default.service gets to assume
+    # that /run/secrets/<name> exists. Ownership is enforced by
+    # Consul Template via the `user`/`group` template options above,
+    # which re-apply on every render (including lease renewals).
     systemd.services.vault-agent-default.serviceConfig.ExecStartPost =
       let
         secretNames = lib.attrNames cfg.secrets;
@@ -161,20 +169,7 @@ in
             exit 1
           fi
         '';
-        ownershipScript = pkgs.writeShellScript "vault-agent-fix-ownership" (
-          lib.concatStringsSep "\n" (
-            lib.mapAttrsToList (
-              name: secret:
-              lib.optionalString (
-                secret.owner != "root" || secret.group != "root"
-              ) "chown ${secret.owner}:${secret.group} /run/secrets/${name}"
-            ) cfg.secrets
-          )
-        );
       in
-      [ "+${waitScript}" ]
-      ++ lib.optional (lib.any (s: s.owner != "root" || s.group != "root") (
-        lib.attrValues cfg.secrets
-      )) "+${ownershipScript}";
+      [ "+${waitScript}" ];
   };
 }
