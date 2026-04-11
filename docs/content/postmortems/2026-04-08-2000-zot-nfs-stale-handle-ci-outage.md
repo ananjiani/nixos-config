@@ -86,3 +86,39 @@ More broadly, liveness probes across the cluster may have similar blind spots �
 - **Liveness probes must test the critical path** — for a storage-backed service, probe an endpoint that reads from storage. A "hello world" endpoint is not a health check.
 - **NFSv4.1 isn't a silver bullet** — it handles server restarts via grace period reclaim, but can't recover if the export path inode changes. It's significantly better than v3, but NFS remains fragile compared to local storage.
 - **A Running pod with 0 restarts can be completely broken** — Kubernetes health is defined by probes, nothing more.
+
+## Recurrence — 2026-04-11
+
+It happened again, on `forgejo-packages-nfs` this time.
+
+Symptom: `git push` to `ssh.git.dimensiondoor.xyz` failed after SSH auth succeeded. The forgejo `gitea serv` hook crashed on startup with:
+
+```
+[F] Unable to load settings from config: unable to create chunked upload directory:
+    /data/packages/tmp (mkdir /data/packages: file exists)
+```
+
+The `file exists` error is misleading — the real problem was surfaced by `stat /data/packages` inside the pod, which returned `Stale file handle`. Forgejo's `MkdirAll` stat'd the directory, got EIO from the stale handle, fell back to `mkdir` which returned EEXIST, and bubbled the EEXIST up as a fatal. Same class of failure as the zot incident.
+
+The forgejo deployment pod had been running for 2d4h with 0 restarts, liveness probes passing — invisible to Kubernetes. Web UI worked fine because it doesn't touch `/data/packages` on boot; only git-over-SSH (which shells out to `gitea serv`, which re-reads the config) hit the fatal path. Classic "healthy pod, broken service" pattern.
+
+**Fix**: `kubectl rollout restart deployment/forgejo -n forgejo`. New pod got a fresh NFS mount, `/data/packages` stat'd cleanly, pushes unblocked. ~30s downtime.
+
+**What this tells us about the original action items:**
+
+- **`nfsvers=4.1 + hard` is necessary-but-not-sufficient.** `forgejo-packages-nfs` was migrated to v4.1 as part of this postmortem's action items and still dropped a handle. v4.1's grace period reclaim handles *server restarts*, but can't recover when the export path inode changes underneath (which is what appears to be happening on theoden periodically).
+- **`noresvport` was never actually applied.** Action item #1 listed `nfsvers=4.1, hard, noresvport` but only the first two were migrated. All four NFS PVs (`zot-nfs`, `forgejo-packages-nfs`, `persona-mcp-nfs`, `voicemail-nfs`) are missing `noresvport`. Whether `noresvport` would have prevented this specific failure is unclear — it mainly helps with port exhaustion after reconnects — but the action item was marked done while incomplete.
+- **The liveness probe audit ([#82](https://codeberg.org/ananjiani/infra/issues/82)) is now more urgent.** Forgejo's probe hits `/api/healthz` which doesn't touch `/data/packages`. A probe that exercised package storage would have caught this within minutes instead of 2d4h.
+
+## Reopened / New Action Items
+
+- [ ] Apply `noresvport` to all four NFS PVs (the original action item, actually completed this time)
+- [ ] Add a forgejo liveness probe that exercises `/data/packages` (or change the probe path to one that does)
+- [ ] Investigate *why* theoden's NFS exports are invalidating handles — is it a re-export, a filesystem change, ZFS snapshot rollover, kernel upgrade? NFSv4.1 shouldn't drop handles on its own.
+- [ ] Evaluate moving `forgejo-packages` off NFS entirely. It's RWO and only mounted by one pod — the only reason it's not on Longhorn is historical. Losing git hosting because of a packages volume stale handle is a bad coupling. ([#83-followup](https://codeberg.org/ananjiani/infra/issues/))
+- [ ] Consider whether the "NFS PVC" pattern should exist at all in this cluster, or whether remaining NFS users should migrate to Longhorn.
+
+## Updated Lessons
+
+- **"Migrate to nfs4.1" is a mitigation, not a fix.** Two incidents in three days on the same NFS server prove that v4.1 with `hard` still drops handles under whatever's happening on theoden. The structural answer is either "fix theoden's exports" or "stop using NFS for k8s volumes."
+- **Marked-done action items deserve re-verification after a recurrence.** The `noresvport` omission went unnoticed for three days because nobody diffed the live PVs against what the postmortem said was applied. Treat an action item as verified only after confirming the state on the live system, not after the PR merges.
