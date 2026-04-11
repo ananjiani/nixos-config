@@ -125,6 +125,18 @@ in
     # reasoning as claude-kimi above). ENABLE_TOOL_SEARCH=false because
     # z.ai doesn't implement Anthropic's ToolSearch beta either.
     #
+    # Also wires two z.ai remote HTTP MCPs (both Bearer-auth'd with the
+    # same zai_api_key):
+    #   - web-reader: fetch/parse arbitrary URLs, complements Tavily's
+    #     search-only API. docs.z.ai/devpack/mcp/reader-mcp-server
+    #   - zread: read docs/code from GitHub-style repos via zread.ai.
+    #     docs.z.ai/devpack/mcp/zread-mcp-server
+    # The MCP config is generated at runtime into a mode-0600 temp file
+    # so the Authorization headers never hit the nix store, mirroring
+    # the tavilyMcpShim pattern. The static claudeAltMcpConfig isn't
+    # reused here because --mcp-config is single-file on the pinned
+    # v2.1.68; tavily is redeclared in the generated config instead.
+    #
     # Usage: claude-glm [any claude args]
     claude-glm = ''
       set -l key_file /run/secrets/zai_api_key
@@ -132,18 +144,25 @@ in
         echo "claude-glm: $key_file not readable — is vault-agent configured for this host?" >&2
         return 1
       end
+      set -l zai_key (cat $key_file)
+      set -l mcp_config (mktemp -t claude-glm-mcp.XXXXXX.json)
+      chmod 600 $mcp_config
+      printf '{"mcpServers":{"tavily":{"command":"%s","args":[]},"web-reader":{"type":"http","url":"https://api.z.ai/api/mcp/web_reader/mcp","headers":{"Authorization":"Bearer %s"}},"zread":{"type":"http","url":"https://api.z.ai/api/mcp/zread/mcp","headers":{"Authorization":"Bearer %s"}}}}\n' ${tavilyMcpShim} $zai_key $zai_key > $mcp_config
       env \
         ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic \
-        ANTHROPIC_AUTH_TOKEN=(cat $key_file) \
+        ANTHROPIC_AUTH_TOKEN=$zai_key \
         ANTHROPIC_DEFAULT_SONNET_MODEL=glm-5.1 \
         ANTHROPIC_DEFAULT_OPUS_MODEL=glm-5.1 \
         ANTHROPIC_DEFAULT_HAIKU_MODEL=glm-4.5-air \
         API_TIMEOUT_MS=3000000 \
         ENABLE_TOOL_SEARCH=false \
         claude \
-          --mcp-config ${claudeAltMcpConfig} \
+          --mcp-config $mcp_config \
           --disallowedTools WebSearch \
           $argv
+      set -l rc $status
+      rm -f $mcp_config
+      return $rc
     '';
   };
 }
