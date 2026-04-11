@@ -37,6 +37,13 @@ resource "vault_policy" "vault_agent" {
     path "secret/data/k8s/bifrost" {
       capabilities = ["read"]
     }
+    # Cross-boundary: Tavily API key used by the Tavily MCP server wired
+    # into claude-kimi and claude-glm fish wrappers. Single source of
+    # truth stays at k8s/open-webui (also consumed by the open-webui
+    # deployment via ExternalSecrets).
+    path "secret/data/k8s/open-webui" {
+      capabilities = ["read"]
+    }
   EOT
 }
 

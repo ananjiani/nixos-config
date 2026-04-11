@@ -17,26 +17,40 @@
   # Desktop compositor via dendritic module
   desktop.hyprland.enable = lib.mkDefault true;
 
-  # Bifrost default VK for `claude-kimi` fish wrapper. vault-agent reads
-  # directly from the k8s-canonical path (single source of truth).
-  # Requires the vault-agent policy to allow read on secret/data/k8s/bifrost
-  # (see terraform/openbao.tf vault_policy.vault_agent).
-  modules.vault-agent.secrets.bifrost_api_key = {
-    path = "secret/k8s/bifrost";
-    field = "default-virtual-key";
-    owner = "ammar";
-    mode = "0400";
-  };
+  # vault-agent runtime secrets for the claude-kimi / claude-glm fish
+  # wrappers (see modules/home/dev/claude-code.nix). All three reuse
+  # k8s-canonical paths via the vault-agent cross-boundary pattern —
+  # single source of truth, no mirroring. Each path must be explicitly
+  # granted in terraform/openbao.tf vault_policy.vault_agent.
+  modules.vault-agent.secrets = {
+    # Bifrost default VK used by `claude-kimi`.
+    bifrost_api_key = {
+      path = "secret/k8s/bifrost";
+      field = "default-virtual-key";
+      owner = "ammar";
+      mode = "0400";
+    };
 
-  # z.ai API key for `claude-glm` fish wrapper. Same k8s-canonical secret
-  # path as bifrost (reused single source of truth) — Bifrost can't proxy
-  # z.ai's Anthropic endpoint (Responses-API translation mismatch), so the
-  # wrapper hits api.z.ai directly.
-  modules.vault-agent.secrets.zai_api_key = {
-    path = "secret/k8s/bifrost";
-    field = "zai-api-key";
-    owner = "ammar";
-    mode = "0400";
+    # z.ai API key used by `claude-glm`. Bifrost can't proxy z.ai's
+    # Anthropic endpoint (Responses-API translation mismatch), so the
+    # wrapper hits api.z.ai directly.
+    zai_api_key = {
+      path = "secret/k8s/bifrost";
+      field = "zai-api-key";
+      owner = "ammar";
+      mode = "0400";
+    };
+
+    # Tavily API key for the Tavily MCP server wired into both wrappers
+    # as an external WebSearch replacement (neither z.ai nor Bifrost/
+    # cliproxy can proxy Anthropic's server-side web_search_20250305
+    # tool). Reused from open-webui's existing k8s secret.
+    tavily_api_key = {
+      path = "secret/k8s/open-webui";
+      field = "tavily-api-key";
+      owner = "ammar";
+      mode = "0400";
+    };
   };
 
   programs = {
