@@ -364,9 +364,15 @@ in
               stylix = {
                 enable = true;
                 base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-material-dark-soft.yaml";
+                cursor = {
+                  name = "Bibata-Modern-Classic";
+                  package = pkgs.bibata-cursors;
+                  size = 24;
+                };
+                polarity = "dark";
+                icons.enable = true;
                 targets = {
                   foot.enable = false;
-                  hyprland.colors.enable = false;
                   waybar.enable = false;
                 };
               };
@@ -380,7 +386,6 @@ in
                 };
 
                 sessionVariables = {
-                  XCURSOR_SIZE = "24";
                   NIXOS_OZONE_WL = "1";
                 };
               };
@@ -525,7 +530,9 @@ in
                       gaps_out = 20;
                       border_size = 2;
                       "col.inactive_border" = "rgba(595959aa)";
-                      "col.active_border" = with config.lib.stylix.colors; "rgba(${base09}ee) rgba(${base0A}ee) 45deg";
+                      "col.active_border" = lib.mkForce (
+                        with config.lib.stylix.colors; "rgba(${base09}ee) rgba(${base0A}ee) 45deg"
+                      );
                       allow_tearing = false;
                       layout = "dwindle";
                     };
@@ -900,30 +907,20 @@ in
                       ];
                       open-on-workspace = "04-chat";
                     }
-                    # Reading mode: Readwise Reader PWA window (left half)
-                    {
-                      matches = [ { app-id = "(?i)readwise"; } ];
-                      open-on-workspace = "05-reading";
-                      default-column-width.proportion = 1.0 / 2.0;
-                    }
-                    # Reading mode: dedicated Emacs frame spawned by
-                    # reading-mode.sh. Matches the locked frame title so
-                    # regular Emacs frames keep their default width.
+                    # Reading mode: route the Readwise Reader Brave window
+                    # to the reading workspace. Brave on Wayland ignores
+                    # --class, so we match on the URL fragment in the title
+                    # ("... | Readwise - Brave"). Column width for all three
+                    # reading-mode windows is set imperatively by
+                    # reading-mode.sh, not here.
                     {
                       matches = [
                         {
-                          app-id = "^emacs$";
-                          title = "^reading-companion$";
+                          app-id = "^brave-browser$";
+                          title = "(?i)readwise";
                         }
                       ];
                       open-on-workspace = "05-reading";
-                      default-column-width.proportion = 1.0 / 4.0;
-                    }
-                    # Reading mode: Claude Code companion pane (last quarter)
-                    {
-                      matches = [ { app-id = "^claude-reading$"; } ];
-                      open-on-workspace = "05-reading";
-                      default-column-width.proportion = 1.0 / 4.0;
                     }
                     # copyq popup should float, not tile
                     {
