@@ -10,7 +10,7 @@
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
-    nix-colors.url = "github:misterio77/nix-colors";
+    stylix.url = "github:nix-community/stylix";
     emacs-overlay.url = "github:nix-community/emacs-overlay";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     sops-nix.url = "github:Mic92/sops-nix";

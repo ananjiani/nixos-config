@@ -294,7 +294,7 @@ in
       in
       {
         imports = [
-          inputs.nix-colors.homeManagerModules.default
+          inputs.stylix.homeModules.stylix
           inputs.niri.homeModules.niri
         ];
 
@@ -361,7 +361,15 @@ in
           lib.mkMerge [
             # ── Shared HM config ─────────────────────────────────────
             {
-              colorScheme = inputs.nix-colors.colorSchemes.gruvbox-material-dark-soft;
+              stylix = {
+                enable = true;
+                base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-material-dark-soft.yaml";
+                targets = {
+                  foot.enable = false;
+                  hyprland.colors.enable = false;
+                  waybar.enable = false;
+                };
+              };
 
               home = {
                 packages = [ pkgs.swaynotificationcenter ];
@@ -377,31 +385,10 @@ in
                 };
               };
 
-              gtk = {
-                enable = true;
-                theme = {
-                  name = "gruvbox-dark";
-                  package = pkgs.gruvbox-dark-gtk;
-                };
-                iconTheme = {
-                  package = pkgs.gruvbox-dark-icons-gtk;
-                  name = "Gruvbox-Dark";
-                };
-              };
-
               programs = {
                 fuzzel = {
                   enable = true;
                   settings = {
-                    colors = with config.colorScheme.palette; {
-                      background = "${base00}ff";
-                      text = "${base05}ff";
-                      match = "${base08}ff";
-                      selection = "${base01}ff";
-                      selection-text = "${base05}ff";
-                      selection-match = "${base08}ff";
-                      border = "${base09}ff";
-                    };
                     key-bindings = {
                       delete-line-forward = "none";
                       next = "Control+j";
@@ -538,7 +525,7 @@ in
                       gaps_out = 20;
                       border_size = 2;
                       "col.inactive_border" = "rgba(595959aa)";
-                      "col.active_border" = with config.colorScheme.palette; "rgba(${base09}ee) rgba(${base0A}ee) 45deg";
+                      "col.active_border" = with config.lib.stylix.colors; "rgba(${base09}ee) rgba(${base0A}ee) 45deg";
                       allow_tearing = false;
                       layout = "dwindle";
                     };
@@ -868,6 +855,14 @@ in
                     };
                   };
 
+                  # Named workspaces. Must be declared here for
+                  # window-rules `open-on-workspace` matches to route
+                  # windows; undeclared names are silently ignored.
+                  workspaces = {
+                    "04-chat" = { };
+                    "05-reading" = { };
+                  };
+
                   # XWayland support for X11-only apps like Steam.
                   # niri itself is pure Wayland; xwayland-satellite provides
                   # a rootless X server and niri spawns it on startup.
@@ -904,6 +899,31 @@ in
                         { app-id = "(?i)^vesktop$"; }
                       ];
                       open-on-workspace = "04-chat";
+                    }
+                    # Reading mode: Readwise Reader PWA window (left half)
+                    {
+                      matches = [ { app-id = "(?i)readwise"; } ];
+                      open-on-workspace = "05-reading";
+                      default-column-width.proportion = 1.0 / 2.0;
+                    }
+                    # Reading mode: dedicated Emacs frame spawned by
+                    # reading-mode.sh. Matches the locked frame title so
+                    # regular Emacs frames keep their default width.
+                    {
+                      matches = [
+                        {
+                          app-id = "^emacs$";
+                          title = "^reading-companion$";
+                        }
+                      ];
+                      open-on-workspace = "05-reading";
+                      default-column-width.proportion = 1.0 / 4.0;
+                    }
+                    # Reading mode: Claude Code companion pane (last quarter)
+                    {
+                      matches = [ { app-id = "^claude-reading$"; } ];
+                      open-on-workspace = "05-reading";
+                      default-column-width.proportion = 1.0 / 4.0;
                     }
                     # copyq popup should float, not tile
                     {
@@ -1191,6 +1211,18 @@ in
                       "-sw"
                     ];
                   };
+                };
+
+                # Fuzzel entry for reading-mode.sh so "reading" is findable
+                # from the launcher as well as the Mod+Shift+E keybind.
+                xdg.desktopEntries.reading-mode = {
+                  name = "Reading";
+                  genericName = "Reading Workspace";
+                  comment = "Launch Readwise Reader, Emacs, and Claude Code on the reading workspace";
+                  icon = "accessories-dictionary";
+                  exec = "bash ${scriptsDir}/reading-mode.sh";
+                  categories = [ "Utility" ];
+                  terminal = false;
                 };
 
                 systemd.user.services.waybar-niri = {

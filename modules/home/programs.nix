@@ -7,7 +7,7 @@
 {
   home.packages = with pkgs; [
     xcolor
-    inkscape
+    # inkscape
     pinta
     vlc
     thunar
