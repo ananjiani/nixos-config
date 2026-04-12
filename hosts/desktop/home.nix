@@ -209,6 +209,7 @@
       "03-main-3".open-on-output = "DP-2";
       "04-chat".open-on-output = "HDMI-A-1";
       "05-media".open-on-output = "DP-1";
+      "05-reading".open-on-output = "DP-2";
     };
   };
 }
