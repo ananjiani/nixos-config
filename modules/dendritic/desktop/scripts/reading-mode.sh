@@ -15,7 +15,7 @@
 
 set -euo pipefail
 
-WORKSPACE="05-reading"
+WORKSPACE="reading"
 ORG_ROAM_DIR="$HOME/Documents/org-roam"
 
 # Wait until niri reports a newly-focused window whose App ID matches the
@@ -38,7 +38,7 @@ wait_focused() {
 # Jump to the reading workspace first so new windows land here. (Do NOT
 # launch Brave before this — if Brave's window appears before the
 # workspace switch, it stays on the old workspace, and wait_focused
-# below never sees a focused brave window on 05-reading.)
+# below never sees a focused brave window on reading.)
 niri msg action focus-workspace "$WORKSPACE"
 
 # 1. Readwise Reader as a Brave PWA-style window (left half).

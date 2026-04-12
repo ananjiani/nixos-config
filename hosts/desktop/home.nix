@@ -201,15 +201,12 @@
       };
     };
 
-    # Persistent workspaces pinned to monitors, matching hyprland's layout
-    # (1-3 on DP-2, 4 on HDMI-A-1, 5 on DP-1)
+    # Persistent workspaces pinned to monitors
     workspaces = {
-      "01-main-1".open-on-output = "DP-2";
-      "02-main-2".open-on-output = "DP-2";
-      "03-main-3".open-on-output = "DP-2";
-      "04-chat".open-on-output = "HDMI-A-1";
-      "05-media".open-on-output = "DP-1";
-      "05-reading".open-on-output = "DP-2";
+      "main".open-on-output = "DP-2";
+      "reading".open-on-output = "DP-2";
+      "chat".open-on-output = "HDMI-A-1";
+      "media".open-on-output = "DP-1";
     };
   };
 }

@@ -869,8 +869,8 @@ in
                   # window-rules `open-on-workspace` matches to route
                   # windows; undeclared names are silently ignored.
                   workspaces = {
-                    "04-chat" = { };
-                    "05-reading" = { };
+                    "chat" = { };
+                    "reading" = { };
                   };
 
                   # XWayland support for X11-only apps like Steam.
@@ -908,7 +908,7 @@ in
                         { app-id = "(?i)^element$"; }
                         { app-id = "(?i)^vesktop$"; }
                       ];
-                      open-on-workspace = "04-chat";
+                      open-on-workspace = "chat";
                     }
                     # Reading mode: route the Readwise Reader Brave PWA
                     # window to the reading workspace. Brave's --app=URL
@@ -922,7 +922,7 @@ in
                       matches = [
                         { app-id = "^brave-read\\.readwise\\.io"; }
                       ];
-                      open-on-workspace = "05-reading";
+                      open-on-workspace = "reading";
                     }
                     # copyq popup should float, not tile
                     {
