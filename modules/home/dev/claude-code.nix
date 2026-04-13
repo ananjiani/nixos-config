@@ -33,17 +33,51 @@ let
     fi
   '';
 
-  # Static MCP config consumed by claude-kimi and claude-glm via
-  # `--mcp-config`. Provides an external web-search tool since neither
-  # z.ai nor Bifrost/cliproxy can proxy Anthropic's server-side
-  # WebSearch tool (web_search_20250305). Loaded additively alongside
-  # any other MCPs the user has configured.
+  # MCP config templates. Both use `__ZAI_KEY__` as a sentinel for the
+  # z.ai Bearer token so the JSON can be built as a Nix attrset and
+  # materialised to the store at eval time. At runtime the wrapper
+  # does `sed "s|__ZAI_KEY__|$key|g"` into a mode-0600 temp file.
+
+  # Shared between both wrappers — only Tavily (no Bearer auth needed).
   claudeAltMcpConfig = pkgs.writeText "claude-alt-mcp.json" (
     builtins.toJSON {
       mcpServers = {
         tavily = {
           command = "${tavilyMcpShim}";
           args = [ ];
+        };
+      };
+    }
+  );
+
+  # Full config for claude-glm: Tavily + z.ai HTTP MCPs.
+  claudeGlmMcpTemplate = pkgs.writeText "claude-glm-mcp-template.json" (
+    builtins.toJSON {
+      mcpServers = {
+        tavily = {
+          command = "${tavilyMcpShim}";
+          args = [ ];
+        };
+        web-reader = {
+          type = "http";
+          url = "https://api.z.ai/api/mcp/web_reader/mcp";
+          headers = {
+            Authorization = "Bearer __ZAI_KEY__";
+          };
+        };
+        web-search-prime = {
+          type = "http";
+          url = "https://api.z.ai/api/mcp/web_search_prime/mcp";
+          headers = {
+            Authorization = "Bearer __ZAI_KEY__";
+          };
+        };
+        zread = {
+          type = "http";
+          url = "https://api.z.ai/api/mcp/zread/mcp";
+          headers = {
+            Authorization = "Bearer __ZAI_KEY__";
+          };
         };
       };
     }
@@ -125,17 +159,18 @@ in
     # reasoning as claude-kimi above). ENABLE_TOOL_SEARCH=false because
     # z.ai doesn't implement Anthropic's ToolSearch beta either.
     #
-    # Also wires two z.ai remote HTTP MCPs (both Bearer-auth'd with the
+    # Also wires three z.ai remote HTTP MCPs (all Bearer-auth'd with the
     # same zai_api_key):
     #   - web-reader: fetch/parse arbitrary URLs, complements Tavily's
     #     search-only API. docs.z.ai/devpack/mcp/reader-mcp-server
+    #   - web-search-prime: z.ai native web search, returns titles/URLs/
+    #     summaries. docs.z.ai/devpack/mcp/search-mcp-server
     #   - zread: read docs/code from GitHub-style repos via zread.ai.
     #     docs.z.ai/devpack/mcp/zread-mcp-server
-    # The MCP config is generated at runtime into a mode-0600 temp file
-    # so the Authorization headers never hit the nix store, mirroring
-    # the tavilyMcpShim pattern. The static claudeAltMcpConfig isn't
-    # reused here because --mcp-config is single-file on the pinned
-    # v2.1.68; tavily is redeclared in the generated config instead.
+    # The MCP config is a Nix-generated JSON template (claudeGlmMcpTemplate)
+    # with a __ZAI_KEY__ sentinel. At runtime the wrapper sed-replaces the
+    # sentinel into a mode-0600 temp file so the Bearer token never hits
+    # the nix store.
     #
     # Usage: claude-glm [any claude args]
     claude-glm = ''
@@ -147,7 +182,7 @@ in
       set -l zai_key (cat $key_file)
       set -l mcp_config (mktemp -t claude-glm-mcp.XXXXXX.json)
       chmod 600 $mcp_config
-      printf '{"mcpServers":{"tavily":{"command":"%s","args":[]},"web-reader":{"type":"http","url":"https://api.z.ai/api/mcp/web_reader/mcp","headers":{"Authorization":"Bearer %s"}},"zread":{"type":"http","url":"https://api.z.ai/api/mcp/zread/mcp","headers":{"Authorization":"Bearer %s"}}}}\n' ${tavilyMcpShim} $zai_key $zai_key > $mcp_config
+      sed "s|__ZAI_KEY__|$zai_key|g" ${claudeGlmMcpTemplate} > $mcp_config
       env \
         ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic \
         ANTHROPIC_AUTH_TOKEN=$zai_key \
