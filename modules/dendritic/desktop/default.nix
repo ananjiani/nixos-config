@@ -830,6 +830,10 @@ in
                 programs.niri.settings = {
                   input = {
                     keyboard.xkb.layout = "us";
+                    focus-follows-mouse = {
+                      enable = true;
+                      max-scroll-amount = "0%";
+                    };
                     touchpad = {
                       tap = true;
                       natural-scroll = false;
@@ -989,10 +993,8 @@ in
                       "emacsclient"
                       "-c"
                     ];
-                    "Mod+B".action.spawn = "brave";
-                    "Mod+Shift+B".action.spawn = "mullvad-browser";
-                    "Mod+Alt+B".action.spawn = "tor-browser";
-                    "Mod+D".action.spawn = "fuzzel"; # niri upstream default
+                    "Mod+R".action.spawn = "fuzzel"; # matches Hyprland
+                    "Mod+D".action.switch-preset-column-width = [ ]; # swapped from Mod+R
                     "Mod+Shift+D".action.spawn = [
                       "bash"
                       "${scriptsDir}/whisper-toggle.sh"
@@ -1011,12 +1013,15 @@ in
                     "Mod+V".action.toggle-window-floating = [ ];
                     "Mod+Shift+V".action.switch-focus-between-floating-and-tiling = [ ];
 
+                    "Mod+F".action.spawn = "brave"; # matches Hyprland
+                    "Mod+Shift+F".action.spawn = "mullvad-browser";
+                    "Mod+Alt+F".action.spawn = "tor-browser";
+                    "Mod+B".action.maximize-column = [ ]; # swapped from Mod+F
+                    "Mod+Shift+B".action.fullscreen-window = [ ]; # swapped from Mod+Shift+F
+
                     # ─── Group: niri-native column/tiling operations ─────────
-                    "Mod+F".action.maximize-column = [ ];
-                    "Mod+Shift+F".action.fullscreen-window = [ ];
                     "Mod+Ctrl+F".action.expand-column-to-available-width = [ ];
                     "Mod+Shift+C".action.center-column = [ ];
-                    "Mod+R".action.switch-preset-column-width = [ ];
                     "Mod+Shift+R".action.switch-preset-window-height = [ ];
                     "Mod+Ctrl+R".action.reset-window-height = [ ];
                     "Mod+W".action.toggle-column-tabbed-display = [ ];
@@ -1030,29 +1035,29 @@ in
                     "Mod+Comma".action.consume-window-into-column = [ ];
                     "Mod+Period".action.expel-window-from-column = [ ];
 
-                    # ─── Group: Focus movement (vim keys) ────────────────────
-                    "Mod+H".action.focus-column-left = [ ];
-                    "Mod+L".action.focus-column-right = [ ];
-                    "Mod+K".action.focus-window-up = [ ];
-                    "Mod+J".action.focus-window-down = [ ];
+                    # ─── Group: Focus movement (vim keys, crosses monitors) ──
+                    "Mod+H".action.focus-column-or-monitor-left = [ ];
+                    "Mod+L".action.focus-column-or-monitor-right = [ ];
+                    "Mod+K".action.focus-window-or-monitor-up = [ ];
+                    "Mod+J".action.focus-window-or-monitor-down = [ ];
 
-                    # ─── Group: Focus movement (arrow keys, niri default) ────
-                    "Mod+Left".action.focus-column-left = [ ];
-                    "Mod+Right".action.focus-column-right = [ ];
-                    "Mod+Up".action.focus-window-up = [ ];
-                    "Mod+Down".action.focus-window-down = [ ];
+                    # ─── Group: Focus movement (arrow keys, crosses monitors) ─
+                    "Mod+Left".action.focus-column-or-monitor-left = [ ];
+                    "Mod+Right".action.focus-column-or-monitor-right = [ ];
+                    "Mod+Up".action.focus-window-or-monitor-up = [ ];
+                    "Mod+Down".action.focus-window-or-monitor-down = [ ];
 
-                    # ─── Group: Move windows (vim keys) ──────────────────────
-                    "Mod+Ctrl+H".action.move-column-left = [ ];
-                    "Mod+Ctrl+L".action.move-column-right = [ ];
-                    "Mod+Ctrl+K".action.move-window-up = [ ];
-                    "Mod+Ctrl+J".action.move-window-down = [ ];
+                    # ─── Group: Move windows (vim keys, crosses monitors) ─────
+                    "Mod+Ctrl+H".action.move-column-left-or-to-monitor-left = [ ];
+                    "Mod+Ctrl+L".action.move-column-right-or-to-monitor-right = [ ];
+                    "Mod+Ctrl+K".action.move-window-up-or-to-workspace-up = [ ];
+                    "Mod+Ctrl+J".action.move-window-down-or-to-workspace-down = [ ];
 
-                    # ─── Group: Move windows (arrow keys) ────────────────────
-                    "Mod+Ctrl+Left".action.move-column-left = [ ];
-                    "Mod+Ctrl+Right".action.move-column-right = [ ];
-                    "Mod+Ctrl+Up".action.move-window-up = [ ];
-                    "Mod+Ctrl+Down".action.move-window-down = [ ];
+                    # ─── Group: Move windows (arrow keys, crosses monitors) ───
+                    "Mod+Ctrl+Left".action.move-column-left-or-to-monitor-left = [ ];
+                    "Mod+Ctrl+Right".action.move-column-right-or-to-monitor-right = [ ];
+                    "Mod+Ctrl+Up".action.move-window-up-or-to-workspace-up = [ ];
+                    "Mod+Ctrl+Down".action.move-window-down-or-to-workspace-down = [ ];
 
                     # ─── Group: Home/End column navigation ───────────────────
                     "Mod+Home".action.focus-column-first = [ ];
