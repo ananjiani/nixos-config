@@ -38,7 +38,7 @@ let
   # materialised to the store at eval time. At runtime the wrapper
   # does `sed "s|__ZAI_KEY__|$key|g"` into a mode-0600 temp file.
 
-  # Shared between both wrappers — only Tavily (no Bearer auth needed).
+  # Shared between both wrappers — Tavily + self-hosted SearXNG.
   claudeAltMcpConfig = pkgs.writeText "claude-alt-mcp.json" (
     builtins.toJSON {
       mcpServers = {
@@ -46,17 +46,39 @@ let
           command = "${tavilyMcpShim}";
           args = [ ];
         };
+        searxng = {
+          command = "${pkgs.nodejs}/bin/npx";
+          args = [
+            "-y"
+            "mcp-searxng"
+          ];
+          env = {
+            SEARXNG_URL = "https://searxng.lan";
+            NODE_TLS_REJECT_UNAUTHORIZED = "0";
+          };
+        };
       };
     }
   );
 
-  # Full config for claude-glm: Tavily + z.ai HTTP MCPs.
+  # Full config for claude-glm: Tavily + SearXNG + z.ai HTTP MCPs.
   claudeGlmMcpTemplate = pkgs.writeText "claude-glm-mcp-template.json" (
     builtins.toJSON {
       mcpServers = {
         tavily = {
           command = "${tavilyMcpShim}";
           args = [ ];
+        };
+        searxng = {
+          command = "${pkgs.nodejs}/bin/npx";
+          args = [
+            "-y"
+            "mcp-searxng"
+          ];
+          env = {
+            SEARXNG_URL = "https://searxng.lan";
+            NODE_TLS_REJECT_UNAUTHORIZED = "0";
+          };
         };
         web-reader = {
           type = "http";
