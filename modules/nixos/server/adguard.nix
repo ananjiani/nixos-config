@@ -217,6 +217,10 @@ in
                 answer = "192.168.1.52";
               }
               {
+                domain = "searxng.lan";
+                answer = "192.168.1.52";
+              }
+              {
                 domain = "stremio.dimensiondoor.xyz";
                 answer = "192.168.1.52";
               }

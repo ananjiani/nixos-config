@@ -1,0 +1,24 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: searxng
+  namespace: searxng
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "SearXNG"
+    gethomepage.dev/group: "AI"
+    gethomepage.dev/icon: "searxng.png"
+    gethomepage.dev/description: "Privacy-respecting metasearch engine"
+    gethomepage.dev/href: "https://searxng.lan"
+    gethomepage.dev/pod-selector: "app.kubernetes.io/name=searxng"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`searxng.lan`)
+      kind: Rule
+      services:
+        - name: searxng
+          port: 8080

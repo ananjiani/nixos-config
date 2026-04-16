@@ -171,3 +171,12 @@ metadata:
 spec:
   interval: 1h
   url: https://charts.external-secrets.io
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: kubitodev
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://charts.kubito.dev
