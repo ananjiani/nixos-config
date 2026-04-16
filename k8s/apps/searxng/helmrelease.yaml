@@ -38,3 +38,18 @@ spec:
       limits:
         memory: "512Mi"
         cpu: "500m"
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: searxng
+            patch: |
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: searxng
+              spec:
+                template:
+                  spec:
+                    enableServiceLinks: false
