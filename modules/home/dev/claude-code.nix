@@ -5,6 +5,53 @@
 }:
 
 let
+  # Community fix for the post-v2.1.68 prompt-cache regression
+  # (cnighswonger/claude-code-cache-fix). A Node.js preload that hooks
+  # globalThis.fetch and relocates attachment blocks back to messages[0]
+  # (plus tool sorting + fingerprint stabilization). URL-guarded to
+  # /v1/messages requests with valid Anthropic body shape — safe no-op
+  # everywhere else (MCPs, claude-kimi/claude-glm alt-backend wrappers).
+  #
+  # IMPORTANT: only works against the Node runtime variant of claude-code
+  # (pkgs.claude-code-node, binary `claude-node`). The native bundled
+  # binary ignores NODE_OPTIONS entirely. See claudeCodeWithCacheFix below.
+  claudeCacheFix =
+    let
+      version = "2.0.3";
+    in
+    pkgs.runCommand "claude-code-cache-fix-${version}"
+      {
+        src = pkgs.fetchurl {
+          url = "https://registry.npmjs.org/claude-code-cache-fix/-/claude-code-cache-fix-${version}.tgz";
+          hash = "sha256-kjbbqiS9S0PReGitO/T8at9DrGJ5AJ1C1mm8zmPKejk=";
+        };
+      }
+      ''
+        mkdir -p $out/lib/node_modules/claude-code-cache-fix
+        tar -xzf $src -C $out/lib/node_modules/claude-code-cache-fix --strip-components=1
+      '';
+
+  # Wrap claude-code-node so every invocation gets the cache-fix preload.
+  # Same shape as tavilyMcpShim — small shell script that sets env then
+  # execs the upstream binary. We restore the `claude` binary name so
+  # programs.claude-code.package and the ~/.local/bin/claude symlink
+  # work unchanged downstream.
+  claudeCodeWithCacheFix =
+    let
+      upstreamBin = "${pkgs.claude-code-node}/bin/claude-node";
+      preload = "${claudeCacheFix}/lib/node_modules/claude-code-cache-fix/preload.mjs";
+      wrapper = pkgs.writeShellScript "claude-with-cache-fix" ''
+        set -eu
+        # Append rather than overwrite — preserve any user-supplied NODE_OPTIONS.
+        export NODE_OPTIONS="''${NODE_OPTIONS:-} --import file://${preload}"
+        exec ${upstreamBin} "$@"
+      '';
+    in
+    pkgs.runCommand "claude-code-cache-fixed" { } ''
+      mkdir -p $out/bin
+      ln -s ${wrapper} $out/bin/claude
+    '';
+
   # Shim that reads the Tavily API key from vault-agent's runtime secret
   # at exec time, then execs the real MCP server. Keeps the secret out of
   # the nix store and out of `ps` argv. Mirrors the claude-kimi/claude-glm
@@ -112,7 +159,7 @@ in
   # Manages settings.json, agents, and commands as immutable nix store paths.
   programs.claude-code = {
     enable = true;
-    package = pkgs.claude-code;
+    package = claudeCodeWithCacheFix;
 
     settings = {
       attribution = {
@@ -186,6 +233,8 @@ in
         "pyright-lsp@claude-plugins-official" = true;
       };
 
+      effortLevel = "xhigh";
+
       skipDangerousModePermissionPrompt = true;
 
       mcpServers = {
@@ -229,7 +278,7 @@ in
       claudeStableLink = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         mkdir -p $HOME/.local/bin
         rm -f $HOME/.local/bin/claude
-        ln -s ${pkgs.claude-code}/bin/claude $HOME/.local/bin/claude
+        ln -s ${claudeCodeWithCacheFix}/bin/claude $HOME/.local/bin/claude
       '';
 
       # Preserve config during switches
