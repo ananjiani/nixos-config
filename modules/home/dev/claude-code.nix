@@ -44,6 +44,15 @@ let
         set -eu
         # Append rather than overwrite — preserve any user-supplied NODE_OPTIONS.
         export NODE_OPTIONS="''${NODE_OPTIONS:-} --import file://${preload}"
+        # Silence "Cannot open directory .../openssl-*/etc/ssl/certs" warning.
+        # claude-code-node bundles its own openssl whose default cert lookup
+        # paths point into a nix-store path that doesn't exist (openssl's
+        # `etc` output isn't propagated). The warning is specifically about a
+        # directory, so SSL_CERT_DIR is the one that suppresses it.
+        # SSL_CERT_FILE is set as well for any code path that reads a single
+        # bundle. NIX_SSL_CERT_FILE is the NixOS convention for the bundle.
+        export SSL_CERT_DIR="''${SSL_CERT_DIR:-/etc/ssl/certs}"
+        export SSL_CERT_FILE="''${SSL_CERT_FILE:-''${NIX_SSL_CERT_FILE:-/etc/ssl/certs/ca-certificates.crt}}"
         exec ${upstreamBin} "$@"
       '';
     in
