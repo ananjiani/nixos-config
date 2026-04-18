@@ -104,16 +104,127 @@ let
       };
     }
   );
+
+  cfgBase = ./claude-code;
 in
 {
-  home = {
-    packages = with pkgs; [
-      claude-code
-    ];
+  # Declarative Claude Code configuration via the official home-manager module.
+  # Manages settings.json, agents, and commands as immutable nix store paths.
+  programs.claude-code = {
+    enable = true;
+    package = pkgs.claude-code;
 
+    settings = {
+      attribution = {
+        commit = "";
+        pr = "";
+      };
+
+      permissions = {
+        allow = [
+          "Bash(mkdir:*)"
+          "Bash(uv:*)"
+          "Bash(mv:*)"
+          "Bash(npm:*)"
+          "Bash(ls:*)"
+          "Bash(cp:*)"
+          "Bash(chmod:*)"
+          "Bash(touch:*)"
+          "Bash(rg:*)"
+          "Bash(fd:*)"
+          "Bash(jq:*)"
+          "Bash(ls:*)"
+          "Bash(cat:*)"
+          "Bash(echo:*)"
+          "Bash(cd:*)"
+        ];
+        deny = [
+          "Bash(sops -d:*)"
+          "Bash(sops --decrypt:*)"
+        ];
+      };
+
+      hooks = {
+        PreToolUse = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "~/.claude/hooks/src/pre_tool_use.py";
+              }
+            ];
+          }
+        ];
+        PostToolUse = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "~/.claude/hooks/src/post_tool_use.py";
+              }
+            ];
+          }
+        ];
+        Notification = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "~/.claude/hooks/src/notification.py";
+              }
+            ];
+          }
+        ];
+      };
+
+      statusLine = {
+        type = "command";
+        command = ''input=$(cat); current_dir=$(echo "$input" | jq -r '.workspace.current_dir'); model=$(echo "$input" | jq -r '.model.display_name'); style=$(echo "$input" | jq -r '.output_style.name'); git_info=""; if [ -d "$current_dir/.git" ]; then cd "$current_dir" && branch=$(git branch --show-current 2>/dev/null) && git_info=" [$branch]"; fi; printf "\033[2m%s in %s%s | %s\033[0m" "$model" "$(basename "$current_dir")" "$git_info" "$style"'';
+      };
+
+      enabledPlugins = {
+        "pyright-lsp@claude-plugins-official" = true;
+      };
+
+      skipDangerousModePermissionPrompt = true;
+
+      mcpServers = {
+        persona = {
+          type = "http";
+          url = "https://mcp.persona.lan/mcp";
+        };
+      };
+    };
+
+    agentsDir = "${cfgBase}/agents";
+    commandsDir = "${cfgBase}/commands";
+  };
+
+  # Hook scripts + CLAUDE.md — individual home.file entries so
+  # ~/.claude/hooks/ stays a writable directory (logs, __pycache__)
+  # while the scripts themselves are immutable store paths.
+  home.file = {
+    ".claude/hooks/CLAUDE.md".source = "${cfgBase}/hooks/CLAUDE.md";
+  }
+  // (lib.mapAttrs'
+    (
+      name: _: lib.nameValuePair ".claude/hooks/src/${name}" { source = "${cfgBase}/hooks/src/${name}"; }
+    )
+    {
+      "shared.py" = { };
+      "pre_tool_use.py" = { };
+      "post_tool_use.py" = { };
+      "notification.py" = { };
+      "stop.py" = { };
+    }
+  );
+
+  home = {
     sessionPath = [ "$HOME/.local/bin" ];
+    sessionVariables.ANTHROPIC_DEFAULT_OPUS_MODEL = "claude-opus-4-7";
 
     activation = {
+
       # Create stable binary path
       claudeStableLink = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         mkdir -p $HOME/.local/bin
