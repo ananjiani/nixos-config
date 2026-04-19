@@ -88,6 +88,7 @@ resource "opnsense_firewall_alias" "vpn_exempt_destinations" {
   description = "Destinations that bypass VPN (WAF blocks Mullvad IPs)"
   content = [
     "api.deepseek.com",
+    "api.kimi.com",
     "api.tavily.com",
     "code.forgejo.org",
   ]

@@ -302,32 +302,42 @@ in
   };
 
   programs.fish.functions = {
-    # Wrapper that routes Claude Code through the self-hosted Bifrost
-    # LLM gateway, targeting cliproxy's Kimi-for-coding model.
+    # Wrapper that routes Claude Code directly to Moonshot's Kimi Code
+    # product (api.kimi.com/coding), NOT their general API at
+    # api.moonshot.ai. Kimi Code is a separate coding-specialised
+    # service; its Anthropic-compatible endpoint serves a stable
+    # `kimi-for-coding` model id that tracks the latest Kimi Code
+    # model — currently K2.6 Code Preview (rolled out 2026-04-13).
     #
-    # Per Kimi Code docs: ENABLE_TOOL_SEARCH=false for Claude Code compatibility.
-    # Smoke-tested 2026-04-10: zai and deepseek 404 via Bifrost's Anthropic
-    # endpoint because Bifrost translates Messages API → OpenAI Responses API
-    # (/v1/responses), which those upstreams don't implement. cliproxy is a
-    # flexible passthrough so it works.
+    # Previously routed through the self-hosted Bifrost gateway +
+    # cliproxy (2026-04-10 → 2026-04-19). Dropped because Bifrost's
+    # Messages→Responses-API translation plus the cliproxy middleman
+    # proved unreliable in practice.
     #
-    # WebSearch is deny-listed and replaced with a Tavily MCP because
-    # Anthropic's server-side web_search_20250305 tool can't be proxied
-    # through Bifrost/cliproxy — vanilla Claude Code routes it to
-    # api.anthropic.com directly, but the upstream here doesn't implement it.
+    # Auth: Kimi Code `sk-kimi-*` keys are x-api-key style, so we use
+    # ANTHROPIC_API_KEY (NOT ANTHROPIC_AUTH_TOKEN / Bearer, which is
+    # what z.ai uses for claude-glm). API_TIMEOUT_MS is bumped because
+    # K2.6 produces deeper reasoning traces and longer agent plans.
+    #
+    # WebSearch is deny-listed and replaced with a Tavily + SearXNG MCP
+    # bundle because Kimi Code doesn't implement Anthropic's server-side
+    # web_search_20250305 tool. ENABLE_TOOL_SEARCH=false disables the
+    # ToolSearch beta for the same reason (same situation as claude-glm).
     #
     # Usage: claude-kimi [any claude args]
     claude-kimi = ''
-      set -l vk_file /run/secrets/bifrost_api_key
-      if not test -r $vk_file
-        echo "claude-kimi: $vk_file not readable — is vault-agent configured for this host?" >&2
+      set -l key_file /run/secrets/kimi_code_api_key
+      if not test -r $key_file
+        echo "claude-kimi: $key_file not readable — is vault-agent configured for this host?" >&2
         return 1
       end
       env \
-        ANTHROPIC_BASE_URL=https://bifrost.lan/anthropic \
-        ANTHROPIC_API_KEY=(cat $vk_file) \
-        ANTHROPIC_MODEL=cliproxy/kimi-for-coding \
-        ANTHROPIC_SMALL_FAST_MODEL=cliproxy/kimi-for-coding \
+        ANTHROPIC_BASE_URL=https://api.kimi.com/coding \
+        ANTHROPIC_API_KEY=(cat $key_file) \
+        ANTHROPIC_DEFAULT_SONNET_MODEL=kimi-for-coding \
+        ANTHROPIC_DEFAULT_OPUS_MODEL=kimi-for-coding \
+        ANTHROPIC_DEFAULT_HAIKU_MODEL=kimi-for-coding \
+        API_TIMEOUT_MS=3000000 \
         ENABLE_TOOL_SEARCH=false \
         claude \
           --mcp-config ${claudeAltMcpConfig} \
