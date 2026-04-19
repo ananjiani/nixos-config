@@ -244,6 +244,11 @@ in
 
       effortLevel = "xhigh";
 
+      # Restore thinking summaries in interactive sessions — Anthropic
+      # stopped generating them by default in v2.1.89 (2026-04-01).
+      # Without this, Ctrl+O verbose mode shows no reasoning output.
+      showThinkingSummaries = true;
+
       skipDangerousModePermissionPrompt = true;
 
       mcpServers = {
