@@ -51,11 +51,11 @@ resource "cloudflare_dns_record" "sji_api" {
 resource "cloudflare_dns_record" "tailscale" {
   zone_id = local.zone_id
   name    = "ts"
-  content = var.homeserver_ip
+  content = hcloud_server.erebor.ipv4_address
   type    = "A"
   proxied = false # Must be false for Tailscale coordination
   ttl     = 300
-  comment = "Headscale control server (boromir) - managed by Terraform"
+  comment = "Headscale control server (erebor) - managed by Terraform"
 }
 
 # =============================================================================

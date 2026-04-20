@@ -176,10 +176,9 @@ in
             }) lanHosts
             ++ [
               # K8s services (Traefik ingress at 192.168.1.52)
-              {
-                domain = "ts.dimensiondoor.xyz";
-                answer = "192.168.1.52";
-              }
+              # ts.dimensiondoor.xyz intentionally excluded — Headscale moved
+              # to erebor (see ADR-002); LAN clients must resolve via public
+              # DNS so a tailscale-logged-out node can still re-auth.
               {
                 domain = "auth.dimensiondoor.xyz";
                 answer = "192.168.1.52";
