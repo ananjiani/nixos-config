@@ -8,7 +8,6 @@ resources:
   - cliproxy
   - forgejo
   - codeberg-runner
-  - headscale
   - home-assistant
   - homepage
   - immich
