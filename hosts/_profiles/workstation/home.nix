@@ -24,6 +24,7 @@
     ../../../modules/home/dev/lang/python.nix
     ../../../modules/home/dev/lang/nixlang.nix
     ../../../modules/home/dev/nix-direnv.nix
+    ../../../modules/home/dev/nix-index.nix
     ../../../modules/home/dev/programs.nix
     ../../../modules/home/dev/claude-code.nix
   ];
