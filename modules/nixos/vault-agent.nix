@@ -154,6 +154,15 @@ in
       "d /var/lib/vault-agent 0700 root root -"
     ];
 
+    # sops-nix's setupSecrets activation clears /run/secrets entries it
+    # doesn't own, wiping vault-agent's renders on every deploy. Force a
+    # re-render by restarting vault-agent after sops has run.
+    system.activationScripts.vault-agent-rehydrate = lib.stringAfter [ "setupSecrets" ] ''
+      if ${pkgs.systemd}/bin/systemctl is-active --quiet vault-agent-default.service; then
+        ${pkgs.systemd}/bin/systemctl try-restart vault-agent-default.service || true
+      fi
+    '';
+
     # Wait for all secrets to be rendered before considering the unit
     # started. vault-agent is Type=simple so systemd would otherwise
     # consider it up before the first template render completes. Any

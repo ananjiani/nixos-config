@@ -1,5 +1,10 @@
 # Headscale - self-hosted Tailscale control server
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.modules.headscale;
@@ -43,7 +48,7 @@ in
 
         policy = lib.mkIf (cfg.aclPolicyFile != null) {
           mode = "file";
-          path = toString cfg.aclPolicyFile;
+          path = pkgs.writeText "headscale-acl.json" (builtins.readFile cfg.aclPolicyFile);
         };
 
         dns = {
