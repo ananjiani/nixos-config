@@ -1,7 +1,7 @@
 ---
 date: 2026-04-20
 title: Move Headscale from k3s to erebor VPS
-status: proposed
+status: accepted
 supersedes:
 superseded_by:
 systems: [tailscale, headscale, k3s, erebor, vault-agent, openbao]
