@@ -875,6 +875,7 @@ in
                   workspaces = {
                     "chat" = { };
                     "reading" = { };
+                    "work" = { };
                   };
 
                   # XWayland support for X11-only apps like Steam.
@@ -960,6 +961,12 @@ in
                       matches = [ { app-id = "^gamescope$"; } ];
                       variable-refresh-rate = true;
                     }
+                    # Work browser (Edge via flatpak): route to work workspace
+                    {
+                      matches = [ { app-id = "^com\\.microsoft\\.Edge$"; } ];
+                      open-on-workspace = "work";
+                      default-column-width.proportion = 1.0 / 2.0;
+                    }
                   ];
 
                   spawn-at-startup =
@@ -978,7 +985,24 @@ in
                         "-m"
                         cfg.wallpaper.mode
                       ];
-                    };
+                    }
+                    ++ [
+                      {
+                        command = [
+                          "bash"
+                          "-c"
+                          ''
+                            day=$(date +%u)
+                            hour=$(date +%H)
+                            if [ "$day" -le 5 ] && [ "$hour" -lt 17 ]; then
+                              mullvad-exclude flatpak run com.microsoft.Edge \
+                                https://outlook.office365.com \
+                                https://teams.microsoft.com &
+                            fi
+                          ''
+                        ];
+                      }
+                    ];
 
                   binds = {
                     # ─── Group: Launchers & apps ─────────────────────────────
