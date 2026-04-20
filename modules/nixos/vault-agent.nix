@@ -20,7 +20,8 @@ let
   secretTemplates = lib.mapAttrsToList (
     name: secret:
     let
-      templateContent = ''{{ with secret "${secret.path}" }}{{ index .Data.data "${secret.field}" }}{{ end }}'';
+      defaultTemplate = ''{{ with secret "${secret.path}" }}{{ index .Data.data "${secret.field}" }}{{ end }}'';
+      templateContent = if secret.template != null then secret.template else defaultTemplate;
     in
     {
       contents = templateContent;
@@ -64,8 +65,18 @@ in
             };
             field = lib.mkOption {
               type = lib.types.str;
-              description = "Field name within the secret";
+              description = "Field name within the secret (ignored if `template` is set)";
               example = "token";
+            };
+            template = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
+              default = null;
+              description = ''
+                Optional Consul Template body. When set, rendered verbatim
+                instead of the default single-field template. Useful for
+                multi-line output formats like EnvironmentFile.
+              '';
+              example = ''CF_API_TOKEN={{ with secret "secret/data/k8s/cert-manager" }}{{ .Data.data.api-token }}{{ end }}'';
             };
             owner = lib.mkOption {
               type = lib.types.str;

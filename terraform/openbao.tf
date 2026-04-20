@@ -44,6 +44,13 @@ resource "vault_policy" "vault_agent" {
     path "secret/data/k8s/open-webui" {
       capabilities = ["read"]
     }
+    # Cross-boundary: Cloudflare DNS-01 API token used by Caddy on erebor
+    # to issue Let's Encrypt certs for Headscale's public endpoint. Single
+    # source of truth stays at k8s/cert-manager (also consumed by the
+    # cert-manager ExternalSecret for in-cluster certs).
+    path "secret/data/k8s/cert-manager" {
+      capabilities = ["read"]
+    }
   EOT
 }
 

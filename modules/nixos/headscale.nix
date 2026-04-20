@@ -24,6 +24,12 @@ in
       default = 8080;
       description = "Port for Headscale to listen on (behind reverse proxy)";
     };
+
+    aclPolicyFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Path to a HuJSON/JSON ACL policy file";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -34,6 +40,11 @@ in
 
       settings = {
         server_url = "https://${cfg.domain}";
+
+        policy = lib.mkIf (cfg.aclPolicyFile != null) {
+          mode = "file";
+          path = toString cfg.aclPolicyFile;
+        };
 
         dns = {
           base_domain = cfg.baseDomain;

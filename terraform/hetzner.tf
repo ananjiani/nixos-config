@@ -56,8 +56,9 @@ resource "hcloud_server" "erebor" {
 # =============================================================================
 # Firewall
 # =============================================================================
-# OpenBao is accessed exclusively over Tailscale, so we only need SSH open.
-# Port 8200/8201 are NOT exposed publicly — only via Tailscale.
+# OpenBao is accessed exclusively over Tailscale (port 8200/8201 not public).
+# Port 443 is exposed publicly for Caddy + Headscale (control plane for the
+# tailnet itself — cannot live behind Tailscale).
 
 resource "hcloud_firewall" "erebor" {
   name = "erebor-firewall"
@@ -78,6 +79,18 @@ resource "hcloud_firewall" "erebor" {
     direction = "in"
     protocol  = "udp"
     port      = "41641"
+    source_ips = [
+      "0.0.0.0/0",
+      "::/0",
+    ]
+  }
+
+  # Caddy HTTPS (Headscale control plane TLS termination).
+  # DNS-01 ACME is used for certs, so port 80 is NOT opened.
+  rule {
+    direction = "in"
+    protocol  = "tcp"
+    port      = "443"
     source_ips = [
       "0.0.0.0/0",
       "::/0",
