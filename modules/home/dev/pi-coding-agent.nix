@@ -1,6 +1,13 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
 let
+  # Absolute path to the user-editable pi resources dir in the working
+  # tree. Hardcoded to ~/.dotfiles — the canonical checkout location this
+  # repo assumes elsewhere (e.g. vault-agent bootstrap). Each subdirectory
+  # below is out-of-store-symlinked so pi can hot-reload/write in-session
+  # and the changes land directly in the git working tree.
+  piUserDir = "${config.home.homeDirectory}/.dotfiles/modules/home/dev/pi-coding-agent";
+
   # Pi ships built-in providers `kimi-coding` (api.kimi.com/coding) and
   # `zai` (api.z.ai/api/anthropic) — see pi-mono packages/ai/src/models.generated.ts.
   # We only need to supply apiKeys; the base URLs, model IDs, and auth
@@ -56,12 +63,25 @@ let
 in
 {
   # numtide/llm-agents.nix's default overlay namespaces everything under
-  # pkgs.llm-agents.* (not top-level pkgs.pi). models.json is symlinked
-  # from the nix store — pi treats it as user-intent config and writes
-  # auth/session state to sibling files (not this one).
+  # pkgs.llm-agents.* (not top-level pkgs.pi).
+  #
+  # models.json is a /nix/store symlink (immutable — secrets-config).
+  # extensions/, prompts/, skills/ are OUT-OF-STORE symlinks pointing
+  # into the dotfiles working tree so pi's `/reload` picks up in-session
+  # edits and pi-written files land directly in git. Changing the
+  # SHAPE (adding a folder, bumping the package) still needs
+  # `nh home switch`; iterating on individual files does not.
+  #
+  # pi also writes into ~/.pi/agent/{auth.json,sessions/,settings.json}
+  # at runtime — NOT symlinked here, pi manages them as mutable state.
   home = {
     packages = [ pkgs.llm-agents.pi ];
     sessionVariables.PI_CACHE_RETENTION = "long";
-    file.".pi/agent/models.json".source = piModels;
+    file = {
+      ".pi/agent/models.json".source = piModels;
+      ".pi/agent/extensions".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/extensions";
+      ".pi/agent/prompts".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/prompts";
+      ".pi/agent/skills".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/skills";
+    };
   };
 }
