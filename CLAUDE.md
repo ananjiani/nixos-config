@@ -150,9 +150,7 @@ deploy .#boromir --remote-build
 ## Working with This Repository
 
 ### Adding New Modules
-1. Create module file in appropriate directory (`modules/home/` or `modules/nixos/`)
-2. Import it in the respective `default.nix`
-3. Enable it in host configuration with options
+See the `nix-repo-conventions` skill for detailed guidance on choosing between `modules/nixos/`, `modules/home/`, and `modules/dendritic/`, and the correct wiring pattern for each.
 
 ### Modifying Host Configurations
 - Host-specific settings go in `hosts/<hostname>/configuration.nix` or `home.nix`
