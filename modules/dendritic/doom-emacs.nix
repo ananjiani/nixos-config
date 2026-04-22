@@ -1,9 +1,10 @@
 # Dendritic Doom Emacs Module
 # Platform-aware Doom Emacs configuration supporting both GUI (pgtk) and terminal (nox) variants
 # This module follows the dendritic pattern - aspect-oriented configuration
-_:
+{ pkgs, ... }:
 let
   doomDir = "$HOME/.dotfiles/modules/home/editors/doom-emacs";
+  treesitGrammars = pkgs.emacs.pkgs.treesit-grammars.with-all-grammars;
 in
 {
   flake.aspects.doom-emacs.homeManager =
@@ -62,6 +63,7 @@ in
                 nodejs
                 prettier
                 mermaid-cli
+                gcc # tree-sitter grammar compilation fallback
                 (aspellWithDicts (
                   d: with d; [
                     en
@@ -71,7 +73,10 @@ in
                 ))
               ];
 
-              sessionVariables.DOOMDIR = doomDir;
+              sessionVariables = {
+                DOOMDIR = doomDir;
+                TREESIT_GRAMMAR_PATH = "${treesitGrammars}/lib";
+              };
               sessionPath = [ "$HOME/.emacs.d/bin" ];
 
               # Clone Doom Emacs
@@ -100,11 +105,7 @@ in
               package = pkgs.emacs-pgtk;
               extraPackages = epkgs: [
                 epkgs.vterm
-                (epkgs.treesit-grammars.with-grammars (
-                  grammars: with grammars; [
-                    tree-sitter-python
-                  ]
-                ))
+                treesitGrammars
               ];
             };
 
@@ -122,11 +123,7 @@ in
               enable = true;
               package = pkgs.emacs-nox;
               extraPackages = epkgs: [
-                (epkgs.treesit-grammars.with-grammars (
-                  grammars: with grammars; [
-                    tree-sitter-python
-                  ]
-                ))
+                treesitGrammars
               ];
             };
 
