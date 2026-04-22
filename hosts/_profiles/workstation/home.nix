@@ -27,6 +27,7 @@
     ../../../modules/home/dev/nix-index.nix
     ../../../modules/home/dev/programs.nix
     ../../../modules/home/dev/claude-code.nix
+    ../../../modules/home/dev/pi-coding-agent.nix
   ];
 
   # Doom Emacs via dendritic module

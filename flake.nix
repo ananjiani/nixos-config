@@ -23,6 +23,11 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     claude-code.url = "github:sadjow/claude-code-nix?ref=v2.1.112"; # pinned: max version verified working with cnighswonger/claude-code-cache-fix preload (see modules/home/dev/claude-code.nix). Do NOT bump without re-verifying https://github.com/cnighswonger/claude-code-cache-fix
+    # AI coding-agent package collection (pi, omp, codex, opencode, …).
+    # No `follows` — their README warns against following a stable nixpkgs,
+    # and their pinned nixpkgs-unstable gives us cache hits from
+    # nix-community.cachix.org (already trusted in hosts/_profiles/base.nix).
+    llm-agents.url = "github:numtide/llm-agents.nix";
     whisper-dictation.url = "github:ananjiani/whisper-dictation";
     git-hooks = {
       url = "github:cachix/git-hooks.nix";
@@ -335,6 +340,7 @@
                     inputs.emacs-overlay.overlay
                     inputs.nix-vscode-extensions.overlays.default
                     inputs.claude-code.overlays.default
+                    inputs.llm-agents.overlays.default
                   ];
                 }
 
