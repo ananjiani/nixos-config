@@ -23,6 +23,76 @@ let
   # and claude-glm. Pi's "!cmd" apiKey form runs the cat at invocation
   # time, stripping trailing whitespace — key stays out of the env table
   # and rotates with vault-agent's lease.
+  # Web access via two small bash scripts on PATH. Mario's pitch is
+  # "CLI tools with READMEs" instead of MCP servers — pi's bash tool
+  # discovers these when asked to search/fetch, no tokens spent
+  # registering them up-front. Tool choices follow the pi ecosystem
+  # (pi-amplike, pi-skills/brave-search, pi-super-curl):
+  #
+  # - `web-search <query>`: self-hosted SearXNG at searxng.lan
+  # - `web-fetch <url>`:    Jina Reader (r.jina.ai) — free, Readability-
+  #                         based extraction, handles JS-rendered pages,
+  #                         de-facto web-fetch standard in the pi
+  #                         community. Strictly better than pandoc for
+  #                         agent use (article extraction vs blind
+  #                         HTML→markdown).
+  #
+  # Tavily and pandoc were considered and dropped — Tavily isn't used
+  # anywhere in the pi ecosystem (it's a Claude Code pattern), and
+  # pandoc converts HTML-as-markup instead of extracting article
+  # bodies. If higher-quality search becomes load-bearing, add a
+  # `web-search-brave` wrapping Mario's pi-skills/brave-search.
+
+  webSearch = pkgs.writeShellApplication {
+    name = "web-search";
+    runtimeInputs = with pkgs; [
+      curl
+      jq
+    ];
+    text = ''
+      # Usage: web-search <query...>
+      #
+      # Queries the self-hosted SearXNG at searxng.lan and prints the
+      # top 10 results as markdown-ish plain text (title, URL, snippet).
+      # For reading a specific URL use `web-fetch`.
+      if [ $# -eq 0 ]; then
+        echo "usage: web-search <query...>" >&2
+        exit 1
+      fi
+      query=$(printf '%s' "$*" | jq -sRr @uri)
+      # -k: searxng.lan has a self-signed cert (same reason mcp-searxng
+      # sets NODE_TLS_REJECT_UNAUTHORIZED=0 in claude-code.nix).
+      curl -fsSLk --max-time 15 \
+        "https://searxng.lan/search?q=''${query}&format=json&safesearch=0" \
+        | jq -r '.results[:10] | .[] | "## \(.title)\n\(.url)\n\(.content // "")\n"'
+    '';
+  };
+
+  webFetch = pkgs.writeShellApplication {
+    name = "web-fetch";
+    runtimeInputs = [ pkgs.curl ];
+    text = ''
+      # Usage: web-fetch <url>
+      #
+      # Fetches <url> via Jina Reader, which returns clean markdown
+      # (Readability-based extraction, JS-rendered pages supported, ads
+      # and navigation removed, links preserved inline). Free tier has
+      # rate limits but no API key required. Set JINA_API_KEY in the
+      # environment if you hit limits — forwarded as Bearer auth.
+      if [ $# -ne 1 ]; then
+        echo "usage: web-fetch <url>" >&2
+        exit 1
+      fi
+      if [ -n "''${JINA_API_KEY:-}" ]; then
+        exec curl -fsSL --max-time 30 \
+          -H "Authorization: Bearer $JINA_API_KEY" \
+          "https://r.jina.ai/$1"
+      else
+        exec curl -fsSL --max-time 30 "https://r.jina.ai/$1"
+      fi
+    '';
+  };
+
   piModels = pkgs.writeText "pi-models.json" (
     builtins.toJSON {
       providers = {
@@ -75,7 +145,11 @@ in
   # pi also writes into ~/.pi/agent/{auth.json,sessions/,settings.json}
   # at runtime — NOT symlinked here, pi manages them as mutable state.
   home = {
-    packages = [ pkgs.llm-agents.pi ];
+    packages = [
+      pkgs.llm-agents.pi
+      webSearch
+      webFetch
+    ];
     sessionVariables.PI_CACHE_RETENTION = "long";
     file = {
       ".pi/agent/models.json".source = piModels;
