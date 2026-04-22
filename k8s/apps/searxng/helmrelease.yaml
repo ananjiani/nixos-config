@@ -21,7 +21,7 @@ spec:
         use_default_settings: true
         server:
           limiter: false
-          image_proxy: false
+          image_proxy: true
           method: "GET"
         search:
           formats:
