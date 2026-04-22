@@ -1,10 +1,9 @@
 # Dendritic Doom Emacs Module
 # Platform-aware Doom Emacs configuration supporting both GUI (pgtk) and terminal (nox) variants
 # This module follows the dendritic pattern - aspect-oriented configuration
-{ pkgs, ... }:
+_:
 let
   doomDir = "$HOME/.dotfiles/modules/home/editors/doom-emacs";
-  treesitGrammars = pkgs.emacs.pkgs.treesit-grammars.with-all-grammars;
 in
 {
   flake.aspects.doom-emacs.homeManager =
@@ -14,6 +13,9 @@ in
       config,
       ...
     }:
+    let
+      treesitGrammars = pkgs.emacs.pkgs.treesit-grammars.with-all-grammars;
+    in
     {
       options.doom-emacs = {
         enable = lib.mkEnableOption "Doom Emacs";
@@ -122,7 +124,7 @@ in
             programs.emacs = {
               enable = true;
               package = pkgs.emacs-nox;
-              extraPackages = epkgs: [
+              extraPackages = _epkgs: [
                 treesitGrammars
               ];
             };

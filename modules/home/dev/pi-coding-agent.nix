@@ -186,6 +186,111 @@ let
       };
     }
   );
+  # Generate a Pi TUI theme from Stylix's base16 palette so the
+  # coding agent's colors stay in sync with the rest of the desktop.
+  # Uses config.lib.stylix.colors (base00–base0F) to build all 51
+  # required Pi theme tokens + an HTML export section.
+  piTheme =
+    let
+      c = config.lib.stylix.colors;
+    in
+    pkgs.writeText "gruvbox-material.json" (
+      builtins.toJSON {
+        "$schema" =
+          "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json";
+        name = "gruvbox-material";
+        vars = {
+          bg = "#${c.base00}";
+          bg1 = "#${c.base01}";
+          bg2 = "#${c.base02}";
+          dimFg = "#${c.base03}";
+          light1 = "#${c.base04}";
+          fg = "#${c.base05}";
+          light2 = "#${c.base06}";
+          bright = "#${c.base07}";
+          red = "#${c.base08}";
+          orange = "#${c.base09}";
+          yellow = "#${c.base0A}";
+          green = "#${c.base0B}";
+          aqua = "#${c.base0C}";
+          blue = "#${c.base0D}";
+          purple = "#${c.base0E}";
+          brown = "#${c.base0F}";
+        };
+        colors = {
+          # Core UI
+          accent = "orange";
+          border = "blue";
+          borderAccent = "aqua";
+          borderMuted = "bg2";
+          success = "green";
+          error = "red";
+          warning = "yellow";
+          muted = "dimFg";
+          dim = "bg2";
+          text = "";
+          thinkingText = "dimFg";
+
+          # Backgrounds & content
+          selectedBg = "bg2";
+          userMessageBg = "bg1";
+          userMessageText = "";
+          customMessageBg = "bg1";
+          customMessageText = "";
+          customMessageLabel = "purple";
+          toolPendingBg = "bg1";
+          toolSuccessBg = "bg1";
+          toolErrorBg = "bg1";
+          toolTitle = "orange";
+          toolOutput = "dimFg";
+
+          # Markdown
+          mdHeading = "yellow";
+          mdLink = "blue";
+          mdLinkUrl = "dimFg";
+          mdCode = "aqua";
+          mdCodeBlock = "light1";
+          mdCodeBlockBorder = "dimFg";
+          mdQuote = "dimFg";
+          mdQuoteBorder = "dimFg";
+          mdHr = "dimFg";
+          mdListBullet = "orange";
+
+          # Tool diffs
+          toolDiffAdded = "green";
+          toolDiffRemoved = "red";
+          toolDiffContext = "dimFg";
+
+          # Syntax highlighting
+          syntaxComment = "dimFg";
+          syntaxKeyword = "orange";
+          syntaxFunction = "yellow";
+          syntaxVariable = "light1";
+          syntaxString = "green";
+          syntaxNumber = "purple";
+          syntaxType = "aqua";
+          syntaxOperator = "light1";
+          syntaxPunctuation = "light1";
+
+          # Thinking level borders
+          thinkingOff = "bg2";
+          thinkingMinimal = "dimFg";
+          thinkingLow = "blue";
+          thinkingMedium = "aqua";
+          thinkingHigh = "purple";
+          thinkingXhigh = "red";
+
+          # Bash mode
+          bashMode = "green";
+        };
+        export = {
+          pageBg = "#${c.base00}";
+          cardBg = "#${c.base01}";
+          infoBg = "#${c.base02}";
+        };
+      }
+    );
+
 in
 {
   # numtide/llm-agents.nix's default overlay namespaces everything under
@@ -220,6 +325,7 @@ in
       ".pi/agent/prompts".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/prompts";
       ".pi/agent/skills".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/skills";
       ".pi/agent/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/settings.json";
+      ".pi/agent/themes/gruvbox-material.json".source = piTheme;
     };
   };
 }
