@@ -70,25 +70,55 @@ let
 
   webFetch = pkgs.writeShellApplication {
     name = "web-fetch";
-    runtimeInputs = [ pkgs.curl ];
+    runtimeInputs = [
+      pkgs.curl
+      pkgs.nodePackages.readability-cli
+      pkgs.python3Packages.html2text
+    ];
     text = ''
       # Usage: web-fetch <url>
       #
-      # Fetches <url> via Jina Reader, which returns clean markdown
-      # (Readability-based extraction, JS-rendered pages supported, ads
-      # and navigation removed, links preserved inline). Free tier has
-      # rate limits but no API key required. Set JINA_API_KEY in the
-      # environment if you hit limits — forwarded as Bearer auth.
+      # Tier 1 (default, private): curl + Mozilla Readability + html2text
+      # — fetches the URL locally, extracts the article body via the same
+      # algorithm Firefox Reader Mode uses, converts cleaned HTML to
+      # markdown. Same pattern Mario uses in pi-skills/brave-search; URLs
+      # never leave the box (only the curl request itself, routed through
+      # whatever VPN the system has — Mullvad here).
+      #
+      # Tier 2 (fallback): Jina Reader (r.jina.ai) — for JS-rendered
+      # SPAs, auth-walled pages, or anything where local extraction
+      # yields trivial content (<500 chars). Set JINA_API_KEY for
+      # higher rate limits (forwarded as Bearer auth).
       if [ $# -ne 1 ]; then
         echo "usage: web-fetch <url>" >&2
         exit 1
       fi
+      url=$1
+      tmpfile=$(mktemp --suffix=.html)
+      trap 'rm -f "$tmpfile"' EXIT
+
+      # Tier 1: local Readability extraction
+      if curl -fsSL --max-time 30 -A "Mozilla/5.0 pi-coding-agent" "$url" -o "$tmpfile" 2>/dev/null \
+        && [ -s "$tmpfile" ]; then
+        output=$(readable "$tmpfile" --base "$url" --quiet --low-confidence=force 2>/dev/null \
+          | html2text --body-width=0 2>/dev/null || true)
+        # Heuristic: substantive extraction is ≥ 500 chars. Trivial
+        # output (404 pages, SPA shells with empty <body>) falls through
+        # to Jina, which can render JS and follow stale URLs.
+        if [ "''${#output}" -ge 500 ]; then
+          printf '%s\n' "$output"
+          exit 0
+        fi
+      fi
+
+      # Tier 2: Jina Reader fallback
+      echo "[web-fetch] local extraction trivial/failed — falling back to Jina Reader" >&2
       if [ -n "''${JINA_API_KEY:-}" ]; then
         exec curl -fsSL --max-time 30 \
           -H "Authorization: Bearer $JINA_API_KEY" \
-          "https://r.jina.ai/$1"
+          "https://r.jina.ai/$url"
       else
-        exec curl -fsSL --max-time 30 "https://r.jina.ai/$1"
+        exec curl -fsSL --max-time 30 "https://r.jina.ai/$url"
       fi
     '';
   };
