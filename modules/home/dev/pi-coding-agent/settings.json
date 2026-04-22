@@ -1,0 +1,10 @@
+{
+  "defaultProvider": "kimi-coding",
+  "defaultModel": "kimi-for-coding",
+  "enabledModels": [
+    "kimi-coding/kimi-for-coding",
+    "zai/glm-5.1",
+    "zai/glm-4.6",
+    "zai/glm-4.5-air"
+  ]
+}

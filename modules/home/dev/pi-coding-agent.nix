@@ -136,14 +136,20 @@ in
   # pkgs.llm-agents.* (not top-level pkgs.pi).
   #
   # models.json is a /nix/store symlink (immutable — secrets-config).
-  # extensions/, prompts/, skills/ are OUT-OF-STORE symlinks pointing
-  # into the dotfiles working tree so pi's `/reload` picks up in-session
-  # edits and pi-written files land directly in git. Changing the
-  # SHAPE (adding a folder, bumping the package) still needs
-  # `nh home switch`; iterating on individual files does not.
+  # extensions/, prompts/, skills/, settings.json are OUT-OF-STORE
+  # symlinks into the dotfiles working tree so pi's `/reload`, `/settings`,
+  # `/scoped-models` and `pi config` interactive edits land directly in
+  # git. Changing the SHAPE (adding a folder, bumping the package) still
+  # needs `nh home switch`; iterating on individual files does not.
   #
-  # pi also writes into ~/.pi/agent/{auth.json,sessions/,settings.json}
-  # at runtime — NOT symlinked here, pi manages them as mutable state.
+  # settings.json holds defaults pi can mutate via /settings, /scoped-
+  # models (Ctrl+S), pi config, and `pi install`. We seed it with our
+  # canonical defaults (default provider/model/thinking level + the
+  # scoped-model cycle list for Ctrl+P) and let pi accumulate any
+  # interactive changes back into git.
+  #
+  # pi also writes ~/.pi/agent/{auth.json,sessions/} at runtime — NOT
+  # symlinked here, pi manages them as mutable runtime state.
   home = {
     packages = [
       pkgs.llm-agents.pi
@@ -156,6 +162,7 @@ in
       ".pi/agent/extensions".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/extensions";
       ".pi/agent/prompts".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/prompts";
       ".pi/agent/skills".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/skills";
+      ".pi/agent/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/settings.json";
     };
   };
 }
