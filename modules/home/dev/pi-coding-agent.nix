@@ -68,6 +68,14 @@ let
     '';
   };
 
+  # Two separate tools, model decides which to use. Local extraction is
+  # private (URL stays on-box, only the curl request leaves, routed
+  # through Mullvad) but can't handle JS-rendered SPAs or auth-walled
+  # pages. Jina handles those but sees every URL you fetch. Splitting
+  # them surfaces the privacy/capability tradeoff explicitly to the
+  # agent — Mario's "small CLIs with READMEs" pattern. The agent reads
+  # --help, picks the right tool, falls back when needed.
+
   webFetch = pkgs.writeShellApplication {
     name = "web-fetch";
     runtimeInputs = [
@@ -78,47 +86,65 @@ let
     text = ''
       # Usage: web-fetch <url>
       #
-      # Tier 1 (default, private): curl + Mozilla Readability + html2text
-      # — fetches the URL locally, extracts the article body via the same
-      # algorithm Firefox Reader Mode uses, converts cleaned HTML to
-      # markdown. Same pattern Mario uses in pi-skills/brave-search; URLs
-      # never leave the box (only the curl request itself, routed through
-      # whatever VPN the system has — Mullvad here).
+      # Local Readability-based extraction. curl -> Mozilla Readability
+      # (same algorithm Firefox Reader Mode uses, in pi-skills/brave-
+      # search style) -> html2text (markdown output). URL stays on-box;
+      # only the curl request itself leaves, routed through whatever VPN
+      # is active.
       #
-      # Tier 2 (fallback): Jina Reader (r.jina.ai) — for JS-rendered
-      # SPAs, auth-walled pages, or anything where local extraction
-      # yields trivial content (<500 chars). Set JINA_API_KEY for
-      # higher rate limits (forwarded as Bearer auth).
+      # Trivial output (<500 chars) usually means a JS-rendered SPA, an
+      # auth-walled page, or a soft-404 — try `web-fetch-jina <url>`
+      # which renders JS server-side and is more lenient about extraction.
+      # Trade-off: every URL you fetch through web-fetch-jina is logged
+      # by Jina; web-fetch keeps URLs private.
       if [ $# -ne 1 ]; then
         echo "usage: web-fetch <url>" >&2
+        echo "  Local Readability extraction. URL stays on-box." >&2
+        echo "  For JS-rendered or auth-walled pages, use web-fetch-jina." >&2
         exit 1
       fi
       url=$1
       tmpfile=$(mktemp --suffix=.html)
       trap 'rm -f "$tmpfile"' EXIT
 
-      # Tier 1: local Readability extraction
-      if curl -fsSL --max-time 30 -A "Mozilla/5.0 pi-coding-agent" "$url" -o "$tmpfile" 2>/dev/null \
-        && [ -s "$tmpfile" ]; then
-        output=$(readable "$tmpfile" --base "$url" --quiet --low-confidence=force 2>/dev/null \
-          | html2text --body-width=0 2>/dev/null || true)
-        # Heuristic: substantive extraction is ≥ 500 chars. Trivial
-        # output (404 pages, SPA shells with empty <body>) falls through
-        # to Jina, which can render JS and follow stale URLs.
-        if [ "''${#output}" -ge 500 ]; then
-          printf '%s\n' "$output"
-          exit 0
-        fi
-      fi
+      curl -fsSL --max-time 30 -A "Mozilla/5.0 pi-coding-agent" "$url" -o "$tmpfile"
+      output=$(readable "$tmpfile" --base "$url" --quiet --low-confidence=force 2>/dev/null \
+        | html2text --body-width=0 2>/dev/null || true)
+      printf '%s\n' "$output"
 
-      # Tier 2: Jina Reader fallback
-      echo "[web-fetch] local extraction trivial/failed — falling back to Jina Reader" >&2
+      # Hint stderr so the model learns about the alternative when the
+      # extraction looks empty. Agent reads stderr alongside stdout.
+      if [ "''${#output}" -lt 500 ]; then
+        echo "[web-fetch] only ''${#output} chars extracted — try web-fetch-jina for JS-rendered or auth-walled pages" >&2
+      fi
+    '';
+  };
+
+  webFetchJina = pkgs.writeShellApplication {
+    name = "web-fetch-jina";
+    runtimeInputs = [ pkgs.curl ];
+    text = ''
+      # Usage: web-fetch-jina <url>
+      #
+      # Jina Reader (r.jina.ai). Server-side Readability extraction with
+      # JS rendering — handles SPAs, dynamically-generated content, and
+      # any page where local extraction (`web-fetch`) returns trivial
+      # output. Free tier rate-limited; set JINA_API_KEY for more.
+      #
+      # Privacy note: every URL fetched here is sent to Jina's servers.
+      # For private fetches, prefer `web-fetch` (local extraction).
+      if [ $# -ne 1 ]; then
+        echo "usage: web-fetch-jina <url>" >&2
+        echo "  Jina Reader (handles JS pages). URL is logged by Jina." >&2
+        echo "  For private fetches, use web-fetch (local extraction)." >&2
+        exit 1
+      fi
       if [ -n "''${JINA_API_KEY:-}" ]; then
         exec curl -fsSL --max-time 30 \
           -H "Authorization: Bearer $JINA_API_KEY" \
-          "https://r.jina.ai/$url"
+          "https://r.jina.ai/$1"
       else
-        exec curl -fsSL --max-time 30 "https://r.jina.ai/$url"
+        exec curl -fsSL --max-time 30 "https://r.jina.ai/$1"
       fi
     '';
   };
@@ -185,6 +211,7 @@ in
       pkgs.llm-agents.pi
       webSearch
       webFetch
+      webFetchJina
     ];
     sessionVariables.PI_CACHE_RETENTION = "long";
     file = {
