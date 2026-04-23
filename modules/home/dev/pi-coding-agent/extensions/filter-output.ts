@@ -51,7 +51,10 @@ export default function (pi: ExtensionAPI) {
   ];
 
   pi.on("tool_result", async (event) => {
-    if (event.toolName !== "bash") return;
+    // Redact secrets from both bash output and file reads.
+    // Without this, `read` on /run/secrets/* or .env files
+    // would leak plaintext to the LLM.
+    if (event.toolName !== "bash" && event.toolName !== "read") return;
 
     // Redact each pattern across all text content
     for (const item of event.content) {
