@@ -11,10 +11,10 @@
   "packages": [
     "git:github.com/annapurna-himal/pi-vim-editor",
     "npm:pi-mermaid",
-    "npm:pi-btw",
-    "npm:pi-ask-tool-extension"
+    "npm:pi-btw"
   ],
   "extensions": [
     "/home/ammar/.pi/agent/git/github.com/annapurna-himal/pi-vim-editor/index.ts"
-  ]
+  ],
+  "defaultThinkingLevel": "medium"
 }
