@@ -10,5 +10,7 @@
     package = inputs.nix-index-database.packages.${pkgs.system}.nix-index-with-db;
   };
 
-  home.packages = [ pkgs.comma ];
+  home.packages = [
+    inputs.nix-index-database.packages.${pkgs.system}.comma-with-db
+  ];
 }
