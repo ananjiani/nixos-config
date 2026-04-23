@@ -10,9 +10,9 @@ pkgs.buildNpmPackage {
 
   postInstall = ''
     mkdir -p $out/bin
-    cat > $out/bin/readwise << SCRIPT
+    cat > $out/bin/readwise << 'SCRIPT'
     #!/bin/sh
-    exec ${pkgs.nodejs}/bin/node $out/lib/node_modules/readwise-cli-wrapper/node_modules/@readwise/cli/dist/index.js "\\$@"
+    exec ${pkgs.nodejs}/bin/node ${placeholder "out"}/lib/node_modules/readwise-cli-wrapper/node_modules/@readwise/cli/dist/index.js "$@"
     SCRIPT
     chmod +x $out/bin/readwise
   '';
