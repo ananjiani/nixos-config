@@ -291,6 +291,54 @@ let
       }
     );
 
+  # Minimal bubblewrap sandbox for pi. Passes through the full host
+  # environment (PATH, devshell vars, direnv) so the agent can use
+  # kubectl, tofu, deploy, etc. when needed. The isolation is purely
+  # filesystem-level:
+  #
+  #   - $HOME is an ephemeral tmpfs (agent can't read ~/.ssh, browser
+  #     profiles, dotfiles outside the explicitly bind-mounted paths)
+  #   - ~/.pi/agent is bind-mounted back (sessions, auth, config tree)
+  #   - /nix/store is read-only (agent can't corrupt the store)
+  #   - CWD is bind-mounted read-write
+  #   - /run/secrets is read-only (for pi's "!cat /run/secrets/..."
+  #     apiKey pattern)
+  #   - /tmp is shared (pi's extensions/tools need scratch space)
+  #
+  # This preserves the devshell workflow — the agent inherits whatever
+  # `nix develop` or `direnv` sets up — while preventing it from
+  # reading private files outside the project and pi's own state.
+  # writeShellScriptBin (not writeShellApplication!) — we explicitly
+  # want the host PATH to flow through so the devshell's tools (npm,
+  # kubectl, tofu, etc.) are available inside the sandbox.
+  # writeShellApplication would cage PATH to only runtimeInputs.
+  pi-sandboxed = pkgs.writeShellScriptBin "pi" ''
+    CWD=$(pwd)
+    HOME_REAL="$HOME"
+
+    exec ${pkgs.bubblewrap}/bin/bwrap \
+      --ro-bind /nix/store /nix/store \
+      --ro-bind /nix/var /nix/var \
+      --ro-bind /etc /etc \
+      $(test -d /run/secrets && echo "--ro-bind /run/secrets /run/secrets") \
+      --dev /dev \
+      --proc /proc \
+      --bind /tmp /tmp \
+      --tmpfs "$HOME_REAL" \
+      --bind "$HOME_REAL/.cache" "$HOME_REAL/.cache" \
+      --bind "$HOME_REAL/.dotfiles" "$HOME_REAL/.dotfiles" \
+      --bind "$HOME_REAL/.pi/agent" "$HOME_REAL/.pi/agent" \
+      --bind "$HOME_REAL/.nix-profile" "$HOME_REAL/.nix-profile" \
+      $(test -d "$HOME_REAL/.npm-global" && echo "--bind $HOME_REAL/.npm-global $HOME_REAL/.npm-global") \
+      $(test -f "$HOME_REAL/.npmrc" && echo "--ro-bind $HOME_REAL/.npmrc $HOME_REAL/.npmrc") \
+      $(test -d "$HOME_REAL/.npm" && echo "--bind $HOME_REAL/.npm $HOME_REAL/.npm") \
+      $(test -d "$HOME_REAL/.local" && echo "--bind $HOME_REAL/.local $HOME_REAL/.local") \
+      --bind "$CWD" "$CWD" \
+      --chdir "$CWD" \
+      --die-with-parent \
+      -- ${pkgs.llm-agents.pi}/bin/pi "$@"
+  '';
+
 in
 {
   # numtide/llm-agents.nix's default overlay namespaces everything under
@@ -313,7 +361,12 @@ in
   # symlinked here, pi manages them as mutable runtime state.
   home = {
     packages = [
-      pkgs.llm-agents.pi
+      pi-sandboxed
+      # Unwrapped pi for when the sandbox causes issues.
+      # Identical to pkgs.llm-agents.pi — no bubblewrap isolation.
+      (pkgs.writeShellScriptBin "pi-unsafe" ''
+        exec ${pkgs.llm-agents.pi}/bin/pi "$@"
+      '')
       webSearch
       webFetch
       webFetchJina
