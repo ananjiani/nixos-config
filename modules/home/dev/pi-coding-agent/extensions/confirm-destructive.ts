@@ -28,7 +28,7 @@ export default function (pi: ExtensionAPI) {
       reason: "system rebuild",
     },
     {
-      pattern: /\bnh\s+(os|home)\s+switch/,
+      pattern: /\bnh\s+(os|home)\s+switch(?!.*--dry)/,
       reason: "Nix system/home switch",
     },
     {
