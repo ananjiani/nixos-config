@@ -320,7 +320,10 @@ let
       --ro-bind /nix/store /nix/store \
       --ro-bind /nix/var /nix/var \
       --ro-bind /etc /etc \
+      --ro-bind /bin /bin \
+      --ro-bind /usr /usr \
       $(test -d /run/secrets && echo "--ro-bind /run/secrets /run/secrets") \
+      --ro-bind /run/systemd /run/systemd \
       --dev /dev \
       --proc /proc \
       --bind /tmp /tmp \
@@ -336,6 +339,8 @@ let
       --bind "$CWD" "$CWD" \
       --chdir "$CWD" \
       --die-with-parent \
+      --share-net \
+      --setenv PATH "${pkgs.coreutils}/bin:$PATH" \
       -- ${pkgs.llm-agents.pi}/bin/pi "$@"
   '';
 
