@@ -18,6 +18,7 @@ in
     sessionPath = [ "$HOME/.npm-global/bin" ];
     file.".npmrc".text = ''
       prefix=~/.npm-global
+      loglevel=error
     '';
 
     # Declaratively install npm global packages
