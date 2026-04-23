@@ -105,6 +105,21 @@ tea api repos/OWNER/REPO/issues?state=open&limit=10
 
 Use `tea api` for anything not covered by a subcommand — it hits the Forgejo REST API directly.
 
+## Multiple logins
+
+`tea` supports multiple Forgejo instances simultaneously. Select with `--login <name>`:
+
+```bash
+tea repo list --login codeberg
+tea issue list --login myforgejo --repo OWNER/REPO
+```
+
+Set a default to avoid repeating `--login`:
+
+```bash
+tea login default codeberg
+```
+
 ## Specifying the repo
 
 - Inside a git clone of the repo: `tea` auto-detects from the remote.
