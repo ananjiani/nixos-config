@@ -53,6 +53,15 @@
       owner = "ammar";
       mode = "0400";
     };
+
+    # NVIDIA NIM API key for pi coding agent (build.nvidia.com).
+    # Workstation-only — no k8s consumer, so lives under secret/nixos/*.
+    nvidia_nim_api_key = {
+      path = "secret/nixos/nvidia-nim";
+      field = "api_key";
+      owner = "ammar";
+      mode = "0400";
+    };
   };
 
   programs = {
