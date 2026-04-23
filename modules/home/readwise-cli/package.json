@@ -1,0 +1,7 @@
+{
+  "name": "readwise-cli-wrapper",
+  "version": "1.0.0",
+  "dependencies": {
+    "@readwise/cli": "0.5.6"
+  }
+}
