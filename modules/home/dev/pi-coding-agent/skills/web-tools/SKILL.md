@@ -1,6 +1,6 @@
 ---
 name: web-tools
-description: Web search and URL content extraction CLI tools available on PATH. Use whenever the user asks to search the web, look up current/recent information, find documentation, read an article, or fetch the contents of a specific URL.
+description: Proactively search the web or fetch URL content when information may be outdated, unfamiliar, or time-sensitive — do NOT wait for the user to explicitly ask. Search WITHOUT asking permission first when you encounter unfamiliar APIs/libraries, version-specific questions, error messages you can't resolve from local context, recent releases or changelogs, or anything that could have changed since your knowledge cutoff. Also use when the user explicitly asks to search, look something up, or read a URL.
 ---
 
 # Web Tools
@@ -53,7 +53,8 @@ Set `JINA_API_KEY` in env for higher rate limits (forwarded as Bearer auth).
 
 ## Decision flow
 
-1. User asks to search → `web-search`
+1. You need current information → `web-search`
+   **Always include the current year (2026) in queries about recent information** — e.g. `web-search nixpkgs unfree packages 2026`, not `web-search nixpkgs unfree packages`.
 2. User asks to read a specific URL → `web-fetch` first
 3. If `web-fetch` returns <500 chars or obviously wrong content → `web-fetch-jina`
 4. If you need both search AND content for a URL in one call → `web-search` gives snippets; follow up with `web-fetch` on specific URLs of interest.
