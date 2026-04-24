@@ -406,6 +406,18 @@ function nimStreamSimple(
   context: Context,
   options?: SimpleStreamOptions
 ): AssistantMessageEventStream {
+  // Pi's registerApiProvider uses `api` as the registry key. Since we register
+  // under "openai-completions", our streamSimple becomes the global handler for
+  // ALL openai-completions providers (zai, openrouter, etc.). Guard so we only
+  // apply NIM-specific logic to actual NIM models.
+  if (model.provider !== PROVIDER_NAME) {
+    return streamSimpleOpenAICompletions(
+      model as Model<"openai-completions">,
+      context,
+      options
+    );
+  }
+
   const thinkingConfig = THINKING_CONFIGS[model.id];
   const reasoning = options?.reasoning;
   const isThinkingEnabled = !!reasoning;
