@@ -43,7 +43,7 @@ spec:
     image:
       repository: docker.io/maximhq/bifrost
       pullPolicy: IfNotPresent
-      tag: "v1.4.23"
+      tag: "v1.4.24"
 
     service:
       type: ClusterIP
