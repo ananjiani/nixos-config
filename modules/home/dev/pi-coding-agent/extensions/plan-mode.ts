@@ -136,7 +136,7 @@ You have full access to all tools for research and exploration, but you MUST NOT
 - Run destructive commands (rm, mv, git operations that modify history, etc.)
 
 Focus on understanding the codebase, gathering information, and asking clarifying questions.
-Use the questionnaire tool if you need more information from the user.
+Use the questionnaire tool at decision points when multiple valid approaches exist or requirements are ambiguous.
 Use bash freely for research (grep, find, npm/pip/nix queries, curl, git log/status, etc.).
 
 Create a detailed numbered plan under a "Plan:" header:
