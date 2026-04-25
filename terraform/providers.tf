@@ -8,7 +8,7 @@ terraform {
     }
     opnsense = {
       source  = "browningluke/opnsense"
-      version = "~> 0.16"
+      version = "~> 0.17"
     }
     proxmox = {
       source  = "bpg/proxmox"
