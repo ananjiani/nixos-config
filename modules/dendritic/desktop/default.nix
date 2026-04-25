@@ -47,10 +47,10 @@ in
               hardware.uinput.enable = true;
               users.groups = {
                 uinput.members = [ "ammar" ];
-                input.members = [ "ammar" ];
+                input.members = [ "ammar" "sddm" ];
               };
 
-              environment.systemPackages = with pkgs-stable; [
+              environment.systemPackages = (with pkgs-stable; [
                 libreoffice
                 imagemagick
                 remmina
@@ -65,6 +65,8 @@ in
                 slurp
                 swappy
                 polkit_gnome
+              ]) ++ [
+                pkgs.bibata-cursors
               ];
 
               services = {
@@ -72,7 +74,15 @@ in
 
                 displayManager.sddm = {
                   enable = true;
-                  wayland.enable = true;
+                  # SDDM's built-in Wayland compositor (weston) has broken
+                  # touchpad support — the trackpad doesn't register at all.
+                  # X11 works fine; desktop sessions (Hyprland/niri) still
+                  # run on Wayland. See sddm/sddm#1748.
+                  wayland.enable = false;
+                  settings.Theme = {
+                    CursorTheme = "Bibata-Modern-Classic";
+                    CursorSize = 24;
+                  };
                 };
 
                 xserver = {
