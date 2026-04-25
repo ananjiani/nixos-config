@@ -82,6 +82,30 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 		handler: async (_args, ctx) => togglePlanMode(ctx),
 	});
 
+	pi.registerCommand("save-plan", {
+		description: "Save the current plan to file and exit plan mode",
+		handler: async (_args, ctx) => {
+			if (!planModeEnabled) {
+				ctx.ui.notify("Plan mode is not active", "warning");
+				return;
+			}
+
+			const today = new Date().toISOString().slice(0, 10);
+			planModeEnabled = false;
+			updateStatus(ctx);
+			persistState();
+
+			pi.sendMessage(
+				{
+					customType: "plan-save",
+					content: `Write the plan from our conversation to \`.agents/plans/\` using the \`write\` tool. Name it \`${today}-<descriptive-slug>.md\`. Format as markdown with \`[ ]\` checkboxes for each step.`,
+					display: true,
+				},
+				{ triggerTurn: true },
+			);
+		},
+	});
+
 	pi.registerShortcut(Key.ctrlAlt("p"), {
 		description: "Toggle plan mode",
 		handler: async (ctx) => togglePlanMode(ctx),
@@ -152,54 +176,18 @@ Do NOT attempt to make changes - just describe what you would do.`,
 		};
 	});
 
-	// Handle plan finalization
+	// Hint when a plan is detected
 	pi.on("agent_end", async (event, ctx) => {
 		if (!planModeEnabled || !ctx.hasUI) return;
 
-		// Extract plan preview from last assistant message
 		const lastAssistant = [...event.messages].reverse().find(isAssistantMessage);
 		if (!lastAssistant) return;
 
 		const text = getTextContent(lastAssistant);
-		const { count, preview } = extractPlanPreview(text);
+		const { count } = extractPlanPreview(text);
 		if (count === 0) return;
 
-		let displayText = `**Plan: ${count} step${count > 1 ? "s" : ""} found**\n\n${preview}`;
-		if (count > 5) {
-			displayText += `\n... and ${count - 5} more`;
-		}
-
-		pi.sendMessage(
-			{ customType: "plan-preview", content: displayText, display: true },
-			{ triggerTurn: false },
-		);
-
-		const choice = await ctx.ui.select("Plan finalized - what next?", [
-			"Save plan to file",
-			"Continue planning",
-			"Discard",
-		]);
-
-		if (choice === "Save plan to file") {
-			const today = new Date().toISOString().slice(0, 10);
-			planModeEnabled = false;
-			updateStatus(ctx);
-			persistState();
-
-			pi.sendMessage(
-				{
-					customType: "plan-save",
-					content: `Write the plan you created above to \`.agents/plans/\` using the \`write\` tool. Name the file with today's date and a short descriptive slug, like \`${today}-<slug>.md\` (e.g. \`${today}-oauth-refactor.md\`). Format as markdown with \`[ ]\` checkboxes for each step.`,
-					display: true,
-				},
-				{ triggerTurn: true },
-			);
-		} else if (choice === "Discard") {
-			planModeEnabled = false;
-			updateStatus(ctx);
-			persistState();
-		}
-		// "Continue planning" - do nothing, plan mode stays active
+		ctx.ui.notify(`Plan detected (${count} steps). Run /save-plan to save or Ctrl+Alt+P to toggle off.`);
 	});
 
 	// Restore state on session start/resume

@@ -1,20 +1,21 @@
 {
-    "defaultProvider": "kimi-coding",
-    "defaultModel": "kimi-for-coding",
-    "enabledModels": [
-        "kimi-coding/kimi-for-coding",
-        "zai/glm-5.1",
-        "zai/glm-4.5-air"
-    ],
-    "theme": "gruvbox-material",
-    "lastChangelogVersion": "0.68.1",
-    "packages": [
-        "git:github.com/annapurna-himal/pi-vim-editor",
-        "npm:pi-mermaid",
-        "npm:pi-btw"
-    ],
-    "extensions": [
-        "/home/ammar/.pi/agent/git/github.com/annapurna-himal/pi-vim-editor/index.ts"
-    ],
-    "hideThinkingBlock": false
+  "defaultProvider": "kimi-coding",
+  "defaultModel": "kimi-for-coding",
+  "enabledModels": [
+    "kimi-coding/kimi-for-coding",
+    "zai/glm-5.1",
+    "zai/glm-4.5-air"
+  ],
+  "theme": "gruvbox-material",
+  "lastChangelogVersion": "0.68.1",
+  "packages": [
+    "git:github.com/annapurna-himal/pi-vim-editor",
+    "npm:pi-mermaid",
+    "npm:pi-btw"
+  ],
+  "extensions": [
+    "/home/ammar/.pi/agent/git/github.com/annapurna-himal/pi-vim-editor/index.ts"
+  ],
+  "hideThinkingBlock": false,
+  "defaultThinkingLevel": "high"
 }
