@@ -12,8 +12,11 @@ spec:
   storageClassName: ""
   mountOptions:
     - nfsvers=4.1
-    - hard
+    - soft
+    - intr
     - noresvport
+    - timeo=50
+    - retrans=2
   nfs:
     server: 192.168.1.27
     path: /zot

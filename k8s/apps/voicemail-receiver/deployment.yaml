@@ -43,10 +43,13 @@ spec:
             limits:
               memory: "256Mi"
               cpu: "200m"
+          # Extra exec probe touches NFS mount so stale mounts trigger restart
           livenessProbe:
-            httpGet:
-              path: /health
-              port: 8080
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "wget -qO- http://localhost:8080/health && test -d /data/voicemails && test -w /data/voicemails"
             initialDelaySeconds: 5
             periodSeconds: 30
           readinessProbe:
