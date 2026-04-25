@@ -1,6 +1,7 @@
 # Framework 13 — Laptop workstation
 {
   pkgs,
+  lib,
   ...
 }:
 
@@ -18,6 +19,12 @@
 
   # Laptop uses age key from home directory (servers use /var/lib/sops-nix/)
   sops.age.keyFile = "/home/ammar/.config/sops/age/keys.txt";
+
+  # Kernel 6.14+ introduced a custom brightness curve that makes the
+  # Framework 13 AMD panel extremely dim.  Combine with the existing
+  # nixos-hardware PSR disable (0x10) by OR-ing in 0x40000.
+  # https://community.frame.work/t/solved-screen-very-dim-with-kernel-6-15-0/69780
+  boot.kernelParams = lib.mkAfter [ "amdgpu.dcdebugmask=0x40010" ];
 
   desktop.niri.enable = true;
 
@@ -83,15 +90,17 @@
     };
   };
 
-  environment.systemPackages = with pkgs; [ networkmanagerapplet ];
-  # Block power-profiles-daemon from using amdgpu_panel_power, which
-  # can kill the backlight on Framework 13 AMD via ABM (adaptive
-  # backlight management).  See:
-  # https://community.frame.work/t/framework-nixos-linux-users-self-help/31426/280
-  systemd.services.power-profiles-daemon.serviceConfig.ExecStart = [
-    ""
-    "${pkgs.power-profiles-daemon}/libexec/power-profiles-daemon --block-action=amdgpu_panel_power"
+  environment.systemPackages = with pkgs; [
+    networkmanagerapplet
+    brightnessctl
   ];
+
+  # Backlight control requires the video group
+  users.users.ammar.extraGroups = [ "video" ];
+  # Disable systemd-backlight — it saves/restores backlight values that
+  # can get stuck at extremely low brightness (e.g. 5%) on Framework 13
+  # AMD, and the stale state persists across reboots.
+  systemd.services."systemd-backlight@backlight:amdgpu_bl1".enable = false;
 
   networking.hostName = "framework13";
 }
