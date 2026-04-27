@@ -81,9 +81,9 @@ nix flake check --all-systems
 ```
 
 ### Codeberg CLI (berg)
-Use berg instead of gh since this repo is on codeberg.
+Use tea instead of gh since this repo is on codeberg.
 ```bash
-berg --help
+tea --help
 ```
 
 ### Remote Deployment (using deploy-rs)
@@ -199,7 +199,6 @@ Load-bearing repo gotchas — each is a hard-won lesson that silently breaks thi
 
 - Use `tofu` (OpenTofu, devshell ships 1.11.5), NOT `terraform`.
 - Use `bao` (OpenBao), NOT `vault` — repo ships openbao. `BAO_ADDR=http://100.64.0.21:8200` and `VAULT_TOKEN` both come from direnv.
-- Use `berg` (Codeberg CLI), NOT `gh` — Codeberg is primary; GitHub is a push mirror only.
 - NEVER print secret values — only list keys or check structure.
 
 ### OpenBao / vault-agent
