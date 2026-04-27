@@ -16,15 +16,15 @@
   };
   jacktook = {
     pname = "jacktook";
-    version = "a8e270da932f976d65cde4c2107dac72bb8494e6";
+    version = "f764283aeb41b3d2f7b03782f9a084b45387cafa";
     src = fetchFromGitHub {
       owner = "Sam-Max";
       repo = "plugin.video.jacktook";
-      rev = "a8e270da932f976d65cde4c2107dac72bb8494e6";
+      rev = "f764283aeb41b3d2f7b03782f9a084b45387cafa";
       fetchSubmodules = false;
-      sha256 = "sha256-58HiVcYjaBfGIWtylCdO0ki8ER7mPDNZHLZb61elMgw=";
+      sha256 = "sha256-89uQspD3+Xm9WoNDt9CGJ2GpuV8xfBKjQhDyQ3wYdgE=";
     };
-    date = "2026-04-23";
+    date = "2026-04-27";
   };
   moondeck-buddy = {
     pname = "moondeck-buddy";
