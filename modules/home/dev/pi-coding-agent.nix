@@ -149,6 +149,154 @@ let
     '';
   };
 
+  # ─── Repo Ingest ───────────────────────────────────────────────────────────
+  #
+  # Packs any git repository (GitHub, GitLab, Codeberg, Gitea, self-hosted)
+  # into a single AI-friendly plain-text dump. Wraps repomix (nixpkgs).
+  #
+  # Usage:
+  #   repo-ingest <git-url|local-path> [--include <glob>] [--compress]
+  #
+  # Examples:
+  #   repo-ingest https://github.com/nixos/nixpkgs --include "pkgs/top-level/*.nix"
+  #   repo-ingest https://codeberg.org/forgejo/forgejo --compress
+  #   repo-ingest ./my-project --include "src/**/*.ts"
+
+  repoIngest = pkgs.writeShellApplication {
+    name = "repo-ingest";
+    runtimeInputs = [
+      pkgs.repomix
+      pkgs.git
+    ];
+    text = ''
+      set -euo pipefail
+
+      usage() {
+        echo "usage: repo-ingest <git-url|local-path> [--include <glob>] [--compress]" >&2
+        echo "  Pack a repository into a single AI-friendly plain-text dump." >&2
+        echo "  Works with GitHub, GitLab, Codeberg, Gitea, and any git host." >&2
+        exit 1
+      }
+
+      [ $# -lt 1 ] && usage
+
+      target=$1
+      shift
+
+      include=""
+      compress=""
+      while [ $# -gt 0 ]; do
+        case "$1" in
+          --include) include="$2"; shift 2 ;;
+          --compress) compress="1"; shift ;;
+          *) echo "unknown option: $1" >&2; usage ;;
+        esac
+      done
+
+      tmpdir=$(mktemp -d)
+      trap 'rm -rf "$tmpdir"' EXIT
+
+      # If it looks like a URL, shallow-clone it; otherwise use local path
+      if [[ "$target" =~ ^(https?://|git@) ]]; then
+        echo "[repo-ingest] cloning $target ..." >&2
+        git clone --depth 1 "$target" "$tmpdir/repo" >&2
+        cd "$tmpdir/repo"
+      else
+        cd "$target"
+      fi
+
+      args=(--style plain --output "$tmpdir/output.txt")
+      [ -n "$include" ] && args+=(--include "$include")
+      [ -n "$compress" ] && args+=(--compress)
+
+      repomix "''${args[@]}" >&2
+      cat "$tmpdir/output.txt"
+    '';
+  };
+
+  # ─── Repo Browse ───────────────────────────────────────────────────────────
+  #
+  # Targeted exploration of any git repository without downloading full
+  # history. Shallow-clones with --depth 1 and caches in /tmp for the
+  # session. Works with any git host.
+  #
+  # Usage:
+  #   repo-browse ls   <git-url> [path]      # list directory
+  #   repo-browse cat  <git-url> <path>      # read a file
+  #   repo-browse grep <git-url> <pattern>   # grep file contents
+  #   repo-browse tree <git-url> [path]      # show directory tree
+
+  repoBrowse = pkgs.writeShellApplication {
+    name = "repo-browse";
+    runtimeInputs = [
+      pkgs.git
+      pkgs.gnugrep
+      pkgs.findutils
+    ];
+    text = ''
+      set -euo pipefail
+
+      CACHE_DIR="/tmp/repo-browse-cache''${USER:+.$USER}"
+
+      usage() {
+        echo "usage: repo-browse <ls|cat|grep|tree> <git-url> [path|pattern]" >&2
+        echo "  ls   <url> [path]     — list directory contents" >&2
+        echo "  cat  <url> <path>     — read a specific file" >&2
+        echo "  grep <url> <pattern>  — search file contents" >&2
+        echo "  tree <url> [path]     — show directory tree" >&2
+        echo "  Works with GitHub, GitLab, Codeberg, Gitea, and any git host." >&2
+        exit 1
+      }
+
+      [ $# -lt 2 ] && usage
+
+      cmd=$1
+      url=$2
+      shift 2
+
+      # Sanitize URL for use as cache directory name
+      cache_key=$(printf '%s' "$url" | sed 's|[^a-zA-Z0-9._-]|_|g')
+      repo_dir="$CACHE_DIR/$cache_key"
+
+      clone_repo() {
+        if [ ! -d "$repo_dir/.git" ]; then
+          mkdir -p "$CACHE_DIR"
+          echo "[repo-browse] cloning $url ..." >&2
+          git clone --depth 1 "$url" "$repo_dir" >&2
+        fi
+      }
+
+      case "$cmd" in
+        ls)
+          target_path="''${1:-.}"
+          clone_repo
+          ls -la "$repo_dir/$target_path"
+          ;;
+        cat)
+          [ $# -lt 1 ] && usage
+          clone_repo
+          cat "$repo_dir/$1"
+          ;;
+        grep)
+          [ $# -lt 1 ] && usage
+          pattern=$1
+          clone_repo
+          cd "$repo_dir"
+          git grep -n "$pattern" || grep -rn "$pattern" . --exclude-dir=.git
+          ;;
+        tree)
+          target_path="''${1:-.}"
+          clone_repo
+          find "$repo_dir/$target_path" -not -path '*/.git/*' | sed "s|^$repo_dir/||" | sort
+          ;;
+        *)
+          echo "unknown command: $cmd" >&2
+          usage
+          ;;
+      esac
+    '';
+  };
+
   piModels = pkgs.writeText "pi-models.json" (
     builtins.toJSON {
       providers = {
@@ -375,6 +523,8 @@ in
       webSearch
       webFetch
       webFetchJina
+      repoIngest
+      repoBrowse
     ];
     sessionVariables.PI_CACHE_RETENTION = "long";
     file = {
