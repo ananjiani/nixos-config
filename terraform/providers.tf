@@ -24,7 +24,7 @@ terraform {
     }
     vault = {
       source  = "hashicorp/vault"
-      version = "~> 4.0"
+      version = "~> 5.0"
     }
     aws = {
       source  = "hashicorp/aws"
