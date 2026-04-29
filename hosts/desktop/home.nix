@@ -17,6 +17,7 @@
     ../../modules/home/gaming.nix
     # crypto.nix is now imported via dendritic pattern in flake.nix
     ../../modules/home/config/sops.nix
+    ../../modules/home/dev/tea.nix
   ];
 
   desktop = {

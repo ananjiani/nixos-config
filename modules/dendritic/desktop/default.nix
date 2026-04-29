@@ -47,27 +47,32 @@ in
               hardware.uinput.enable = true;
               users.groups = {
                 uinput.members = [ "ammar" ];
-                input.members = [ "ammar" "sddm" ];
+                input.members = [
+                  "ammar"
+                  "sddm"
+                ];
               };
 
-              environment.systemPackages = (with pkgs-stable; [
-                libreoffice
-                imagemagick
-                remmina
-                wl-clipboard
-                pavucontrol
-                light
-                libnotify
-                copyq
-                wlogout
-                swaybg
-                grim
-                slurp
-                swappy
-                polkit_gnome
-              ]) ++ [
-                pkgs.bibata-cursors
-              ];
+              environment.systemPackages =
+                (with pkgs-stable; [
+                  libreoffice
+                  imagemagick
+                  remmina
+                  wl-clipboard
+                  pavucontrol
+                  light
+                  libnotify
+                  copyq
+                  wlogout
+                  swaybg
+                  grim
+                  slurp
+                  swappy
+                  polkit_gnome
+                ])
+                ++ [
+                  pkgs.bibata-cursors
+                ];
 
               services = {
                 libinput.enable = true;

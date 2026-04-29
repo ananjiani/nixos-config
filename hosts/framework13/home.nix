@@ -8,6 +8,7 @@
     ../_profiles/workstation/home.nix
     ../../modules/home/profiles/laptop.nix
     ../../modules/home/config/sops.nix
+    ../../modules/home/dev/tea.nix
     ../../modules/home/work.nix
   ];
 

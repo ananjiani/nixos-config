@@ -106,6 +106,34 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 		},
 	});
 
+	pi.registerCommand("create-issue", {
+		description: "Create an issue on the current repo's forge and exit plan mode",
+		handler: async (_args, ctx) => {
+			if (!planModeEnabled) {
+				ctx.ui.notify("Plan mode is not active", "warning");
+				return;
+			}
+
+			planModeEnabled = false;
+			updateStatus(ctx);
+			persistState();
+
+			pi.sendMessage(
+				{
+					customType: "plan-issue",
+					content: `Create an issue from the plan in our conversation. First determine the target forge by checking \`git remote -v\` in the current directory.
+
+- For **Gitea/Forgejo/Codeberg** remotes (e.g. codeberg.org, git.dimensiondoor.xyz): use \`tea issue create\` with the appropriate \`--repo\` and \`--login\` flags.
+- For **GitHub** remotes: use \`gh issue create\`.
+
+Use the full plan body as the description, formatted as markdown with \`[ ]\` checkboxes for each step. After creating it, report the issue URL back to the user.`,
+					display: true,
+				},
+				{ triggerTurn: true },
+			);
+		},
+	});
+
 	pi.registerShortcut(Key.ctrlAlt("p"), {
 		description: "Toggle plan mode",
 		handler: async (ctx) => togglePlanMode(ctx),
@@ -187,7 +215,7 @@ Do NOT attempt to make changes - just describe what you would do.`,
 		const { count } = extractPlanPreview(text);
 		if (count === 0) return;
 
-		ctx.ui.notify(`Plan detected (${count} steps). Run /save-plan to save or Ctrl+Alt+P to toggle off.`);
+		ctx.ui.notify(`Plan detected (${count} steps). Run /save-plan to save locally, /create-issue to create an issue on the current repo's forge, or Ctrl+Alt+P to toggle off.`);
 	});
 
 	// Restore state on session start/resume

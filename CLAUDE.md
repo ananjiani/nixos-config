@@ -152,6 +152,23 @@ deploy .#boromir --remote-build
 ### Adding New Modules
 See the `nix-repo-conventions` skill for detailed guidance on choosing between `modules/nixos/`, `modules/home/`, and `modules/dendritic/`, and the correct wiring pattern for each.
 
+### Architecture Decision Records (ADRs)
+
+This repo maintains ADRs in `docs/content/adrs/` using the MADR format. The `adr` skill is available at `.agents/skills/adr/SKILL.md`.
+
+**When to create an ADR:**
+- Any plan or issue that involves choosing between competing technologies, infrastructure architecture changes, or significant configuration decisions
+- When the plan contains an "Alternative approaches considered" table or evaluates ≥2 serious alternatives
+- Decisions that would be hard to reverse or that future maintainers will wonder about
+
+**How:**
+- When `/save-plan` or `/create-issue` produces a spec with architectural decisions, proactively extract the decision rationale into an ADR
+- Use the next sequential number (`adr-NNNN-YYYY-MM-DD-slug.md`)
+- Link the ADR in the issue body or plan file: "Decision documented in `docs/content/adrs/adr-NNNN-*.md`"
+- If the plan is for an infrastructure change but no real alternatives were evaluated (only one viable path), skip the ADR
+
+**Do NOT create ADRs for:** trivial configuration tweaks, bug fixes, or easily reversible decisions.
+
 ### Modifying Host Configurations
 - Host-specific settings go in `hosts/<hostname>/configuration.nix` or `home.nix`
 - Hardware settings stay in `hardware-configuration.nix` (usually generated)
