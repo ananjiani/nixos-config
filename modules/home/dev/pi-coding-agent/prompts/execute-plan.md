@@ -1,9 +1,8 @@
 Execute the attached plan. Do not enter plan mode — proceed directly to implementation.
 
-Read the plan file, extract all unchecked `[ ]` items, and create todos for each using the `todo` tool. Execute them in order.
+Read the plan file, extract all unchecked `[ ]` items, and execute them in order.
 
 SYNC RULES:
-- Use the `todo` tool for real-time execution state (start/complete tasks).
 - Do NOT update the spec artifact after every individual task — that is noisy and wastes tokens.
 - Only sync completed items back to the spec artifact at MILESTONES:
   * Phase boundaries (when the spec has `## Phase` headers)
