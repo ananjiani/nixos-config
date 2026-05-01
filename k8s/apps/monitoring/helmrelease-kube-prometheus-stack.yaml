@@ -516,3 +516,29 @@ spec:
                     file on disk. Fetching these paths returns HTTP 500 and blocks deploys.
                     Fix: delete orphaned DB rows (nar/chunk/chunkref/object) then re-push via
                     attic push middle-earth <store-path>.
+      k8s-node-scheduling-alerts:
+        groups:
+          - name: k8s-node-scheduling
+            rules:
+              - alert: NodeCordonedTooLong
+                expr: kube_node_spec_unschedulable == 1
+                for: 1h
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Node {{ $labels.node }} has been cordoned for over 1 hour"
+                  description: >-
+                    Node {{ $labels.node }} is not schedulable. If intentional (maintenance),
+                    this is expected. If not, the auto-uncordon service may have failed.
+                    Run: kubectl uncordon {{ $labels.node }}
+              - alert: NodeDiskPressure
+                expr: kube_node_status_condition{condition="DiskPressure",status="true"} == 1
+                for: 10m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Node {{ $labels.node }} has disk pressure"
+                  description: >-
+                    Kubelet on {{ $labels.node }} is reporting disk pressure. New pods will
+                    not schedule and existing pods may be evicted. Check disk usage and vacuum
+                    journals if needed.

@@ -17,7 +17,18 @@ spec:
       interval: 1h
   values:
     installCRDs: true
-    # Exclude rivendell — no Tailscale, can't reach OpenBao
+    # Exclude rivendell — no Tailscale, can't reach OpenBao at BAO_ADDR
+    # (100.64.0.21 via Tailscale). rivendell has Tailscale permanently disabled
+    # due to r8169 NIC driver bugs (see AGENTS.md Hardware section).
+    #
+    # SPOF WARNING: this means ESO can ONLY run on the 3 control-plane nodes
+    # (boromir, samwise, theoden). If all 3 are cordoned or tainted, ESO has
+    # zero schedulable nodes and ALL ExternalSecrets go stale. This happened
+    # for 12 days in April 2026 — see postmortem
+    # 2026-05-01-2100-cordoned-nodes-12-day-eso-outage.md.
+    #
+    # Mitigation: Prometheus alert NodeCordonedTooLong fires after 1h.
+    # Long-term fix: route OpenBao traffic via LAN instead of Tailscale.
     affinity: &noRivendell
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:

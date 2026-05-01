@@ -167,29 +167,36 @@ in
 
         # Uncordon this node after k3s starts, reversing the cordon from the drain hook.
         # Waits for the node to be Ready before uncordoning so pods can schedule immediately.
+        # Uncordon this node after k3s starts, reversing the cordon from the drain
+        # hook. Runs as a persistent loop (not a timeout-bounded oneshot) so that
+        # it survives slow vault-agent bootstrap chains. See postmortem
+        # 2026-05-01-2100-cordoned-nodes-12-day-eso-outage.md for context.
         k3s-auto-uncordon = lib.mkIf (cfg.role == "server") {
           description = "Uncordon k3s node after startup";
           after = [ "k3s.service" ];
           wantedBy = [ "multi-user.target" ];
           serviceConfig = {
-            Type = "oneshot";
-            RemainAfterExit = true;
+            Type = "simple";
+            Restart = "on-failure";
+            RestartSec = "30s";
           };
           script = ''
             NODE=$(${pkgs.hostname}/bin/hostname)
             export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 
-            # Wait for the API server and this node to be Ready (up to 5 min)
-            for i in $(seq 1 60); do
+            # Keep trying until the node is Ready, then uncordon.
+            # No timeout — the vault-agent → k3s bootstrap chain on control-plane
+            # nodes can take >5 minutes (see 2026-04-20 headscale cold-boot postmortem).
+            # systemd will restart this script if it crashes.
+            while true; do
               STATUS=$(${pkgs.kubectl}/bin/kubectl get node "$NODE" -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null) || true
               if [ "$STATUS" = "True" ]; then
                 ${pkgs.kubectl}/bin/kubectl uncordon "$NODE"
                 echo "Uncordoned $NODE"
                 exit 0
               fi
-              sleep 5
+              sleep 10
             done
-            echo "Warning: $NODE did not become Ready within 5 minutes, skipping uncordon"
           '';
         };
 
