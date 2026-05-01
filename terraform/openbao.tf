@@ -32,17 +32,12 @@ resource "vault_policy" "vault_agent" {
     path "secret/metadata/nixos/*" {
       capabilities = ["read", "list"]
     }
-    # Cross-boundary: Bifrost default VK used by claude-kimi fish wrapper
-    # on workstations. Single source of truth stays at k8s/bifrost.
-    path "secret/data/k8s/bifrost" {
+    # Consolidated LLM API keys (DeepSeek, ZAI, Kimi, NVIDIA NIM, Tavily)
+    path "secret/data/llm/*" {
       capabilities = ["read"]
     }
-    # Cross-boundary: Tavily API key used by the Tavily MCP server wired
-    # into claude-kimi and claude-glm fish wrappers. Single source of
-    # truth stays at k8s/open-webui (also consumed by the open-webui
-    # deployment via ExternalSecrets).
-    path "secret/data/k8s/open-webui" {
-      capabilities = ["read"]
+    path "secret/metadata/llm/*" {
+      capabilities = ["read", "list"]
     }
     # Cross-boundary: Cloudflare DNS-01 API token used by Caddy on erebor
     # to issue Let's Encrypt certs for Headscale's public endpoint. Single
@@ -62,6 +57,13 @@ resource "vault_policy" "eso" {
       capabilities = ["read"]
     }
     path "secret/metadata/k8s/*" {
+      capabilities = ["read", "list"]
+    }
+    # Consolidated LLM API keys (DeepSeek, ZAI, Kimi, NVIDIA NIM, Tavily)
+    path "secret/data/llm/*" {
+      capabilities = ["read"]
+    }
+    path "secret/metadata/llm/*" {
       capabilities = ["read", "list"]
     }
   EOT

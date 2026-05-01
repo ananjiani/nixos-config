@@ -32,11 +32,11 @@ spec:
                   name: persona-mcp-secrets
                   key: openai-api-key
             - name: OPENAI_API_BASE
-              value: "http://bifrost.bifrost.svc:8080/v1"
+              value: "https://api.deepseek.com/v1"
             - name: PERSONA_PERSONAS_DIR
               value: "/app/personas"
             - name: PERSONA_MODEL
-              value: "deepseek/deepseek-chat"
+              value: "deepseek-chat"
             - name: PERSONA_ACTIVE
               value: "keres"
             - name: USER

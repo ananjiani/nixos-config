@@ -7,9 +7,9 @@ metadata:
 spec:
   ai:
     enabled: true
-    model: cliproxy/kimi-for-coding
+    model: deepseek-chat
     backend: openai
-    baseUrl: http://bifrost.bifrost.svc:8080/v1
+    baseUrl: https://api.deepseek.com/v1
     anonymized: true
     language: english
     secret:

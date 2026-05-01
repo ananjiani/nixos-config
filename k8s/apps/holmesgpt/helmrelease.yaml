@@ -28,11 +28,11 @@ spec:
             key: api-key
 
     modelList:
-      bifrost-kimi:
+      deepseek-chat:
         api_key: "{{ env.OPENAI_API_KEY }}"
-        api_base: "http://bifrost.bifrost.svc:8080/v1"
-        model: openai/cliproxy/kimi-for-coding
-        temperature: 1
+        api_base: "https://api.deepseek.com/v1"
+        model: deepseek-chat
+        temperature: 0.7
 
     customClusterRoleRules:
       # Fix upstream chart bug: deployments/daemonsets/replicasets/statefulsets

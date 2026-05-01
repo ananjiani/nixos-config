@@ -64,15 +64,14 @@ spec:
                   name: lobechat-secrets
                   key: s3-secret-access-key
 
-            # LLM Backends
-            # Bifrost for cloud providers (DeepSeek, Z.AI, Cliproxy)
+            # Direct DeepSeek API (bypassing Bifrost)
             - name: OPENAI_API_BASE_URL
-              value: "http://bifrost.bifrost.svc:8080/v1"
+              value: "https://api.deepseek.com/v1"
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: lobechat-secrets
-                  key: bifrost-api-key
+                  key: openai-api-key
             # Direct Ollama connection for local models
             - name: OLLAMA_BASE_URL
               value: "http://ollama.bifrost.svc:11434"
