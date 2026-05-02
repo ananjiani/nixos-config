@@ -5,7 +5,7 @@ pkgs.buildNpmPackage {
   version = "0.5.6";
   src = ./.;
   packageJson = ./package.json;
-  npmDepsHash = "sha256-+k8bwIvhaaAW/Iryrv+U1UbYecXlCc2yqboldT1CMaQ=";
+  npmDepsHash = "sha256-SFXYeSuq3w6vHra1JSgM8BZu8TzXwCkS9ALyjbNKrhE=";
   dontNpmBuild = true;
 
   postInstall = ''
