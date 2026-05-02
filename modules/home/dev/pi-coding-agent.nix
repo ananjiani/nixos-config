@@ -80,7 +80,7 @@ let
     name = "web-fetch";
     runtimeInputs = [
       pkgs.curl
-      pkgs.nodePackages.readability-cli
+      pkgs.readability-cli
       pkgs.python3Packages.html2text
     ];
     text = ''
