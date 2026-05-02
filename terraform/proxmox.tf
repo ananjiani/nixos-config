@@ -128,7 +128,7 @@ resource "proxmox_virtual_environment_vm" "samwise" {
 
   cpu {
     cores = 4
-    type  = "x86-64-v2-AES"
+    type  = "host" # No live migration on the-shire (single node), so passthrough is free perf
   }
 
   memory {
