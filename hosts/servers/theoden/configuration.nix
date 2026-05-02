@@ -18,7 +18,7 @@ let
   # Deploy wrapper: runs after each successful nix-build in CI.
   # Only deploys server configs built on the main branch.
   sshConfig = pkgs.writeText "buildbot-ssh-config" ''
-    Host *.lan
+    Host *.lan 91.99.82.115
       StrictHostKeyChecking accept-new
       UserKnownHostsFile /var/lib/buildbot-worker/deploy-known-hosts
       IdentityFile /run/secrets/buildbot_deploy_ssh_key
@@ -39,7 +39,12 @@ let
     STRIPPED=''${ATTR#*.}
     SERVER=''${STRIPPED#nixos-}
     case "$SERVER" in
-      boromir|samwise|theoden|rivendell) ;;
+      boromir|samwise|theoden|rivendell)
+        HOST="$SERVER.lan"
+        ;;
+      erebor)
+        HOST="91.99.82.115" # Hetzner public IP (matches deploy-rs config)
+        ;;
       *)
         echo "Skipping deploy: $ATTR is not a server configuration"
         exit 0
@@ -52,12 +57,14 @@ let
     fi
 
     SSH_OPTS="-F ${sshConfig}"
-    HOST="$SERVER.lan"
 
-    echo "Deploying $SERVER from $OUT_PATH..."
+    echo "Deploying $SERVER ($HOST) from $OUT_PATH..."
 
-    # Copy the closure to the target host
-    NIX_SSHOPTS="$SSH_OPTS" nix copy --to "ssh://root@$HOST" "$OUT_PATH"
+    # Copy the closure to the target host. --substitute-on-destination tells
+    # the remote nix-daemon to fetch from its substituters first (Attic via
+    # Cloudflare for erebor, theoden.lan direct for LAN servers), and only
+    # ask us for what's missing — much cheaper than pushing everything.
+    NIX_SSHOPTS="$SSH_OPTS" nix copy --substitute-on-destination --to "ssh://root@$HOST" "$OUT_PATH"
 
     # Activate: set system profile and switch
     ssh $SSH_OPTS "root@$HOST" \
@@ -364,7 +371,6 @@ in
             OUT_PATH = interpolate "%(prop:out_path)s";
           };
           command = [ (toString deployScript) ];
-          warnOnly = true;
         }
       ];
     };

@@ -96,7 +96,7 @@
   };
 
   # Use Attic binary cache via Cloudflare Tunnel (erebor can't reach theoden.lan)
-  nix.settings.extra-substituters = [ "https://attic.dimensiondoor.xyz/middle-earth" ];
+  nix.settings.extra-substituters = [ "https://attic.dimensiondoor.xyz/middle-earth?priority=10" ];
 
   # Boot: GRUB for BIOS boot (Hetzner CX-series uses SeaBIOS)
   # Device is set automatically by disko via the EF02 partition
