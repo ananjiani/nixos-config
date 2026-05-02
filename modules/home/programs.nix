@@ -4,9 +4,6 @@
   ...
 }:
 
-let
-  readwise-cli = import ./readwise-cli { inherit pkgs; };
-in
 {
   home.packages = with pkgs; [
     xcolor
@@ -33,7 +30,6 @@ in
     playerctl
     qbittorrent
     sparrow # bitcoin client
-    readwise-cli
     # kdePackages.kdenlive
   ];
 
