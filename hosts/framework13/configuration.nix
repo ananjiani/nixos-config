@@ -84,15 +84,22 @@
     nm-applet.enable = true;
     brave = {
       enable = true;
+      package = pkgs.brave-origin;
       features.sync = true;
       features.aiChat = true;
       doh.enable = false;
+      searchEngine = {
+        enable = true;
+        searchUrl = "https://searxng.lan/search?q={searchTerms}";
+        suggestUrl = "https://searxng.lan/autocompleter?q={searchTerms}";
+      };
     };
   };
 
   environment.systemPackages = with pkgs; [
     networkmanagerapplet
     brightnessctl
+    brave # fallback during brave-origin transition
   ];
 
   # Backlight control requires the video group

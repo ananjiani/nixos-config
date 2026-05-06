@@ -126,8 +126,14 @@ in
       trustedInterfaces = [ "tailscale0" ];
     };
 
-    # Wrap tailscaled with mullvad-exclude to run outside VPN tunnel
+    # Wrap tailscaled with mullvad-exclude to run outside VPN tunnel.
+    # Must start after mullvad-daemon so the cgroup-based exclusion firewall
+    # rules are in place — otherwise tailscaled's first login attempt is
+    # caught by Mullvad's kill-switch and gets "connection refused" on all
+    # outbound, leaving it stuck in NoState until manually restarted.
     systemd.services.tailscaled = lib.mkIf cfg.excludeFromMullvad {
+      after = [ "mullvad-daemon.service" ];
+      wants = [ "mullvad-daemon.service" ];
       serviceConfig.ExecStart = lib.mkForce [
         ""
         "${pkgs.mullvad}/bin/mullvad-exclude ${config.services.tailscale.package}/bin/tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/run/tailscale/tailscaled.sock --port=${toString config.services.tailscale.port}"

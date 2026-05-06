@@ -4,6 +4,17 @@
 #
 # NOTE: Brave on Linux only reads policies from /etc/brave/policies/managed/
 # This is a NixOS-only module - no Home Manager needed.
+#
+# TODO: When brave-origin merges into nixpkgs-unstable
+#   (https://github.com/NixOS/nixpkgs/pull/511131), replace `pkgs.brave` entirely
+#   with `pkgs.brave-origin` as the default package. Many Brave-specific debloat
+#   policies (Rewards, Wallet, VPN, Leo, News, Talk, Tor, Speedreader, Wayback
+#   Machine, Playlist, P3A, daily ping, Web Discovery, diagnostics) become no-ops
+#   since those features are compiled out in brave-origin standalone. The
+#   Chromium-level policies (DoH, WebRTC, geolocation, notifications, autofill,
+#   translate, background mode) and the Sync toggle will still apply.
+#   At that point: remove the overlay in flake.nix, delete pkgs/brave-origin/,
+#   and simplify the feature/telemetry options that are no longer relevant.
 _:
 
 {
@@ -86,6 +97,15 @@ _:
       // lib.optionalAttrs cfg.webrtc.disableNonProxiedUdp {
         WebRtcIPHandling = "disable_non_proxied_udp";
       }
+      # Default search engine (conditional)
+      // lib.optionalAttrs cfg.searchEngine.enable {
+        DefaultSearchProviderEnabled = true;
+        DefaultSearchProviderName = cfg.searchEngine.name;
+        DefaultSearchProviderSearchURL = cfg.searchEngine.searchUrl;
+      }
+      // (lib.optionalAttrs (cfg.searchEngine.enable && cfg.searchEngine.suggestUrl != null) {
+        DefaultSearchProviderSuggestURL = cfg.searchEngine.suggestUrl;
+      })
       # Additional policies from extraPolicies
       // cfg.extraPolicies;
 
@@ -94,6 +114,17 @@ _:
     {
       options.programs.brave = {
         enable = lib.mkEnableOption "Brave browser with declarative privacy configuration";
+
+        package = lib.mkOption {
+          type = lib.types.package;
+          default = pkgs.brave;
+          defaultText = lib.literalExpression "pkgs.brave";
+          description = ''
+            Brave browser package to install.
+            Use `pkgs.brave-origin` for the standalone Brave Origin build
+            (free on Linux, compiled-out bloat features).
+          '';
+        };
 
         # === Feature Toggles ===
         features = {
@@ -302,6 +333,30 @@ _:
           };
         };
 
+        # === Default Search Engine ===
+        searchEngine = {
+          enable = lib.mkEnableOption "declarative default search engine";
+
+          name = lib.mkOption {
+            type = lib.types.str;
+            default = "SearXNG";
+            description = "Display name for the search engine";
+          };
+
+          searchUrl = lib.mkOption {
+            type = lib.types.str;
+            description = "Search URL with {searchTerms} placeholder";
+            example = "https://searxng.lan/search?q={searchTerms}";
+          };
+
+          suggestUrl = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            default = null;
+            description = "Autocomplete/suggestions URL with {searchTerms} placeholder";
+            example = "https://searxng.lan/autocompleter?q={searchTerms}";
+          };
+        };
+
         # === Extra Policies ===
         extraPolicies = lib.mkOption {
           type = lib.types.attrs;
@@ -310,18 +365,12 @@ _:
             Additional Chromium/Brave policies to set.
             See: https://support.brave.com/hc/en-us/articles/360039248271-Group-Policy
           '';
-          example = lib.literalExpression ''
-            {
-              DefaultSearchProviderEnabled = true;
-              DefaultSearchProviderSearchURL = "https://duckduckgo.com/?q={searchTerms}";
-            }
-          '';
         };
       };
 
       config = lib.mkIf cfg.enable {
         # Install Brave browser
-        environment.systemPackages = [ pkgs.brave ];
+        environment.systemPackages = [ cfg.package ];
 
         # Write policies to /etc/brave/policies/managed/policies.json
         # This is the only location Brave reads on Linux

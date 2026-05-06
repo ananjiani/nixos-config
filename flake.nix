@@ -170,6 +170,12 @@
           modules = [
             ./hosts/desktop/configuration.nix
             inputs.sops-nix.nixosModules.sops
+            # brave-origin overlay (remove when https://github.com/NixOS/nixpkgs/pull/511131 merges)
+            {
+              nixpkgs.overlays = [
+                (final: _prev: { brave-origin = final.callPackage ./pkgs/brave-origin/package.nix { }; })
+              ];
+            }
             # Import dendritic moondeck NixOS module
             (
               if self._modules ? nixos && self._modules.nixos ? moondeck then
@@ -200,6 +206,12 @@
             ./hosts/framework13/configuration.nix
             inputs.nixos-hardware.nixosModules.framework-13-7040-amd
             inputs.sops-nix.nixosModules.sops
+            # brave-origin overlay (remove when https://github.com/NixOS/nixpkgs/pull/511131 merges)
+            {
+              nixpkgs.overlays = [
+                (final: _prev: { brave-origin = final.callPackage ./pkgs/brave-origin/package.nix { }; })
+              ];
+            }
             # Import dendritic brave NixOS module
             (if self._modules ? nixos && self._modules.nixos ? brave then self._modules.nixos.brave else { })
             # Import dendritic desktop NixOS module

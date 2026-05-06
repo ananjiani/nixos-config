@@ -622,7 +622,7 @@ in
                       "$mainMod, E, exec, emacsclient -c"
                       "$mainMod, B, exec, claude-desktop"
                       "$mainMod, R, exec, fuzzel"
-                      "$mainMod, F, exec, brave"
+                      "$mainMod, F, exec, brave-origin"
                       "$mainMod SHIFT, F, exec, mullvad-browser"
                       "$mainMod ALT, F, exec, tor-browser"
 
@@ -915,7 +915,7 @@ in
                     # Browsers: half-width for comfortable reading
                     {
                       matches = [
-                        { app-id = "^brave-browser$"; }
+                        { app-id = "^brave-origin-nightly$"; }
                         { app-id = "(?i)mullvad.browser"; }
                         { app-id = "(?i)tor.browser"; }
                       ];
@@ -931,16 +931,14 @@ in
                       open-on-workspace = "chat";
                     }
                     # Reading mode: route the Readwise Reader Brave PWA
-                    # window to the reading workspace. Brave's --app=URL
-                    # mode generates a per-URL hashed app_id like
-                    # "brave-read.readwise.io__-Default", which is stable
-                    # and fires as soon as the window is mapped (no need
-                    # to wait for the page title). Column widths for all
-                    # three reading-mode windows are set imperatively by
+                    # window to the reading workspace. The app_id is
+                    # chromium's extension-based hash, which changes between
+                    # brave and brave-origin. Column widths for all three
+                    # reading-mode windows are set imperatively by
                     # reading-mode.sh, not here.
                     {
                       matches = [
-                        { app-id = "^brave-read\\.readwise\\.io"; }
+                        { app-id = "^brave-hcggeifnejlmamllipafdhamanebkbgk-Default$"; }
                       ];
                       open-on-workspace = "reading";
                     }
@@ -1052,7 +1050,7 @@ in
                     "Mod+V".action.toggle-window-floating = [ ];
                     "Mod+Shift+V".action.switch-focus-between-floating-and-tiling = [ ];
 
-                    "Mod+F".action.spawn = "brave"; # matches Hyprland
+                    "Mod+F".action.spawn = "brave-origin"; # matches Hyprland
                     "Mod+Shift+F".action.spawn = "mullvad-browser";
                     "Mod+Alt+F".action.spawn = "tor-browser";
                     "Mod+B".action.maximize-column = [ ]; # swapped from Mod+F

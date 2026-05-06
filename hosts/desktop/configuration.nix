@@ -97,6 +97,7 @@
   environment.systemPackages = with pkgs; [
     signal-desktop
     cifs-utils
+    brave # fallback during brave-origin transition
   ];
 
   virtualisation.docker.enable = true;
@@ -164,8 +165,15 @@
   # Brave browser - disable DoH since OPNsense handles DNS with Mullvad DoT
   programs.brave = {
     enable = true;
+    package = pkgs.brave-origin;
     features.sync = true;
     features.aiChat = true;
     doh.enable = false; # Use system DNS (router-level encryption)
+    searchEngine = {
+      enable = true;
+      searchUrl = "https://searxng.lan/search?q={searchTerms}";
+      suggestUrl = "https://searxng.lan/autocompleter?q={searchTerms}";
+    };
   };
+
 }
