@@ -10,7 +10,7 @@ _:
         font = "hack:size=14";
       };
 
-      colors = {
+      colors-dark = {
         background = "282828";
         foreground = "ebdbb2";
         regular0 = "282828";
