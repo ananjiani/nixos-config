@@ -136,7 +136,7 @@ in
       wants = [ "mullvad-daemon.service" ];
       serviceConfig.ExecStart = lib.mkForce [
         ""
-        "${pkgs.mullvad}/bin/mullvad-exclude ${config.services.tailscale.package}/bin/tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/run/tailscale/tailscaled.sock --port=${toString config.services.tailscale.port}"
+        "${config.services.mullvad-vpn.package}/bin/mullvad-exclude ${config.services.tailscale.package}/bin/tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/run/tailscale/tailscaled.sock --port=${toString config.services.tailscale.port}"
       ];
     };
 
