@@ -14,7 +14,6 @@ metadata:
     gethomepage.dev/pod-selector: "app.kubernetes.io/name=searxng"
 spec:
   entryPoints:
-    - web
     - websecure
   routes:
     - match: Host(`searxng.lan`)
@@ -22,3 +21,5 @@ spec:
       services:
         - name: searxng
           port: 8080
+  tls:
+    secretName: searxng-lan-tls

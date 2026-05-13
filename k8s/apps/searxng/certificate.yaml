@@ -1,0 +1,13 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: searxng-lan-tls
+  namespace: searxng
+spec:
+  secretName: searxng-lan-tls
+  issuerRef:
+    name: lan-ca
+    kind: ClusterIssuer
+  dnsNames:
+    - searxng.lan
