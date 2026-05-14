@@ -166,6 +166,21 @@ in
                 ];
               };
 
+              # Ensure the gnome portal backend starts with the session.
+              # It's D-Bus activated but can fail to auto-start on niri,
+              # breaking screen sharing in browsers and other apps.
+              systemd.user.units."xdg-desktop-portal-gnome.service" = {
+                wantedBy = [ "graphical-session.target" ];
+              };
+
+              # The user nix profile may only contain hyprland.portal,
+              # causing xdg-desktop-portal to fail discovering gnome.portal
+              # (needed for ScreenCast). Force the system portal directory
+              # which has all portal backends.
+              systemd.user.services.xdg-desktop-portal.environment = lib.mkForce {
+                NIX_XDG_DESKTOP_PORTAL_DIR = "/run/current-system/sw/share/xdg-desktop-portal/portals";
+              };
+
               environment.systemPackages = [ pkgs.xdg-desktop-portal-gnome ];
             })
           ]
