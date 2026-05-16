@@ -131,13 +131,41 @@ in
     # rules are in place — otherwise tailscaled's first login attempt is
     # caught by Mullvad's kill-switch and gets "connection refused" on all
     # outbound, leaving it stuck in NoState until manually restarted.
+    #
+    # The ExecStartPre poll waits for mullvad to report Connected (tunnel +
+    # exclusion rules active) or Disconnected (no kill-switch, safe to proceed)
+    # before launching tailscaled.  This prevents the boot-time race where
+    # mullvad-daemon is "started" from systemd's perspective but its nftables
+    # split-tunnel rules haven't been applied yet.
     systemd.services.tailscaled = lib.mkIf cfg.excludeFromMullvad {
       after = [ "mullvad-daemon.service" ];
       wants = [ "mullvad-daemon.service" ];
-      serviceConfig.ExecStart = lib.mkForce [
-        ""
-        "${config.services.mullvad-vpn.package}/bin/mullvad-exclude ${config.services.tailscale.package}/bin/tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/run/tailscale/tailscaled.sock --port=${toString config.services.tailscale.port}"
-      ];
+      serviceConfig = {
+        ExecStartPre =
+          let
+            waitMullvad = pkgs.writeShellScript "wait-for-mullvad" ''
+              for i in $(seq 1 60); do
+                status=$(${config.services.mullvad-vpn.package}/bin/mullvad status 2>/dev/null)
+                # Connected → tunnel + exclusion rules are active
+                if echo "$status" | grep -q "Connected"; then
+                  exit 0
+                fi
+                # Disconnected → no kill-switch, tailscaled can reach the internet directly
+                if echo "$status" | grep -q "Disconnected"; then
+                  exit 0
+                fi
+                sleep 1
+              done
+              # Timeout — proceed anyway, tailscaled will retry on its own
+              exit 0
+            '';
+          in
+          "${waitMullvad}";
+        ExecStart = lib.mkForce [
+          ""
+          "${config.services.mullvad-vpn.package}/bin/mullvad-exclude ${config.services.tailscale.package}/bin/tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/run/tailscale/tailscaled.sock --port=${toString config.services.tailscale.port}"
+        ];
+      };
     };
 
     # Optimize UDP GRO forwarding for better throughput
