@@ -1,7 +1,6 @@
 # ammars-pc — Primary desktop workstation
 {
   pkgs,
-  inputs,
   ...
 }:
 
@@ -18,7 +17,6 @@
     ../../modules/nixos/openconnect.nix
     ../../modules/nixos/networking.nix
     ../../modules/nixos/tailscale.nix
-    inputs.play-nix.nixosModules.play
   ];
 
   # Desktop uses age key from home directory (servers use /var/lib/sops-nix/)
