@@ -59,15 +59,6 @@
       url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
-    mix-nix = {
-      url = "github:tophc7/mix.nix";
-      inputs.nixpkgs.follows = "nixpkgs-unstable";
-    };
-    play-nix = {
-      url = "github:TophC7/play.nix";
-      inputs.nixpkgs.follows = "nixpkgs-unstable";
-      inputs.mix-nix.follows = "mix-nix";
-    };
     nixos-avf = {
       url = "github:nix-community/nixos-avf";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
@@ -403,9 +394,6 @@
                   else
                     { }
                 )
-
-                # Import play.nix for gamescope integration
-                inputs.play-nix.homeManagerModules.play
 
                 # Load host-specific home configuration
                 hostPath
