@@ -161,8 +161,8 @@ in
 
               xdg.portal.config = {
                 niri.default = [
-                  "gnome"
                   "gtk"
+                  "gnome"
                 ];
               };
 
