@@ -4,14 +4,27 @@
   "enabledModels": [
     "kimi-coding/kimi-for-coding",
     "zai/glm-5.1",
-    "zai/glm-4.5-air"
+    "zai/glm-4.5-air",
+    "opencode-go/glm-5",
+    "opencode-go/glm-5.1",
+    "opencode-go/kimi-k2-5",
+    "opencode-go/kimi-k2-6",
+    "opencode-go/mimo-v2-5",
+    "opencode-go/mimo-v2-5-pro",
+    "opencode-go/minimax-m2-5",
+    "opencode-go/minimax-m2-7",
+    "opencode-go/qwen3-5-plus",
+    "opencode-go/qwen3-6-plus",
+    "opencode-go/deepseek-v4-pro",
+    "opencode-go/deepseek-v4-flash"
   ],
   "theme": "gruvbox-material",
   "lastChangelogVersion": "0.74.0",
   "packages": [
     "git:github.com/annapurna-himal/pi-vim-editor",
     "npm:pi-mermaid",
-    "npm:pi-btw"
+    "npm:pi-btw",
+    "npm:pi-init"
   ],
   "extensions": [
     "/home/ammar/.pi/agent/git/github.com/annapurna-himal/pi-vim-editor/index.ts"

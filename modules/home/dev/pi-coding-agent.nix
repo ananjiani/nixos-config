@@ -331,6 +331,19 @@ let
           apiKey = "!cat /run/secrets/zai_api_key";
           baseUrl = "https://api.z.ai/api/coding/paas/v4";
         };
+
+        # OpenCode Go ($10/month) — pi's built-in opencode-go provider.
+        # Same !cat /run/secrets/* pattern as kimi-coding and zai.
+        # Renders to /run/secrets/opencode_api_key by vault-agent
+        # (see hosts/_profiles/workstation/configuration.nix).
+        # Pi already knows the baseUrl, model IDs, and openai-completions
+        # protocol for opencode-go — we only need apiKey + baseUrl to
+        # satisfy the model-registry's "must specify one of…" check
+        # (same workaround as kimi-coding/zai baseUrl redeclaration).
+        "opencode-go" = {
+          apiKey = "!cat /run/secrets/opencode_api_key";
+          baseUrl = "https://opencode.ai/zen/go/v1";
+        };
       };
     }
   );

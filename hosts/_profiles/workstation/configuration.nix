@@ -49,6 +49,35 @@
       mode = "0400";
     };
 
+    # OpenCode Go API key for pi coding agent ($10/month subscription
+    # to open coding models via opencode.ai/zen/go/v1).
+    opencode_api_key = {
+      path = "secret/llm/keys";
+      field = "opencode-api-key";
+      owner = "ammar";
+      mode = "0400";
+    };
+
+    # OpenCode Go dashboard workspace ID and browser auth cookie.
+    # Used by the usage-tracker extension to scrape exact quota
+    # percentages (rolling/weekly/monthly) from the OpenCode dashboard.
+    # The workspace ID is visible in the browser URL bar at
+    # https://opencode.ai/workspace/<id>/go — not sensitive but
+    # colocated with the cookie for simplicity. The auth cookie is
+    # the `auth` cookie for opencode.ai from browser devtools.
+    opencode_go_workspace_id = {
+      path = "secret/llm/keys";
+      field = "opencode-go-workspace-id";
+      owner = "ammar";
+      mode = "0400";
+    };
+    opencode_go_auth_cookie = {
+      path = "secret/llm/keys";
+      field = "opencode-go-auth-cookie";
+      owner = "ammar";
+      mode = "0400";
+    };
+
     # NVIDIA NIM API key for pi coding agent (build.nvidia.com).
     nvidia_nim_api_key = {
       path = "secret/llm/keys";
