@@ -9,8 +9,13 @@
   services.ssh-agent.enable = true;
 
   # SSH askpass for passphrase prompts
-  home.packages = [ pkgs.lxqt.lxqt-openssh-askpass ];
-  home.sessionVariables.SSH_ASKPASS = "${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass";
+  home = {
+    packages = [ pkgs.lxqt.lxqt-openssh-askpass ];
+    sessionVariables.SSH_ASKPASS = "${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass";
+    shellAliases = {
+      fab = ''BROWSER="flatpak run com.microsoft.Edge %s" mullvad-exclude fab'';
+    };
+  };
 
   imports = [
     ../_profiles/workstation/home.nix
@@ -173,6 +178,7 @@
     workspaces = {
       "main".open-on-output = "DP-2";
       "reading".open-on-output = "DP-2";
+      "work".open-on-output = "DP-2";
       "chat".open-on-output = "HDMI-A-1";
       "media".open-on-output = "DP-1";
     };
