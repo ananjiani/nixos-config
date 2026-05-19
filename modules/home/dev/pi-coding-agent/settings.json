@@ -3,7 +3,7 @@
   "defaultModel": "glm-5.1",
   "enabledModels": [
     "zai/glm-5.1",
-    "opencode-go/kimi-k2-6",
+    "opencode-go/kimi-k2.6",
     "opencode-go/deepseek-v4-pro",
     "opencode-go/deepseek-v4-flash"
   ],
