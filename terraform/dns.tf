@@ -209,6 +209,17 @@ resource "cloudflare_dns_record" "buildbot" {
   comment = "Buildbot CI/CD (Cloudflare Tunnel) - managed by Terraform"
 }
 
+# ntfy push notification server
+resource "cloudflare_dns_record" "ntfy" {
+  zone_id = local.zone_id
+  name    = "ntfy"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "ntfy push notifications (internal) - managed by Terraform"
+}
+
 # Voicemail receiver (via Cloudflare Tunnel for Telnyx webhooks)
 resource "cloudflare_dns_record" "voicemail" {
   zone_id = local.zone_id

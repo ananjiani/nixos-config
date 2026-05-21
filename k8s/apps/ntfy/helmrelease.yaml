@@ -16,7 +16,7 @@ spec:
       interval: 1h
   values:
     ntfy:
-      baseUrl: "https://ntfy.lan"
+      baseUrl: "https://ntfy.dimensiondoor.xyz"
       behindProxy: true
       cacheFile: "/var/cache/ntfy/cache.db"
 
