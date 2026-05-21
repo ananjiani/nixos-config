@@ -10,6 +10,7 @@
  * Providers:
  * - kimi-coding:  api.kimi.com/coding/v1/usages
  * - zai:          api.z.ai/api/monitor/usage/quota/limit
+ *   (TOKENS_LIMIT = 5h rolling token quota, TIME_LIMIT = monthly MCP tool quota)
  * - opencode-go:  dashboard scraping + model probing fallback
  *   (OpenCode Go tracking adapted from timm-u/pi-usage, MIT © 2026 timm-u)
  */
@@ -52,8 +53,8 @@ interface KimiUsage {
 
 interface ZaiLimit {
 	type: string;
-	used?: number;
-	currentValue?: number;
+	used?: number; // actual usage (from currentValue in API)
+	limit?: number; // quota limit (from "usage" field in API — misleading name)
 	remaining?: number;
 	percentage: number;
 	nextResetTime: number;
@@ -250,8 +251,8 @@ async function fetchZaiUsage(signal?: AbortSignal): Promise<ZaiUsage> {
 
 		const limits = (data.data?.limits ?? []).map((l: any) => ({
 			type: l.type,
-			used: l.usage,
-			currentValue: l.currentValue,
+			used: l.currentValue ?? undefined, // actual usage counter
+			limit: l.usage ?? undefined, // quota limit (API field is misleadingly named "usage")
 			remaining: l.remaining,
 			percentage: l.percentage,
 			nextResetTime: l.nextResetTime,
@@ -721,8 +722,8 @@ export default function (pi: ExtensionAPI) {
 			return { label: "kimi", pct: usedPct, remaining: kimiData.remaining, limit: kimiData.limit };
 		}
 		if (provider === "zai" && zaiData && !zaiData.error && zaiData.limits.length > 0) {
-			const l = zaiData.limits[0];
-			return { label: "zai", pct: l.percentage, remaining: l.remaining ?? 0, limit: (l.used ?? 0) + (l.remaining ?? 0) };
+			const l = zaiData.limits.find(x => x.type === "TOKENS_LIMIT") ?? zaiData.limits[0];
+			return { label: "zai", pct: l.percentage, remaining: l.remaining ?? 0, limit: l.limit ?? 0 };
 		}
 		if (provider === "opencode-go" && goData && goData.status !== "no_key") {
 			const pct = goData.weeklyUsedPercent ?? (goData.available ? 0 : 100);
@@ -734,8 +735,8 @@ export default function (pi: ExtensionAPI) {
 			return { label: "go", pct, remaining: 0, limit: 0 };
 		}
 		if (zaiData && !zaiData.error && zaiData.limits.length > 0) {
-			const l = zaiData.limits[0];
-			return { label: "zai", pct: l.percentage, remaining: l.remaining ?? 0, limit: (l.used ?? 0) + (l.remaining ?? 0) };
+			const l = zaiData.limits.find(x => x.type === "TOKENS_LIMIT") ?? zaiData.limits[0];
+			return { label: "zai", pct: l.percentage, remaining: l.remaining ?? 0, limit: l.limit ?? 0 };
 		}
 		if (kimiData && !kimiData.error) {
 			const usedPct = kimiData.limit > 0 ? Math.round((kimiData.used / kimiData.limit) * 100) : 0;
@@ -812,12 +813,12 @@ export default function (pi: ExtensionAPI) {
 			} else {
 				lines.push(`  Plan: ${zaiData.plan}`);
 				for (const l of zaiData.limits) {
-					const label = l.type === "TIME_LIMIT" ? "5h window" : "Weekly tokens";
+					const label = l.type === "TIME_LIMIT" ? "MCP monthly" : "5h tokens";
 					const usedPct = l.percentage;
-					const total = (l.used ?? 0) + (l.remaining ?? 0);
-					const remaining = l.remaining !== undefined ? `${l.remaining}/${total} remaining` : "";
 					const parts = [`  ${label}: ${pctBar(usedPct)}`];
-					if (remaining) parts.push(remaining);
+					if (l.limit !== undefined && l.remaining !== undefined) {
+						parts.push(`${l.remaining}/${l.limit} remaining`);
+					}
 					parts.push(`resets ${formatResetTime(l.nextResetTime)}`);
 					lines.push(parts.join("  "));
 					if (l.details && l.details.length > 0) {
