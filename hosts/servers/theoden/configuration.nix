@@ -361,6 +361,16 @@ in
         topic = "buildbot-nix";
       };
       admins = [ "ananjiani" ];
+      # Disable GC root registration — buildbot builds are pushed to Attic
+      # binary cache, so full closures don't need to be pinned on local disk.
+      # The deploy post-build step runs immediately after nix build, before
+      # any GC could run, so OUT_PATH is always available when needed.
+      branches = {
+        disable-gcroots = {
+          matchGlob = "*";
+          registerGCRoots = false;
+        };
+      };
       # Auto-deploy servers after successful builds on main
       postBuildSteps = [
         {
