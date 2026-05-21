@@ -130,6 +130,16 @@ in
         "L+ /usr/local/bin/iscsiadm - - - - /run/current-system/sw/bin/iscsiadm"
         "d /usr/sbin 0755 root root -"
         "L+ /usr/sbin/iscsiadm - - - - /run/current-system/sw/bin/iscsiadm"
+        # Kubelet drop-in to enable image GC by age.
+        # k3s hardcodes imageMaximumGCAge=0s in 00-k3s-defaults.conf but the
+        # kubelet merges all *.conf files in --config-dir (sorted alphanum),
+        # so 99- overrides 00-. NOTE: the kubelet silently ignores non-.conf
+        # files — the suffix is mandatory.
+        "L+ /var/lib/rancher/k3s/agent/etc/kubelet.conf.d/99-image-gc.conf - - - - ${pkgs.writeText "99-image-gc.conf" ''
+          apiVersion: kubelet.config.k8s.io/v1beta1
+          kind: KubeletConfiguration
+          imageMaximumGCAge: 168h
+        ''}"
       ];
 
       services = {
@@ -197,23 +207,6 @@ in
               fi
               sleep 10
             done
-          '';
-        };
-
-        # Periodically prune unused container images.
-        # k3s hardcodes imageMaximumGCAge=0s (never GC) in its generated kubelet
-        # config and regenerates it on every start. --kubelet-arg can't set
-        # imageMaximumGCAge because it's a KubeletConfiguration-only field
-        # (no CLI flag exists). Instead, we prune images via crictl on a schedule.
-        # See postmortem 2026-05-21-1330-theoden-disk-pressure-buildbot-gcroots.md.
-        k3s-image-prune = {
-          description = "Prune unused container images";
-          path = [ config.services.k3s.package ];
-          serviceConfig = {
-            Type = "oneshot";
-          };
-          script = ''
-            crictl rmi --prune 2>&1 | tail -3
           '';
         };
 
@@ -370,15 +363,6 @@ in
         };
       };
 
-      timers.k3s-image-prune = {
-        description = "Prune unused container images daily";
-        wantedBy = [ "timers.target" ];
-        timerConfig = {
-          OnCalendar = "daily";
-          OnBootSec = "30min";
-          RandomizedDelaySec = "1h";
-        };
-      };
     };
 
     environment = {
