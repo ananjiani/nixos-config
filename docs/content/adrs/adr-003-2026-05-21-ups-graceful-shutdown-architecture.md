@@ -10,7 +10,7 @@ tags: [infrastructure, power, shutdown, monitoring]
 
 ## Context and Problem Statement
 
-A single CyberPower CP1500PFCRM2U UPS (USB-connected) protects three Proxmox hosts (rohan, gondor, the-shire) and their VMs. Rohan runs theoden (k3s server + NFS + CI/CD), gondor runs boromir (k3s server + GPU workloads), and the-shire runs samwise (k3s server + Zigbee2MQTT) and frodo (Home Assistant OS). All three k3s nodes depend on graceful drain to avoid data corruption and pod scheduling chaos. Without a coordinated shutdown, a power outage kills everything simultaneously — k3s etcd can lose quorum mid-write, NFS clients lose their server mid-IO, and pods don't get rescheduled. The UPS provides ~10-20 minutes of runtime at current load, which is enough time for a clean shutdown cascade if triggered promptly. Rivendell (bare metal HTPC) is on separate power and excluded from this architecture.
+A single CyberPower CP1500PFCRM2U UPS (USB-connected) protects three Proxmox hosts (rohan, gondor, the-shire) and their VMs. Rohan runs theoden (k3s server + NFS + CI/CD), gondor runs boromir (k3s server + GPU workloads), and the-shire runs samwise (k3s server + Zigbee2MQTT) and frodo (Home Assistant OS). All three k3s nodes depend on graceful drain to avoid data corruption and pod scheduling chaos. Without a coordinated shutdown, a power outage kills everything simultaneously — k3s etcd can lose quorum mid-write, NFS clients lose their server mid-IO, and pods don't get rescheduled. The UPS provides ~10-20 minutes of runtime at current load, which is enough time for a clean shutdown cascade if triggered promptly. Rivendell (bare metal HTPC) is on separate power and excluded from this architecture. The network switch (managed, same VLAN for all hosts) is on the same UPS as the Proxmox hosts, but the router is not — it is physically too far from the UPS for an extension cord.
 
 ## Decision Drivers
 
@@ -68,6 +68,12 @@ Proxmox BIOS "restore on AC power loss" powers on hosts → `on_boot = true` sta
 - Bad: Once FSD fires, shutdown proceeds even if power returns (NUT does not cancel in-progress shutdowns)
 - Neutral: All three k3s nodes drain simultaneously, so there's no healthy node to reschedule pods to during drain. This is expected — the entire cluster is going down.
 - Neutral: Rohan is both the NUT server and a Proxmox host running the most critical VM (theoden). If rohan fails to detect the UPS or send FSD, the other hosts won't know to shut down.
+
+### Infrastructure Assumptions
+
+- **Network switch is on the UPS.** All three Proxmox hosts are on the same VLAN and share a managed switch. Since the switch has UPS-backed power, LAN connectivity between hosts is maintained during a power outage even though the router (default gateway) dies immediately. NUT's FSD propagation from rohan to gondor/the-shire relies on Layer-2 switch connectivity, not the router. **If the switch is ever moved off the UPS, this architecture breaks** — the slaves would lose network before receiving FSD, and would need independent shutdown logic (e.g., upssched on slaves with COMMBAD timer + gateway ping check).
+
+- **Router is NOT on the UPS.** This is acceptable because NUT host-to-host communication does not traverse the router (same subnet). Router death only affects WAN/Internet access and DHCP lease renewal — neither of which matter during a shutdown cascade.
 
 ### Confirmation
 
