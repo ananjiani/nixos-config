@@ -200,6 +200,23 @@ in
           '';
         };
 
+        # Periodically prune unused container images.
+        # k3s hardcodes imageMaximumGCAge=0s (never GC) in its generated kubelet
+        # config and regenerates it on every start. --kubelet-arg can't set
+        # imageMaximumGCAge because it's a KubeletConfiguration-only field
+        # (no CLI flag exists). Instead, we prune images via crictl on a schedule.
+        # See postmortem 2026-05-21-1330-theoden-disk-pressure-buildbot-gcroots.md.
+        k3s-image-prune = {
+          description = "Prune unused container images";
+          path = [ config.services.k3s.package ];
+          serviceConfig = {
+            Type = "oneshot";
+          };
+          script = ''
+            crictl rmi --prune 2>&1 | tail -3
+          '';
+        };
+
         # Scale CoreDNS to 2 replicas spread across nodes for DNS resilience.
         # k3s deploys CoreDNS as an Addon (not HelmChart), so HelmChartConfig
         # doesn't work. This runs after k3s starts to patch the deployment.
@@ -350,6 +367,16 @@ in
             done
             echo "Warning: flannel subnet.env not found after 5 minutes"
           '';
+        };
+      };
+
+      timers.k3s-image-prune = {
+        description = "Prune unused container images daily";
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnCalendar = "daily";
+          OnBootSec = "30min";
+          RandomizedDelaySec = "1h";
         };
       };
     };
