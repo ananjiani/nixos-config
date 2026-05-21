@@ -19,6 +19,12 @@
     - Restart nut-server
     - Restart nut-monitor
 
+# --- Decrypt credentials from SOPS ---
+- name: Decrypt NUT monitor password from SOPS
+  ansible.builtin.set_fact:
+    nut_monitor_password: "{{ lookup('pipe', 'sops -d --extract ' ~ nut_sops_password_key ~ ' ' ~ sops_secrets_file) }}"
+  no_log: true
+
 # --- Master-only: UPS driver + server ---
 - name: Configure UPS driver (master only)
   ansible.builtin.template:
@@ -50,6 +56,35 @@
   when: inventory_hostname == nut_master_host
   notify: Restart nut-server
 
+# --- Master-only: upssched timer for automated shutdown ---
+- name: Create /run/nut directory for upssched pipe/lock
+  ansible.builtin.file:
+    path: /run/nut
+    state: directory
+    owner: root
+    group: nut
+    mode: '0770'
+  when: inventory_hostname == nut_master_host
+
+- name: Configure upssched (master only)
+  ansible.builtin.template:
+    src: upssched.conf.j2
+    dest: /etc/nut/upssched.conf
+    owner: root
+    group: nut
+    mode: '0640'
+  when: inventory_hostname == nut_master_host
+  notify: Restart nut-server
+
+- name: Install upssched callback script (master only)
+  ansible.builtin.template:
+    src: upssched-cmd.j2
+    dest: /usr/local/bin/upssched-cmd
+    owner: root
+    group: root
+    mode: '0755'
+  when: inventory_hostname == nut_master_host
+
 # --- All hosts: monitoring client ---
 - name: Configure upsmon
   ansible.builtin.template:
@@ -69,6 +104,63 @@
     group: root
     mode: '0755'
 
+# --- NUT Prometheus exporter (master only) ---
+- name: Create udev rule for CyberPower UPS (master only)
+  ansible.builtin.copy:
+    dest: /etc/udev/rules.d/99-nut-ups.rules
+    content: |
+      # CyberPower PR1500LCDRT2U UPS
+      SUBSYSTEM=="usb", ATTR{idVendor}=="0764", ATTR{idProduct}=="0601", MODE="0664", GROUP="nut"
+    mode: '0644'
+  when: inventory_hostname == nut_master_host
+  notify: Reload udev
+
+- name: Download nut_exporter (master only)
+  ansible.builtin.shell:
+    cmd: >-
+      curl -fSL -A 'Mozilla/5.0' -o /usr/local/bin/nut_exporter
+      https://github.com/DRuggeri/nut_exporter/releases/download/v{{ nut_exporter_version }}/nut_exporter-v{{ nut_exporter_version }}-linux-amd64
+    creates: /usr/local/bin/nut_exporter
+  when: inventory_hostname == nut_master_host
+
+- name: Set nut_exporter permissions (master only)
+  ansible.builtin.file:
+    path: /usr/local/bin/nut_exporter
+    mode: '0755'
+  when: inventory_hostname == nut_master_host
+
+- name: Create nut_exporter systemd service (master only)
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/nut_exporter.service
+    content: |
+      [Unit]
+      Description=NUT Prometheus Exporter
+      After=nut-server.service
+
+      [Service]
+      Type=simple
+      ExecStart=/usr/local/bin/nut_exporter \
+        --nut.server=127.0.0.1:{{ nut_listen_port }} \
+        --nut.vars_enable=battery.charge,battery.runtime,battery.voltage,ups.load,ups.status,input.voltage,ups.temperature \
+        --nut.statuses=OL,OB,LB,HB,RB,CHRG,DISCHRG,BYPASS,CAL,OFF,OVER \
+        --web.listen-address=:{{ nut_exporter_port }}
+      Restart=always
+      RestartSec=5
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+  when: inventory_hostname == nut_master_host
+  notify: Restart nut_exporter
+
+- name: Enable and start nut_exporter (master only)
+  ansible.builtin.systemd:
+    name: nut_exporter
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: inventory_hostname == nut_master_host
+
 # --- Enable services ---
 - name: Enable and start nut-server (master only)
   ansible.builtin.systemd:
@@ -85,8 +177,8 @@
     state: started
     daemon_reload: true
 
-# --- Firewall: allow NUT port from other Proxmox hosts ---
-- name: Allow NUT port in firewall (master only)
+# --- Firewall rules ---
+- name: Allow NUT port from LAN (master only)
   ansible.builtin.iptables:
     chain: INPUT
     protocol: tcp
@@ -94,4 +186,14 @@
     source: "192.168.1.0/24"
     jump: ACCEPT
     comment: "NUT upsd for UPS monitoring"
+  when: inventory_hostname == nut_master_host
+
+- name: Allow nut_exporter port from LAN (master only)
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "{{ nut_exporter_port }}"
+    source: "192.168.1.0/24"
+    jump: ACCEPT
+    comment: "NUT Prometheus exporter"
   when: inventory_hostname == nut_master_host

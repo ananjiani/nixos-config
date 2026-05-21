@@ -1,0 +1,18 @@
+#!/bin/bash
+# upssched callback: handles timer expiry and critical battery events.
+# Called by upssched when a timer fires or an AT EXECUTE rule triggers.
+set -euo pipefail
+
+case "$1" in
+  early-shutdown)
+    logger -t upssched "Battery timeout reached ({{ nut_upssched_timer }}s on battery), triggering FSD"
+    /sbin/upsmon -c fsd
+    ;;
+  critical-shutdown)
+    logger -t upssched "Battery critically low (LOWBATT), triggering FSD"
+    /sbin/upsmon -c fsd
+    ;;
+  *)
+    logger -t upssched "Unknown upssched command: $1"
+    ;;
+esac

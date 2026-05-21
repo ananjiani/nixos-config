@@ -1,9 +1,9 @@
 {% if inventory_hostname == nut_master_host %}
-# Master: powerdownflag=1, this host tells the UPS to cut power after all slaves disconnect
-MONITOR {{ nut_ups_name }}@localhost {{ nut_listen_port }} 1 {{ nut_monitor_user }} {{ nut_monitor_password }} master
+# Master: monitors UPS driver locally
+MONITOR {{ nut_ups_name }}@localhost 1 {{ nut_monitor_user }} {{ nut_monitor_password }} master
 {% else %}
-# Slave: powerdownflag=0, this host shuts down when master says battery is low
-MONITOR {{ nut_ups_name }}@{{ nut_master_host }} {{ nut_listen_port }} 1 {{ nut_monitor_user }} {{ nut_monitor_password }} slave
+# Slave: monitors UPS via network from the master host
+MONITOR {{ nut_ups_name }}@{{ hostvars[nut_master_host]['ansible_host'] }} 1 {{ nut_slave_user }} {{ nut_monitor_password }} slave
 {% endif %}
 
 # Gracefully shut down VMs before powering off the host

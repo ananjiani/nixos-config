@@ -7,19 +7,29 @@ nut_ups_desc: "CyberPower CP1500PFCRM2U"
 
 # Which Proxmox host has the UPS USB cable (NUT master)
 # Other hosts become NUT clients (slaves)
-nut_master_host: "gondor"
+nut_master_host: "rohan"
 
 # Network settings
 nut_listen_port: 3493
 
-# Monitoring credentials (shared between upsd and upsmon)
+# Monitoring credentials
+# Password stored in SOPS, shared between master and slave users
 nut_monitor_user: "upsmon"
-nut_monitor_password: "changeme"
+nut_slave_user: "upsmonslave"
 
 # Battery thresholds
 # LOWBATT: UPS reports low battery (usually ~20%, set in UPS firmware)
 # FINALDELAY: seconds to wait after LOWBATT before running SHUTDOWNCMD
 nut_finaldelay: 5
 
+# Timer-based shutdown: trigger FSD after this many seconds on battery
+# Rides out brief blips while leaving ample battery for graceful cascade
+nut_upssched_timer: 300
+
 # VM shutdown timeout (seconds to wait for VMs to stop before host poweroff)
 nut_vm_shutdown_timeout: 120
+
+# NUT Prometheus exporter (master only)
+nut_exporter_port: 9199
+nut_exporter_version: "3.3.0"
+nut_exporter_sha256: "8183da720ff547b7be56cc60505a3e0b731ccbf23aa18b3e297159b261500d8a"

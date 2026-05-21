@@ -133,3 +133,21 @@ spec:
         - "192.168.1.27:9101" # theoden buildbot-prometheus
       labels:
         job: buildbot
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: nut-exporter
+  namespace: monitoring
+spec:
+  scrapeInterval: 15s
+  metricsPath: /ups_metrics
+  params:
+    ups:
+      - cyberpower
+  staticConfigs:
+    - targets:
+        - "192.168.1.24:9199" # rohan NUT exporter
+      labels:
+        job: nut-exporter
+        ups: cyberpower

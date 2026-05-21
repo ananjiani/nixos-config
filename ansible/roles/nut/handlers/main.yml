@@ -10,3 +10,13 @@
     name: nut-monitor
     state: restarted
     daemon_reload: true
+
+- name: Restart nut_exporter
+  ansible.builtin.systemd:
+    name: nut_exporter
+    state: restarted
+    daemon_reload: true
+
+- name: Reload udev
+  ansible.builtin.shell: udevadm control --reload-rules && udevadm trigger && systemctl restart nut-driver@cyberpower
+  when: inventory_hostname == nut_master_host

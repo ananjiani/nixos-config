@@ -1,0 +1,14 @@
+CMDSCRIPT /usr/local/bin/upssched-cmd
+PIPEFN /run/nut/upssched.pipe
+LOCKFN /run/nut/upssched.lock
+
+# Start a timer when UPS goes on battery. If power doesn't return within
+# the timer period, trigger FSD to begin the graceful shutdown cascade.
+AT ONBATT * START-TIMER early-shutdown {{ nut_upssched_timer }}
+
+# Cancel the timer if power returns before it fires.
+AT ONLINE * CANCEL-TIMER early-shutdown
+
+# Immediate FSD on LOWBATT (firmware reports ~20% battery).
+# This is a safety net in case the timer hasn't fired yet.
+AT LOWBATT * EXECUTE critical-shutdown

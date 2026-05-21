@@ -542,3 +542,73 @@ spec:
                     Kubelet on {{ $labels.node }} is reporting disk pressure. New pods will
                     not schedule and existing pods may be evicted. Check disk usage and vacuum
                     journals if needed.
+      ups-alerts:
+        groups:
+          - name: ups
+            rules:
+              - alert: UPSOnBattery
+                expr: network_ups_tools_ups_status{flag="OB"} == 1
+                for: 0m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "UPS {{ $labels.ups }} is on battery power"
+                  description: >-
+                    Power loss detected. UPS is running on battery.
+                    A graceful shutdown will be triggered automatically after 5 minutes
+                    if power does not return.
+
+              - alert: UPSLowBattery
+                expr: network_ups_tools_ups_battery_charge < 20
+                for: 1m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "UPS {{ $labels.ups }} battery critically low ({{ $value }}%)"
+                  description: >-
+                    Battery at {{ $value }}%. Graceful shutdown should be in progress.
+                    Estimated runtime remaining is very short.
+
+              - alert: UPSRuntimeLow
+                expr: network_ups_tools_ups_battery_runtime < 600
+                for: 5m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "UPS {{ $labels.ups }} estimated runtime under 10 minutes"
+                  description: >-
+                    At current load, battery will last {{ $value | humanizeDuration }}.
+                    This may indicate battery degradation or increased load.
+
+              - alert: UPSLoadHigh
+                expr: network_ups_tools_ups_load > 80
+                for: 10m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "UPS {{ $labels.ups }} load is {{ $value }}%"
+                  description: >-
+                    Sustained high load reduces runtime during power outages.
+                    Consider moving equipment to a second UPS.
+
+              - alert: UPSBatteryNeedsReplace
+                expr: network_ups_tools_ups_battery_charge < 50 and network_ups_tools_ups_status{flag="OL"} == 1
+                for: 24h
+                labels:
+                  severity: info
+                annotations:
+                  summary: "UPS {{ $labels.ups }} battery never reaches full charge"
+                  description: >-
+                    Battery stuck below 50% while on mains power.
+                    Likely needs replacement.
+
+              - alert: NUTExporterDown
+                expr: up{job="nut-exporter"} == 0
+                for: 5m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "NUT exporter is down on {{ $labels.instance }}"
+                  description: >-
+                    UPS metrics are not being collected.
+                    Power outage detection is blind.

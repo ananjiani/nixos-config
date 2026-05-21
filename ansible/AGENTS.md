@@ -34,6 +34,7 @@ Ansible manages Proxmox hosts (not NixOS VMs):
 
 - `proxmox-base`: SSH hardening, base packages, authorized keys
 - `proxmox-monitoring`: node_exporter (port 9100), smartd
+- `nut`: NUT (Network UPS Tools) for UPS graceful shutdown + nut_exporter (port 9199)
 - `nvidia-fan-control`: NVIDIA driver + coolgpus fan control (rohan only)
 
 ## Operational Invariants
