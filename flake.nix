@@ -183,6 +183,8 @@
             )
             # Import dendritic brave NixOS module
             (if self._modules ? nixos && self._modules.nixos ? brave then self._modules.nixos.brave else { })
+            # Import dendritic gaming NixOS module
+            (if self._modules ? nixos && self._modules.nixos ? gaming then self._modules.nixos.gaming else { })
             # Import dendritic desktop NixOS module
             (
               if self._modules ? nixos && self._modules.nixos ? desktop then self._modules.nixos.desktop else { }
@@ -205,6 +207,8 @@
             }
             # Import dendritic brave NixOS module
             (if self._modules ? nixos && self._modules.nixos ? brave then self._modules.nixos.brave else { })
+            # Import dendritic gaming NixOS module
+            (if self._modules ? nixos && self._modules.nixos ? gaming then self._modules.nixos.gaming else { })
             # Import dendritic desktop NixOS module
             (
               if self._modules ? nixos && self._modules.nixos ? desktop then self._modules.nixos.desktop else { }
@@ -383,6 +387,14 @@
                 (
                   if self._modules ? homeManager && self._modules.homeManager ? doom-emacs then
                     self._modules.homeManager.doom-emacs
+                  else
+                    { }
+                )
+
+                # Import dendritic gaming module
+                (
+                  if self._modules ? homeManager && self._modules.homeManager ? gaming then
+                    self._modules.homeManager.gaming
                   else
                     { }
                 )

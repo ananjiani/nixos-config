@@ -19,7 +19,6 @@
 
   imports = [
     ../_profiles/workstation/home.nix
-    ../../modules/home/gaming.nix
     # crypto.nix is now imported via dendritic pattern in flake.nix
     ../../modules/home/config/sops.nix
     ../../modules/home/dev/tea.nix
@@ -43,6 +42,8 @@
     enable = true;
     cakewallet.enable = true;
   };
+
+  gaming.enable = true;
 
   moondeck = {
     enable = true;

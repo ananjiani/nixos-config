@@ -10,7 +10,6 @@
 
     # Workstation-specific additions
     ../../../modules/home/config/defaults-workstation.nix
-    ../../../modules/home/gaming.nix
     # ../../../modules/home/editors/lvim.nix
     #../../../modules/home/editors/vscode.nix
     ../../../modules/home/firefox.nix
@@ -29,6 +28,8 @@
     ../../../modules/home/dev/claude-code.nix
     ../../../modules/home/dev/pi-coding-agent.nix
   ];
+
+  gaming.enable = lib.mkDefault true;
 
   # Doom Emacs via dendritic module
   doom-emacs = {

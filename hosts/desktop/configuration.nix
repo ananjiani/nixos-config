@@ -9,7 +9,6 @@
     ./hardware-configuration.nix
     ../_profiles/workstation/configuration.nix
     ./samba.nix
-    ../../modules/nixos/gaming.nix
     ../../modules/nixos/amd.nix
     ../../modules/nixos/bluetooth.nix
     ../../modules/nixos/android.nix
@@ -107,6 +106,8 @@
     capSysAdmin = true;
     openFirewall = true;
   };
+
+  gaming.enable = true;
 
   moondeck = {
     enable = true;
