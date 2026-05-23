@@ -31,7 +31,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       initContainers:
         - name: copy-runner-config
-          image: busybox:1.37
+          image: busybox:1.38
           command: ["sh", "-c", "cp /secret/.runner /data/.runner && chmod 666 /data/.runner"]
           volumeMounts:
             - name: runner-secret
