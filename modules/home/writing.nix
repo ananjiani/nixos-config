@@ -44,8 +44,8 @@ in
       "Zotero/translators/Marxists.org.js".source = ./zotero/translators/Marxists.org.js;
     };
 
-    activation.valeSync = lib.hm.dag.entryAfter [ "installPackages" ] ''
-      vale sync
+    activation.valeSync = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ${pkgs.vale}/bin/vale sync --config $HOME/.config/vale/.vale.ini
     '';
   };
 }
