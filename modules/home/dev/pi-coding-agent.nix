@@ -321,6 +321,9 @@ let
         kimi-coding = {
           apiKey = "!cat /run/secrets/kimi_code_api_key";
           baseUrl = "https://api.kimi.com/coding";
+          compat = {
+            supportsLongCacheRetention = false;
+          };
         };
 
         # z.ai's Coding-PaaS endpoint (openai-completions protocol).
