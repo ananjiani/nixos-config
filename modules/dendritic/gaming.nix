@@ -109,6 +109,7 @@ _:
             protontricks
             heroic
             hydralauncher
+            umu
           ]
           ++ lib.optionals cfg.ludusavi.enable [
             ludusavi
