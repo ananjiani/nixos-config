@@ -159,6 +159,11 @@ in
             (lib.mkIf cfg.niri.enable {
               programs.niri.enable = true;
 
+              # Override to nixpkgs niri (26.04+) which includes the
+              # wl_display_set_default_max_buffer_size fix for Wayland
+              # buffer overflow crashes (niri#1989).
+              programs.niri.package = lib.mkDefault pkgs.niri;
+
               xdg.portal.config = {
                 niri.default = [
                   "gtk"
