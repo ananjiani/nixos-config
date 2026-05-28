@@ -989,9 +989,11 @@ in
                       matches = [ { app-id = "^gamescope$"; } ];
                       variable-refresh-rate = true;
                     }
-                    # Work browser (Edge via flatpak): route to work workspace
+                    # Work browser (Edge via flatpak): route to work workspace.
+                    # niri sees the flatpak app-id as "Microsoft-edge", not
+                    # "com.microsoft.Edge".
                     {
-                      matches = [ { app-id = "^com\\.microsoft\\.Edge$"; } ];
+                      matches = [ { app-id = "^Microsoft-edge$"; } ];
                       open-on-workspace = "work";
                       default-column-width.proportion = 1.0 / 2.0;
                     }
@@ -1017,17 +1019,8 @@ in
                     ++ [
                       {
                         command = [
-                          "bash"
-                          "-c"
-                          ''
-                            day=$(date +%u)
-                            hour=$(date +%H)
-                            if [ "$day" -le 5 ] && [ "$hour" -lt 17 ]; then
-                              mullvad-exclude flatpak run com.microsoft.Edge \
-                                https://outlook.office365.com \
-                                https://teams.microsoft.com &
-                            fi
-                          ''
+                          "${pkgs.bash}/bin/bash"
+                          "${scriptsDir}/weekday-work-edge.sh"
                         ];
                       }
                     ];
