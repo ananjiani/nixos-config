@@ -15,6 +15,7 @@
     ia-writer-duospace
     etBook
     alegreya
+    noto-fonts-cjk-sans
   ];
 
 }

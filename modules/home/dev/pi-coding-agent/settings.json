@@ -8,7 +8,7 @@
     "opencode-go/deepseek-v4-flash"
   ],
   "theme": "gruvbox-material",
-  "lastChangelogVersion": "0.75.3",
+  "lastChangelogVersion": "0.75.4",
   "packages": [
     "git:github.com/annapurna-himal/pi-vim-editor",
     "npm:pi-mermaid",
