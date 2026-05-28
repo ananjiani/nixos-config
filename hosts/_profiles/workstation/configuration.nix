@@ -134,9 +134,15 @@
     "docker"
   ];
 
-  # EFI boot loader (all workstations use systemd-boot)
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  # Steam's 32-bit helper binaries trigger split lock traps (unaligned atomics
+  # spanning cache lines) which the kernel throttles by default since 5.19,
+  # causing system-wide stalls. Set to warn-only — still logs but no penalty.
+  # steam-for-linux#13037, #8003, #11740; Phoronix 2022-12-13
+  boot = {
+    kernelParams = [ "split_lock_detect=warn" ];
+    loader.systemd-boot.enable = true;
+    loader.efi.canTouchEfiVariables = true;
+  };
 
   security = {
     polkit.enable = true;
