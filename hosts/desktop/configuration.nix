@@ -121,42 +121,6 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEsPlw7G8qNx5esED6AHc6EQhZk0nuLxfwh1IlZ1k5Nb";
   };
 
-  nix = {
-    distributedBuilds = true;
-    settings = {
-      max-jobs = 0;
-      builders-use-substitutes = true;
-    };
-    buildMachines = [
-      {
-        hostName = "theoden.lan";
-        systems = [ "x86_64-linux" ];
-        sshUser = "root";
-        sshKey = "/home/ammar/.ssh/id_ed25519";
-        maxJobs = 4;
-        speedFactor = 2;
-        supportedFeatures = [
-          "nixos-test"
-          "big-parallel"
-          "kvm"
-        ];
-      }
-      {
-        hostName = "boromir.lan";
-        systems = [ "x86_64-linux" ];
-        sshUser = "root";
-        sshKey = "/home/ammar/.ssh/id_ed25519";
-        maxJobs = 3;
-        speedFactor = 2;
-        supportedFeatures = [
-          "nixos-test"
-          "big-parallel"
-          "kvm"
-        ];
-      }
-    ];
-  };
-
   desktop.niri.enable = true;
 
   opendeck.enable = true;

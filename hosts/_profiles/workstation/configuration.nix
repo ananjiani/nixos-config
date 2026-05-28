@@ -150,4 +150,48 @@
   };
 
   system.stateVersion = "23.05";
+
+  # Distributed builds: delegate to theoden + boromir, keeping local CPU free.
+  # i686-linux is included so FHS envs (lutris, steam) can delegate 32-bit builds.
+  nix = {
+    distributedBuilds = true;
+    settings = {
+      max-jobs = 0;
+      builders-use-substitutes = true;
+    };
+    buildMachines = [
+      {
+        hostName = "theoden.lan";
+        systems = [
+          "x86_64-linux"
+          "i686-linux"
+        ];
+        sshUser = "root";
+        sshKey = "/home/ammar/.ssh/id_ed25519";
+        maxJobs = 4;
+        speedFactor = 2;
+        supportedFeatures = [
+          "nixos-test"
+          "big-parallel"
+          "kvm"
+        ];
+      }
+      {
+        hostName = "boromir.lan";
+        systems = [
+          "x86_64-linux"
+          "i686-linux"
+        ];
+        sshUser = "root";
+        sshKey = "/home/ammar/.ssh/id_ed25519";
+        maxJobs = 3;
+        speedFactor = 2;
+        supportedFeatures = [
+          "nixos-test"
+          "big-parallel"
+          "kvm"
+        ];
+      }
+    ];
+  };
 }
