@@ -108,7 +108,6 @@ _:
             wine-wayland
             protontricks
             heroic
-            lutris
             hydralauncher
           ]
           ++ lib.optionals cfg.ludusavi.enable [
