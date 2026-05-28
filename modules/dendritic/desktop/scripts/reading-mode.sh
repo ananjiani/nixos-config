@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Reading mode: open Readwise Reader, an Emacs frame, and a Claude Code
+# Reading mode: open Readwise Reader, an Emacs frame, and a Pi coding agent
 # research companion side-by-side on the dedicated niri reading workspace.
 #
 # Layout on 32:9 ultrawide:
-#   [ Readwise Reader (1/2) ][ Emacs (1/4) ][ Claude Code (1/4) ]
+#   [ Readwise Reader (1/2) ][ Emacs (1/4) ][ Pi (1/4) ]
 #
 # Window routing is handled by focus-workspace + niri auto-focusing each
 # new window. Column widths are set imperatively after each spawn rather
@@ -35,11 +35,14 @@ wait_focused() {
     return 1
 }
 
-# Jump to the reading workspace first so new windows land here. (Do NOT
-# launch Brave before this — if Brave's window appears before the
-# workspace switch, it stays on the old workspace, and wait_focused
-# below never sees a focused brave window on reading.)
-niri msg action focus-workspace "$WORKSPACE"
+# Jump to a fresh dynamic workspace and name it "reading".
+# niri creates numbered workspaces on demand; set-workspace-name
+# (25.01+) then labels it so Waybar and window rules see it by name.
+# This avoids the pre-declared named workspace sitting around empty
+# on every boot — the workspace only exists when reading mode is
+# actually fired.
+niri msg action focus-workspace 99
+niri msg action set-workspace-name "$WORKSPACE"
 
 # 1. Readwise Reader as a Brave PWA-style window (left half).
 #    Brave's --app=URL mode generates a per-URL hashed app_id of the form
@@ -55,10 +58,10 @@ emacsclient -c -n
 wait_focused "emacs" 5 || true
 niri msg action set-column-width "25%"
 
-# 3. Claude Code rooted in org-roam as a research companion (last quarter).
-#    fish -C runs claude at startup and drops back to an interactive shell
+# 3. Pi coding agent rooted in org-roam as a research companion (last quarter).
+#    fish -C runs pi at startup and drops back to an interactive shell
 #    if it exits.
-foot --working-directory="$ORG_ROAM_DIR" fish -C claude >/dev/null 2>&1 &
+foot --working-directory="$ORG_ROAM_DIR" fish -C pi >/dev/null 2>&1 &
 wait_focused "foot" 5 || true
 niri msg action set-column-width "25%"
 

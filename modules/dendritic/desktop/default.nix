@@ -904,7 +904,6 @@ in
                   # windows; undeclared names are silently ignored.
                   workspaces = {
                     "chat" = { };
-                    "reading" = { };
                     "work" = { };
                   };
 
@@ -945,18 +944,7 @@ in
                       ];
                       open-on-workspace = "chat";
                     }
-                    # Reading mode: route the Readwise Reader Brave PWA
-                    # window to the reading workspace. The app_id is
-                    # chromium's extension-based hash, which changes between
-                    # brave and brave-origin. Column widths for all three
-                    # reading-mode windows are set imperatively by
-                    # reading-mode.sh, not here.
-                    {
-                      matches = [
-                        { app-id = "^brave-hcggeifnejlmamllipafdhamanebkbgk-Default$"; }
-                      ];
-                      open-on-workspace = "reading";
-                    }
+
                     # copyq popup should float, not tile
                     {
                       matches = [ { app-id = "(?i)copyq"; } ];
@@ -1267,7 +1255,7 @@ in
                 xdg.desktopEntries.reading-mode = {
                   name = "Reading";
                   genericName = "Reading Workspace";
-                  comment = "Launch Readwise Reader, Emacs, and Claude Code on the reading workspace";
+                  comment = "Launch Readwise Reader, Emacs, and Pi on the reading workspace";
                   icon = "accessories-dictionary";
                   exec = "bash ${scriptsDir}/reading-mode.sh";
                   categories = [ "Utility" ];
