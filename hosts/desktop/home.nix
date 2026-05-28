@@ -48,8 +48,6 @@
     ludusavi.backupPath = "/home/ammar/Games/Saves/ammars-pc";
   };
 
-  hydra.enable = true;
-
   moondeck = {
     enable = true;
     autostart = true; # headless mode via systemd

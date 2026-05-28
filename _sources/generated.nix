@@ -14,14 +14,6 @@
       sha256 = "sha256-awZut6smNYb+HMPYNsRTKlW09PnqGFWCklQddcSXH7A=";
     };
   };
-  hydra-launcher = {
-    pname = "hydra-launcher";
-    version = "3.9.8";
-    src = fetchurl {
-      url = "https://github.com/hydralauncher/hydra/releases/download/v3.9.8/hydralauncher-3.9.8.AppImage";
-      sha256 = "sha256-jKhmcHfi3QuihTxIX73QRLfs8K7iH+lKxhCNpKJsumk=";
-    };
-  };
   jacktook = {
     pname = "jacktook";
     version = "e028c0c7290f8fd24836da61a88e3eb9908abad4";

@@ -109,6 +109,7 @@ _:
             protontricks
             heroic
             lutris
+            hydralauncher
           ]
           ++ lib.optionals cfg.ludusavi.enable [
             ludusavi
