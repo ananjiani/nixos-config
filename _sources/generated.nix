@@ -14,17 +14,25 @@
       sha256 = "sha256-awZut6smNYb+HMPYNsRTKlW09PnqGFWCklQddcSXH7A=";
     };
   };
+  hydra-launcher = {
+    pname = "hydra-launcher";
+    version = "3.9.8";
+    src = fetchurl {
+      url = "https://github.com/hydralauncher/hydra/releases/download/v3.9.8/hydralauncher-3.9.8.AppImage";
+      sha256 = "sha256-jKhmcHfi3QuihTxIX73QRLfs8K7iH+lKxhCNpKJsumk=";
+    };
+  };
   jacktook = {
     pname = "jacktook";
-    version = "a8e270da932f976d65cde4c2107dac72bb8494e6";
+    version = "e028c0c7290f8fd24836da61a88e3eb9908abad4";
     src = fetchFromGitHub {
       owner = "Sam-Max";
       repo = "plugin.video.jacktook";
-      rev = "a8e270da932f976d65cde4c2107dac72bb8494e6";
+      rev = "e028c0c7290f8fd24836da61a88e3eb9908abad4";
       fetchSubmodules = false;
-      sha256 = "sha256-58HiVcYjaBfGIWtylCdO0ki8ER7mPDNZHLZb61elMgw=";
+      sha256 = "sha256-Kce5vuk7vf0mwGzMK61mRWQzW+LVO2raVKrYJeotFls=";
     };
-    date = "2026-04-23";
+    date = "2026-05-25";
   };
   moondeck-buddy = {
     pname = "moondeck-buddy";
@@ -36,10 +44,10 @@
   };
   opendeck = {
     pname = "opendeck";
-    version = "2.11.1";
+    version = "2.12.0";
     src = fetchurl {
-      url = "https://github.com/nekename/OpenDeck/releases/download/v2.11.1/opendeck_2.11.1_amd64.AppImage";
-      sha256 = "sha256-saJeKvSfr7DoKA/oloM0gbIWRdOK+0puyy0y/SZ03jU=";
+      url = "https://github.com/nekename/OpenDeck/releases/download/v2.12.0/opendeck_2.12.0_amd64.AppImage";
+      sha256 = "sha256-W40GHZZImUpxmJfW9zc47dTkjMJ+NIfGAuXy/UvsRL4=";
     };
   };
 }

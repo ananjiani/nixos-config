@@ -17,6 +17,9 @@
   # Mode 2775 = setgid + rwxrwxr-x (new files inherit group)
   systemd.tmpfiles.rules = [
     "d /mnt/storage 2775 root storage -"
+    "d /mnt/storage/games 2775 root storage -"
+    "d /mnt/storage/games/library 2775 root storage -"
+    "d /mnt/storage/games/saves 2775 ammar storage -"
     "d /mnt/storage/immich 2775 root storage -"
   ];
 

@@ -113,6 +113,8 @@ in
         9101 # Buildbot Prometheus metrics
         445 # SMB
         139 # NetBIOS
+        8384 # Syncthing web UI
+        22000 # Syncthing sync protocol
       ];
       allowedUDPPorts = [
         111 # rpcbind/portmapper
@@ -120,6 +122,7 @@ in
         20048 # mountd
         137 # NetBIOS name service
         138 # NetBIOS datagram
+        22000 # Syncthing device discovery (broadcast)
       ];
     };
   };
@@ -235,6 +238,25 @@ in
       port = 9187;
       openFirewall = true;
       runAsLocalSuperUser = true;
+    };
+
+    # Syncthing for game save sync (Desktop ↔ Deck ↔ theoden)
+    syncthing = {
+      enable = true;
+      user = "ammar";
+      group = "storage";
+      dataDir = "/home/ammar/.syncthing";
+      settings = {
+        gui = {
+          user = "ammar";
+          password = ""; # No password on LAN, firewall-restricted
+        };
+        folders."game-saves" = {
+          path = "/mnt/storage/games/saves";
+          id = "game-saves";
+          # Devices are paired via web UI (device IDs are per-install)
+        };
+      };
     };
 
     # NFS Server
@@ -467,6 +489,54 @@ in
 
     # Services that consume vault-agent secrets must wait for rendering
     services = {
+      # Restic backup for game saves (S3-ready via S3_REPO env var)
+      restic-backup-game-saves = {
+        description = "Restic backup for game saves";
+        after = [ "network-online.target" ];
+        wants = [ "network-online.target" ];
+        path = [ pkgs.restic ];
+        environment = {
+          RESTIC_REPOSITORY = "/mnt/storage/games/.restic-saves";
+          RESTIC_PASSWORD_FILE = "/dev/null"; # No encryption for LAN storage; swap for S3 key file when migrating
+        };
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = pkgs.writeShellScript "restic-backup-game-saves" ''
+            set -euo pipefail
+            REPO="''${S3_REPO:-$RESTIC_REPOSITORY}"
+            if [ "$REPO" != "$RESTIC_REPOSITORY" ]; then
+              echo "Using S3 repo: $REPO"
+            fi
+            exec ${pkgs.restic}/bin/restic backup /mnt/storage/games/saves \
+              --repo "$REPO" \
+              --verbose
+          '';
+        };
+      };
+
+      # Restic retention (prune old snapshots)
+      restic-forget-game-saves = {
+        description = "Restic forget/prune for game saves";
+        after = [ "restic-backup-game-saves.service" ];
+        path = [ pkgs.restic ];
+        environment = {
+          RESTIC_REPOSITORY = "/mnt/storage/games/.restic-saves";
+          RESTIC_PASSWORD_FILE = "/dev/null";
+        };
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = pkgs.writeShellScript "restic-forget-game-saves" ''
+            set -euo pipefail
+            REPO="''${S3_REPO:-$RESTIC_REPOSITORY}"
+            ${pkgs.restic}/bin/restic forget \
+              --repo "$REPO" \
+              --keep-daily 30 \
+              --prune \
+              --verbose
+          '';
+        };
+      };
+
       buildbot-master = {
         after = [ "vault-agent-default.service" ];
         wants = [ "vault-agent-default.service" ];
@@ -534,13 +604,25 @@ in
       };
     };
 
-    timers.attic-chunk-check = {
-      description = "Run Attic chunk integrity check daily";
-      wantedBy = [ "timers.target" ];
-      timerConfig = {
-        OnCalendar = "daily";
-        OnBootSec = "15min";
-        RandomizedDelaySec = "1h";
+    timers = {
+      restic-backup-game-saves = {
+        description = "Run Restic backup for game saves daily";
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnCalendar = "daily";
+          RandomizedDelaySec = "1h";
+          Persistent = true;
+        };
+      };
+
+      attic-chunk-check = {
+        description = "Run Attic chunk integrity check daily";
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnCalendar = "daily";
+          OnBootSec = "15min";
+          RandomizedDelaySec = "1h";
+        };
       };
     };
   };

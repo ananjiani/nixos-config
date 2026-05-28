@@ -399,6 +399,14 @@
                     { }
                 )
 
+                # Import dendritic hydra module
+                (
+                  if self._modules ? homeManager && self._modules.homeManager ? hydra then
+                    self._modules.homeManager.hydra
+                  else
+                    { }
+                )
+
                 # Import dendritic desktop module
                 (
                   if self._modules ? homeManager && self._modules.homeManager ? desktop then

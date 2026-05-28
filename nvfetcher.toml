@@ -12,6 +12,11 @@ src.github = "nekename/OpenDeck"
 src.prefix = "v"
 fetch.url = "https://github.com/nekename/OpenDeck/releases/download/v$ver/opendeck_$ver_amd64.AppImage"
 
+[hydra-launcher]
+src.github = "hydralauncher/hydra"
+src.prefix = "v"
+fetch.url = "https://github.com/hydralauncher/hydra/releases/download/v$ver/hydralauncher-$ver.AppImage"
+
 [jacktook]
 src.git = "https://github.com/Sam-Max/plugin.video.jacktook.git"
 src.branch = "main"

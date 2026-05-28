@@ -43,7 +43,12 @@
     cakewallet.enable = true;
   };
 
-  gaming.enable = true;
+  gaming = {
+    enable = true;
+    ludusavi.backupPath = "/home/ammar/Games/Saves/ammars-pc";
+  };
+
+  hydra.enable = true;
 
   moondeck = {
     enable = true;

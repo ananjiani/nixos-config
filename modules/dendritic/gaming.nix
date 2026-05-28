@@ -71,6 +71,28 @@ _:
     {
       options.gaming = {
         enable = lib.mkEnableOption "gaming user-level tools and launchers";
+
+        syncthing = {
+          enable = lib.mkEnableOption "Syncthing save sync";
+        };
+
+        ludusavi = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = cfg.enable;
+            description = "Ludusavi save backup (auto-enabled when gaming is on)";
+          };
+          backupPath = lib.mkOption {
+            type = lib.types.str;
+            default = "${config.home.homeDirectory}/Games/Saves";
+            description = "Path for Ludusavi backups (set per-host for subdirectory separation)";
+          };
+          timerInterval = lib.mkOption {
+            type = lib.types.str;
+            default = "hourly";
+            description = "Systemd timer OnCalendar interval";
+          };
+        };
       };
 
       config = lib.mkIf cfg.enable {
@@ -78,13 +100,57 @@ _:
           DXVK_HDR = "1";
         };
 
-        home.packages = with pkgs; [
-          gpu-screen-recorder
-          gpu-screen-recorder-gtk
-          wine-wayland
-          protontricks
-          heroic
-        ];
+        home.packages =
+          with pkgs;
+          [
+            gpu-screen-recorder
+            gpu-screen-recorder-gtk
+            wine-wayland
+            protontricks
+            heroic
+            lutris
+          ]
+          ++ lib.optionals cfg.ludusavi.enable [
+            ludusavi
+          ];
+
+        # Syncthing for game save sync (Desktop ↔ Deck ↔ theoden)
+        services.syncthing = lib.mkIf cfg.syncthing.enable {
+          enable = true;
+          settings = {
+            folders."game-saves" = {
+              path = "${config.home.homeDirectory}/Games/Saves";
+              id = "game-saves";
+              # Devices are paired via web UI (device IDs are per-install)
+            };
+          };
+        };
+
+        # Ludusavi systemd user timer for automated save backups
+        systemd.user = lib.mkIf cfg.ludusavi.enable {
+          services.ludusavi-backup = {
+            Unit = {
+              Description = "Ludusavi save backup";
+              Documentation = "https://github.com/mtkennerly/ludusavi";
+            };
+            Service = {
+              Type = "oneshot";
+              ExecStart = "${pkgs.ludusavi}/bin/ludusavi backup --path ${cfg.ludusavi.backupPath} --force";
+            };
+          };
+          timers.ludusavi-backup = {
+            Unit = {
+              Description = "Ludusavi save backup timer";
+            };
+            Install = {
+              WantedBy = [ "timers.target" ];
+            };
+            Timer = {
+              OnCalendar = cfg.ludusavi.timerInterval;
+              Persistent = true;
+            };
+          };
+        };
 
         programs = {
           mangohud = {
