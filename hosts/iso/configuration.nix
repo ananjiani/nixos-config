@@ -3,9 +3,26 @@
   lib,
   modulesPath,
   inputs,
+  pkgs,
   ...
 }:
 
+let
+  # Decrypt wifi secrets at ISO build time using the desktop's age key.
+  # `nix build .#iso --impure` required to access the key file outside the flake.
+  wifi-secrets =
+    pkgs.runCommand "iso-wifi-secrets"
+      {
+        nativeBuildInputs = [ pkgs.sops ];
+        SOPS_AGE_KEY_FILE = "/home/ammar/.config/sops/age/keys.txt";
+        __noChroot = true;
+      }
+      ''
+        mkdir -p $out
+        sops -d --extract '["wifi_ssid"]' ${../../secrets/secrets.yaml} > $out/ssid
+        sops -d --extract '["wifi_psk"]' ${../../secrets/secrets.yaml} > $out/psk
+      '';
+in
 {
   imports = [
     "${modulesPath}/installer/cd-dvd/installation-cd-minimal.nix"
@@ -31,6 +48,35 @@
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMoo8KQiLBJ6WrWmG0/6O8lww/v6ggPaLfv70/ksMZbD ammar.nanjiani@gmail.com"
     ];
+  };
+
+  # Auto-connect to WiFi on boot (decrypted at build time, plaintext in nix store)
+  systemd.services.iso-wifi = {
+    description = "Connect to WiFi on boot";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    path = with pkgs; [
+      wpa_supplicant
+      dhcpcd
+    ];
+    script = ''
+      SSID=$(cat ${wifi-secrets}/ssid)
+      PSK=$(cat ${wifi-secrets}/psk)
+      # Find the wireless interface
+      IFACE=$(ls /sys/class/net/ | grep -E '^wl' | head -1)
+      if [ -z "$IFACE" ]; then
+        echo "iso-wifi: no wireless interface found"
+        exit 0
+      fi
+      wpa_passphrase "$SSID" "$PSK" > /tmp/wpa.conf
+      wpa_supplicant -B -i "$IFACE" -c /tmp/wpa.conf
+      dhcpcd "$IFACE"
+      echo "iso-wifi: connected to $SSID on $IFACE"
+    '';
   };
 
   # Extra tools available via: nix shell nixpkgs#parted nixpkgs#gptfdisk etc.
