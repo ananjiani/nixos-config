@@ -55,10 +55,7 @@
       url = "github:HorlogeSkynet/thunderbird-user.js";
       flake = false;
     };
-    chaotic = {
-      url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
-      inputs.nixpkgs.follows = "nixpkgs-unstable";
-    };
+    chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     nixos-avf = {
       url = "github:nix-community/nixos-avf";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
@@ -91,6 +88,7 @@
       url = "github:nix-community/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+    jovian.follows = "chaotic/jovian";
   };
 
   outputs =
@@ -269,6 +267,35 @@
               if self._modules ? homeManager && self._modules.homeManager ? kodi then
                 {
                   home-manager.sharedModules = [ self._modules.homeManager.kodi ];
+                }
+              else
+                { }
+            )
+          ];
+        };
+
+        # Steam Deck — Jovian NixOS handheld
+        steamdeck = lib.nixosSystem {
+          inherit system specialArgs;
+          modules = [
+            ./hosts/steamdeck/configuration.nix
+            inputs.sops-nix.nixosModules.sops
+            inputs.disko.nixosModules.disko
+            # brave-origin overlay (remove when nixpkgs PR #511131 merges)
+            {
+              nixpkgs.overlays = [
+                (final: _prev: { brave-origin = final.callPackage ./pkgs/brave-origin/package.nix { }; })
+              ];
+            }
+            # Import dendritic brave NixOS module
+            (if self._modules ? nixos && self._modules.nixos ? brave then self._modules.nixos.brave else { })
+            # Import dendritic gaming NixOS module
+            (if self._modules ? nixos && self._modules.nixos ? gaming then self._modules.nixos.gaming else { })
+            # Import dendritic gaming HM module (Ludusavi, Syncthing, MangoHUD, etc.)
+            (
+              if self._modules ? homeManager && self._modules.homeManager ? gaming then
+                {
+                  home-manager.sharedModules = [ self._modules.homeManager.gaming ];
                 }
               else
                 { }
@@ -463,6 +490,7 @@
         nixos-theoden = self.nixosConfigurations.theoden.config.system.build.toplevel;
         nixos-rivendell = self.nixosConfigurations.rivendell.config.system.build.toplevel;
         nixos-erebor = self.nixosConfigurations.erebor.config.system.build.toplevel;
+        nixos-steamdeck = self.nixosConfigurations.steamdeck.config.system.build.toplevel;
 
         # Home Manager builds (for CI caching)
         home-ammars-pc = self.homeConfigurations."ammar@ammars-pc".activationPackage;
