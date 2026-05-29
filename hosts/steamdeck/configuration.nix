@@ -36,7 +36,15 @@
     };
     decky-loader = {
       enable = true;
-      extraPackages = [ pkgs.systemd ]; # systemctl not in service PATH by default
+      # Decky Loader's run() defaults env to {"LD_LIBRARY_PATH": ""},
+      # which replaces the entire environment including PATH.
+      # This breaks systemctl calls. Fix: change default to None.
+      package = pkgs.decky-loader.overridePythonAttrs (old: {
+        postPatch = (old.postPatch or "") + ''
+          substituteInPlace src/localplatform/localplatformlinux.py \
+            --replace-fail 'env: ENV | None = {"LD_LIBRARY_PATH": ""}' 'env: ENV | None = None'
+        '';
+      });
     };
   };
 
