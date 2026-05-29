@@ -34,7 +34,10 @@
       user = "ammar";
       desktopSession = "plasma";
     };
-    decky-loader.enable = true;
+    decky-loader = {
+      enable = true;
+      extraPackages = [ pkgs.systemd ]; # systemctl not in service PATH by default
+    };
   };
 
   # ── Gaming system services (Steam, gamemode, gamescope) ────────────
