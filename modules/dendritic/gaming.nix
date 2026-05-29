@@ -115,6 +115,10 @@ _:
           ]
           ++ lib.optionals cfg.ludusavi.enable [
             ludusavi
+          ]
+          ++ [
+            boilr
+            protonup-qt
           ];
 
         # Syncthing for game save sync (Desktop ↔ Deck ↔ theoden)

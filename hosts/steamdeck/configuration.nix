@@ -34,6 +34,7 @@
       user = "ammar";
       desktopSession = "plasma";
     };
+    decky-loader.enable = true;
   };
 
   # ── Gaming system services (Steam, gamemode, gamescope) ────────────
