@@ -104,6 +104,16 @@ let
         exit 1
       fi
       url=$1
+
+      # Auto-append .rss to Reddit thread URLs. Reddit blocks all
+      # unauthenticated HTML/JSON endpoints (403) regardless of IP —
+      # Mullvad, residential, even Jina's servers are blocked. The
+      # .rss endpoint is the only one that works without auth.
+      if [[ "$url" =~ ^https?://(www\.|old\.)?reddit\.com/r/[^/]+/comments/ ]] && \
+         [[ ! "$url" =~ \.rss$ ]]; then
+        url=$(printf '%s' "$url" | sed 's|/*$||').rss
+      fi
+
       tmpfile=$(mktemp --suffix=.html)
       trap 'rm -f "$tmpfile"' EXIT
 
