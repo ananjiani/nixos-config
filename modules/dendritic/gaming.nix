@@ -98,6 +98,7 @@ _:
       config = lib.mkIf cfg.enable {
         home.sessionVariables = {
           DXVK_HDR = "1";
+          WINE_LARGE_ADDRESS_AWARE = "1";
         };
 
         home.packages =
@@ -107,6 +108,7 @@ _:
             gpu-screen-recorder-gtk
             wine-wayland
             protontricks
+            winetricks
             heroic
             hydralauncher
             umu-launcher
