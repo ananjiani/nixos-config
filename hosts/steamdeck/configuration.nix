@@ -41,7 +41,7 @@
       # This breaks systemctl calls. Fix: change default to None.
       package = pkgs.decky-loader.overridePythonAttrs (old: {
         postPatch = (old.postPatch or "") + ''
-          find . -name localplatformlinux.py -exec sed -i 's/env: ENV | None = {"LD_LIBRARY_PATH": ""}/env: ENV | None = None/' {} +
+          find . -name localplatformlinux.py -exec sed -i 's@env: ENV | None = {"LD_LIBRARY_PATH": ""}@env: ENV | None = None@' {} +
         '';
       });
     };
