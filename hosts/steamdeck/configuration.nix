@@ -78,16 +78,19 @@
     before = [ "display-manager.service" ];
   };
 
-  # Decky LSFG-VK: fix default Lossless.dll path for NixOS (Steam library is under ~/.local, not /games).
-  # Also: Decky runs as root (HOME=/root) so DLL detection can't find ~ammar's Steam library.
-  # Set LSFG_DLL_PATH env var (checked first by detection).
-  systemd.services.decky-loader = {
-    preStart = lib.mkAfter ''
-      sed -i 's|dll = .*|dll = "/home/ammar/.local/share/Steam/steamapps/common/Lossless Scaling/Lossless.dll"|' \
-        /var/lib/decky-loader/.config/lsfg-vk/conf.toml 2>/dev/null || true
-    '';
-    environment.LSFG_DLL_PATH = "/home/ammar/.local/share/Steam/steamapps/common/Lossless Scaling/Lossless.dll";
-  };
+  # Decky LSFG-VK: The plugin detects Lossless Scaling by checking
+  #   HOME/.local/share/Steam/steamapps/common/Lossless Scaling/Lossless.dll
+  # Decky runs plugins as the 'decky' user (HOME=/var/lib/decky-loader),
+  # so the DLL is not found. Create a symlink from decky's HOME to the real path.
+  systemd.services.decky-loader.preStart = lib.mkAfter ''
+    sed -i 's|dll = .*|dll = "/home/ammar/.local/share/Steam/steamapps/common/Lossless Scaling/Lossless.dll"|' \
+      /var/lib/decky-loader/.config/lsfg-vk/conf.toml 2>/dev/null || true
+    # Create expected directory structure and symlink for DLL detection
+    LS_HOME=/var/lib/decky-loader/.local/share/Steam/steamapps/common
+    mkdir -p "$LS_HOME"
+    chown decky:decky "$LS_HOME"
+    ln -sfn /home/ammar/.local/share/Steam/steamapps/common/Lossless\ Scaling "$LS_HOME/Lossless Scaling"
+  '';
 
   # ── Gaming system services (Steam, gamemode, gamescope) ────────────
   # Disable NixOS gamescope — Jovian's steam module provides its own wrapper
