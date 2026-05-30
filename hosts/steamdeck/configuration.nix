@@ -54,7 +54,7 @@
 
   # Decky Loader requires Steam CEF remote debugging to inject its UI.
   # Create the flag file before Steam starts (Jovian doesn't auto-enable for security).
-  systemd.services.steam-cef-debug = lib.mkIf config.jovian.decky-loader.enable {
+  systemd.services.steam-cef-debug = {
     description = "Enable Steam CEF debugging for Decky Loader";
     serviceConfig = {
       Type = "oneshot";
