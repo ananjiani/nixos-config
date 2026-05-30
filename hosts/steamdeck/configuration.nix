@@ -100,11 +100,21 @@
     server = "theoden.lan";
   };
 
-  # liblsfg-vk.so is loaded by the Vulkan loader inside Steam Runtime (Proton),
-  # which doesn't use nix-ld. Patch the RUNPATH so it finds libstdc++.so.6.
+  # ── LSFG-VK Vulkan layer (nixpkgs package, compiled for NixOS) ─────
+  # The Decky LSFG-VK plugin handles config + launch script.
+  # Use the nixpkgs-built layer instead of the plugin's prebuilt binary
+  # so library paths resolve correctly on NixOS.
+  environment.systemPackages = [ pkgs.lsfg-vk ];
+
+  # Ensure the layer JSON is discoverable inside Proton (Steam Runtime).
+  # /etc/vulkan/implicit_layer.d is always checked regardless of XDG vars.
+  environment.etc."vulkan/implicit_layer.d/VkLayer_LS_frame_generation.json".source =
+    "${pkgs.lsfg-vk}/share/vulkan/implicit_layer.d/VkLayer_LS_frame_generation.json";
+
+  # Remove plugin-installed layer files so the nixpkgs system version is used.
   systemd.services.decky-loader.preStart = lib.mkAfter ''
-    ${pkgs.patchelf}/bin/patchelf --set-rpath ${pkgs.stdenv.cc.cc.lib}/lib \
-      /home/ammar/.local/lib/liblsfg-vk.so 2>/dev/null || true
+    rm -f /home/ammar/.local/share/vulkan/implicit_layer.d/VkLayer_LS_frame_generation.json
+    rm -f /home/ammar/.local/lib/liblsfg-vk.so
   '';
 
   # ── KDE Plasma 6 for Desktop Mode ──────────────────────────────────
