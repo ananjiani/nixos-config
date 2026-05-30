@@ -36,6 +36,11 @@
     };
     decky-loader = {
       enable = true;
+      # Plugins (Junk-Store, Decky-Framegen, etc.) need these in PATH
+      extraPackages = [
+        pkgs.python3 # python3 for Junk-Store
+        pkgs.p7zip # 7z for Decky-Framegen extraction
+      ];
       # Decky Loader's run() defaults env to {"LD_LIBRARY_PATH": ""},
       # which replaces the entire environment including PATH.
       # This breaks systemctl calls. Fix: change default to None.
@@ -45,6 +50,19 @@
         '';
       });
     };
+  };
+
+  # Decky Loader requires Steam CEF remote debugging to inject its UI.
+  # Create the flag file before Steam starts (Jovian doesn't auto-enable for security).
+  systemd.services.steam-cef-debug = lib.mkIf config.jovian.decky-loader.enable {
+    description = "Enable Steam CEF debugging for Decky Loader";
+    serviceConfig = {
+      Type = "oneshot";
+      User = config.jovian.steam.user;
+      ExecStart = "/bin/sh -c 'mkdir -p ~/.steam/steam && touch ~/.steam/steam/.cef-enable-remote-debugging'";
+    };
+    wantedBy = [ "multi-user.target" ];
+    before = [ "display-manager.service" ];
   };
 
   # ── Gaming system services (Steam, gamemode, gamescope) ────────────
