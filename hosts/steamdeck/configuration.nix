@@ -3,6 +3,7 @@
 # Managed Home Manager: one `nixos-rebuild --target-host` deploys everything.
 # No separate `nh home switch` needed.
 {
+  config,
   pkgs,
   lib,
   inputs,
