@@ -78,6 +78,12 @@
     before = [ "display-manager.service" ];
   };
 
+  # Decky LSFG-VK: fix default Lossless.dll path for NixOS (Steam library is under ~/.local, not /games)
+  systemd.services.decky-loader.preStart = lib.mkAfter ''
+    sed -i 's|dll = .*|dll = "/home/ammar/.local/share/Steam/steamapps/common/Lossless Scaling/Lossless.dll"|' \
+      /var/lib/decky-loader/.config/lsfg-vk/conf.toml 2>/dev/null || true
+  '';
+
   # ── Gaming system services (Steam, gamemode, gamescope) ────────────
   # Disable NixOS gamescope — Jovian's steam module provides its own wrapper
   gaming.enable = true;
