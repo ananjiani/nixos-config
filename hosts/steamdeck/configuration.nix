@@ -100,6 +100,13 @@
     server = "theoden.lan";
   };
 
+  # liblsfg-vk.so is loaded by the Vulkan loader inside Steam Runtime (Proton),
+  # which doesn't use nix-ld. Patch the RUNPATH so it finds libstdc++.so.6.
+  systemd.services.decky-loader.preStart = lib.mkAfter ''
+    ${pkgs.patchelf}/bin/patchelf --set-rpath ${pkgs.stdenv.cc.cc.lib}/lib \
+      /home/ammar/.local/lib/liblsfg-vk.so 2>/dev/null || true
+  '';
+
   # ── KDE Plasma 6 for Desktop Mode ──────────────────────────────────
   services = {
     desktopManager.plasma6.enable = true;

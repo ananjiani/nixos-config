@@ -55,6 +55,6 @@ Set `JINA_API_KEY` in env for higher rate limits (forwarded as Bearer auth).
 
 1. You need current information → `web-search`
    **Always include the current year (2026) in queries about recent information** — e.g. `web-search nixpkgs unfree packages 2026`, not `web-search nixpkgs unfree packages`.
-2. User asks to read a specific URL → `web-fetch` first
-3. If `web-fetch` returns <500 chars or obviously wrong content → `web-fetch-jina`
+2. User asks to read a specific URL → `web-fetch` first (handles Reddit automatically)
+3. If `web-fetch` returns <500 chars or obviously wrong content → `web-fetch-jina` (skip for Reddit — use `web-fetch`)
 4. If you need both search AND content for a URL in one call → `web-search` gives snippets; follow up with `web-fetch` on specific URLs of interest.

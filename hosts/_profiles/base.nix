@@ -42,6 +42,7 @@
         curl
         zlib
         mesa
+        stdenv.cc.cc.lib # libstdc++.so.6 — needed by precompiled binaries (e.g. Vulkan layers)
       ];
     };
   };
