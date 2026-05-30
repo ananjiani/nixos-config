@@ -45,7 +45,19 @@
       # Decky Loader's run() defaults env to {"LD_LIBRARY_PATH": ""},
       # which replaces the entire environment including PATH.
       # This breaks systemctl calls. Fix: change default to None.
-      package = pkgs.decky-loader.overridePythonAttrs (old: {
+      # Pin v3.2.4 — fixes CEF rendering error (missing Field component in @decky/ui).
+      package = pkgs.decky-loader.overridePythonAttrs (old: rec {
+        version = "3.2.4";
+        src = pkgs.fetchFromGitHub {
+          owner = "SteamDeckHomebrew";
+          repo = "decky-loader";
+          rev = "v3.2.4";
+          hash = "sha256-QC1vmosEY+gQGMskA+y3yz3zpHJjXNjoYk3TA93ffJw=";
+        };
+        pnpmDeps = old.pnpmDeps.override {
+          inherit src version;
+          hash = "sha256-rjou5KDHlF0MWAMzIKjc9UiIKk8t626SOM1Nw7WQzy4=";
+        };
         postPatch = (old.postPatch or "") + ''
           find . -name localplatformlinux.py -exec sed -i 's@env: ENV | None = {"LD_LIBRARY_PATH": ""}@env: ENV | None = None@' {} +
         '';
