@@ -9,13 +9,12 @@
 
 let
   # Decrypt wifi secrets at ISO build time using the desktop's age key.
-  # `nix build .#iso --impure` required to access the key file outside the flake.
+  # `nix build .#iso --impure` required — reads key into nix store at eval time.
   wifi-secrets =
     pkgs.runCommand "iso-wifi-secrets"
       {
         nativeBuildInputs = [ pkgs.sops ];
-        SOPS_AGE_KEY_FILE = "/home/ammar/.config/sops/age/keys.txt";
-        __noChroot = true;
+        SOPS_AGE_KEY = builtins.readFile /home/ammar/.config/sops/age/keys.txt;
       }
       ''
         mkdir -p $out
