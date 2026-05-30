@@ -111,10 +111,15 @@
   environment.etc."vulkan/implicit_layer.d/VkLayer_LS_frame_generation.json".source =
     "${pkgs.lsfg-vk}/share/vulkan/implicit_layer.d/VkLayer_LS_frame_generation.json";
 
-  # Remove plugin-installed layer files so the nixpkgs system version is used.
+  # Replace plugin-installed layer files with symlinks to the nixpkgs-built
+  # lsfg-vk.  The nixpkgs binary is compiled for NixOS with correct RUNPATH,
+  # unlike the plugin's prebuilt.  Symlinks keep the plugin's install check
+  # happy (it expects ~/.local/{lib,share/vulkan/implicit_layer.d}/).
   systemd.services.decky-loader.preStart = lib.mkAfter ''
-    rm -f /home/ammar/.local/share/vulkan/implicit_layer.d/VkLayer_LS_frame_generation.json
-    rm -f /home/ammar/.local/lib/liblsfg-vk.so
+    mkdir -p /home/ammar/.local/lib
+    mkdir -p /home/ammar/.local/share/vulkan/implicit_layer.d
+    ln -sf ${pkgs.lsfg-vk}/lib/liblsfg-vk.so /home/ammar/.local/lib/liblsfg-vk.so
+    ln -sf ${pkgs.lsfg-vk}/share/vulkan/implicit_layer.d/VkLayer_LS_frame_generation.json /home/ammar/.local/share/vulkan/implicit_layer.d/VkLayer_LS_frame_generation.json
   '';
 
   # ── KDE Plasma 6 for Desktop Mode ──────────────────────────────────
