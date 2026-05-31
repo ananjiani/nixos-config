@@ -54,8 +54,18 @@ in
         dns = {
           base_domain = cfg.baseDomain;
           magic_dns = true;
-          # Use same DNS as the host (AdGuard VIP → router → Quad9)
-          nameservers.global = config.networking.nameservers;
+          nameservers = {
+            # Use same DNS as the host (AdGuard VIP → router)
+            global = config.networking.nameservers;
+            # Split DNS: route dimensiondoor.xyz queries to AdGuard so
+            # split-DNS rewrites (ssh.git, git, auth, etc.) work for
+            # Tailscale clients off-LAN (e.g. laptop at a coffee shop).
+            # Without this, roaming clients hit public DNS which returns
+            # NXDOMAIN for internal-only records like ssh.git.*.
+            split = {
+              "dimensiondoor.xyz" = [ "192.168.1.53" ]; # AdGuard HA VIP
+            };
+          };
         };
 
         prefixes = {
