@@ -58,8 +58,6 @@ in
       tor-browser
       mullvad-browser
       nitrokey-app2
-      bitwarden-desktop
-      bitwarden-cli
     ];
 
     services.mullvad-vpn = {
