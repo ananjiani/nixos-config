@@ -356,6 +356,13 @@ let
         "opencode-go" = {
           apiKey = "!cat /run/secrets/opencode_api_key";
           baseUrl = "https://opencode.ai/zen/go/v1";
+          modelOverrides = {
+            "kimi-k2.6" = {
+              compat = {
+                supportsLongCacheRetention = false;
+              };
+            };
+          };
         };
       };
     }

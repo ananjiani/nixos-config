@@ -17,7 +17,7 @@ Run this command using the Bash tool, replacing QUESTION with the user's questio
 curl -sk --max-time 300 \
   -X POST https://holmes.lan/api/chat \
   -H 'Content-Type: application/json' \
-  -d '{"ask": "QUESTION", "model": "bifrost-kimi"}'
+  -d '{"ask": "QUESTION"}'
 ```
 
 ### Step 2: Parse and present the response
@@ -48,10 +48,7 @@ ssh root@boromir.lan "kubectl get pods -n holmesgpt"
 ```
 
 ### Empty or error response about model
-The configured model is `bifrost-kimi` (Kimi via Bifrost LLM gateway). Check Bifrost is healthy:
-```bash
-curl -s http://bifrost.lan/health
-```
+Check that the configured model (defined in `k8s/apps/holmesgpt/helmrelease.yaml` under `modelList`) is reachable. For DeepSeek, verify the API key in the `holmesgpt-ai-secret` secret is valid.
 
 ### Investigation taking too long
 Complex investigations chain multiple tool calls (kubectl, Loki queries, Prometheus queries). If the 300s timeout is hit, break the question into smaller parts:
