@@ -354,7 +354,22 @@ in
               '';
             };
           };
-          niri.enable = lib.mkEnableOption "niri compositor";
+          niri = {
+            enable = lib.mkEnableOption "niri compositor";
+
+            screenProfile = lib.mkOption {
+              type = lib.types.enum [
+                "ultrawide"
+                "standard"
+              ];
+              default = "standard";
+              description = ''
+                Screen width profile for niri column sizing.
+                "ultrawide" tunes proportions for 32:9 displays (5120 px+).
+                "standard" tunes proportions for 16:9 displays (~1920 px).
+              '';
+            };
+          };
 
           startupApps = lib.mkOption {
             type = lib.types.listOf lib.types.str;
@@ -786,6 +801,34 @@ in
             # ── niri HM ─────────────────────────────────────────────
             (lib.mkIf cfg.niri.enable (
               let
+                # Profile-tuned column proportions. Each host selects
+                # its profile via desktop.niri.screenProfile.
+                profileWidths = {
+                  ultrawide = {
+                    terminal = 1.0 / 4.0;
+                    editor = 1.0 / 2.0;
+                    browser = 1.0 / 2.0;
+                    presets = [
+                      { proportion = 1.0 / 4.0; }
+                      { proportion = 1.0 / 3.0; }
+                      { proportion = 1.0 / 2.0; }
+                      { proportion = 2.0 / 3.0; }
+                      { proportion = 3.0 / 4.0; }
+                    ];
+                  };
+                  standard = {
+                    terminal = 1.0 / 2.0;
+                    editor = 1.0 / 2.0;
+                    browser = 1.0 / 2.0;
+                    presets = [
+                      { proportion = 1.0 / 3.0; }
+                      { proportion = 1.0 / 2.0; }
+                      { proportion = 2.0 / 3.0; }
+                    ];
+                  };
+                };
+                widths = profileWidths.${cfg.niri.screenProfile};
+
                 niriBarSettings = waybarSharedModules // {
                   layer = "top";
                   height = 30;
@@ -883,15 +926,9 @@ in
                     # On the 32:9 ultrawide, a lone column otherwise
                     # slams to the left edge. Auto-center it instead.
                     always-center-single-column = true;
-                    # Mod+R cycles through these. The 1/4 and 3/4 extras
-                    # are useful on 32:9 where 1/3 is still quite wide.
-                    preset-column-widths = [
-                      { proportion = 1.0 / 4.0; }
-                      { proportion = 1.0 / 3.0; }
-                      { proportion = 1.0 / 2.0; }
-                      { proportion = 2.0 / 3.0; }
-                      { proportion = 3.0 / 4.0; }
-                    ];
+                    # Mod+D cycles through these. The profile selects
+                    # proportions tuned for the host's screen width.
+                    preset-column-widths = widths.presets;
                     # Tab indicator for Mod+W tabbed columns. Drawn inside
                     # the column (so it's never clipped by the screen edge)
                     # as a full-height 8px bar on the left.
@@ -924,12 +961,12 @@ in
                     # Terminal: narrow sidekick width
                     {
                       matches = [ { app-id = "^foot$"; } ];
-                      default-column-width.proportion = 1.0 / 4.0;
+                      default-column-width.proportion = widths.terminal;
                     }
                     # Editor: main workhorse, half the screen
                     {
                       matches = [ { app-id = "^emacs$"; } ];
-                      default-column-width.proportion = 1.0 / 2.0;
+                      default-column-width.proportion = widths.editor;
                     }
                     # Browsers: half-width for comfortable reading
                     {
@@ -938,7 +975,7 @@ in
                         { app-id = "(?i)mullvad.browser"; }
                         { app-id = "(?i)tor.browser"; }
                       ];
-                      default-column-width.proportion = 1.0 / 2.0;
+                      default-column-width.proportion = widths.browser;
                     }
                     # Chat apps: always land on the chat workspace
                     {
@@ -988,7 +1025,7 @@ in
                     {
                       matches = [ { app-id = "^Microsoft-edge$"; } ];
                       open-on-workspace = "work";
-                      default-column-width.proportion = 1.0 / 2.0;
+                      default-column-width.proportion = widths.browser;
                     }
                   ];
 

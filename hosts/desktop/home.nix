@@ -25,7 +25,10 @@
   ];
 
   desktop = {
-    niri.enable = true;
+    niri = {
+      enable = true;
+      screenProfile = "ultrawide";
+    };
     wallpaper.mode = lib.mkForce "fit";
     hyprland.persistentWorkspaces = {
       "DP-2" = [
