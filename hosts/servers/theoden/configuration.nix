@@ -602,6 +602,34 @@ in
           in
           "${checkScript}";
       };
+
+      # buildbot-nix hardcodes GC root registration for the default branch
+      # regardless of the registerGCRoots option (check_lookup short-circuits
+      # on branch == default_branch). Periodically remove stale roots and GC
+      # to prevent disk pressure from closure accumulation.
+      buildbot-gcroots-cleanup = {
+        description = "Remove buildbot GC roots and reclaim disk space";
+        path = [
+          pkgs.coreutils
+          pkgs.findutils
+          config.nix.package
+        ];
+        serviceConfig = {
+          Type = "oneshot";
+        };
+        script = ''
+          set -euo pipefail
+          GCROOTS_DIR=/nix/var/nix/gcroots/per-user/buildbot-worker
+          if [ -d "$GCROOTS_DIR" ]; then
+            echo "Removing buildbot GC roots under $GCROOTS_DIR"
+            find "$GCROOTS_DIR" -type l -delete
+            echo "GC roots removed, running nix-store --gc"
+            nix-store --gc
+          else
+            echo "No buildbot GC roots directory found, skipping"
+          fi
+        '';
+      };
     };
 
     timers = {
@@ -622,6 +650,17 @@ in
           OnCalendar = "daily";
           OnBootSec = "15min";
           RandomizedDelaySec = "1h";
+        };
+      };
+
+      buildbot-gcroots-cleanup = {
+        description = "Clean buildbot GC roots and reclaim disk daily";
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnCalendar = "daily";
+          OnBootSec = "30min";
+          RandomizedDelaySec = "1h";
+          Persistent = true;
         };
       };
     };
