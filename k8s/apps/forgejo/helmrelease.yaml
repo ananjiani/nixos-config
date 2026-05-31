@@ -55,10 +55,7 @@ spec:
           INSTALL_LOCK: true
 
         packages:
-          ENABLED: true
-          STORAGE_TYPE: local
-          PATH: /data/packages
-          CHUNKED_UPLOAD_PATH: /data/packages/tmp
+          ENABLED: false
 
         mirror:
           ENABLED: true
@@ -117,42 +114,6 @@ spec:
         memory: "1Gi"
         cpu: "1000m"
 
-    # NFS volume for container registry packages
-    extraVolumes:
-      - name: packages-storage
-        persistentVolumeClaim:
-          claimName: forgejo-packages
-    extraVolumeMounts:
-      - name: packages-storage
-        mountPath: /data/packages
-        subPath: forgejo/packages
-
-    # Liveness probe touches NFS mount so stale mounts trigger pod restart
-    livenessProbe:
-      exec:
-        command:
-          - /bin/sh
-          - -c
-          - "test -d /data/packages && test -w /data/packages"
-      initialDelaySeconds: 60
-      periodSeconds: 30
-      failureThreshold: 3
-
-    # Softer NFS mount options: fail fast instead of hanging forever
-    # so the liveness probe can detect stale mounts and restart the pod
-    extraInitContainers:
-      - name: remount-packages
-        image: busybox:latest
-        command:
-          - sh
-          - -c
-          - |
-            # Wait for the NFS mount to be ready
-            until test -d /data/packages; do sleep 1; done
-        volumeMounts:
-          - name: packages-storage
-            mountPath: /data/packages
-            subPath: forgejo/packages
 
     # Service configuration
     service:
