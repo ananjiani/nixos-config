@@ -16,15 +16,15 @@
   };
   jacktook = {
     pname = "jacktook";
-    version = "e028c0c7290f8fd24836da61a88e3eb9908abad4";
+    version = "f6778e766546727b06115884b8b8cc5ccdb3a62f";
     src = fetchFromGitHub {
       owner = "Sam-Max";
       repo = "plugin.video.jacktook";
-      rev = "e028c0c7290f8fd24836da61a88e3eb9908abad4";
+      rev = "f6778e766546727b06115884b8b8cc5ccdb3a62f";
       fetchSubmodules = false;
-      sha256 = "sha256-Kce5vuk7vf0mwGzMK61mRWQzW+LVO2raVKrYJeotFls=";
+      sha256 = "sha256-0tSpiNkP2bOg6beDmF29SFpVqD0o5mniom6pcHPz3YU=";
     };
-    date = "2026-05-25";
+    date = "2026-05-30";
   };
   moondeck-buddy = {
     pname = "moondeck-buddy";
@@ -36,10 +36,10 @@
   };
   opendeck = {
     pname = "opendeck";
-    version = "2.12.0";
+    version = "2.12.1";
     src = fetchurl {
-      url = "https://github.com/nekename/OpenDeck/releases/download/v2.12.0/opendeck_2.12.0_amd64.AppImage";
-      sha256 = "sha256-W40GHZZImUpxmJfW9zc47dTkjMJ+NIfGAuXy/UvsRL4=";
+      url = "https://github.com/nekename/OpenDeck/releases/download/v2.12.1/opendeck_2.12.1_amd64.AppImage";
+      sha256 = "sha256-fxYNr/ZSiQw5UTWHz/Q6kJ6WjGQr9NO9dPbZ3rXFKXw=";
     };
   };
 }

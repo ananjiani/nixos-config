@@ -1,68 +1,68 @@
 {
-  "cakewallet": {
-    "cargoLock": null,
-    "date": null,
-    "extract": null,
-    "name": "cakewallet",
-    "passthru": null,
-    "pinned": false,
-    "src": {
-      "name": null,
-      "sha256": "sha256-awZut6smNYb+HMPYNsRTKlW09PnqGFWCklQddcSXH7A=",
-      "type": "url",
-      "url": "https://github.com/cake-tech/cake_wallet/releases/download/v6.1.2/Cake_Wallet_v6.1.2_Linux.tar.xz"
+    "cakewallet": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "cakewallet",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-awZut6smNYb+HMPYNsRTKlW09PnqGFWCklQddcSXH7A=",
+            "type": "url",
+            "url": "https://github.com/cake-tech/cake_wallet/releases/download/v6.1.2/Cake_Wallet_v6.1.2_Linux.tar.xz"
+        },
+        "version": "v6.1.2"
     },
-    "version": "v6.1.2"
-  },
-  "jacktook": {
-    "cargoLock": null,
-    "date": "2026-05-25",
-    "extract": null,
-    "name": "jacktook",
-    "passthru": null,
-    "pinned": false,
-    "src": {
-      "deepClone": false,
-      "fetchSubmodules": false,
-      "leaveDotGit": false,
-      "name": null,
-      "owner": "Sam-Max",
-      "repo": "plugin.video.jacktook",
-      "rev": "e028c0c7290f8fd24836da61a88e3eb9908abad4",
-      "sha256": "sha256-Kce5vuk7vf0mwGzMK61mRWQzW+LVO2raVKrYJeotFls=",
-      "sparseCheckout": [],
-      "type": "github"
+    "jacktook": {
+        "cargoLock": null,
+        "date": "2026-05-30",
+        "extract": null,
+        "name": "jacktook",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "deepClone": false,
+            "fetchSubmodules": false,
+            "leaveDotGit": false,
+            "name": null,
+            "owner": "Sam-Max",
+            "repo": "plugin.video.jacktook",
+            "rev": "f6778e766546727b06115884b8b8cc5ccdb3a62f",
+            "sha256": "sha256-0tSpiNkP2bOg6beDmF29SFpVqD0o5mniom6pcHPz3YU=",
+            "sparseCheckout": [],
+            "type": "github"
+        },
+        "version": "f6778e766546727b06115884b8b8cc5ccdb3a62f"
     },
-    "version": "e028c0c7290f8fd24836da61a88e3eb9908abad4"
-  },
-  "moondeck-buddy": {
-    "cargoLock": null,
-    "date": null,
-    "extract": null,
-    "name": "moondeck-buddy",
-    "passthru": null,
-    "pinned": false,
-    "src": {
-      "name": null,
-      "sha256": "sha256-SfaqrBJJZlJwhSPLPUlwfvZ8RxIWrbwY6uys8ziRvek=",
-      "type": "url",
-      "url": "https://github.com/FrogTheFrog/moondeck-buddy/releases/download/v1.9.2/MoonDeckBuddy-1.9.2-x86_64.AppImage"
+    "moondeck-buddy": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "moondeck-buddy",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-SfaqrBJJZlJwhSPLPUlwfvZ8RxIWrbwY6uys8ziRvek=",
+            "type": "url",
+            "url": "https://github.com/FrogTheFrog/moondeck-buddy/releases/download/v1.9.2/MoonDeckBuddy-1.9.2-x86_64.AppImage"
+        },
+        "version": "1.9.2"
     },
-    "version": "1.9.2"
-  },
-  "opendeck": {
-    "cargoLock": null,
-    "date": null,
-    "extract": null,
-    "name": "opendeck",
-    "passthru": null,
-    "pinned": false,
-    "src": {
-      "name": null,
-      "sha256": "sha256-W40GHZZImUpxmJfW9zc47dTkjMJ+NIfGAuXy/UvsRL4=",
-      "type": "url",
-      "url": "https://github.com/nekename/OpenDeck/releases/download/v2.12.0/opendeck_2.12.0_amd64.AppImage"
-    },
-    "version": "2.12.0"
-  }
+    "opendeck": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "opendeck",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-fxYNr/ZSiQw5UTWHz/Q6kJ6WjGQr9NO9dPbZ3rXFKXw=",
+            "type": "url",
+            "url": "https://github.com/nekename/OpenDeck/releases/download/v2.12.1/opendeck_2.12.1_amd64.AppImage"
+        },
+        "version": "2.12.1"
+    }
 }
