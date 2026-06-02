@@ -362,6 +362,14 @@ let
                 supportsLongCacheRetention = false;
               };
             };
+            # MiniMax M3 (launched 2026-06-01) — not yet in pi's built-in
+            # registry, so we declare it here with context window sizes
+            # from OpenCode Go's /models endpoint. Pi uses these to
+            # populate --list-models and enforce context limits.
+            "minimax-m3" = {
+              contextWindow = 512 * 1024; # 512K on OpenCode Go (full 1M needs direct MiniMax plan)
+              maxOutputTokens = 131072; # 128K output, same as minimax-m2.7
+            };
           };
         };
       };
