@@ -73,7 +73,12 @@ _:
         libraries = with pkgs.python3Packages; [ pyyaml ];
         flakeIgnore = [ "E501" ];
       } ''
-        import json, subprocess, os, sys, re, glob
+        import json
+        import subprocess
+        import os
+        import sys
+        import re
+        import glob
 
         CONFIG_PATH = os.path.expanduser("~/.config/ludusavi/config.yaml")
         STEAM_LIBS = [
@@ -82,15 +87,18 @@ _:
         ]
         LUDUSAVI = "${pkgs.ludusavi}/bin/ludusavi"
 
+
         def load_config():
             import yaml
             with open(CONFIG_PATH) as f:
                 return yaml.safe_load(f)
 
+
         def save_config(config):
             import yaml
             with open(CONFIG_PATH, "w") as f:
                 yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+
 
         def run_preview(backup_path, cloud_exclude):
             config = load_config()
@@ -105,6 +113,7 @@ _:
                 capture_output=True, text=True, timeout=120
             )
             return set(json.loads(result.stdout).get("games", {}).keys())
+
 
         def build_compatdata_map(backup_path):
             import yaml
@@ -123,6 +132,7 @@ _:
                         break
             return name_to_cid
 
+
         def has_appmanifest(cid):
             if not cid:
                 return False
@@ -130,6 +140,7 @@ _:
                 if os.path.exists(f"{lib}/appmanifest_{cid}.acf"):
                     return True
             return False
+
 
         # ── Main ──
         backup_path = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/Games/Saves/ammars-pc")
