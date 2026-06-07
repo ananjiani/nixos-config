@@ -146,7 +146,14 @@ _:
             if cid and not has_appmanifest(cid):
                 rescued.add(game)
 
-        ignored = sorted(cloud_games - rescued)
+        # Live-service games with server-side state — no local saves to back up
+        force_exclude = {
+            "Lethal Company", "MultiVersus", "Payday 3",
+            "The Finals", "Webfishing", "Marvel Rivals",
+            "Sea of Thieves",
+        }
+
+        ignored = sorted((cloud_games - rescued) | force_exclude)
         config = load_config()
         config["backup"]["ignoredGames"] = ignored
         config["backup"]["filter"]["cloud"] = {

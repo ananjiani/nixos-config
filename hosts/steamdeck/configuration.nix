@@ -182,7 +182,10 @@
 
   # ── Secrets ────────────────────────────────────────────────────────
   # Deck uses age key from home directory (same as workstations)
-  sops.age.keyFile = "/home/ammar/.config/sops/age/keys.txt";
+  sops = {
+    age.keyFile = "/home/ammar/.config/sops/age/keys.txt";
+    secrets.tailscale_authkey = { };
+  };
 
   # ── Networking ─────────────────────────────────────────────────────
   networking = {
