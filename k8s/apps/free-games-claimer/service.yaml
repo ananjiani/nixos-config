@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: free-games-claimer
+  namespace: free-games-claimer
+spec:
+  selector:
+    app: free-games-claimer
+  ports:
+    - name: novnc
+      port: 6080
+      targetPort: 6080
+    - name: panel
+      port: 7080
+      targetPort: 7080

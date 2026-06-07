@@ -1,0 +1,14 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: free-games-claimer-lan-tls
+  namespace: free-games-claimer
+spec:
+  secretName: free-games-claimer-lan-tls
+  issuerRef:
+    name: lan-ca
+    kind: ClusterIssuer
+  dnsNames:
+    - fgc.lan
+    - fgc-vnc.lan

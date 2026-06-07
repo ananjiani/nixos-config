@@ -1,0 +1,60 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: free-games-claimer
+  namespace: free-games-claimer
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: free-games-claimer
+  template:
+    metadata:
+      labels:
+        app: free-games-claimer
+    spec:
+      containers:
+        - name: free-games-claimer
+          image: ghcr.io/feldorn/free-games-claimer:latest
+          ports:
+            - containerPort: 6080
+              name: novnc
+            - containerPort: 7080
+              name: panel
+          envFrom:
+            - secretRef:
+                name: free-games-claimer-creds
+          env:
+            - name: LOOP
+              value: "86400"
+            - name: START_TIME
+              value: "08:00"
+            - name: SHOW
+              value: "1"
+            - name: WIDTH
+              value: "1920"
+            - name: HEIGHT
+              value: "1080"
+            - name: PG_REDEEM
+              value: "1"
+            - name: NOTIFY
+              value: "ntfy://ntfy.ntfy.svc:80/free-games-claimer"
+            - name: NOTIFY_TITLE
+              value: "🎮 Free Games Claimer"
+          volumeMounts:
+            - name: data
+              mountPath: /fgc/data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "2Gi"
+              cpu: "2"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: free-games-claimer-data

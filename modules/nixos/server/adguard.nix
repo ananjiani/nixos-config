@@ -276,6 +276,14 @@ in
                 answer = "192.168.1.52";
               }
               {
+                domain = "fgc.lan";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "fgc-vnc.lan";
+                answer = "192.168.1.52";
+              }
+              {
                 domain = "holmes.lan";
                 answer = "192.168.1.52";
               }

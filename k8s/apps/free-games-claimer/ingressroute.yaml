@@ -1,0 +1,32 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: free-games-claimer
+  namespace: free-games-claimer
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Free Games Claimer"
+    gethomepage.dev/group: "Automation"
+    gethomepage.dev/icon: "epic-games.png"
+    gethomepage.dev/description: "Auto-claims free games from Epic, Prime, GOG, Steam"
+    gethomepage.dev/href: "https://fgc.lan"
+    gethomepage.dev/pod-selector: "app=free-games-claimer"
+    gethomepage.dev/siteMonitor: "http://free-games-claimer.free-games-claimer.svc:7080"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`fgc.lan`)
+      kind: Rule
+      services:
+        - name: free-games-claimer
+          port: 7080
+    - match: Host(`fgc-vnc.lan`)
+      kind: Rule
+      services:
+        - name: free-games-claimer
+          port: 6080
+  tls:
+    secretName: free-games-claimer-lan-tls

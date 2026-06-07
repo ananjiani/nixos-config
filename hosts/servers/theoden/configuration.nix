@@ -509,6 +509,7 @@ in
             fi
             exec ${pkgs.restic}/bin/restic backup /mnt/storage/games/saves \
               --repo "$REPO" \
+              --insecure-no-password \
               --verbose
           '';
         };
@@ -530,6 +531,7 @@ in
             REPO="''${S3_REPO:-$RESTIC_REPOSITORY}"
             ${pkgs.restic}/bin/restic forget \
               --repo "$REPO" \
+              --insecure-no-password \
               --keep-daily 30 \
               --prune \
               --verbose
