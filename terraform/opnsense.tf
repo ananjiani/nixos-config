@@ -444,6 +444,14 @@ resource "opnsense_kea_reservation" "rivendell" {
   description = "HTPC (Trycoo WI6 N100)"
 }
 
+resource "opnsense_kea_reservation" "steamdeck" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.110"
+  mac_address = local.mac_addresses.steamdeck
+  hostname    = "steamdeck"
+  description = "Steam Deck (Jovian NixOS)"
+}
+
 # =============================================================================
 # Port Forwarding for Traefik (k8s ingress)
 # =============================================================================

@@ -23,5 +23,6 @@ locals {
     theoden = "BC:24:11:00:01:04" # k3s server VM
     # Bare metal
     rivendell = "00:e0:9d:87:1d:e4" # HTPC (Trycoo WI6 N100)
+    steamdeck = "e8:8d:a6:e2:29:0d" # Steam Deck (Jovian NixOS)
   }
 }

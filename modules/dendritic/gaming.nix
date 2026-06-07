@@ -139,10 +139,12 @@ _:
             Unit = {
               Description = "Ludusavi save backup";
               Documentation = "https://github.com/mtkennerly/ludusavi";
+              After = [ "network-online.target" ];
+              Wants = [ "network-online.target" ];
             };
             Service = {
               Type = "oneshot";
-              ExecStart = "${pkgs.ludusavi}/bin/ludusavi backup --path ${cfg.ludusavi.backupPath} --force";
+              ExecStart = "${pkgs.ludusavi}/bin/ludusavi --try-manifest-update backup --path ${cfg.ludusavi.backupPath} --force";
             };
           };
           timers.ludusavi-backup = {
