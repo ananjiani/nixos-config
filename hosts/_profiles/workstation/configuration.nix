@@ -151,12 +151,15 @@
 
   system.stateVersion = "23.05";
 
-  # Distributed builds: delegate to theoden + boromir, keeping local CPU free.
+  # Local + distributed builds: build locally on the 9800X3D (fastest per-core),
+  # overflow heavy/parallel work to theoden + boromir.
   # i686-linux is included so FHS envs (lutris, steam) can delegate 32-bit builds.
+  # speedFactor 1 makes local jobs preferred; remote builders pick up when local
+  # slots are full or for i686-only derivations.
   nix = {
     distributedBuilds = true;
     settings = {
-      max-jobs = 0;
+      max-jobs = 8;
       builders-use-substitutes = true;
     };
     buildMachines = [
@@ -169,7 +172,7 @@
         sshUser = "root";
         sshKey = "/home/ammar/.ssh/id_ed25519";
         maxJobs = 4;
-        speedFactor = 2;
+        speedFactor = 1;
         supportedFeatures = [
           "nixos-test"
           "big-parallel"
@@ -185,7 +188,7 @@
         sshUser = "root";
         sshKey = "/home/ammar/.ssh/id_ed25519";
         maxJobs = 3;
-        speedFactor = 2;
+        speedFactor = 1;
         supportedFeatures = [
           "nixos-test"
           "big-parallel"
