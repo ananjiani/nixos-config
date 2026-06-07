@@ -1,6 +1,6 @@
 {
-  "defaultProvider": "opencode-go",
-  "defaultModel": "deepseek-v4-pro",
+  "defaultProvider": "zai",
+  "defaultModel": "glm-5.1",
   "enabledModels": [
     "zai/glm-5.1",
     "opencode-go/minimax-m3",
@@ -9,7 +9,7 @@
     "opencode-go/deepseek-v4-flash"
   ],
   "theme": "gruvbox-material",
-  "lastChangelogVersion": "0.78.0",
+  "lastChangelogVersion": "0.78.1",
   "packages": [
     "git:github.com/annapurna-himal/pi-vim-editor",
     "npm:pi-mermaid",
