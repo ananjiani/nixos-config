@@ -67,6 +67,99 @@ _:
     }:
     let
       cfg = config.gaming;
+
+      # Wrapper that excludes cloud-save games, rescues DRM-free/non-Steam games
+      ludusaviBackupWrapper = pkgs.writers.writePython3Bin "ludusavi-backup-wrapper" {
+        libraries = with pkgs.python3Packages; [ pyyaml ];
+        flakeIgnore = [ "E501" ];
+      } ''
+        import json, subprocess, os, sys, re, glob
+
+        CONFIG_PATH = os.path.expanduser("~/.config/ludusavi/config.yaml")
+        STEAM_LIBS = [
+            os.path.expanduser("~/.local/share/Steam/steamapps"),
+            "/mnt/nvme/SteamLibrary/steamapps",
+        ]
+        LUDUSAVI = "${pkgs.ludusavi}/bin/ludusavi"
+
+        def load_config():
+            import yaml
+            with open(CONFIG_PATH) as f:
+                return yaml.safe_load(f)
+
+        def save_config(config):
+            import yaml
+            with open(CONFIG_PATH, "w") as f:
+                yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+
+        def run_preview(backup_path, cloud_exclude):
+            config = load_config()
+            config["backup"]["filter"]["cloud"] = {
+                "exclude": cloud_exclude,
+                "epic": True, "gog": True, "origin": True, "steam": True, "uplay": True,
+            }
+            save_config(config)
+            result = subprocess.run(
+                [LUDUSAVI, "--try-manifest-update", "backup", "--preview",
+                 "--path", "/tmp/ludusavi-wrapper-empty", "--api"],
+                capture_output=True, text=True, timeout=120
+            )
+            return set(json.loads(result.stdout).get("games", {}).keys())
+
+        def build_compatdata_map(backup_path):
+            import yaml
+            name_to_cid = {}
+            for d in glob.glob(f"{backup_path}/*/"):
+                mapping = os.path.join(d, "mapping.yaml")
+                if not os.path.exists(mapping):
+                    continue
+                with open(mapping) as f:
+                    data = yaml.safe_load(f)
+                game_name = data.get("name", "")
+                for fpath in data.get("backups", [{}])[0].get("files", {}):
+                    m = re.search(r"compatdata/(\d+)", fpath)
+                    if m:
+                        name_to_cid[game_name] = m.group(1)
+                        break
+            return name_to_cid
+
+        def has_appmanifest(cid):
+            if not cid:
+                return False
+            for lib in STEAM_LIBS:
+                if os.path.exists(f"{lib}/appmanifest_{cid}.acf"):
+                    return True
+            return False
+
+        # ── Main ──
+        backup_path = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/Games/Saves/ammars-pc")
+
+        all_games = run_preview(backup_path, cloud_exclude=False)
+        non_cloud = run_preview(backup_path, cloud_exclude=True)
+        cloud_games = all_games - non_cloud
+
+        name_to_cid = build_compatdata_map(backup_path)
+
+        rescued = set()
+        for game in cloud_games:
+            cid = name_to_cid.get(game)
+            if cid and not has_appmanifest(cid):
+                rescued.add(game)
+
+        ignored = sorted(cloud_games - rescued)
+        config = load_config()
+        config["backup"]["ignoredGames"] = ignored
+        config["backup"]["filter"]["cloud"] = {
+            "exclude": True,
+            "epic": True, "gog": True, "origin": True, "steam": True, "uplay": True,
+        }
+        save_config(config)
+
+        os.execvp(LUDUSAVI, [
+            LUDUSAVI, "--try-manifest-update", "backup",
+            "--path", backup_path, "--force"
+        ])
+      '';
     in
     {
       options.gaming = {
@@ -144,7 +237,7 @@ _:
             };
             Service = {
               Type = "oneshot";
-              ExecStart = "${pkgs.ludusavi}/bin/ludusavi --try-manifest-update backup --path ${cfg.ludusavi.backupPath} --force";
+              ExecStart = "${ludusaviBackupWrapper}/bin/ludusavi-backup-wrapper ${cfg.ludusavi.backupPath}";
             };
           };
           timers.ludusavi-backup = {
