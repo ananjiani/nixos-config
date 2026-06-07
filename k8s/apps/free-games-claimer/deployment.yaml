@@ -40,6 +40,10 @@ spec:
               value: "1080"
             - name: PG_REDEEM
               value: "1"
+            - name: NOVNC_URL
+              value: "https://fgc-vnc.lan"
+            - name: PUBLIC_URL
+              value: "https://fgc.lan"
             - name: NOTIFY
               value: "ntfy://ntfy.ntfy.svc:80/free-games-claimer"
             - name: NOTIFY_TITLE
