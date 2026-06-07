@@ -9,18 +9,30 @@
 
 let
   # Decrypt wifi secrets at ISO build time using the desktop's age key.
-  # `nix build .#iso --impure` required — reads key into nix store at eval time.
+  # In pure mode (CI, deploy-rs checks) the key path isn't visible, so we
+  # produce a dummy derivation instead.  For a real ISO, build with `--impure`.
+  ageKeyPath = /home/ammar/.config/sops/age/keys.txt;
+
   wifi-secrets =
-    pkgs.runCommand "iso-wifi-secrets"
-      {
-        nativeBuildInputs = [ pkgs.sops ];
-        SOPS_AGE_KEY = builtins.readFile /home/ammar/.config/sops/age/keys.txt;
-      }
-      ''
-        mkdir -p $out
-        sops -d --extract '["wifi_ssid"]' ${../../secrets/secrets.yaml} > $out/ssid
-        sops -d --extract '["wifi_psk"]' ${../../secrets/secrets.yaml} > $out/psk
-      '';
+    if builtins.pathExists ageKeyPath then
+      pkgs.runCommand "iso-wifi-secrets"
+        {
+          nativeBuildInputs = [ pkgs.sops ];
+          SOPS_AGE_KEY = builtins.readFile ageKeyPath;
+        }
+        ''
+          mkdir -p $out
+          sops -d --extract '["wifi_ssid"]' ${../../secrets/secrets.yaml} > $out/ssid
+          sops -d --extract '["wifi_psk"]' ${../../secrets/secrets.yaml} > $out/psk
+        ''
+    else
+      pkgs.runCommand "iso-wifi-secrets-dummy"
+        { }
+        ''
+          mkdir -p $out
+          echo "dummy" > $out/ssid
+          echo "dummy" > $out/psk
+        '';
 in
 {
   imports = [
