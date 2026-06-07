@@ -26,13 +26,11 @@ let
           sops -d --extract '["wifi_psk"]' ${../../secrets/secrets.yaml} > $out/psk
         ''
     else
-      pkgs.runCommand "iso-wifi-secrets-dummy"
-        { }
-        ''
-          mkdir -p $out
-          echo "dummy" > $out/ssid
-          echo "dummy" > $out/psk
-        '';
+      pkgs.runCommand "iso-wifi-secrets-dummy" { } ''
+        mkdir -p $out
+        echo "dummy" > $out/ssid
+        echo "dummy" > $out/psk
+      '';
 in
 {
   imports = [
