@@ -542,8 +542,16 @@ in
       buildbot-master = {
         after = [ "vault-agent-default.service" ];
         wants = [ "vault-agent-default.service" ];
+        serviceConfig = {
+          Restart = "on-failure";
+          RestartSec = 5;
+        };
       };
       buildbot-worker = {
+        after = [ "vault-agent-default.service" ];
+        wants = [ "vault-agent-default.service" ];
+      };
+      atticd = {
         after = [ "vault-agent-default.service" ];
         wants = [ "vault-agent-default.service" ];
       };
