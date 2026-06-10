@@ -38,20 +38,15 @@ spec:
             key: opencode-api-key
 
     modelList:
-      deepseek-chat:
-        api_key: "{{ env.DEEPSEEK_API_KEY }}"
-        api_base: "https://api.deepseek.com/v1"
-        model: deepseek/deepseek-chat
+      opencode-kimi:
+        api_key: "{{ env.OPENCODE_API_KEY }}"
+        api_base: "https://opencode.ai/zen/go/v1"
+        model: openai/kimi-k2.6
         temperature: 0.7
       zai-glm:
         api_key: "{{ env.ZAI_API_KEY }}"
         api_base: "https://api.z.ai/api/coding/paas/v4"
         model: openai/glm-4.5
-        temperature: 0.7
-      opencode-kimi:
-        api_key: "{{ env.OPENCODE_API_KEY }}"
-        api_base: "https://opencode.ai/zen/go/v1"
-        model: openai/kimi-k2.6
         temperature: 0.7
 
     customClusterRoleRules:
