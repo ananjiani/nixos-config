@@ -43,6 +43,9 @@ in
                 extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
               };
 
+              # swaylock needs PAM to authenticate unlocks
+              security.pam.services.swaylock = { };
+
               # xremap uinput/group setup
               hardware.uinput.enable = true;
               users.groups = {
@@ -69,6 +72,8 @@ in
                   slurp
                   swappy
                   polkit_gnome
+                  swaylock-effects
+                  swayidle
                 ])
                 ++ [
                   pkgs.bibata-cursors
@@ -462,6 +467,19 @@ in
                   systemd.enable = false;
                   style = ./waybar/style.css;
                 };
+
+                swaylock = {
+                  enable = true;
+                  package = pkgs.swaylock-effects;
+                  settings = {
+                    indicator-idle-visible = false;
+                    show-failed-attempts = true;
+                    clock = true;
+                    screenshots = true;
+                    effect-blur = "7x5";
+                    effect-vignette = "0.5:0.5";
+                  };
+                };
               };
             }
 
@@ -578,6 +596,8 @@ in
                       ++ [
                         "${pkgs.bash}/bin/bash ${scriptsDir}/weekday-work-edge.sh"
                         "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
+                        # Idle management: lock after 10 min, DPMS-off 1s later, DPMS-on on resume
+                        "swayidle -w timeout 600 'swaylock -f' timeout 601 'hyprctl dispatch dpms off' resume 'hyprctl dispatch dpms on' before-sleep 'swaylock -f'"
                       ];
 
                     general = {
@@ -1051,6 +1071,22 @@ in
                         command = [
                           "${pkgs.bash}/bin/bash"
                           "${scriptsDir}/weekday-work-edge.sh"
+                        ];
+                      }
+
+                      # Idle management: lock after 10 min, DPMS-off 1s later
+                      {
+                        command = [
+                          "swayidle"
+                          "-w"
+                          "timeout"
+                          "600"
+                          "swaylock -f"
+                          "timeout"
+                          "601"
+                          "niri msg action power-off-monitors"
+                          "before-sleep"
+                          "swaylock -f"
                         ];
                       }
                     ];
