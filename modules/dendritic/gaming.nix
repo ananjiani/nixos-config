@@ -49,6 +49,13 @@ _:
         programs.gamescope.enable = true;
         programs.gamescope.capSysNice = true;
 
+        services.udev.extraRules = ''
+          # 8BitDo Ultimate 2 Wireless - 2.4GHz/Dongle (DInput: gyro + back buttons)
+          KERNEL=="hidraw*", ATTRS{idProduct}=="6012", ATTRS{idVendor}=="2dc8", MODE="0660", TAG+="uaccess"
+          # 8BitDo Ultimate 2 Wireless - Bluetooth
+          KERNEL=="hidraw*", KERNELS=="*2DC8:6012*", MODE="0660", TAG+="uaccess"
+        '';
+
         environment.systemPackages = with pkgs; [
           steamtinkerlaunch
           yad
