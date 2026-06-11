@@ -596,8 +596,8 @@ in
                       ++ [
                         "${pkgs.bash}/bin/bash ${scriptsDir}/weekday-work-edge.sh"
                         "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
-                        # Idle management: lock after 10 min, DPMS-off 1s later, DPMS-on on resume
-                        "swayidle -w timeout 600 'swaylock -f' timeout 601 'hyprctl dispatch dpms off' resume 'hyprctl dispatch dpms on' before-sleep 'swaylock -f'"
+                        # Idle management: lock after 10 min, DPMS-off 1s later, DPMS-on on resume, suspend 30 min after lock
+                        "swayidle -w timeout 600 'swaylock -f' timeout 601 'hyprctl dispatch dpms off' resume 'hyprctl dispatch dpms on' timeout 1800 'systemctl suspend' before-sleep 'swaylock -f'"
                       ];
 
                     general = {
@@ -1074,7 +1074,7 @@ in
                         ];
                       }
 
-                      # Idle management: lock after 10 min, DPMS-off 1s later
+                      # Idle management: lock after 10 min, DPMS-off 1s later, suspend 30 min after lock
                       {
                         command = [
                           "swayidle"
@@ -1085,6 +1085,9 @@ in
                           "timeout"
                           "601"
                           "niri msg action power-off-monitors"
+                          "timeout"
+                          "1800"
+                          "systemctl suspend"
                           "before-sleep"
                           "swaylock -f"
                         ];
