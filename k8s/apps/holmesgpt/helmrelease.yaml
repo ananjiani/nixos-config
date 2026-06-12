@@ -36,6 +36,9 @@ spec:
           secretKeyRef:
             name: holmesgpt-ai-secret
             key: opencode-api-key
+      # Strip token_count from messages before sending — OpenCode and z.ai reject it
+      - name: LLM_EXTRA_STRIP_MESSAGE_FIELDS
+        value: "token_count"
 
     modelList:
       opencode-kimi:
