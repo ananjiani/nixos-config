@@ -349,23 +349,29 @@ let
         # Same !cat /run/secrets/* pattern as kimi-coding and zai.
         # Renders to /run/secrets/opencode_api_key by vault-agent
         # (see hosts/_profiles/workstation/configuration.nix).
-        # Pi already knows the baseUrl, model IDs, and openai-completions
-        # protocol for opencode-go — we only need apiKey + baseUrl to
-        # satisfy the model-registry's "must specify one of…" check
-        # (same workaround as kimi-coding/zai baseUrl redeclaration).
+        #
+        # Pi already knows the baseUrl, model IDs, and API protocols for
+        # opencode-go — some models use openai-completions at
+        # /zen/go/v1, others use anthropic-messages at /zen/go.
+        # We only supply apiKey + modelOverrides (which satisfies the
+        # model-registry's "must specify one of…" check).
+        #
+        # IMPORTANT: do NOT set a provider-level baseUrl here — it
+        # overrides the per-model built-in base URLs and breaks models
+        # that use a different API protocol/path (e.g. minimax-m3 uses
+        # anthropic-messages at /zen/go, not /zen/go/v1).
         "opencode-go" = {
           apiKey = "!cat /run/secrets/opencode_api_key";
-          baseUrl = "https://opencode.ai/zen/go/v1";
           modelOverrides = {
             "kimi-k2.6" = {
               compat = {
                 supportsLongCacheRetention = false;
               };
             };
-            # MiniMax M3 (launched 2026-06-01) — not yet in pi's built-in
-            # registry, so we declare it here with context window sizes
-            # from OpenCode Go's /models endpoint. Pi uses these to
-            # populate --list-models and enforce context limits.
+            # MiniMax M3 (launched 2026-06-01) — already in pi's built-in
+            # registry; we override context window sizes from OpenCode
+            # Go's /models endpoint. Pi uses these to populate
+            # --list-models and enforce context limits.
             "minimax-m3" = {
               contextWindow = 512 * 1024; # 512K on OpenCode Go (full 1M needs direct MiniMax plan)
               maxOutputTokens = 131072; # 128K output, same as minimax-m2.7
