@@ -10,6 +10,7 @@
     # inkscape
     pinta
     vlc
+    stremio-linux-shell
     thunar
     thunar-archive-plugin
     thunar-media-tags-plugin
