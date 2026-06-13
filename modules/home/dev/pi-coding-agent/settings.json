@@ -1,10 +1,10 @@
 {
-  "defaultProvider": "zai",
-  "defaultModel": "glm-5.1",
+  "defaultProvider": "opencode-go",
+  "defaultModel": "deepseek-v4-flash",
   "enabledModels": [
-    "zai/glm-5.1",
+    "zai/glm-5.2",
     "opencode-go/minimax-m3",
-    "opencode-go/kimi-k2.6",
+    "opencode-go/kimi-k2.7-code",
     "opencode-go/deepseek-v4-pro",
     "opencode-go/deepseek-v4-flash"
   ],

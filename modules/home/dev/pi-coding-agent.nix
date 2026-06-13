@@ -340,9 +340,35 @@ let
         # Different from claude-glm's api.z.ai/api/anthropic — pi doesn't
         # need Anthropic-protocol-everywhere like Claude Code does, so the
         # native PaaS endpoint is the right default.
+        # GLM-5.2 landed 2026-06-13 on the CPaaS endpoint for Coding Plan
+        # subscribers. Model id `glm-5.2`, 1M context, 131K max output.
+        # Not yet in any pi built-in registry (too new) so we define it
+        # explicitly here. Merge semantics keep all built-in zai models.
         zai = {
           apiKey = "!cat /run/secrets/zai_api_key";
           baseUrl = "https://api.z.ai/api/coding/paas/v4";
+          models = [
+            {
+              id = "glm-5.2";
+              name = "GLM-5.2";
+              api = "openai-completions";
+              compat = {
+                supportsDeveloperRole = false;
+                thinkingFormat = "zai";
+                zaiToolStream = true;
+              };
+              reasoning = true;
+              input = [ "text" ];
+              cost = {
+                input = 0;
+                output = 0;
+                cacheRead = 0;
+                cacheWrite = 0;
+              };
+              contextWindow = 1000000;
+              maxTokens = 131072;
+            }
+          ];
         };
 
         # OpenCode Go ($10/month) — pi's built-in opencode-go provider.
