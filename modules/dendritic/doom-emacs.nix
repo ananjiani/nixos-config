@@ -115,6 +115,14 @@ in
               enable = true;
               package = pkgs.emacs-pgtk;
             };
+
+            # The GUI Emacs daemon is WantedBy=default.target, which starts it at
+            # boot before the compositor imports WAYLAND_DISPLAY / XDG_SESSION_TYPE
+            # into the systemd user manager. Without these, org-download-clipboard
+            # falls back to xclip (which can't read Wayland image clipboards, -> 0KB
+            # files) and wl-paste can't connect to the compositor. Ordering the
+            # service after the graphical session makes it inherit the imported env.
+            systemd.user.services.emacs.Unit.After = [ "graphical-session.target" ];
           })
 
           # nox variant (terminal Emacs)
