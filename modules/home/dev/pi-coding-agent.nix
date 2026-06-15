@@ -537,7 +537,12 @@ in
       # Thin wrapper around pkgs.llm-agents.pi so we can inject flags
       # or wrap it differently in the future.
       (pkgs.writeShellScriptBin "pi" ''
-        exec ${pkgs.llm-agents.pi}/bin/pi "$@"
+        exec ${pkgs.systemd}/bin/systemd-inhibit \
+          --what=sleep \
+          --who=pi \
+          --why="pi coding agent running" \
+          --mode=block \
+          ${pkgs.llm-agents.pi}/bin/pi "$@"
       '')
       webSearch
       webFetch
