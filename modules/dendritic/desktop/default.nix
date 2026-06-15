@@ -67,7 +67,6 @@ in
                   libnotify
                   copyq
                   wlogout
-                  swaybg
                   grim
                   slurp
                   swappy
@@ -431,11 +430,19 @@ in
                   dark = "Papirus-Dark";
                   light = "Papirus-Light";
                 };
+                # Wallpaper feeds wpaperd + hyprlock/swaylock lock-screen targets.
+                # base16Scheme stays pinned above, so image never triggers palette regen.
+                image = lib.mkIf cfg.wallpaper.enable cfg.wallpaper.path;
+                imageScalingMode = lib.mkIf cfg.wallpaper.enable cfg.wallpaper.mode;
                 targets = {
                   foot.enable = false;
                   waybar.enable = false;
                 };
               };
+
+              # wpaperd: daemon, subscribes to output events, systemd After=wayland.target
+              # + Restart=always — fixes the multi-monitor/VRR race that killed bare swaybg.
+              services.wpaperd.enable = lib.mkIf cfg.wallpaper.enable true;
 
               home = {
                 packages = [ pkgs.swaynotificationcenter ];
@@ -590,15 +597,12 @@ in
 
                     exec = [ "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1" ];
 
-                    exec-once =
-                      cfg.startupApps
-                      ++ lib.optional cfg.wallpaper.enable "swaybg -i ${cfg.wallpaper.path} -m ${cfg.wallpaper.mode}"
-                      ++ [
-                        "${pkgs.bash}/bin/bash ${scriptsDir}/weekday-work-edge.sh"
-                        "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
-                        # Idle management: lock after 10 min, DPMS-off 1s later, DPMS-on on resume, suspend 30 min after lock
-                        "swayidle -w timeout 600 'swaylock -f' timeout 601 'hyprctl dispatch dpms off' resume 'hyprctl dispatch dpms on' timeout 1800 'systemctl suspend' before-sleep 'swaylock -f'"
-                      ];
+                    exec-once = cfg.startupApps ++ [
+                      "${pkgs.bash}/bin/bash ${scriptsDir}/weekday-work-edge.sh"
+                      "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
+                      # Idle management: lock after 10 min, DPMS-off 1s later, DPMS-on on resume, suspend 30 min after lock
+                      "swayidle -w timeout 600 'swaylock -f' timeout 601 'hyprctl dispatch dpms off' resume 'hyprctl dispatch dpms on' timeout 1800 'systemctl suspend' before-sleep 'swaylock -f'"
+                    ];
 
                     general = {
                       gaps_in = 5;
@@ -1057,15 +1061,7 @@ in
                         app
                       ];
                     }) cfg.startupApps)
-                    ++ lib.optional cfg.wallpaper.enable {
-                      command = [
-                        "swaybg"
-                        "-i"
-                        (toString cfg.wallpaper.path)
-                        "-m"
-                        cfg.wallpaper.mode
-                      ];
-                    }
+
                     ++ [
                       {
                         command = [
