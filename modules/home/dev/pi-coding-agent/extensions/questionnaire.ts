@@ -6,7 +6,7 @@
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Editor, type EditorTheme, Key, matchesKey, Text, truncateToWidth } from "@mariozechner/pi-tui";
+import { Editor, type EditorTheme, Key, matchesKey, Text, truncateToWidth, wrapTextWithAnsi } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
 
 // Types
@@ -262,8 +262,10 @@ export default function questionnaire(pi: ExtensionAPI) {
 					const q = currentQuestion();
 					const opts = currentOptions();
 
-					// Helper to add truncated line
-					const add = (s: string) => lines.push(truncateToWidth(s, width));
+					// Helper: ANSI-aware word-wrap so long prompts/labels/descriptions
+					// wrap instead of getting cut off. Borders are exactly `width` wide
+					// so wrap is a no-op for them.
+					const add = (s: string) => lines.push(...wrapTextWithAnsi(s, width));
 
 					add(theme.fg("accent", "─".repeat(width)));
 
@@ -287,7 +289,9 @@ export default function questionnaire(pi: ExtensionAPI) {
 							? theme.bg("selectedBg", theme.fg("text", submitText))
 							: theme.fg(canSubmit ? "success" : "dim", submitText);
 						tabs.push(`${submitStyled} →`);
-						add(` ${tabs.join("")}`);
+						// Tab bar stays truncated, not wrapped — wrapping a tab row mid-tab
+						// looks worse than losing the trailing Submit tab at narrow widths.
+						lines.push(truncateToWidth(` ${tabs.join("")}`, width));
 						lines.push("");
 					}
 
