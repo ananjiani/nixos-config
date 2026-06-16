@@ -32,7 +32,9 @@
     tailscale = {
       enable = true;
       excludeFromMullvad = true;
+      acceptDns = true; # Use Headscale split DNS for dimensiondoor.xyz → AdGuard
       operator = "ammar";
+
     };
     nfs-client.enable = true;
   };
