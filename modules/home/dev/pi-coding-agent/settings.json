@@ -1,20 +1,23 @@
 {
-  "defaultProvider": "opencode-go",
-  "defaultModel": "deepseek-v4-flash",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.5",
   "enabledModels": [
     "zai/glm-5.2",
     "opencode-go/minimax-m3",
     "opencode-go/kimi-k2.7-code",
     "opencode-go/deepseek-v4-pro",
-    "opencode-go/deepseek-v4-flash"
+    "opencode-go/deepseek-v4-flash",
+    "openai-codex/gpt-5.5"
   ],
   "theme": "gruvbox-material",
-  "lastChangelogVersion": "0.78.1",
+  "lastChangelogVersion": "0.79.2",
   "packages": [
     "git:github.com/annapurna-himal/pi-vim-editor",
     "npm:pi-mermaid",
     "npm:pi-btw",
-    "npm:pi-init"
+    "npm:pi-init",
+    "git:github.com/DietrichGebert/ponytail",
+    "npm:pi-caveman"
   ],
   "extensions": [
     "/home/ammar/.pi/agent/git/github.com/annapurna-himal/pi-vim-editor/index.ts"
