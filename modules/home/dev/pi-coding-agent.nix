@@ -544,6 +544,12 @@ in
       webFetchJina
       repoIngest
       repoBrowse
+
+      # Structural code search via tree-sitter. No wrapper — ast-grep's
+      # CLI is already clean (`ast-grep run -l python -p '...'`). The
+      # code-nav skill teaches the model when to reach for it over rg
+      # (definition/reference lookups, structural shapes).
+      pkgs.ast-grep
     ];
     sessionVariables.PI_CACHE_RETENTION = "long";
     file = {
