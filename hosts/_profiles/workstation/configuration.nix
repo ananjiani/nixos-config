@@ -115,10 +115,10 @@
       enable = true;
       domains = [
         "~lan" # Route .lan to fallback DNS
-        # Route ts.dimensiondoor.xyz and other dimensiondoor.xyz subdomains
-        # to AdGuard so split-DNS rewrites win over wg0-mullvad's `~.` catch-all.
-        # Defense in depth for the 2026-04-07/2026-04-10 Mullvad DNS saga.
-        "~dimensiondoor.xyz"
+        # ~dimensiondoor.xyz intentionally removed: Headscale split-DNS now
+        # points dimensiondoor.xyz to 100.64.0.1 (boromir's Tailscale IP),
+        # so Tailscale's ~. catch-all (DefaultRoute) handles it correctly
+        # both on-LAN and off-LAN without needing a Global routing override.
       ];
       fallbackDns = [ "192.168.1.1" ]; # OPNsense for .lan resolution
     };

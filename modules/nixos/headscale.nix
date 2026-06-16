@@ -63,7 +63,14 @@ in
             # Without this, roaming clients hit public DNS which returns
             # NXDOMAIN for internal-only records like ssh.git.*.
             split = {
-              "dimensiondoor.xyz" = [ "192.168.1.53" ]; # AdGuard HA VIP
+              # Use Tailscale IPs so this resolves off-LAN (equivalent HA to
+              # the 192.168.1.53 keepalived VIP — all three run AdGuard and
+              # bind 0.0.0.0 so they already listen on their Tailscale IPs).
+              "dimensiondoor.xyz" = [
+                "100.64.0.1" # boromir
+                "100.64.0.2" # samwise
+                "100.64.0.3" # theoden
+              ];
             };
           };
         };
