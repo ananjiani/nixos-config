@@ -238,6 +238,7 @@ Load-bearing repo gotchas — each is a hard-won lesson that silently breaks thi
 
 - **Tailscale is PERMANENTLY disabled on rivendell.** Its r8169 NIC has two bugs: hardware offloading causes RX buffer overflow at ~7 min (fix via ethtool), and Tailscale's netfilter modifications trigger a driver bug causing complete inbound loss at ~11 min. The r8168 OOT driver is broken on kernel ≥ 6.13; the `eee_enable` modprobe param is r8168-only and not valid for r8169.
 - **Tailscale `useExitNode` defaults to `"boromir"`** — servers should set `useExitNode = null` unless they actually need an exit node.
+- **Nvidia driver bumps on GPU hosts require a reboot.** NixOS cannot hot-swap the loaded nvidia kernel module; a `nixpkgs` bump that updates `linuxPackages.nvidia_x11` leaves userspace libs (e.g. `libnvidia-ml.so`, `libnvsandboxutils.so`) at the new version while the running kernel module stays old. `nvidia-container-toolkit-cdi-generator.service` then fails on activation with `Driver/library version mismatch` / `failed to initialize nvml`, failing the deploy-rs activation step. Fix: reboot the host, then re-deploy. Symptom: CDI generator exits 1 right after a driver-version bump on boromir (and any GPU host).
 
 ### deploy-rs
 
