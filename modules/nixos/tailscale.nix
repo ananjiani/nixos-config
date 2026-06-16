@@ -59,6 +59,12 @@ in
       description = "Accept subnet routes advertised by other nodes. Enable only on nodes that are NOT on the LAN to avoid circular routing.";
     };
 
+    addHostsEntry = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Add a static /etc/hosts entry for the login server so it resolves without LAN DNS (safe to enable on LAN too — resolves to the same IP either way).";
+    };
+
     useExitNode = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
@@ -88,6 +94,12 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    networking.hosts = lib.mkIf cfg.addHostsEntry {
+      "91.99.82.115" = [
+        (lib.removePrefix "https://" (lib.removePrefix "http://" cfg.loginServer))
+      ];
+    };
+
     services.tailscale = {
       enable = true;
       useRoutingFeatures = if cfg.exitNode || cfg.subnetRoutes != [ ] then "both" else "client";
