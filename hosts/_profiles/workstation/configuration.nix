@@ -109,18 +109,13 @@
     firewall.allowedTCPPorts = [ 22 ]; # SSH
   };
 
-  # Split DNS: route .lan queries to OPNsense, everything else through VPN
   services = {
     resolved = {
       enable = true;
-      domains = [
-        "~lan" # Route .lan to fallback DNS
-        # ~dimensiondoor.xyz intentionally removed: Headscale split-DNS now
-        # points dimensiondoor.xyz to 100.64.0.1 (boromir's Tailscale IP),
-        # so Tailscale's ~. catch-all (DefaultRoute) handles it correctly
-        # both on-LAN and off-LAN without needing a Global routing override.
-      ];
-      fallbackDns = [ "192.168.1.1" ]; # OPNsense for .lan resolution
+      # No explicit routing domains — Tailscale's ~. catch-all (DefaultRoute)
+      # handles both .lan and dimensiondoor.xyz via Headscale split-DNS, which
+      # points both to AdGuard on Tailscale IPs (reachable on-LAN and off-LAN).
+      fallbackDns = [ "192.168.1.1" ];
     };
     pcscd.enable = true;
   };
