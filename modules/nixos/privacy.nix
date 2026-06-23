@@ -66,6 +66,32 @@ in
       enableExcludeWrapper = true;
     };
 
+    # Lower wg0-mullvad MTU from mullvad's default 1380 to 1280. Default
+    # black-holes large packets on paths with extra encapsulation past the
+    # mullvad exit (e.g. SSH to codeberg — signature packet >1352B silently
+    # dropped, PMTUD ICMP never returns). 1280 matches Tailscale and leaves
+    # headroom. See docs/content/postmortems/ (MTU incidents). mullvad owns
+    # wg0-mullvad so this can't be set via networking.wireguard.
+    systemd.services.mullvad-mtu = {
+      description = "Set Mullvad tunnel MTU to 1280";
+      after = [ "mullvad-daemon.service" ];
+      wants = [ "mullvad-daemon.service" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+      path = [ pkgs.mullvad ];
+      script = ''
+        for i in $(seq 1 5); do
+          if mullvad tunnel set mtu 1280; then exit 0; fi
+          sleep 3
+        done
+        echo "Warning: Could not set Mullvad MTU"
+        exit 0
+      '';
+    };
+
     # Configure Mullvad custom DNS declaratively
     systemd.services.mullvad-custom-dns = lib.mkIf (cfg.mullvadCustomDns != [ ]) {
       description = "Configure Mullvad custom DNS servers";
