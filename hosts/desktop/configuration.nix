@@ -55,6 +55,13 @@
 
   networking = {
     hostName = "ammars-pc";
+
+    # Wake-on-LAN via wakeOnLan.enable no-ops on this NIC driver (nixpkgs#415213:
+    # `ethtool` stays `Wake-on: d` despite the option). Applied manually via the
+    # systemd service + udev rule below instead. NIC keeps PHY powered in S3 so
+    # `wakeonlan 30:c5:99:26:f4:c5` from another LAN host can resume the box.
+    # Requires BIOS: WoL/PCI power-up = on, ErP = off, Deep Sx = off.
+    # Verify post-reboot: `sudo ethtool eno1 | grep Wake-on` should show `g`.
     # Tailscale bypass is loaded via systemd (see systemd.services.mullvad-tailscale-bypass)
     # because networking.nftables.tables requires networking.nftables.enable which
     # switches the entire firewall backend and breaks iptables-nft rules (Docker, Tailscale).
@@ -91,6 +98,20 @@
     };
   };
 
+  # Wake-on-LAN: re-apply magic-packet policy at boot and on every link add.
+  # networking.interfaces.eno1.wakeOnLan.enable is a no-op on this driver (see comment above).
+  systemd.services.wake-on-lan = {
+    description = "Enable Wake-on-LAN (magic packet) on eno1";
+    after = [ "network-pre.target" ];
+    wants = [ "network-pre.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.ethtool}/bin/ethtool -s eno1 wol g";
+    };
+  };
+
   environment.systemPackages = with pkgs; [
     signal-desktop
     cifs-utils
@@ -99,12 +120,20 @@
 
   virtualisation.docker.enable = true;
 
-  services.udev.enable = true;
-  services.sunshine = {
-    enable = true;
-    autoStart = true;
-    capSysAdmin = true;
-    openFirewall = true;
+  services = {
+    udev = {
+      enable = true;
+      extraRules = ''
+        # Re-apply WoL on NIC (re)bind — driver resets the flag on link flap.
+        ACTION=="add", SUBSYSTEM=="net", KERNEL=="eno1", RUN+="${pkgs.ethtool}/bin/ethtool -s eno1 wol g"
+      '';
+    };
+    sunshine = {
+      enable = true;
+      autoStart = true;
+      capSysAdmin = true;
+      openFirewall = true;
+    };
   };
 
   gaming.enable = true;
