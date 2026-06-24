@@ -8,6 +8,35 @@ let
   # and the changes land directly in the git working tree.
   piUserDir = "${config.home.homeDirectory}/.dotfiles/modules/home/dev/pi-coding-agent";
 
+  # Sources tracked by nvfetcher (run `nix run github:berberman/nvfetcher`
+  # to bump). Same import shape as modules/nixos/htpc.nix.
+  sources = import ../../_sources/generated.nix {
+    inherit (pkgs)
+      fetchurl
+      fetchFromGitHub
+      fetchgit
+      dockerTools
+      ;
+  };
+
+  # Parenthesis checker for agent-generated Emacs Lisp (kiyoka/agent-
+  # lisp-paren-aid). Runs the .el through Emacs' re-indenter and reports
+  # the exact line where parens are unbalanced — too many or too few.
+  # LLMs get the indentation right but miscount closers; this catches
+  # that class of bug the agent can't self-verify by counting. See
+  # skills/elisp/SKILL.md for how pi is told to reach for it after
+  # every .el edit. Go static binary, no autoPatchelf needed.
+  agent-lisp-paren-aid = pkgs.stdenv.mkDerivation {
+    pname = "agent-lisp-paren-aid";
+    inherit (sources.agent-lisp-paren-aid) version src;
+    dontUnpack = true;
+    installPhase = ''
+      runHook preInstall
+      install -Dm555 $src $out/bin/agent-lisp-paren-aid
+      runHook postInstall
+    '';
+  };
+
   # Pi ships built-in providers `kimi-coding` (api.kimi.com/coding) and
   # `zai` (api.z.ai/api/anthropic) — see pi-mono packages/ai/src/models.generated.ts.
   # We only need to supply apiKeys; the base URLs, model IDs, and auth
@@ -550,6 +579,10 @@ in
       # code-nav skill teaches the model when to reach for it over rg
       # (definition/reference lookups, structural shapes).
       pkgs.ast-grep
+
+      # Paren checker for Emacs Lisp the agent writes. See the comment
+      # on the derivation above and skills/elisp/SKILL.md.
+      agent-lisp-paren-aid
     ];
     sessionVariables.PI_CACHE_RETENTION = "long";
     file = {

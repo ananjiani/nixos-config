@@ -6,6 +6,14 @@
   dockerTools,
 }:
 {
+  agent-lisp-paren-aid = {
+    pname = "agent-lisp-paren-aid";
+    version = "2.1.0";
+    src = fetchurl {
+      url = "https://github.com/kiyoka/agent-lisp-paren-aid/releases/download/2.1.0/agent-lisp-paren-aid-linux";
+      sha256 = "sha256-xaTPFQyvISRAr9oWYYLTqnNHCVQwY4aSJfrMP2145XQ=";
+    };
+  };
   cakewallet = {
     pname = "cakewallet";
     version = "v6.1.2";

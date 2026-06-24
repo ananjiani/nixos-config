@@ -16,3 +16,7 @@ fetch.url = "https://github.com/nekename/OpenDeck/releases/download/v$ver/opende
 src.git = "https://github.com/Sam-Max/plugin.video.jacktook.git"
 src.branch = "main"
 fetch.github = "Sam-Max/plugin.video.jacktook"
+
+[agent-lisp-paren-aid]
+src.github = "kiyoka/agent-lisp-paren-aid"
+fetch.url = "https://github.com/kiyoka/agent-lisp-paren-aid/releases/download/$ver/agent-lisp-paren-aid-linux"
