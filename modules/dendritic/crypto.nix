@@ -4,12 +4,18 @@
 _:
 
 let
-  # Source information (updated by nvfetcher via CI)
+  # ponytail: cakewallet is MANUALLY pinned, deliberately NOT in nvfetcher.toml.
+  # This is a crypto wallet — auto-bumping money-handling software via weekly CI
+  # with automerge is a risk profile nobody should take. Bump deliberately after
+  # reading release notes, and re-check the asset filename: upstream's tooling is
+  # flaky (v6.2.1 shipped its Linux tarball mislabeled as v6.2.0). We pin v6.2.0
+  # because it's the last correctly-named release AND is literally the binary
+  # shipped under v6.2.1 anyway. If you re-add to nvfetcher, set automerge:false.
   sources = {
     cakewallet = {
-      version = "v5.5.2";
-      url = "https://github.com/cake-tech/cake_wallet/releases/download/v5.5.2/Cake_Wallet_v5.5.2_Linux.tar.xz";
-      sha256 = "sha256-86G4t4EfZzAFxhCAGmcjGnp4A0N/ZpR71LKkKk+qZUc=";
+      version = "v6.2.0";
+      url = "https://github.com/cake-tech/cake_wallet/releases/download/v6.2.0/Cake_Wallet_v6.2.0_Linux.tar.xz";
+      sha256 = "sha256-r/cAC5vK8qfnY27HvPRmfxbWsfWzola5+yVahBSZyoQ=";
     };
   };
 
