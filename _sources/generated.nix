@@ -14,25 +14,17 @@
       sha256 = "sha256-xaTPFQyvISRAr9oWYYLTqnNHCVQwY4aSJfrMP2145XQ=";
     };
   };
-  cakewallet = {
-    pname = "cakewallet";
-    version = "v6.1.2";
-    src = fetchurl {
-      url = "https://github.com/cake-tech/cake_wallet/releases/download/v6.1.2/Cake_Wallet_v6.1.2_Linux.tar.xz";
-      sha256 = "sha256-awZut6smNYb+HMPYNsRTKlW09PnqGFWCklQddcSXH7A=";
-    };
-  };
   jacktook = {
     pname = "jacktook";
-    version = "e028c0c7290f8fd24836da61a88e3eb9908abad4";
+    version = "bc767f387049c85b08fbbc5128c0eef210315496";
     src = fetchFromGitHub {
       owner = "Sam-Max";
       repo = "plugin.video.jacktook";
-      rev = "e028c0c7290f8fd24836da61a88e3eb9908abad4";
+      rev = "bc767f387049c85b08fbbc5128c0eef210315496";
       fetchSubmodules = false;
-      sha256 = "sha256-Kce5vuk7vf0mwGzMK61mRWQzW+LVO2raVKrYJeotFls=";
+      sha256 = "sha256-zy0wHlY3bjZfxOz8Mfs7Jk6alzo8Tby/yZIQ+TE6bzY=";
     };
-    date = "2026-05-25";
+    date = "2026-06-17";
   };
   moondeck-buddy = {
     pname = "moondeck-buddy";
@@ -44,10 +36,10 @@
   };
   opendeck = {
     pname = "opendeck";
-    version = "2.12.0";
+    version = "2.12.1";
     src = fetchurl {
-      url = "https://github.com/nekename/OpenDeck/releases/download/v2.12.0/opendeck_2.12.0_amd64.AppImage";
-      sha256 = "sha256-W40GHZZImUpxmJfW9zc47dTkjMJ+NIfGAuXy/UvsRL4=";
+      url = "https://github.com/nekename/OpenDeck/releases/download/v2.12.1/opendeck_2.12.1_amd64.AppImage";
+      sha256 = "sha256-fxYNr/ZSiQw5UTWHz/Q6kJ6WjGQr9NO9dPbZ3rXFKXw=";
     };
   };
 }
