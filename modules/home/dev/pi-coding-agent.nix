@@ -9,8 +9,9 @@ let
   piUserDir = "${config.home.homeDirectory}/.dotfiles/modules/home/dev/pi-coding-agent";
 
   # Sources tracked by nvfetcher (run `nix run github:berberman/nvfetcher`
-  # to bump). Same import shape as modules/nixos/htpc.nix.
-  sources = import ../../_sources/generated.nix {
+  # to bump). Mirrors modules/nixos/htpc.nix; depth differs (3 vs 2), so
+  # the `../../` there would land at `modules/_sources/` here.
+  sources = import ../../../_sources/generated.nix {
     inherit (pkgs)
       fetchurl
       fetchFromGitHub
