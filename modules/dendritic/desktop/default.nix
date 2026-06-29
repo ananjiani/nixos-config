@@ -488,6 +488,39 @@ in
                   };
                 };
               };
+
+              # Re-run weekday-work-edge.sh on resume. mullvad-exclude
+              # bypasses the tunnel but NOT the kill switch: after resume
+              # mullvad-daemon enters a ~3s "Blocked. Allowing LAN." state
+              # while the tunnel re-handshakes (visible in
+              # journalctl -u mullvad-daemon as `firewall: Blocked` → `Blocked.
+              # Allowing LAN. Allowing endpoint: ...` → `Connected` over
+              # wg0-mullvad). Edge's existing sockets die in that window and
+              # Chromium's WebSocket reconnect for Teams/Outlook is unreliable
+              # enough that the user sees "no connection" until restart.
+              # Respawning Edge is cheaper than fighting the reconnect — and
+              # the script's day-of-week + hour checks stay no-ops on
+              # weekends and after 5pm. Applies to both Hyprland and niri;
+              # the script dispatches to the active compositor.
+              systemd.user.services.work-edge-resume = {
+                Unit = {
+                  Description = "Relaunch Edge on resume (mullvad-exclude kill-switch window)";
+                  After = [
+                    "suspend.target"
+                    "hybrid-suspend.target"
+                    "hibernate.target"
+                  ];
+                };
+                Service = {
+                  Type = "oneshot";
+                  ExecStart = "${pkgs.bash}/bin/bash ${scriptsDir}/weekday-work-edge.sh";
+                };
+                Install.WantedBy = [
+                  "suspend.target"
+                  "hybrid-suspend.target"
+                  "hibernate.target"
+                ];
+              };
             }
 
             # ── Hyprland HM ─────────────────────────────────────────
