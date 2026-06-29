@@ -1,0 +1,23 @@
+---
+# Headless service pointing at the Podman RomM container on theoden.
+# Mirrors home-assistant/service.yaml (off-cluster via manual Endpoints).
+apiVersion: v1
+kind: Service
+metadata:
+  name: romm-external
+  namespace: romm
+spec:
+  ports:
+    - port: 8085
+      targetPort: 8085
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: romm-external
+  namespace: romm
+subsets:
+  - addresses:
+      - ip: 192.168.1.27
+    ports:
+      - port: 8085

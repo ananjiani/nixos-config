@@ -98,6 +98,8 @@ in
     ./storage.nix
     ../../_profiles/server/configuration.nix
     ../../../modules/nixos/networking.nix
+    inputs.quadlet-nix.nixosModules.quadlet
+    ./romm.nix
   ];
 
   networking = {
@@ -115,6 +117,7 @@ in
         139 # NetBIOS
         8384 # Syncthing web UI
         22000 # Syncthing sync protocol
+        8085 # RomM web UI
       ];
       allowedUDPPorts = [
         111 # rpcbind/portmapper

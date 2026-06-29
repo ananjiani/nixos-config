@@ -296,6 +296,12 @@ in
                 answer = "192.168.1.56";
               }
 
+              # RomM (Podman on theoden, traefik IngressRoute to :8085)
+              {
+                domain = "romm.lan";
+                answer = "192.168.1.52";
+              }
+
               # Wyoming Whisper (Keepalived VIP - rohan primary, boromir backup)
               {
                 domain = "whisper.lan";
