@@ -56,7 +56,17 @@ in
         rommNet = config.virtualisation.quadlet.networks.romm.ref;
       in
       {
-        networks.romm.networkConfig.subnets = [ "10.100.1.0/24" ];
+        # AdGuard binds 0.0.0.0:53 on theoden, which blocks podman's
+        # aardvark-dns (wants <bridge-gateway>:53 for container name
+        # resolution). Disabling podman DNS + pinning static IPs lets the
+        # containers talk by IP without the :53 fight. External DNS still
+        # works: containers inherit the host resolv.conf (192.168.1.53).
+        # Proper fix for podman-on-theoden generically: bind AdGuard to
+        # specific IPs instead of 0.0.0.0 — skipped, AdGuard is load-bearing.
+        networks.romm.networkConfig = {
+          subnets = [ "10.100.1.0/24" ];
+          disableDns = true;
+        };
 
         containers = {
           romm-db = {
@@ -64,6 +74,7 @@ in
               image = "docker.io/library/mariadb:11";
               name = "romm-db";
               networks = [ rommNet ];
+              ip = "10.100.1.10";
               environmentFiles = [ "/run/secrets/romm-env" ];
               environments = {
                 MARIADB_RANDOM_ROOT_PASSWORD = "yes";
@@ -79,6 +90,7 @@ in
               image = "docker.io/library/redis:7";
               name = "romm-redis";
               networks = [ rommNet ];
+              ip = "10.100.1.11";
               volumes = [ "/var/lib/romm-redis:/data" ];
               exec = "redis-server --appendonly yes";
             };
@@ -89,13 +101,15 @@ in
               image = "docker.io/rommapp/romm:latest";
               name = "romm";
               networks = [ rommNet ];
+              ip = "10.100.1.12";
               publishPorts = [ "8085:8080" ];
               environmentFiles = [ "/run/secrets/romm-env" ];
               environments = {
-                DB_HOST = "romm-db";
+                # IPs, not names — podman DNS is disabled on this net.
+                DB_HOST = "10.100.1.10";
                 DB_NAME = "romm";
                 DB_USER = "romm";
-                REDIS_HOST = "romm-redis";
+                REDIS_HOST = "10.100.1.11";
                 HASHEOUS_API_ENABLED = "true";
               };
               volumes = [
