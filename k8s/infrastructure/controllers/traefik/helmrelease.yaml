@@ -70,12 +70,11 @@ spec:
         cpu: "500m"
         memory: "256Mi"
 
-    # Logs
-    logs:
-      general:
-        level: INFO
-      access:
-        enabled: true
+    # Logs (chart 41.x renamed: logs.general -> log, logs.access -> accessLog)
+    log:
+      level: INFO
+    accessLog:
+      enabled: true
 
     # Providers
     providers:
