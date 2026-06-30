@@ -43,7 +43,10 @@ in
 
   systemd.tmpfiles.rules = [
     "d /var/lib/romm-db 0755 root root -"
-    "d /var/lib/romm-redis 0755 root root -"
+    # redis runs as UID 999 inside the container (not root); the data dir
+    # must be owned 999 so bgsave can fork+write temp-*.rdb. root:root 0755
+    # causes 'Permission denied' on bgsave -> MISCONF -> login 500s.
+    "d /var/lib/romm-redis 0755 999 999 -"
     "d /var/lib/romm 0755 root root -"
     "d /var/lib/romm/resources 0755 root root -"
     "d /var/lib/romm/assets 0755 root root -"
