@@ -1,0 +1,13 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: retroarch-lan-tls
+  namespace: retroarch-sync
+spec:
+  secretName: retroarch-lan-tls
+  issuerRef:
+    name: lan-ca
+    kind: ClusterIssuer
+  dnsNames:
+    - retroarch.lan

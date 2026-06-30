@@ -302,6 +302,12 @@ in
                 answer = "192.168.1.52";
               }
 
+              # RetroArch Cloud Sync (rclone WebDAV on theoden, traefik to :8086)
+              {
+                domain = "retroarch.lan";
+                answer = "192.168.1.52";
+              }
+
               # Wyoming Whisper (Keepalived VIP - rohan primary, boromir backup)
               {
                 domain = "whisper.lan";

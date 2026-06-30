@@ -100,6 +100,7 @@ in
     ../../../modules/nixos/networking.nix
     inputs.quadlet-nix.nixosModules.quadlet
     ./romm.nix
+    ./rclone-webdav.nix
   ];
 
   networking = {
@@ -118,6 +119,7 @@ in
         8384 # Syncthing web UI
         22000 # Syncthing sync protocol
         8085 # RomM web UI
+        8086 # RetroArch WebDAV (Cloud Sync)
       ];
       allowedUDPPorts = [
         111 # rpcbind/portmapper

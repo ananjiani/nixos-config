@@ -27,3 +27,4 @@ resources:
   - opnsense-exporter
   - searxng
   - romm
+  - retroarch-sync

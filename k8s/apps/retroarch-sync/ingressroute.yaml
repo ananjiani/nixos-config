@@ -1,0 +1,17 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: retroarch-sync
+  namespace: retroarch-sync
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`retroarch.lan`)
+      kind: Rule
+      services:
+        - name: retroarch-external
+          port: 8086
+  tls:
+    secretName: retroarch-lan-tls
