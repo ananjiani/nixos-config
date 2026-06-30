@@ -85,6 +85,12 @@ in
               };
               volumes = [ "/var/lib/romm-db:/var/lib/mysql" ];
             };
+            # /run/secrets/romm-env is wiped by sops-nix on every deploy and
+            # re-rendered by vault-agent; order after it so the file exists.
+            unitConfig = {
+              After = [ "vault-agent-default.service" ];
+              Wants = [ "vault-agent-default.service" ];
+            };
           };
 
           romm-redis = {
@@ -121,6 +127,12 @@ in
                 "/var/lib/romm/assets:/romm/assets"
                 "/var/lib/romm/config:/romm/config"
               ];
+            };
+            # /run/secrets/romm-env is wiped by sops-nix on every deploy and
+            # re-rendered by vault-agent; order after it so the file exists.
+            unitConfig = {
+              After = [ "vault-agent-default.service" ];
+              Wants = [ "vault-agent-default.service" ];
             };
           };
         };
