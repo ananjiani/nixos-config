@@ -26,6 +26,8 @@ let
     SCREENSCRAPER_PASSWORD={{ index .Data.data "screenscraper_password" }}
     STEAMGRIDDB_API_KEY={{ index .Data.data "steamgriddb_api_key" }}
     RETROACHIEVEMENTS_API_KEY={{ index .Data.data "retroachievements_api_key" }}
+    IGDB_CLIENT_ID={{ index .Data.data "igdb_client_id" }}
+    IGDB_CLIENT_SECRET={{ index .Data.data "igdb_client_secret" }}
     {{ end }}
   '';
 in
