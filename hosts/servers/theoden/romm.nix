@@ -111,6 +111,7 @@ in
                 DB_USER = "romm";
                 REDIS_HOST = "10.100.1.11";
                 HASHEOUS_API_ENABLED = "true";
+                HLTB_API_ENABLED = "true"; # HowLongToBeat — no key needed, free
               };
               volumes = [
                 "/mnt/storage/games/library:/romm/library:ro"
