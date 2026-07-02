@@ -449,6 +449,11 @@ let
   piClaudeBridgeConfig = pkgs.writeText "pi-claude-bridge.json" (
     builtins.toJSON {
       provider.pathToClaudeCodeExecutable = "${config.home.homeDirectory}/.local/bin/claude";
+      # AskClaude tool disabled — it spawns a separate Claude Code session
+      # that competes with the main Fable session for Claude quota. The
+      # model-router skill + scout/worker/reviewer agents cover delegation
+      # without burning Claude tokens on a second concurrent session.
+      askClaude.enabled = false;
     }
   );
 

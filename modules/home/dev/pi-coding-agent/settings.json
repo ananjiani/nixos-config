@@ -1,10 +1,8 @@
 {
-  "defaultProvider": "claude-bridge",
-  "defaultModel": "claude-sonnet-5",
+  "defaultProvider": "zai",
+  "defaultModel": "glm-5.2",
   "enabledModels": [
     "claude-bridge/claude-fable-5",
-    "claude-bridge/claude-opus-4-8",
-    "claude-bridge/claude-sonnet-5",
     "zai/glm-5.2",
     "opencode-go/minimax-m3",
     "opencode-go/kimi-k2.7-code",

@@ -21,8 +21,6 @@ Scores are Pi-local routing priors. Higher is better. Quota means this user's ef
 | Model | Pool | Code | Debug | Review | Scout | LongCtx | Speed | Quota | Vision | Tools |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | `claude-bridge/claude-fable-5` | Claude | 10 | 10 | 10 | 9 | 10 | 3 | 1 | 10 | 10 |
-| `claude-bridge/claude-opus-4-8` | Claude | 9 | 9 | 9 | 8 | 10 | 4 | 2 | 8 | 9 |
-| `claude-bridge/claude-sonnet-5` | Claude | 8 | 8 | 9 | 8 | 10 | 7 | 3 | 8 | 8 |
 | `openai-codex/gpt-5.5` | OpenAI | 10 | 9 | 9 | 8 | 7 | 6 | 6 | 8 | 9 |
 | `zai/glm-5.2` | Z.ai | 8 | 8 | 8 | 8 | 10 | 6 | 10 | 0 | 7 |
 | `opencode-go/kimi-k2.7-code` | Go | 9 | 7 | 7 | 6 | 7 | 7 | 7 | 7 | 8 |
@@ -36,6 +34,17 @@ Selection:
 3. Avoid Claude subagents unless stakes require it or cheaper attempts failed twice.
 4. Prefer different providers/pools for worker vs reviewer.
 5. Vision tasks require Vision >= 7.
+
+Worker routing (spec quality beats model tier):
+- A detailed, unambiguous spec + a reviewer gate makes a cheap model viable.
+  `deepseek-v4-flash` is fine for bounded implementation work when the ticket
+  names exact files, exact change, and a checkable done-condition.
+- For worker, weight `Tools` (instruction-following, structured reports,
+  push-back on bad spec) at least as heavily as `Code`. Raw code ability
+  matters less when Fable already did the thinking.
+- Escalate to `kimi-k2.7-code`, `deepseek-v4-pro`, `glm-5.2`, or `gpt-5.5` when ANY of:
+  the task leaves any "figure out" unsaid, it is debug-shaped, or flash failed
+  twice. Debug/root-cause work never routes to flash.
 
 Prompt each agent like a self-contained ticket:
 - Context: larger task and why
