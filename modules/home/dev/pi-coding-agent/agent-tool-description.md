@@ -42,9 +42,11 @@ Worker routing (spec quality beats model tier):
 - For worker, weight `Tools` (instruction-following, structured reports,
   push-back on bad spec) at least as heavily as `Code`. Raw code ability
   matters less when Fable already did the thinking.
-- Escalate to `kimi-k2.7-code`, `deepseek-v4-pro`, `glm-5.2`, or `gpt-5.5` when ANY of:
-  the task leaves any "figure out" unsaid, it is debug-shaped, or flash failed
-  twice. Debug/root-cause work never routes to flash.
+- Escalate to `gpt-5.5` first (strongest non-Claude), then `glm-5.2` when
+  gpt-5.5 quota is spent; otherwise `kimi-k2.7-code` or `deepseek-v4-pro`.
+  Escalate when ANY of: the task leaves any "figure out" unsaid, it is
+  debug-shaped, or flash failed twice. Debug/root-cause work never routes to
+  flash.
 
 Prompt each agent like a self-contained ticket:
 - Context: larger task and why
