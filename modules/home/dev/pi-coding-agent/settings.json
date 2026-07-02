@@ -1,6 +1,6 @@
 {
-  "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.5",
+  "defaultProvider": "zai",
+  "defaultModel": "glm-5.2",
   "enabledModels": [
     "zai/glm-5.2",
     "opencode-go/minimax-m3",
@@ -17,7 +17,8 @@
     "npm:pi-btw",
     "npm:pi-init",
     "git:github.com/DietrichGebert/ponytail",
-    "npm:pi-caveman"
+    "npm:pi-caveman",
+    "npm:pi-claude-bridge"
   ],
   "extensions": [
     "/home/ammar/.pi/agent/git/github.com/annapurna-himal/pi-vim-editor/index.ts"
