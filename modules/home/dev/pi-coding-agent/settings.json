@@ -26,5 +26,8 @@
     "/home/ammar/.pi/agent/git/github.com/annapurna-himal/pi-vim-editor/index.ts"
   ],
   "hideThinkingBlock": false,
-  "defaultThinkingLevel": "high"
+  "defaultThinkingLevel": "high",
+  "compaction": {
+    "enabled": false
+  }
 }

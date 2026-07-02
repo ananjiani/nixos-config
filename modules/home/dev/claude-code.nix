@@ -254,6 +254,13 @@ in
 
       effortLevel = "xhigh";
 
+      # Auto-compact off. Matches what pi-claude-bridge already does for
+      # spawned CC (DISABLE_AUTO_COMPACT=1) — keeps standalone claude/
+      # claude-kimi/claude-glm consistent. Sessions that fill context stop
+      # hard instead of summarizing; manual /compact still works. Acceptable
+      # tradeoff with 1M-context models where the wall is rarely reached.
+      autoCompactEnabled = false;
+
       # Restore thinking summaries in interactive sessions — Anthropic
       # stopped generating them by default in v2.1.89 (2026-04-01).
       # Without this, Ctrl+O verbose mode shows no reasoning output.
