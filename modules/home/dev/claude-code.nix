@@ -5,25 +5,35 @@
 }:
 
 let
-  # Community fix for the post-v2.1.68 prompt-cache regression
-  # (cnighswonger/claude-code-cache-fix). A Node.js preload that hooks
-  # globalThis.fetch and relocates attachment blocks back to messages[0]
-  # (plus tool sorting + fingerprint stabilization). URL-guarded to
-  # /v1/messages requests with valid Anthropic body shape — safe no-op
-  # everywhere else (MCPs, claude-kimi/claude-glm alt-backend wrappers).
+  # Community fix for prompt-cache + cost regressions in Claude Code
+  # (cnighswonger/claude-code-cache-fix, v4.2.1). A Node.js preload that
+  # hooks globalThis.fetch on /v1/messages requests and rewrites the body
+  # for cache-prefix stability. Started (v2.0.3) as attachment-block
+  # relocation + tool sort + fingerprint stabilization; v4.x adds much
+  # more: TTL injection (forces 1h cache_control past GrowthBook gating),
+  # cache_control marker normalization/sticky, system-reminder smoosh
+  # split/normalize, deferred-tools restore across resume, image
+  # stripping from old tool_results (CACHE_FIX_IMAGE_KEEP_LAST), and
+  # microcompaction/context-degradation monitoring. All opt-in extras
+  # are env-gated and default-off; the core cache fixes are default-on.
+  # URL-guarded to /v1/messages requests with valid Anthropic body shape
+  # — safe no-op everywhere else (MCPs, claude-kimi/claude-glm alt-backend
+  # wrappers). Proxy mode (runtime deps hpagent/proper-lockfile) is NOT
+  # used here — preload-only, which stays pure-Node (builtin imports
+  # only) and needs no patchelf.
   #
   # IMPORTANT: only works against the Node runtime variant of claude-code
   # (pkgs.claude-code-node, binary `claude-node`). The native bundled
   # binary ignores NODE_OPTIONS entirely. See claudeCodeWithCacheFix below.
   claudeCacheFix =
     let
-      version = "2.0.3";
+      version = "4.2.1";
     in
     pkgs.runCommand "claude-code-cache-fix-${version}"
       {
         src = pkgs.fetchurl {
           url = "https://registry.npmjs.org/claude-code-cache-fix/-/claude-code-cache-fix-${version}.tgz";
-          hash = "sha256-kjbbqiS9S0PReGitO/T8at9DrGJ5AJ1C1mm8zmPKejk=";
+          hash = "sha256-wzqxFyblnOqlpVDstYmebq9gRAD0bd0lN4Lfz4zm17o=";
         };
       }
       ''
