@@ -1,6 +1,6 @@
 {
-  "defaultProvider": "zai",
-  "defaultModel": "glm-5.2",
+  "defaultProvider": "opencode-go",
+  "defaultModel": "deepseek-v4-flash",
   "enabledModels": [
     "claude-bridge/claude-fable-5",
     "zai/glm-5.2",
@@ -26,8 +26,5 @@
     "/home/ammar/.pi/agent/git/github.com/annapurna-himal/pi-vim-editor/index.ts"
   ],
   "hideThinkingBlock": false,
-  "defaultThinkingLevel": "high",
-  "compaction": {
-    "enabled": false
-  }
+  "defaultThinkingLevel": "high"
 }
