@@ -607,6 +607,8 @@ in
       ".pi/agent/prompts".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/prompts";
       ".pi/agent/skills".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/skills";
       ".pi/agent/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/settings.json";
+      ".pi/agent/subagents.json".source =
+        config.lib.file.mkOutOfStoreSymlink "${piUserDir}/subagents.json";
       ".pi/agent/claude-bridge.json".source = piClaudeBridgeConfig;
       ".pi/agent/themes/gruvbox-material.json".source = piTheme;
     };

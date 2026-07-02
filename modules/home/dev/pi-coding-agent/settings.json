@@ -21,7 +21,8 @@
     "npm:pi-init",
     "git:github.com/DietrichGebert/ponytail",
     "npm:pi-caveman",
-    "npm:pi-claude-bridge"
+    "npm:pi-claude-bridge",
+    "npm:@tintinweb/pi-subagents"
   ],
   "extensions": [
     "/home/ammar/.pi/agent/git/github.com/annapurna-himal/pi-vim-editor/index.ts"
