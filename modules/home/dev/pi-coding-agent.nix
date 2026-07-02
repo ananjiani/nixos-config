@@ -139,7 +139,20 @@ let
       # unauthenticated HTML/JSON endpoints (403) regardless of IP —
       # Mullvad, residential, even Jina's servers are blocked. The
       # .rss endpoint is the only one that works without auth.
-      if [[ "$url" =~ ^https?://(www\.|old\.)?reddit\.com/r/[^/]+/comments/ ]] && \
+      # Resolve shortlink/share redirectors first: redd.it/<id> and
+      # share.reddit.com/... 301 to www.reddit.com/comments/<id>, whose
+      # canonical form has NO /r/<sub>/ segment. One HEAD-with--L captures
+      # the final URL so the regex below handles it uniformly. Direct
+      # reddit.com links (the common case) skip the extra hop.
+      case "$url" in
+        http://redd.it/* | https://redd.it/* | http*://share.reddit.com/*)
+          resolved=$(curl -sIL -o /dev/null -w '%{url_effective}' \
+            --max-time 15 -A "Mozilla/5.0 pi-coding-agent" "$url" 2>/dev/null || true)
+          if [ -n "$resolved" ]; then url=$resolved; fi
+          ;;
+      esac
+      # /r/<sub>/comments/ and bare /comments/ both accept .rss without auth.
+      if [[ "$url" =~ ^https?://(www\.|old\.)?reddit\.com/(r/[^/]+/)?comments/ ]] && \
          [[ ! "$url" =~ \.rss$ ]]; then
         url=$(printf '%s' "$url" | sed 's|/*$||').rss
       fi
