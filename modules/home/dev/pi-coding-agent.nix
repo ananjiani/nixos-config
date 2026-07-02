@@ -437,6 +437,21 @@ let
       };
     }
   );
+  # pi-claude-bridge config. The only knob that matters on NixOS is
+  # `pathToClaudeCodeExecutable`: the Claude Agent SDK bundles its own
+  # musl/glibc `claude` binary that can't run on NixOS (no dynamic linker
+  # in the expected path). Forcing the SDK to spawn our nix-managed
+  # `claude` (~/.local/bin/claude — the activation-created stable link in
+  # claude-code.nix) sidesteps that. The file is read-only at runtime
+  # (the extension only loadConfig()s it, never mutates), so a plain
+  # store-path source is the honest shape — unlike settings.json which
+  # pi mutates interactively and needs an out-of-store symlink.
+  piClaudeBridgeConfig = pkgs.writeText "pi-claude-bridge.json" (
+    builtins.toJSON {
+      provider.pathToClaudeCodeExecutable = "${config.home.homeDirectory}/.local/bin/claude";
+    }
+  );
+
   # Generate a Pi TUI theme from Stylix's base16 palette so the
   # coding agent's colors stay in sync with the rest of the desktop.
   # Uses config.lib.stylix.colors (base00–base0F) to build all 51
@@ -592,6 +607,7 @@ in
       ".pi/agent/prompts".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/prompts";
       ".pi/agent/skills".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/skills";
       ".pi/agent/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/settings.json";
+      ".pi/agent/claude-bridge.json".source = piClaudeBridgeConfig;
       ".pi/agent/themes/gruvbox-material.json".source = piTheme;
     };
   };
