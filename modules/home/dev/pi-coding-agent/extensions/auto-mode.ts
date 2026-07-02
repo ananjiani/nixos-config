@@ -11,7 +11,10 @@
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Key } from "@earendil-works/pi-tui";
-import { autoModeRef } from "./auto-mode-shared.js";
+
+// Shared state: confirm-destructive.ts reads the same global.
+(globalThis as any).__autoModeRef ??= { enabled: false };
+const autoModeRef = (globalThis as any).__autoModeRef as { enabled: boolean };
 
 export default function (pi: ExtensionAPI) {
 	pi.registerFlag("auto", {

@@ -16,7 +16,9 @@ import type {
   SessionBeforeSwitchEvent,
   SessionMessageEntry,
 } from "@mariozechner/pi-coding-agent";
-import { autoModeRef } from "./auto-mode-shared.js";
+
+// Shared auto-mode state set by auto-mode.ts
+const _autoMode = () => ((globalThis as any).__autoModeRef?.enabled ?? false);
 
 export default function (pi: ExtensionAPI) {
   // ─── Bash command gate ───
@@ -62,7 +64,7 @@ export default function (pi: ExtensionAPI) {
     if (!match) return;
 
     // Auto mode: block silently instead of asking
-    if (autoModeRef.enabled) {
+    if (_autoMode()) {
       return { block: true, reason: `Auto mode: blocked ${match.reason}` };
     }
 
