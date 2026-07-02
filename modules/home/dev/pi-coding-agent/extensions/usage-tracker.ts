@@ -68,6 +68,40 @@ interface ZaiUsage {
 	error?: string;
 }
 
+// --- Claude (Anthropic OAuth) types ---
+//
+// /api/oauth/usage returns authoritative 5h/7d utilization + per-model
+// limits — same live-quota shape as the other providers. No ccusage, no
+// local-file parsing. Token comes from claude-code's own OAuth cache.
+// ponytail: the `anthropic-beta: oauth-2025-04-20` header is versioned.
+// When Anthropic bumps it, requests 401 and this surfaces as an error
+// string (no crash). Find the new date in Claude Code's bundled JS.
+
+interface ClaudeLimit {
+	kind: string; // "session" | "weekly_all" | "weekly_scoped"
+	group: string; // "session" | "weekly"
+	percent: number; // 0-100
+	severity: string; // "normal" | "warning" | "critical"
+	resetsAt: string;
+	isActive: boolean;
+	model?: string; // scope.model.display_name (weekly_scoped only)
+}
+
+interface ClaudeUsage {
+	fiveHourPercent: number;
+	fiveHourReset: string;
+	sevenDayPercent: number;
+	sevenDayReset: string;
+	limits: ClaudeLimit[];
+	spendPercent: number;
+	spendSeverity: string;
+	extraUsedCredits?: number;
+	extraMonthlyLimit?: number;
+	extraCurrency?: string;
+	lastFetched: number;
+	error?: string;
+}
+
 // --- OpenCode Go types (adapted from timm-u/pi-usage) ---
 
 type GoModelStatus = "available" | "rate_limited" | "credits_error" | "error" | "no_key";
@@ -269,6 +303,88 @@ async function fetchZaiUsage(signal?: AbortSignal): Promise<ZaiUsage> {
 		};
 	} catch (e: any) {
 		return { plan: "?", limits: [], lastFetched: Date.now(), error: e.message };
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Provider fetchers: Claude (Anthropic OAuth)
+// ---------------------------------------------------------------------------
+// Undocumented endpoint that powers Claude Code's own /usage HUD. Returns
+// authoritative 5h/7d utilization + per-model limits + spend cap. Works for
+// Claude Max/Pro (OAuth) — the same auth path claude-code uses. The token
+// lives in claude-code's OAuth cache (NOT a /run/secrets file); claude-code
+// refreshes it as long as `claude` runs periodically.
+
+const CLAUDE_CREDENTIALS_PATH = "~/.claude/.credentials.json";
+const CLAUDE_USAGE_URL = "https://api.anthropic.com/api/oauth/usage";
+const CLAUDE_OAUTH_BETA = "oauth-2025-04-20";
+
+function readClaudeOAuth(): string | undefined {
+	try {
+		const fs = require("node:fs");
+		const home = process.env.HOME || process.env.USERPROFILE || "";
+		const expanded = CLAUDE_CREDENTIALS_PATH.replace("~", home);
+		const raw = fs.readFileSync(expanded, "utf-8");
+		const token = JSON.parse(raw)?.claudeAiOauth?.accessToken;
+		return typeof token === "string" && token.length > 0 ? token : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+async function fetchClaudeUsage(signal?: AbortSignal): Promise<ClaudeUsage> {
+	const token = readClaudeOAuth();
+	if (!token) {
+		return {
+			fiveHourPercent: 0, fiveHourReset: "",
+			sevenDayPercent: 0, sevenDayReset: "",
+			limits: [], spendPercent: 0, spendSeverity: "normal",
+			lastFetched: Date.now(),
+			error: "No claude OAuth token (~/.claude/.credentials.json)",
+		};
+	}
+
+	try {
+		const data = await fetchJSON(CLAUDE_USAGE_URL, {
+			Authorization: `Bearer ${token}`,
+			"anthropic-beta": CLAUDE_OAUTH_BETA,
+		}, signal);
+
+		const fh = data.five_hour ?? {};
+		const sd = data.seven_day ?? {};
+		const eu = data.extra_usage ?? {};
+		const spend = data.spend ?? {};
+
+		const limits: ClaudeLimit[] = (data.limits ?? []).map((l: any) => ({
+			kind: l.kind ?? "",
+			group: l.group ?? "",
+			percent: clampPercent(Number(l.percent ?? 0)),
+			severity: l.severity ?? "normal",
+			resetsAt: l.resets_at ?? "",
+			isActive: Boolean(l.is_active),
+			model: l.scope?.model?.display_name,
+		}));
+
+		return {
+			fiveHourPercent: clampPercent(Number(fh.utilization ?? 0)),
+			fiveHourReset: fh.resets_at ?? "",
+			sevenDayPercent: clampPercent(Number(sd.utilization ?? 0)),
+			sevenDayReset: sd.resets_at ?? "",
+			limits,
+			spendPercent: clampPercent(Number(spend.percent ?? 0)),
+			spendSeverity: spend.severity ?? "normal",
+			extraUsedCredits: eu.used_credits != null ? Number(eu.used_credits) : undefined,
+			extraMonthlyLimit: eu.monthly_limit != null ? Number(eu.monthly_limit) : undefined,
+			extraCurrency: eu.currency,
+			lastFetched: Date.now(),
+		};
+	} catch (e: any) {
+		return {
+			fiveHourPercent: 0, fiveHourReset: "",
+			sevenDayPercent: 0, sevenDayReset: "",
+			limits: [], spendPercent: 0, spendSeverity: "normal",
+			lastFetched: Date.now(), error: e.message,
+		};
 	}
 }
 
@@ -633,6 +749,7 @@ export default function (pi: ExtensionAPI) {
 	let kimiData: KimiUsage | null = null;
 	let zaiData: ZaiUsage | null = null;
 	let goData: OpenCodeGoUsage | null = null;
+	let claudeData: ClaudeUsage | null = null;
 	let fetching = false;
 
 	// -----------------------------------------------------------------------
@@ -643,14 +760,16 @@ export default function (pi: ExtensionAPI) {
 		if (fetching) return;
 		fetching = true;
 		try {
-			const [kimi, zai, go] = await Promise.all([
+			const [kimi, zai, go, claude] = await Promise.all([
 				fetchKimiUsage(signal),
 				fetchZaiUsage(signal),
 				fetchOpencodeGoUsage(signal),
+				fetchClaudeUsage(signal),
 			]);
 			kimiData = kimi;
 			zaiData = zai;
 			goData = go;
+			claudeData = claude;
 			updateStatus(ctx);
 		} finally {
 			fetching = false;
@@ -728,6 +847,9 @@ export default function (pi: ExtensionAPI) {
 		if (provider === "opencode-go" && goData && goData.status !== "no_key") {
 			const pct = goData.weeklyUsedPercent ?? (goData.available ? 0 : 100);
 			return { label: "go", pct, remaining: 0, limit: 0 };
+		}
+		if (provider === "claude-bridge" && claudeData && !claudeData.error) {
+			return { label: "claude", pct: claudeData.fiveHourPercent, remaining: 0, limit: 0 };
 		}
 		// Fallback: try other providers
 		if (goData && goData.status !== "no_key") {
@@ -887,6 +1009,35 @@ export default function (pi: ExtensionAPI) {
 				}
 				if (goData.error) {
 					lines.push(`  Error:   ${goData.error.substring(0, 100)}`);
+				}
+			}
+			lines.push("");
+
+			// Claude (Anthropic OAuth)
+			lines.push("🟠 Claude (Max/OAuth)");
+			if (!claudeData) {
+				lines.push("  No data — fetch failed");
+			} else if (claudeData.error) {
+				lines.push(`  ❌ ${claudeData.error}`);
+			} else {
+				lines.push(`  5h:  ${pctBar(claudeData.fiveHourPercent)}  resets ${formatResetTime(claudeData.fiveHourReset)}`);
+				lines.push(`  7d:  ${pctBar(claudeData.sevenDayPercent)}  resets ${formatResetTime(claudeData.sevenDayReset)}`);
+				// session (5h) + weekly_all (7d) shown above; surface only per-model
+				// scoped limits, and only when warm.
+				for (const l of claudeData.limits) {
+					if (l.kind === "weekly_scoped" && (l.percent > 0 || l.severity !== "normal")) {
+						const name = l.model ?? "scoped";
+						const sev = l.severity !== "normal" ? ` [${l.severity}]` : "";
+						lines.push(`  7d ${name}: ${pctBar(l.percent)}${sev}  resets ${formatResetTime(l.resetsAt)}`);
+					}
+				}
+				if (claudeData.spendSeverity !== "normal" || claudeData.spendPercent > 0) {
+					lines.push(`  Spend cap: ${pctBar(claudeData.spendPercent)} [${claudeData.spendSeverity}]`);
+				}
+				if (claudeData.extraUsedCredits && claudeData.extraUsedCredits > 0) {
+					const lim = claudeData.extraMonthlyLimit ?? 0;
+					const cur = claudeData.extraCurrency ?? "";
+					lines.push(`  Extra usage: ${claudeData.extraUsedCredits}/${lim} ${cur} credits used`);
 				}
 			}
 			lines.push("");

@@ -2,37 +2,46 @@
  * Custom Compaction — delegate summarization to a cheap model.
  *
  * Hooks session_before_compact and routes the summary call to
- * deepseek-v4-flash (opencode-go) instead of the primary model.
- * Saves quota — compaction costs ~$0 instead of Fable/Opus output
- * token prices.
+ * deepseek-v4-flash (opencode-go) with fallback to glm-5.2 (zai)
+ * when opencode usage is exhausted. Falls back to default compaction
+ * only when both fail.
  */
 
 import { complete } from "@earendil-works/pi-ai/compat";
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { Api, ExtensionAPI, Model } from "@earendil-works/pi-coding-agent";
 import { convertToLlm, serializeConversation } from "@earendil-works/pi-coding-agent";
 
-export default function (pi: ExtensionAPI) {
-	pi.on("session_before_compact", async (event, ctx) => {
-		const { preparation, signal } = event;
-		const { messagesToSummarize, turnPrefixMessages, tokensBefore, firstKeptEntryId, previousSummary } = preparation;
+type SummaryResult = { text: string; modelName: string } | null;
 
-		const model = ctx.modelRegistry.find("opencode-go", "deepseek-v4-flash");
-		if (!model) return; // fall back to default compaction
+async function tryCompactionModel(
+	provider: string,
+	modelId: string,
+	conversationText: string,
+	previousSummary: string | undefined,
+	signal: AbortSignal | undefined,
+	ctx: {
+		modelRegistry: { find: (p: string, m: string) => Model<Api> | undefined; getApiKeyAndHeaders: (m: Model<Api>) => Promise<any> };
+		ui: { notify: (msg: string, level?: string) => void };
+	},
+): Promise<SummaryResult> {
+	const model = ctx.modelRegistry.find(provider, modelId);
+	if (!model) return null;
 
-		const auth = await ctx.modelRegistry.getApiKeyAndHeaders(model);
-		if (!auth.ok || !auth.apiKey) return;
+	const auth = await ctx.modelRegistry.getApiKeyAndHeaders(model);
+	if (!auth.ok || !auth.apiKey) {
+		ctx.ui.notify(`Compaction: ${modelId} not available, trying fallback`, "info");
+		return null;
+	}
 
-		const allMessages = [...messagesToSummarize, ...turnPrefixMessages];
-		const conversationText = serializeConversation(convertToLlm(allMessages));
-		const prevCtx = previousSummary ? `\n\nPrevious session summary:\n${previousSummary}` : "";
+	const prevCtx = previousSummary ? `\n\nPrevious session summary:\n${previousSummary}` : "";
 
-		const summaryMessages = [
-			{
-				role: "user" as const,
-				content: [
-					{
-						type: "text" as const,
-						text: `Summarize this conversation for continuation. Capture:
+	const summaryMessages = [
+		{
+			role: "user" as const,
+			content: [
+				{
+					type: "text" as const,
+					text: `Summarize this conversation for continuation. Capture:
 - Goals and objectives
 - Key decisions and rationale
 - Code/file changes and technical details
@@ -45,36 +54,51 @@ Thorough but concise — this replaces the full history.${prevCtx}
 <conversation>
 ${conversationText}
 </conversation>`,
-					},
-				],
-				timestamp: Date.now(),
-			},
-		];
+				},
+			],
+			timestamp: Date.now(),
+		},
+	];
 
-		try {
-			const response = await complete(model, { messages: summaryMessages }, {
-				apiKey: auth.apiKey,
-				headers: auth.headers,
-				env: auth.env,
-				maxTokens: 8192,
-				signal,
-			});
+	try {
+		const response = await complete(model, { messages: summaryMessages }, {
+			apiKey: auth.apiKey,
+			headers: auth.headers,
+			env: auth.env,
+			maxTokens: 8192,
+			signal,
+		});
 
-			const summary = response.content
-				.filter((c): c is { type: "text"; text: string } => c.type === "text")
-				.map((c) => c.text)
-				.join("\n");
+		const text = response.content
+			.filter((c): c is { type: "text"; text: string } => c.type === "text")
+			.map((c) => c.text)
+			.join("\n");
 
-			if (!summary.trim()) return;
+		if (!text.trim()) return null;
+		return { text, modelName: modelId };
+	} catch {
+		return null;
+	}
+}
 
-			ctx.ui.notify(`Compacted ${tokensBefore.toLocaleString()} tokens via deepseek-v4-flash`, "info");
+export default function (pi: ExtensionAPI) {
+	pi.on("session_before_compact", async (event, ctx) => {
+		const { preparation, signal } = event;
+		const { messagesToSummarize, turnPrefixMessages, tokensBefore, firstKeptEntryId, previousSummary } = preparation;
 
-			return {
-				compaction: { summary, firstKeptEntryId, tokensBefore },
-			};
-		} catch {
-			// fall back to default compaction on error
-			return;
-		}
+		const allMessages = [...messagesToSummarize, ...turnPrefixMessages];
+		const conversationText = serializeConversation(convertToLlm(allMessages));
+
+		// Try cheapest first, then fallback, then default compaction
+		const result = await tryCompactionModel("opencode-go", "deepseek-v4-flash", conversationText, previousSummary, signal, ctx)
+			?? await tryCompactionModel("zai", "glm-5.2", conversationText, previousSummary, signal, ctx);
+
+		if (!result) return; // both failed → default compaction
+
+		ctx.ui.notify(`Compacted ${tokensBefore.toLocaleString()} tokens via ${result.modelName}`, "info");
+
+		return {
+			compaction: { summary: result.text, firstKeptEntryId, tokensBefore },
+		};
 	});
 }
