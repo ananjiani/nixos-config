@@ -30,6 +30,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    b2 = {
+      source  = "Backblaze/b2"
+      version = "~> 0.12"
+    }
   }
 }
 
@@ -120,4 +124,13 @@ provider "proxmox" {
     agent    = true
     username = "root"
   }
+}
+
+# Backblaze B2 master key — read from SOPS (same pattern as the vault
+# provider's bao_root_token). Keeps the master key out of OpenBao (blast
+# radius) while staying reproducible and avoiding per-apply env vars.
+# Password manager holds an independent recovery copy.
+provider "b2" {
+  application_key_id = data.sops_file.secrets.data["b2_master_key_id"]
+  application_key    = data.sops_file.secrets.data["b2_master_application_key"]
 }
