@@ -92,6 +92,14 @@ resource "opnsense_firewall_alias" "vpn_exempt_destinations" {
     "api.kimi.com",
     "api.tavily.com",
     "code.forgejo.org",
+    # Game stores — VPN IPs trigger CAPTCHA/account-lock on login
+    "www.epicgames.com",
+    "epicgames.com",
+    "gaming.amazon.com",
+    "www.amazon.com",
+    "www.gog.com",
+    "store.steampowered.com",
+    "steamcommunity.com",
   ]
 }
 

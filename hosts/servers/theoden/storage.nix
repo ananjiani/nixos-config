@@ -77,7 +77,7 @@
         "func.chown=ff"
         "func.getxattr=ff"
         "func.listxattr=ff"
-        "func.mkdir=ff"
+        "func.mkdir=epmfs"
         "func.mknod=ff"
         "func.removexattr=ff"
         "func.rename=ff"
