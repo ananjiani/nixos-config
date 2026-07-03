@@ -32,8 +32,9 @@ resource "opnsense_wireguard_server" "mullvad" {
   tunnel_address = [data.vault_kv_secret_v2.mullvad.data["address"]]
   peers          = [opnsense_wireguard_client.mullvad_peer.id]
   port           = 51820
-  mtu            = 1420 # WireGuard overhead is ~60-80 bytes (1500 - 80 = 1420)
-  disable_routes = true # Required for policy-based routing
+  mtu            = 1420        # WireGuard overhead is ~60-80 bytes (1500 - 80 = 1420)
+  disable_routes = true        # Required for policy-based routing
+  gateway        = "10.64.0.1" # Mullvad_VPNV4 gateway (OPNsense > System > Gateways)
 }
 
 # =============================================================================
