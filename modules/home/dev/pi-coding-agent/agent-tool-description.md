@@ -1,7 +1,7 @@
 Launch autonomous subagents for complex, multi-step tasks. Use direct tools for tiny known-path work.
 
 Available agent types:
-{{compactTypeList}}
+{{typeList}}
 
 Custom agents: .pi/agents/<name>.md (project) or {{agentDir}}/agents/<name>.md (global).
 

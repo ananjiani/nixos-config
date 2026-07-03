@@ -21,6 +21,20 @@ spec:
     strategy:
       type: Recreate
 
+    # Pin off rivendell: Longhorn CSI attach fails there (DeadlineExceeded,
+    # its r8169 networking). theoden is the control-plane node. Land on a
+    # healthy worker.
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                    - boromir
+                    - samwise
+
     files:
       dataDirectory: /data
       server: /data/server-files
