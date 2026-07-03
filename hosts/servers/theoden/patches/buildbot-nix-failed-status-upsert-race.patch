@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ammar <ammar@example.com>
+Date: Thu, 3 Jul 2026 00:00:00 -0500
+Subject: [PATCH] failed_status: make mark_status_failed race-safe via savepoint
+
+mark_status_failed implemented its upsert as update-then-insert against the
+(revision, status_name) primary key. Under an obsolete storm -- many builds for
+the same revision obsoleted by a newer commit at once -- concurrent calls all
+observe rowcount==0 on the update and all insert; the loser raises
+IntegrityError on the PK. Since the insert runs inside the caller's transaction
+that exception poisons it and propagates as "Got fatal Exception on DB",
+aborting the build-stop path. The build record freezes in "running" and the
+worker slot leaks; after four leaks every virtual worker is busy and CI
+deadlocks (observed in production on theoden, 2026-07-02).
+
+Guard the insert with a SAVEPOINT (conn.begin_nested). On a PK collision roll
+back only the savepoint, leaving the outer transaction usable so the build-stop
+path completes and no slot leaks. The winning caller still writes the row, so
+the bookkeeping stays correct.
+
+Stopgap for nix-community/buildbot-nix (pin 0c1190ae); bug still present on
+upstream HEAD 2026-06-28, no upstream issue yet.
+
+---
+ buildbot_nix/db/failed_status.py | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+--- a/buildbot_nix/db/failed_status.py
++++ b/buildbot_nix/db/failed_status.py
+@@ -6,6 +6,7 @@
+ from typing import TYPE_CHECKING
+
+ import sqlalchemy as sa
++from sqlalchemy.exc import IntegrityError
+ from buildbot.db import base
+
+ if TYPE_CHECKING:
+@@ -62,14 +63,25 @@
+                 )
+                 result = conn.execute(update_stmt)
+
+-                # If no rows were updated, insert a new one
++                # If no rows were updated, insert a new one. Guard the insert
++                # with a savepoint so a concurrent insert for the same
++                # (revision, status_name) during an obsolete storm cannot abort
++                # the outer transaction: under that race both callers see
++                # rowcount==0, both insert, and the loser hits the PK. Rolling
++                # back only the savepoint keeps the build-stop path alive and
++                # prevents the worker slot from leaking.
+                 if result.rowcount == 0:
+                     insert_stmt = self.failed_statuses.insert().values(
+                         revision=revision,
+                         status_name=status_name,
+                         timestamp=timestamp,
+                     )
+-                    conn.execute(insert_stmt)
++                    savepoint = conn.begin_nested()
++                    try:
++                        conn.execute(insert_stmt)
++                        savepoint.commit()
++                    except IntegrityError:
++                        savepoint.rollback()
+
+                 trans.commit()
+             except Exception:

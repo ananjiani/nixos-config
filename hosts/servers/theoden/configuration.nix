@@ -76,6 +76,17 @@ let
   # buildbot-prometheus: Exposes Buildbot metrics for Prometheus scraping.
   # Uses the same Python interpreter as buildbot-nix to ensure compatibility.
   buildbotPackages = config.services.buildbot-nix.packages;
+
+  # Local patch for buildbot-nix: make mark_status_failed race-safe so an
+  # obsolete storm can't abort the build-stop transaction and leak worker
+  # slots (CI deadlock root cause, 2026-07-02). Stopgap pending upstream fix.
+  patchedBuildbotNix = buildbotPackages.buildbot-nix.overrideAttrs (old: {
+    src = pkgs.applyPatches {
+      inherit (old) src;
+      patches = [ ./patches/buildbot-nix-failed-status-upsert-race.patch ];
+    };
+  });
+
   buildbot-prometheus = buildbotPackages.python.pkgs.buildPythonPackage rec {
     pname = "buildbot-prometheus";
     version = "22.0.0";
@@ -423,7 +434,7 @@ in
     # all original packages plus our addition.
     buildbot-master.pythonPackages = lib.mkForce (ps: [
       (ps.toPythonModule buildbotPackages.buildbot-worker)
-      buildbotPackages.buildbot-nix
+      patchedBuildbotNix
       buildbotPackages.buildbot-effects
       buildbotPackages.buildbot-plugins.www
       buildbotPackages.buildbot-gitea
