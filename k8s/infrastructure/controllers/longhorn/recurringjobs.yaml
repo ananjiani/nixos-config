@@ -1,96 +1,21 @@
 ---
-# Offsite volume backups to Backblaze B2 (issue #41). Each RecurringJob
-# triggers a block-level snapshot of its PVC and ships it to Longhorn's
-# S3 backup target (configured in the Longhorn HelmRelease). Subsequent
-# runs are incremental — only changed blocks are uploaded.
+# Offsite volume backups to Backblaze B2 (issue #41). One RecurringJob
+# targets all volumes in the "offsite" group — volumes are annotated with
+# recurring-job-group.longhorn.io/offsite=enabled.
 #
-# PVC naming convention:
-#   Helm-managed volumes use the release name (e.g. forgejo, authentik).
-#   Hand-rolled statefulsets use the claimName from the PVC manifest.
+# Block-level incremental snapshots → Longhorn's S3 backup target
+# (configured in the Longhorn HelmRelease). Concurrency=2 so at most
+# two volumes back up simultaneously.
 
 apiVersion: longhorn.io/v1beta2
 kind: RecurringJob
 metadata:
-  name: backup-forgejo
+  name: offsite-backup
   namespace: longhorn-system
 spec:
   task: backup
   cron: "0 2 * * *"
   retain: 7
   concurrency: 2
-  volumeName: pvc-ed956c09-9a89-4ebf-ae6e-ee548f132353
----
-apiVersion: longhorn.io/v1beta2
-kind: RecurringJob
-metadata:
-  name: backup-authentik
-  namespace: longhorn-system
-spec:
-  task: backup
-  cron: "30 2 * * *"
-  retain: 7
-  concurrency: 2
-  volumeName: pvc-c7c907ea-98d6-471f-b47c-c6b24e3c67c2
----
-apiVersion: longhorn.io/v1beta2
-kind: RecurringJob
-metadata:
-  name: backup-actual-budget
-  namespace: longhorn-system
-spec:
-  task: backup
-  cron: "0 1 * * *"
-  retain: 7
-  concurrency: 2
-  volumeName: pvc-75422690-ae49-4261-a226-81755aca6ac7
----
-apiVersion: longhorn.io/v1beta2
-kind: RecurringJob
-metadata:
-  name: backup-chromadb
-  namespace: longhorn-system
-spec:
-  task: backup
-  cron: "30 1 * * *"
-  retain: 7
-  concurrency: 2
-  volumeName: pvc-ff48dc0a-1c35-4ed6-9ec5-b648477d3f97
----
-apiVersion: longhorn.io/v1beta2
-kind: RecurringJob
-metadata:
-  name: backup-ntfy
-  namespace: longhorn-system
-spec:
-  task: backup
-  cron: "0 3 * * *"
-  retain: 7
-  concurrency: 2
-  volumeName: pvc-7b3477a8-bda2-42f4-a187-5a07087732f4
----
-# Stremio has two Longhorn PVCs: postgres-data (DB + config) and
-# prowlarr-config (indexer data). Names come from the explicit claimName
-# fields in the stremio postgres-statefulset and prowlarr-deployment.
-apiVersion: longhorn.io/v1beta2
-kind: RecurringJob
-metadata:
-  name: backup-stremio-postgres
-  namespace: longhorn-system
-spec:
-  task: backup
-  cron: "30 3 * * *"
-  retain: 7
-  concurrency: 2
-  volumeName: pvc-f210ac6c-188f-42a3-ad35-582ba568a00a
----
-apiVersion: longhorn.io/v1beta2
-kind: RecurringJob
-metadata:
-  name: backup-stremio-prowlarr
-  namespace: longhorn-system
-spec:
-  task: backup
-  cron: "0 4 * * *"
-  retain: 7
-  concurrency: 2
-  volumeName: pvc-cc0a8854-24b9-4f83-9d81-6f2bd396cbce
+  groups:
+    - offsite
