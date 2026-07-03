@@ -24,9 +24,17 @@ resource "b2_bucket" "offsite" {
 }
 
 resource "b2_application_key" "restic" {
-  key_name     = "restic-backup"
-  capabilities = ["readFiles", "writeFiles", "deleteFiles", "listFiles"]
-  bucket_ids   = [b2_bucket.offsite.bucket_id]
+  key_name = "restic-backup"
+  # listBuckets is required for the S3-compatible API to resolve the bucket
+  # name with a bucket-restricted key (restic uses the s3: backend).
+  capabilities = [
+    "listBuckets",
+    "readFiles",
+    "writeFiles",
+    "deleteFiles",
+    "listFiles",
+  ]
+  bucket_ids = [b2_bucket.offsite.bucket_id]
 }
 
 # Write credentials to OpenBao so NixOS hosts can read them via vault-agent
@@ -38,6 +46,13 @@ resource "vault_kv_secret_v2" "backblaze" {
     application_key = b2_application_key.restic.application_key
     bucket_name     = b2_bucket.offsite.bucket_name
   })
+}
+
+data "b2_account_info" "current" {}
+
+output "b2_s3_endpoint" {
+  description = "S3-compatible API endpoint (restic uses the s3: backend; new B2 keys are v3-API-only, which restic's native b2 backend cannot speak)"
+  value       = data.b2_account_info.current.s3_api_url
 }
 
 output "b2_bucket_name" {

@@ -208,12 +208,15 @@ in
         owner = "immich";
         group = "immich";
       };
-      # Offsite backups (issue #41): B2 credentials + restic repo password
+      # Offsite backups (issue #41): B2 credentials + restic repo password.
+      # S3-style var names: restic talks to B2 via its S3-compatible endpoint
+      # because keys created after B2's v3 API cutover can't authorize
+      # restic's native b2 backend (b2_authorize_account 400).
       b2_env = {
         path = "secret/nixos/backblaze";
         template = ''
-          B2_ACCOUNT_ID={{ with secret "secret/data/nixos/backblaze" }}{{ .Data.data.key_id }}{{ end }}
-          B2_ACCOUNT_KEY={{ with secret "secret/data/nixos/backblaze" }}{{ .Data.data.application_key }}{{ end }}
+          AWS_ACCESS_KEY_ID={{ with secret "secret/data/nixos/backblaze" }}{{ .Data.data.key_id }}{{ end }}
+          AWS_SECRET_ACCESS_KEY={{ with secret "secret/data/nixos/backblaze" }}{{ .Data.data.application_key }}{{ end }}
         '';
       };
       restic_pw = {
@@ -347,7 +350,7 @@ in
       in
       {
         postgres-offsite = offsiteDefaults // {
-          repository = "b2:ammars-homelab-offsite:theoden/postgres";
+          repository = "s3:s3.us-east-005.backblazeb2.com/ammars-homelab-offsite/theoden/postgres";
           paths = [ "/var/backup/postgres" ];
           backupPrepareCommand = ''
             install -d -o postgres -g postgres -m 700 /var/backup/postgres
@@ -359,7 +362,7 @@ in
           };
         };
         immich-offsite = offsiteDefaults // {
-          repository = "b2:ammars-homelab-offsite:theoden/immich";
+          repository = "s3:s3.us-east-005.backblazeb2.com/ammars-homelab-offsite/theoden/immich";
           paths = [ "/srv/nfs/immich" ];
           timerConfig = {
             OnCalendar = "03:00";
@@ -367,7 +370,7 @@ in
           };
         };
         game-saves-offsite = offsiteDefaults // {
-          repository = "b2:ammars-homelab-offsite:theoden/game-saves";
+          repository = "s3:s3.us-east-005.backblazeb2.com/ammars-homelab-offsite/theoden/game-saves";
           paths = [ "/mnt/storage/games/saves" ];
           timerConfig = {
             OnCalendar = "04:00";
@@ -375,7 +378,7 @@ in
           };
         };
         romm-offsite = offsiteDefaults // {
-          repository = "b2:ammars-homelab-offsite:theoden/romm";
+          repository = "s3:s3.us-east-005.backblazeb2.com/ammars-homelab-offsite/theoden/romm";
           # assets = user-uploaded saves/states/screenshots; config = config.yml;
           # DB dump written by prepare command. resources/ (scraped artwork) and
           # the ROM library are re-derivable, so excluded.
