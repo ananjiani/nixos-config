@@ -374,6 +374,27 @@ in
             Persistent = true;
           };
         };
+        romm-offsite = offsiteDefaults // {
+          repository = "b2:ammars-homelab-offsite:theoden/romm";
+          # assets = user-uploaded saves/states/screenshots; config = config.yml;
+          # DB dump written by prepare command. resources/ (scraped artwork) and
+          # the ROM library are re-derivable, so excluded.
+          paths = [
+            "/var/backup/romm"
+            "/var/lib/romm/assets"
+            "/var/lib/romm/config"
+          ];
+          # MYSQL_PWD comes from the container's own environment (romm-env),
+          # so the password never appears in host argv.
+          backupPrepareCommand = ''
+            install -d -m 700 /var/backup/romm
+            ${pkgs.podman}/bin/podman exec romm-db sh -c 'MYSQL_PWD=$MARIADB_PASSWORD exec mariadb-dump -u romm romm' > /var/backup/romm/romm.sql
+          '';
+          timerConfig = {
+            OnCalendar = "04:30";
+            Persistent = true;
+          };
+        };
       };
 
     # PostgreSQL for Attic and Buildbot
@@ -571,6 +592,10 @@ in
       ];
       restic-backups-immich-offsite.after = [ "vault-agent-default.service" ];
       restic-backups-game-saves-offsite.after = [ "vault-agent-default.service" ];
+      restic-backups-romm-offsite.after = [
+        "vault-agent-default.service"
+        "romm-db.service"
+      ];
 
       # Restic backup for game saves (S3-ready via S3_REPO env var)
       restic-backup-game-saves = {
