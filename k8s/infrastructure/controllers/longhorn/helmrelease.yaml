@@ -27,6 +27,11 @@ spec:
       guaranteedInstanceManagerCPU: 5
       # Faster failover: delete pods when node goes down (instead of waiting for k8s)
       nodeDownPodDeletionPolicy: delete-statefulset-pod
+      # Offsite S3 volume backups (issue #41). Block-level incremental
+      # snapshots → Backblaze B2 S3-compatible API. Same bucket, longhorn/
+      # prefix. Credentials from Secret created by ExternalSecret below.
+      backupTarget: "s3://ammars-homelab-offsite@us-east-005/longhorn/"
+      backupTargetCredentialSecret: longhorn-backup
     persistence:
       # Make Longhorn the default storage class
       defaultClass: true

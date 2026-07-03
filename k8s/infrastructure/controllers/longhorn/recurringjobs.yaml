@@ -1,0 +1,96 @@
+---
+# Offsite volume backups to Backblaze B2 (issue #41). Each RecurringJob
+# triggers a block-level snapshot of its PVC and ships it to Longhorn's
+# S3 backup target (configured in the Longhorn HelmRelease). Subsequent
+# runs are incremental — only changed blocks are uploaded.
+#
+# PVC naming convention:
+#   Helm-managed volumes use the release name (e.g. forgejo, authentik).
+#   Hand-rolled statefulsets use the claimName from the PVC manifest.
+
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: backup-forgejo
+  namespace: longhorn-system
+spec:
+  task: backup
+  cron: "0 2 * * *"
+  retain: 7
+  concurrency: 2
+  volumeName: forgejo
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: backup-authentik
+  namespace: longhorn-system
+spec:
+  task: backup
+  cron: "30 2 * * *"
+  retain: 7
+  concurrency: 2
+  volumeName: authentik
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: backup-actual-budget
+  namespace: longhorn-system
+spec:
+  task: backup
+  cron: "0 1 * * *"
+  retain: 7
+  concurrency: 2
+  volumeName: actual-budget
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: backup-chromadb
+  namespace: longhorn-system
+spec:
+  task: backup
+  cron: "30 1 * * *"
+  retain: 7
+  concurrency: 2
+  volumeName: chromadb
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: backup-ntfy
+  namespace: longhorn-system
+spec:
+  task: backup
+  cron: "0 3 * * *"
+  retain: 7
+  concurrency: 2
+  volumeName: ntfy
+---
+# Stremio has two Longhorn PVCs: postgres-data (DB + config) and
+# prowlarr-config (indexer data). Names come from the explicit claimName
+# fields in the stremio postgres-statefulset and prowlarr-deployment.
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: backup-stremio-postgres
+  namespace: longhorn-system
+spec:
+  task: backup
+  cron: "30 3 * * *"
+  retain: 7
+  concurrency: 2
+  volumeName: postgres-data
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: backup-stremio-prowlarr
+  namespace: longhorn-system
+spec:
+  task: backup
+  cron: "0 4 * * *"
+  retain: 7
+  concurrency: 2
+  volumeName: prowlarr-config

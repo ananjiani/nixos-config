@@ -66,6 +66,13 @@ resource "vault_policy" "eso" {
     path "secret/metadata/llm/*" {
       capabilities = ["read", "list"]
     }
+    # Backblaze B2 credentials for Longhorn S3 volume backups (issue #41)
+    path "secret/data/nixos/backblaze" {
+      capabilities = ["read"]
+    }
+    path "secret/metadata/nixos/backblaze" {
+      capabilities = ["read", "list"]
+    }
   EOT
 }
 
