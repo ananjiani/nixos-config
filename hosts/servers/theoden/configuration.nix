@@ -208,6 +208,18 @@ in
         owner = "immich";
         group = "immich";
       };
+      # Offsite backups (issue #41): B2 credentials + restic repo password
+      b2_env = {
+        path = "secret/nixos/backblaze";
+        template = ''
+          B2_ACCOUNT_ID={{ with secret "secret/data/nixos/backblaze" }}{{ .Data.data.key_id }}{{ end }}
+          B2_ACCOUNT_KEY={{ with secret "secret/data/nixos/backblaze" }}{{ .Data.data.application_key }}{{ end }}
+        '';
+      };
+      restic_pw = {
+        path = "secret/nixos/restic";
+        field = "password";
+      };
     };
 
     k3s = {
@@ -315,6 +327,54 @@ in
       enable = true;
       openFirewall = true;
     };
+
+    # Offsite backups to Backblaze B2 (issue #41). Credentials rendered by
+    # vault-agent (b2_env + restic_pw). Separate repo path per dataset so
+    # retention and restores are independent.
+    restic.backups =
+      let
+        offsiteDefaults = {
+          environmentFile = "/run/secrets/b2_env";
+          passwordFile = "/run/secrets/restic_pw";
+          initialize = true;
+          pruneOpts = [
+            "--keep-daily 7"
+            "--keep-weekly 4"
+            "--keep-monthly 6"
+            "--keep-yearly 2"
+          ];
+        };
+      in
+      {
+        postgres-offsite = offsiteDefaults // {
+          repository = "b2:ammars-homelab-offsite:theoden/postgres";
+          paths = [ "/var/backup/postgres" ];
+          backupPrepareCommand = ''
+            install -d -o postgres -g postgres -m 700 /var/backup/postgres
+            ${pkgs.util-linux}/bin/runuser -u postgres -- ${config.services.postgresql.package}/bin/pg_dumpall -f /var/backup/postgres/all.sql
+          '';
+          timerConfig = {
+            OnCalendar = "02:15";
+            Persistent = true;
+          };
+        };
+        immich-offsite = offsiteDefaults // {
+          repository = "b2:ammars-homelab-offsite:theoden/immich";
+          paths = [ "/srv/nfs/immich" ];
+          timerConfig = {
+            OnCalendar = "03:00";
+            Persistent = true;
+          };
+        };
+        game-saves-offsite = offsiteDefaults // {
+          repository = "b2:ammars-homelab-offsite:theoden/game-saves";
+          paths = [ "/mnt/storage/games/saves" ];
+          timerConfig = {
+            OnCalendar = "04:00";
+            Persistent = true;
+          };
+        };
+      };
 
     # PostgreSQL for Attic and Buildbot
     postgresql = {
@@ -505,6 +565,13 @@ in
 
     # Services that consume vault-agent secrets must wait for rendering
     services = {
+      restic-backups-postgres-offsite.after = [
+        "vault-agent-default.service"
+        "postgresql.service"
+      ];
+      restic-backups-immich-offsite.after = [ "vault-agent-default.service" ];
+      restic-backups-game-saves-offsite.after = [ "vault-agent-default.service" ];
+
       # Restic backup for game saves (S3-ready via S3_REPO env var)
       restic-backup-game-saves = {
         description = "Restic backup for game saves";
