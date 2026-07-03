@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "tools": [
+    {
+      "id": "nix",
+      "enabled": true,
+      "include": ["**/*.nix"],
+      "exclude": ["result/**", "**/result/**", "node_modules/**"],
+      "rootMarkers": ["flake.nix"],
+      "formatter": {
+        "bin": "nixfmt",
+        "args": ["{file}"],
+        "cwd": "{root}",
+        "timeoutMs": 25000
+      },
+      "linter": {
+        "bin": "statix",
+        "args": ["check", "{file}"],
+        "cwd": "{root}",
+        "timeoutMs": 30000,
+        "diagnosticExitCodes": [1, 2]
+      }
+    },
+    {
+      "id": "nix-deadnix",
+      "enabled": true,
+      "include": ["**/*.nix"],
+      "exclude": ["result/**", "**/result/**"],
+      "rootMarkers": ["flake.nix"],
+      "linter": {
+        "bin": "deadnix",
+        "args": ["{file}"],
+        "cwd": "{root}",
+        "timeoutMs": 30000,
+        "diagnosticExitCodes": [1]
+      }
+    },
+    {
+      "id": "terraform",
+      "enabled": true,
+      "include": ["**/*.tf", "**/*.tfvars"],
+      "exclude": ["result/**", "**/.terraform/**"],
+      "formatter": {
+        "bin": "tofu",
+        "args": ["fmt", "{file}"],
+        "timeoutMs": 25000
+      }
+    }
+  ]
+}
