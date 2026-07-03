@@ -1,0 +1,91 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: actualbudget
+  namespace: actual-budget
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: actualbudget
+      version: "1.9.0"
+      sourceRef:
+        kind: HelmRepository
+        name: community-charts
+        namespace: flux-system
+      interval: 1h
+  values:
+    replicaCount: 1
+    # Single-instance + SQLite: Recreate avoids split-brain on the volume.
+    strategy:
+      type: Recreate
+
+    files:
+      dataDirectory: /data
+      server: /data/server-files
+      user: /data/user-files
+
+    persistence:
+      enabled: true
+      size: 5Gi
+      storageClass: longhorn
+      accessModes:
+        - ReadWriteOnce
+
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+    # Chart-managed Ingress. NOT optional here: the chart's OIDC secret
+    # injection (ACTUAL_OPENID_CLIENT_ID/SECRET + envFrom) is gated on
+    # ingress.enabled. Traefik watches standard Ingress and globally
+    # redirects HTTP -> HTTPS, so this also owns routing + TLS.
+    ingress:
+      enabled: true
+      className: "traefik"
+      annotations:
+        cert-manager.io/cluster-issuer: lan-ca
+        gethomepage.dev/enabled: "true"
+        gethomepage.dev/name: "Actual Budget"
+        gethomepage.dev/group: "Finance"
+        gethomepage.dev/icon: "actual-budget.png"
+        gethomepage.dev/description: "Self-hosted personal finance & budgeting"
+        gethomepage.dev/href: "https://actual.lan"
+        gethomepage.dev/siteMonitor: "http://actualbudget.actual-budget.svc:5006"
+      hosts:
+        - host: actual.lan
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: actual-lan-tls
+          hosts:
+            - actual.lan
+
+    # OpenID Connect via authentik. clientId/clientSecret pulled from the
+    # ExternalSecret (OpenBao k8s/actual-budget) below.
+    login:
+      method: openid
+      allowedLoginMethods:
+        - openid
+      openid:
+        enforce: true
+        providerName: authentik
+        discoveryUrl: "https://auth.dimensiondoor.xyz/application/o/actual-budget/.well-known/openid-configuration"
+        authMethod: openid
+        tokenExpiration: "never"
+        existingSecret:
+          name: actualbudget-openid-secret
+          clientIdKey: clientId
+          clientSecretKey: clientSecret
+
+    # Chart does not derive the OIDC redirect host from its ingress; set it
+    # explicitly so authentik redirects back to the LAN hostname (trusted via
+    # the lan-ca-issued cert).
+    extraEnvVars:
+      ACTUAL_OPENID_SERVER_HOSTNAME: "https://actual.lan"

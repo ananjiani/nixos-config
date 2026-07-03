@@ -73,6 +73,11 @@ spec:
             secretKeyRef:
               name: authentik-secrets
               key: lobechat-client-secret
+        - name: ACTUAL_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: authentik-secrets
+              key: actualbudget-client-secret
 
     worker:
       volumes:
@@ -103,3 +108,8 @@ spec:
             secretKeyRef:
               name: authentik-secrets
               key: lobechat-client-secret
+        - name: ACTUAL_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: authentik-secrets
+              key: actualbudget-client-secret

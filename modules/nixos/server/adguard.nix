@@ -212,6 +212,10 @@ in
                 answer = "192.168.1.53"; # keepalived VIP (AdGuard UI on port 3000)
               }
               {
+                domain = "actual.lan";
+                answer = "192.168.1.52";
+              }
+              {
                 domain = "cliproxy.lan";
                 answer = "192.168.1.52";
               }
