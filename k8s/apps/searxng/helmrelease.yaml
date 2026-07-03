@@ -16,21 +16,32 @@ spec:
         namespace: flux-system
       interval: 1h
   values:
+    env:
+      - name: SEARXNG_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: searxng-secret
+            key: secret-key
     config:
       settings:
-        use_default_settings: true
-        server:
-          limiter: false
-          image_proxy: true
-          method: "GET"
-        search:
-          formats:
-            - html
-            - json
-          default_lang: "en"
-        general:
-          enable_metrics: false
-      limiter: {}
+        enabled: true
+        data: |-
+          use_default_settings: true
+          server:
+            limiter: false
+            image_proxy: true
+            method: "GET"
+          search:
+            formats:
+              - html
+              - json
+            default_lang: "en"
+
+      limiter:
+        enabled: true
+        data: |-
+          [botdetection.ip_limit]
+          link_token = true
     resources:
       requests:
         memory: "128Mi"
