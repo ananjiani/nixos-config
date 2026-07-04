@@ -36,10 +36,10 @@ spec:
             - name: DATABASE_URL
               value: "postgres:$(POSTGRES_PASSWORD)@postgres:5432/comet"
 
-            # Proxy streaming disabled — rivendell is on ethernet now so no need
-            # to proxy through the cluster (was needed for WiFi micro-drop workaround)
+            # Proxy streaming enabled — prevents debrid link expiry by re-resolving
+            # URLs per request, centralizes TorBox calls, avoids per-client rate-limit hammering
             - name: PROXY_DEBRID_STREAM
-              value: "False"
+              value: "True"
             - name: PROXY_DEBRID_STREAM_PASSWORD
               valueFrom:
                 secretKeyRef:
