@@ -147,6 +147,14 @@ in
       '';
     };
 
+    # Raise fd ceiling for Kodi — its GBM backend leaks EGL sync_file fence fds
+    # (missed close() on the dup'd per-frame dma-fence). Default soft limit 1024
+    # is exhausted after long uptime or a restart burst (fresh boot rescans the
+    # whole library), at which point dup() fails (EMFILE), KMS rejects frames,
+    # and the screen goes black. Hard limit is already 524288; this lifts soft.
+    # Upstream Kodi bug — this only raises the ceiling, doesn't stop the drip.
+    systemd.services.greetd.serviceConfig.LimitNOFILE = 65536;
+
     # Kodi web interface (8080) and JSON-RPC (9090) for remote control apps
     networking.firewall.allowedTCPPorts = [
       8080
