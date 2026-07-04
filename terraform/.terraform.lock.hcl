@@ -3,7 +3,7 @@
 
 provider "registry.opentofu.org/backblaze/b2" {
   version     = "0.13.0"
-  constraints = "~> 0.12"
+  constraints = "~> 0.13"
   hashes = [
     "h1:9aynKYr2dD4Pw8tH/onopvO8g0+tfWa5YaCypm/Otzw=",
     "h1:IKPv+usGf0FSikzWROxmIaRWNNWUcW2twQ55lKdeQGs=",
