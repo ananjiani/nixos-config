@@ -31,6 +31,8 @@ spec:
                   name: stremio-secrets
                   key: postgres-password
             # Zilean uses .NET configuration format
+            - name: Zilean__Dmm__ScrapeSchedule
+              value: "0 */6 * * *"
             - name: Zilean__Database__ConnectionString
               value: "Host=postgres;Port=5432;Database=zilean;Username=postgres;Password=$(POSTGRES_PASSWORD)"
           resources:
