@@ -1,0 +1,23 @@
+---
+# Headless service pointing at the NixOS paperless-ngx service on theoden.
+# Mirrors romm/service.yaml (off-cluster via manual Endpoints).
+apiVersion: v1
+kind: Service
+metadata:
+  name: paperless-external
+  namespace: paperless
+spec:
+  ports:
+    - port: 28981
+      targetPort: 28981
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: paperless-external
+  namespace: paperless
+subsets:
+  - addresses:
+      - ip: 192.168.1.27
+    ports:
+      - port: 28981

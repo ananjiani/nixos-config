@@ -111,6 +111,7 @@ in
     ../../../modules/nixos/networking.nix
     inputs.quadlet-nix.nixosModules.quadlet
     ./romm.nix
+    ./paperless.nix
     ./rclone-webdav.nix
   ];
 
@@ -398,6 +399,17 @@ in
             Persistent = true;
           };
         };
+        paperless-offsite = offsiteDefaults // {
+          # Document media (the irreplacable part). Whoosh index and the
+          # auto-generated secret_key in dataDir are re-derivable/regeneratable
+          # and excluded. DB covered by postgres-offsite (pg_dumpall).
+          repository = "s3:s3.us-east-005.backblazeb2.com/ammars-homelab-offsite/theoden/paperless";
+          paths = [ "/srv/nfs/paperless/media" ];
+          timerConfig = {
+            OnCalendar = "05:00";
+            Persistent = true;
+          };
+        };
       };
 
     # PostgreSQL for Attic and Buildbot
@@ -599,6 +611,7 @@ in
         "vault-agent-default.service"
         "romm-db.service"
       ];
+      restic-backups-paperless-offsite.after = [ "vault-agent-default.service" ];
 
       # Restic backup for game saves (S3-ready via S3_REPO env var)
       restic-backup-game-saves = {

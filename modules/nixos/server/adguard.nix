@@ -306,6 +306,12 @@ in
                 answer = "192.168.1.52";
               }
 
+              # Paperless-ngx (NixOS module on theoden, traefik IngressRoute to :28981)
+              {
+                domain = "paperless.lan";
+                answer = "192.168.1.52";
+              }
+
               # RetroArch Cloud Sync (rclone WebDAV on theoden, traefik to :8086)
               {
                 domain = "retroarch.lan";

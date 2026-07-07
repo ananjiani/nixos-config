@@ -1,0 +1,24 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: paperless
+  namespace: paperless
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Paperless"
+    gethomepage.dev/group: "Documents"
+    gethomepage.dev/icon: "paperless-ngx.png"
+    gethomepage.dev/description: "Document management and OCR archive"
+    gethomepage.dev/href: "https://paperless.lan"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`paperless.lan`)
+      kind: Rule
+      services:
+        - name: paperless-external
+          port: 28981
+  tls:
+    secretName: paperless-lan-tls
