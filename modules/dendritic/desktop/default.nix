@@ -63,7 +63,6 @@ in
                   remmina
                   wl-clipboard
                   pavucontrol
-                  light
                   libnotify
                   copyq
                   wlogout
