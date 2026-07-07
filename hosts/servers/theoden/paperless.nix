@@ -39,13 +39,14 @@
     address = "0.0.0.0";
     port = 28981;
     database.createLocally = true;
+    # Canonical URL behind traefik. The module derives PAPERLESS_URL from
+    # `domain`, which populates ALLOWED_HOSTS + CSRF_TRUSTED_ORIGINS. Without
+    # it, login POSTs from https://paperless.lan fail CSRF (origin untrusted).
+    domain = "paperless.lan";
     settings = {
       # Recursive consume so dropped folder trees ingest; subdirs become tags.
       PAPERLESS_CONSUMER_RECURSIVE = true;
       PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS = true;
-      # PAPERLESS_URL left unset: paperless derives from the request Host
-      # header, so http://theoden.lan:28981 and a future https://paperless.lan
-      # both work without reconfig. Set a canonical URL when traefik lands.
     };
   };
 
