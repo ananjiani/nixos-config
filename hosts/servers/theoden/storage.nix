@@ -28,6 +28,29 @@
     mergerfs-tools
   ];
 
+  # Tripwire fired on every `switch-to-configuration`: a NixOS deploy that
+  # changes storage.nix restarts the fstab-generated mnt-storage.mount. If
+  # bind-mounts (/srv/nfs, container binds) hold it busy, the old mergerfs
+  # instance lingers as a stacked/dead-FUSE shadow and running containers
+  # stay pinned to it -> ENOTCONN -> 502 (2026-07-07 incident). Romm's
+  # PartOf=mnt-storage.mount mitigates by restarting it; this check warns if a
+  # deploy still stacked the mount so a human can act before a stale-bind
+  # surfaces days later. Silent on clean deploys (findmnt -R == 1 entry).
+  system.activationScripts.storageMountCheck = ''
+    for m in /mnt/storage /srv/nfs; do
+      n=$(${pkgs.util-linux}/bin/findmnt -R "$m" --output TARGET --noheadings 2>/dev/null | wc -l)
+      if [ "$n" -gt 1 ]; then
+        echo "storageMountCheck: WARNING $m has $n stacked mounts (expected 1) — deploy restarted mnt-storage.mount while busy; restart containers binding /mnt/storage" >&2
+        ${pkgs.curl}/bin/curl -fsS -o /dev/null \
+          -H "Title: theoden: stacked mount on $m" \
+          -H "Priority: high" \
+          -H "Tags: warning" \
+          -d "$m has $n stacked mergerfs mounts (expected 1) after a deploy. Restart containers binding /mnt/storage (romm). Postmortem: 2026-07-07-1238." \
+          "https://ntfy.dimensiondoor.xyz/monitoring" || true
+      fi
+    done
+  '';
+
   # Storage filesystem configuration
   fileSystems = {
     # Data drives for MergerFS pool

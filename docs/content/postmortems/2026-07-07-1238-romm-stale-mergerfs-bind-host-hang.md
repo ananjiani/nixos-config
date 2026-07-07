@@ -101,7 +101,7 @@ There is a second, separate pattern worth naming: **troubleshooting actions caus
 - [x] Fix the broken `deploy .#boromir -- --confirm` advice in `AGENTS.md`/`CLAUDE.md` → `--magic-rollback false` (commit `a93f62de`)
 - [ ] Apply the same `PartOf`/`After` to any future container that bind-mounts `/mnt/storage` (operational rule; only romm today)
 - [ ] Add an operational invariant to `AGENTS.md`: never `umount` a FUSE/mergerfs mount whose daemon has exited — reboot the VM instead
-- [ ] Add a post-deploy check for stacked/duplicate mounts: `findmnt -R /mnt/storage | wc -l` should be 1; flag if more
+- [x] Add a post-deploy check for stacked/duplicate mounts (`hosts/servers/theoden/storage.nix`): `system.activationScripts.storageMountCheck` runs `findmnt -R` on `/mnt/storage` + `/srv/nfs` on every `switch-to-configuration`, warns to stderr and fires ntfy (`monitoring` topic, priority high) if either has >1 stacked entry. Silent on clean deploys.
 - [ ] Investigate whether `mnt-storage.mount` can be made non-restartable on NixOS deploy (e.g. `systemd.services."mnt-storage.mount".unitConfig.RefuseManualStop` or a stable unit hash) — open question, may not be feasible
 - [ ] Consider a liveness probe / `ExecStartPost` on romm that `stat`s `/romm/library`, so a stale bind surfaces as a unit failure instead of a silent 502
 
