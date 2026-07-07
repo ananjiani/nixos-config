@@ -601,6 +601,23 @@ in
 
     # Services that consume vault-agent secrets must wait for rendering
     services = {
+      # Refresh collation versions before ensureDatabases runs CREATE DATABASE.
+      # A nixpkgs glibc bump leaves template1 recording the old collation
+      # version; CREATE DATABASE (clones template1) then fails with
+      # "collation version mismatch", breaking ensureDatabases and any unit
+      # requiring postgresql.target. Idempotent — matching DBs emit a harmless
+      # NOTICE. See docs/content/postmortems/2026-07-07-1300-postgres-collation-mismatch.md
+      postgresql-setup.preStart = ''
+        for i in $(seq 1 30); do
+          psql -d postgres -tAc "SELECT 1" >/dev/null 2>&1 && break
+          sleep 1
+        done
+        psql -d postgres -tAc "SELECT datname FROM pg_database WHERE datallowconn" \
+          | while read -r db; do
+              psql -d postgres -c "ALTER DATABASE \"$db\" REFRESH COLLATION VERSION;" >/dev/null 2>&1 || true
+            done
+      '';
+
       restic-backups-postgres-offsite.after = [
         "vault-agent-default.service"
         "postgresql.service"
