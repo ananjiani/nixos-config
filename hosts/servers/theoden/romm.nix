@@ -133,9 +133,22 @@ in
             };
             # /run/secrets/romm-env is wiped by sops-nix on every deploy and
             # re-rendered by vault-agent; order after it so the file exists.
+            #
+            # PartOf mnt-storage.mount: a NixOS deploy that changes storage.nix
+            # restarts mnt-storage.mount, creating a new mergerfs FUSE instance
+            # while the old one lingers (busy bind-mounts block clean umount).
+            # Without PartOf, romm keeps running bound to the DEAD old instance
+            # -> ENOTCONN on /romm/library -> gunicorn boot fail -> nginx 502
+            # (2026-07-07 incident). PartOf propagates the mount restart to romm
+            # so podman recreates the container and re-binds the fresh instance;
+            # After orders romm's start behind the mount coming up.
             unitConfig = {
-              After = [ "vault-agent-default.service" ];
+              After = [
+                "vault-agent-default.service"
+                "mnt-storage.mount"
+              ];
               Wants = [ "vault-agent-default.service" ];
+              PartOf = [ "mnt-storage.mount" ];
             };
           };
         };

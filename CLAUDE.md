@@ -99,8 +99,8 @@ deploy .#boromir
 deploy .#samwise
 deploy .#theoden
 
-# Skip magic rollback (auto-confirm)
-deploy .#boromir -- --confirm
+# Skip magic rollback (no 240s confirm wait)
+deploy .#boromir --magic-rollback false
 
 # Build on remote instead of locally
 deploy .#boromir --remote-build
