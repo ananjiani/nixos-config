@@ -81,7 +81,15 @@
       ];
     };
 
-    # MergerFS unified storage pool
+    # MergerFS unified storage pool.
+    # A NixOS deploy that changes this entry restarts mnt-storage.mount -> new
+    # FUSE instance; the old one lingers if bind-mounts hold it busy, and
+    # containers bind-mounting /mnt/storage stay pinned to the dead instance
+    # (ENOTCONN -> 502; 2026-07-07 postmortem). Any container binding this pool
+    # MUST set on its unit:
+    #   PartOf = [ "mnt-storage.mount" ]; After = [ "mnt-storage.mount" ];
+    # so the restart propagates and it re-binds the fresh instance.
+    # See hosts/servers/theoden/romm.nix for the pattern (quadlet unitConfig).
     "/mnt/storage" = {
       device = "/mnt/disk1:/mnt/disk2:/mnt/disk3";
       fsType = "fuse.mergerfs";

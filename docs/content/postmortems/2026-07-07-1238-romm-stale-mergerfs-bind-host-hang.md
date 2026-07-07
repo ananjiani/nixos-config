@@ -99,10 +99,10 @@ There is a second, separate pattern worth naming: **troubleshooting actions caus
 
 - [x] Add `PartOf=mnt-storage.mount` + `After=mnt-storage.mount` to romm's quadlet unit (commit `a93f62de`)
 - [x] Fix the broken `deploy .#boromir -- --confirm` advice in `AGENTS.md`/`CLAUDE.md` → `--magic-rollback false` (commit `a93f62de`)
-- [ ] Apply the same `PartOf`/`After` to any future container that bind-mounts `/mnt/storage` (operational rule; only romm today)
-- [ ] Add an operational invariant to `AGENTS.md`: never `umount` a FUSE/mergerfs mount whose daemon has exited — reboot the VM instead
+- [x] Document the `PartOf`/`After` requirement for containers binding `/mnt/storage` as a comment on the mergerfs `fileSystems` entry in `hosts/servers/theoden/storage.nix` (catches the next container at authoring time; only romm binds it today)
+- ~~Add an operational invariant to `AGENTS.md`: never `umount` a FUSE/mergerfs mount whose daemon has exited — reboot the VM instead~~ — dropped: the lesson is already in Lessons below, and it's a one-off operational mistake, not a recurring repo pattern worth coding into agent instructions.
 - [x] Add a post-deploy check for stacked/duplicate mounts (`hosts/servers/theoden/storage.nix`): `system.activationScripts.storageMountCheck` runs `findmnt -R` on `/mnt/storage` + `/srv/nfs` on every `switch-to-configuration`, warns to stderr and fires ntfy (`monitoring` topic, priority high) if either has >1 stacked entry. Silent on clean deploys.
-- [ ] Investigate whether `mnt-storage.mount` can be made non-restartable on NixOS deploy (e.g. `systemd.services."mnt-storage.mount".unitConfig.RefuseManualStop` or a stable unit hash) — open question, may not be feasible
+- [x] Investigate whether `mnt-storage.mount` can be made non-restartable on NixOS deploy — **closed, not pursuing**: no clean NixOS switch exists (`RefuseManualStop` is fragile and blocks maintenance; a stable unit hash is impossible when editing the options; `systemd.mounts` has the same restart-on-change behavior). The `PartOf` + `ExecStartPost` probe + findmnt tripwire stack mitigates the symptom for *any* mount-cycle cause, so preventing the restart itself adds little on top.
 - [x] Add a romm `ExecStartPost` probe that `stat`s `/romm/library` (`hosts/servers/theoden/romm.nix`): a stale dead-FUSE bind fails the start instead of leaving the unit silently "active" while nginx 502s. `Type=notify` means the container is ready before the probe runs (no retry loop needed); `Restart=always` retries on failure. Complements `PartOf` (trigger) by confirming the restart landed on a live bind.
 
 ## Lessons
