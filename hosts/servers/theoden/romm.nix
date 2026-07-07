@@ -12,7 +12,7 @@
 # manual Endpoints to 192.168.1.27, cert from the lan-ca ClusterIssuer).
 #
 # Logs: journalctl -u romm.service / romm-db.service / romm-redis.service
-{ config, ... }:
+{ config, pkgs, ... }:
 let
   # env-file rendered by vault-agent from OpenBao secret/nixos/romm.
   # DB_PASSWD and MARIADB_PASSWORD share the db_passwd value so RomM and
@@ -150,6 +150,15 @@ in
               Wants = [ "vault-agent-default.service" ];
               PartOf = [ "mnt-storage.mount" ];
             };
+            # Probe: verify the /romm/library bind is live right after start. A
+            # stale dead-FUSE bind returns ENOTCONN -> gunicorn boot-loops while
+            # nginx stays up, so systemd sees the unit "active" and stops
+            # trying (2026-07-07 incident). Type=notify guarantees the container
+            # is ready before ExecStartPost runs, so a plain podman exec is safe
+            # (no retry loop). On a stale bind, stat exits 1 -> unit fails ->
+            # Restart=always retries. Complements PartOf (which triggers the
+            # restart on mount cycle); this confirms the restart landed clean.
+            serviceConfig.ExecStartPost = "${pkgs.podman}/bin/podman exec romm stat /romm/library";
           };
         };
       };

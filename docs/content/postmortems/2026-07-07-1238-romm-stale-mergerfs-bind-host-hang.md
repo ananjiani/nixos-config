@@ -103,7 +103,7 @@ There is a second, separate pattern worth naming: **troubleshooting actions caus
 - [ ] Add an operational invariant to `AGENTS.md`: never `umount` a FUSE/mergerfs mount whose daemon has exited — reboot the VM instead
 - [x] Add a post-deploy check for stacked/duplicate mounts (`hosts/servers/theoden/storage.nix`): `system.activationScripts.storageMountCheck` runs `findmnt -R` on `/mnt/storage` + `/srv/nfs` on every `switch-to-configuration`, warns to stderr and fires ntfy (`monitoring` topic, priority high) if either has >1 stacked entry. Silent on clean deploys.
 - [ ] Investigate whether `mnt-storage.mount` can be made non-restartable on NixOS deploy (e.g. `systemd.services."mnt-storage.mount".unitConfig.RefuseManualStop` or a stable unit hash) — open question, may not be feasible
-- [ ] Consider a liveness probe / `ExecStartPost` on romm that `stat`s `/romm/library`, so a stale bind surfaces as a unit failure instead of a silent 502
+- [x] Add a romm `ExecStartPost` probe that `stat`s `/romm/library` (`hosts/servers/theoden/romm.nix`): a stale dead-FUSE bind fails the start instead of leaving the unit silently "active" while nginx 502s. `Type=notify` means the container is ready before the probe runs (no retry loop needed); `Restart=always` retries on failure. Complements `PartOf` (trigger) by confirming the restart landed on a live bind.
 
 ## Lessons
 
