@@ -1,6 +1,6 @@
 {
-  "defaultProvider": "opencode-go",
-  "defaultModel": "deepseek-v4-pro",
+  "defaultProvider": "zai",
+  "defaultModel": "glm-5.2",
   "enabledModels": [
     "claude-bridge/claude-fable-5",
     "zai/glm-5.2",
@@ -20,7 +20,13 @@
     "git:github.com/DietrichGebert/ponytail",
     "npm:pi-caveman",
     "npm:pi-claude-bridge",
-    "npm:@tintinweb/pi-subagents"
+    "npm:pi-mcp-adapter",
+    "npm:@tintinweb/pi-subagents",
+
+    {
+      "source": "git:github.com/anthropics/skills",
+      "skills": ["skills/frontend-design/**"]
+    }
   ],
   "extensions": [
     "/home/ammar/.pi/agent/git/github.com/annapurna-himal/pi-vim-editor/index.ts"

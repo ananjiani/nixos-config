@@ -470,6 +470,51 @@ let
     }
   );
 
+  # ─── Browser automation (chrome-devtools-mcp via pi-mcp-adapter) ─────────
+  #
+  # pi-mcp-adapter (nicopreme, `pi install npm:pi-mcp-adapter`) exposes MCP
+  # servers as ONE lazy proxy tool (~200 tokens) instead of registering every
+  # server's tools up-front — directly addresses Mario's MCP token-bloat
+  # objection ("what if you don't need MCP"). Servers start on first call,
+  # idle-disconnect; the agent does `mcp({ search: "screenshot" })` then
+  # `mcp({ tool: "...", args: '{}' })`.
+  #
+  # We drive chrome-devtools-mcp (Google) rather than @playwright/mcp here:
+  # playwright-mcp bundles its own playwright-core which expects specific
+  # browser REVISIONS, and its downloads don't run on NixOS (unpatched,
+  # missing libnss3/libnspr4). nixpkgs ships patched playwright browsers, but
+  # only at its pinned playwright version (1.60.0); @playwright/mcp@latest
+  # bundles 1.62-alpha → revision mismatch → hard failure. chrome-devtools-mcp
+  # sidesteps all of that: --executable-path points it at nixpkgs' already-
+  # Nix-patched system Chromium via CDP. Zero browser download, zero patchelf,
+  # zero version coupling. Chrome-only is fine for hitting localhost dev
+  # servers (the web-dev testing use case); reach for playwright-mcp only if
+  # firefox/webkit test matrices become load-bearing.
+  #
+  # `${pkgs.nodejs}` and `${pkgs.chromium}` interpolate at BUILD time (JSON
+  # can't interpolate at runtime) — same store-path pattern as piModels /
+  # piClaudeBridgeConfig. npx -y ...@latest mirrors the tavily-mcp pattern in
+  # claude-code.nix. lifecycle=lazy is the adapter default but stated for
+  # clarity. --headless = no visible window; drop it when you want eyes on
+  # the page while the agent drives it.
+  piMcp = pkgs.writeText "mcp.json" (
+    builtins.toJSON {
+      mcpServers = {
+        "chrome-devtools" = {
+          command = "${pkgs.nodejs}/bin/npx";
+          args = [
+            "-y"
+            "chrome-devtools-mcp@latest"
+            "--headless"
+            "--executable-path"
+            "${pkgs.chromium}/bin/chromium"
+          ];
+          lifecycle = "lazy";
+        };
+      };
+    }
+  );
+
   # Generate a Pi TUI theme from Stylix's base16 palette so the
   # coding agent's colors stay in sync with the rest of the desktop.
   # Uses config.lib.stylix.colors (base00–base0F) to build all 51
@@ -631,6 +676,7 @@ in
       ".pi/agent/subagents.json".source =
         config.lib.file.mkOutOfStoreSymlink "${piUserDir}/subagents.json";
       ".pi/agent/claude-bridge.json".source = piClaudeBridgeConfig;
+      ".pi/agent/mcp.json".source = piMcp;
       ".pi/agent/themes/gruvbox-material.json".source = piTheme;
     };
   };
