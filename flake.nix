@@ -60,6 +60,10 @@
       url = "github:nix-community/nixos-avf";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+    nixos-wsl = {
+      url = "github:nix-community/NixOS-WSL";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     deploy-rs = {
       url = "github:serokell/deploy-rs";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
@@ -313,6 +317,15 @@
           ];
         };
 
+        # wsl-work - NixOS-WSL (work laptop under Windows)
+        wsl-work = lib.nixosSystem {
+          inherit system specialArgs;
+          modules = [
+            ./hosts/wsl-work/configuration.nix
+            inputs.nixos-wsl.nixosModules.default
+          ];
+        };
+
       };
 
       # deploy-rs deployment configuration
@@ -491,6 +504,7 @@
         nixos-rivendell = self.nixosConfigurations.rivendell.config.system.build.toplevel;
         nixos-erebor = self.nixosConfigurations.erebor.config.system.build.toplevel;
         nixos-steamdeck = self.nixosConfigurations.steamdeck.config.system.build.toplevel;
+        nixos-wsl-work = self.nixosConfigurations.wsl-work.config.system.build.toplevel;
 
         # Home Manager builds (for CI caching)
         home-ammars-pc = self.homeConfigurations."ammar@ammars-pc".activationPackage;
