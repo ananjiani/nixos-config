@@ -139,26 +139,48 @@ Use the full plan body as the description, formatted as markdown with \`[ ]\` ch
 		handler: async (ctx) => togglePlanMode(ctx),
 	});
 
-	// Filter out stale plan mode context when not in plan mode
+	// Neutralize stale plan mode context when not in plan mode.
+	//
+	// IMPORTANT: replace content in place, do NOT filter messages out.
+	// pi-claude-bridge tracks a message-count cursor into its Claude Code
+	// session; a context shorter than the cursor hits its "clean start for
+	// shorter context" path (no --resume, priors dropped), so Claude loses
+	// all history from before plan mode was toggled off.
+	const STALE_STUB = "[stale plan-mode instructions removed — plan mode is off]";
 	pi.on("context", async (event) => {
 		if (planModeEnabled) return;
 
 		return {
-			messages: event.messages.filter((m) => {
+			messages: event.messages.map((m) => {
 				const msg = m as AgentMessage & { customType?: string };
-				if (msg.customType === "plan-mode-context") return false;
-				if (msg.role !== "user") return true;
+				const isPlanContext = msg.customType === "plan-mode-context";
+				if (!isPlanContext && msg.role !== "user") return m;
 
 				const content = msg.content;
 				if (typeof content === "string") {
-					return !content.includes("[PLAN MODE ACTIVE]");
+					if (isPlanContext || content.includes("[PLAN MODE ACTIVE]")) {
+						return { ...msg, content: STALE_STUB };
+					}
+					return m;
 				}
 				if (Array.isArray(content)) {
-					return !content.some(
-						(c) => c.type === "text" && (c as TextContent).text?.includes("[PLAN MODE ACTIVE]"),
-					);
+					const hasMarker =
+						isPlanContext ||
+						content.some(
+							(c) => c.type === "text" && (c as TextContent).text?.includes("[PLAN MODE ACTIVE]"),
+						);
+					if (!hasMarker) return m;
+					return {
+						...msg,
+						content: content.map((c) =>
+							c.type === "text" &&
+							(isPlanContext || (c as TextContent).text?.includes("[PLAN MODE ACTIVE]"))
+								? { ...c, text: STALE_STUB }
+								: c,
+						),
+					};
 				}
-				return true;
+				return isPlanContext ? { ...msg, content: STALE_STUB } : m;
 			}),
 		};
 	});
