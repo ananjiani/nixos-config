@@ -675,6 +675,7 @@ in
       ".pi/agent/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/settings.json";
       ".pi/agent/subagents.json".source =
         config.lib.file.mkOutOfStoreSymlink "${piUserDir}/subagents.json";
+      ".pi/agent/pi-sense.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/pi-sense.json";
       ".pi/agent/claude-bridge.json".source = piClaudeBridgeConfig;
       ".pi/agent/mcp.json".source = piMcp;
       ".pi/agent/themes/gruvbox-material.json".source = piTheme;

@@ -12,7 +12,7 @@
     "openai-codex/gpt-5.6-terra"
   ],
   "theme": "gruvbox-material",
-  "lastChangelogVersion": "0.80.3",
+  "lastChangelogVersion": "0.80.6",
   "packages": [
     "git:github.com/annapurna-himal/pi-vim-editor",
     "npm:pi-mermaid",
@@ -29,7 +29,8 @@
         "skills/frontend-design/**"
       ]
     },
-    "npm:pi-xai-oauth"
+    "npm:pi-xai-oauth",
+    "npm:pi-sense"
   ],
   "extensions": [
     "/home/ammar/.pi/agent/git/github.com/annapurna-himal/pi-vim-editor/index.ts"

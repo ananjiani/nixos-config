@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "visionModel": "openai/gpt-4o-mini",
+  "autoHandoff": true,
+  "videoEnabled": true,
+  "videoModel": null,
+  "videoRoute": "auto",
+  "videoFps": 1,
+  "videoThinking": false,
+  "asrProvider": "auto",
+  "maxVideoFrames": 120,
+  "enableAdaptiveSampling": false
+}
