@@ -1,8 +1,8 @@
 {
   "enabled": true,
-  "visionModel": "openai/gpt-4o-mini",
+  "visionModel": "opencode-go/minimax-m3",
   "autoHandoff": true,
-  "videoEnabled": true,
+  "videoEnabled": false,
   "videoModel": null,
   "videoRoute": "auto",
   "videoFps": 1,
