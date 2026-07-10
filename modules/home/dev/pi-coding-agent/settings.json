@@ -1,14 +1,15 @@
 {
-  "defaultProvider": "zai",
-  "defaultModel": "glm-5.2",
+  "defaultProvider": "opencode-go",
+  "defaultModel": "deepseek-v4-pro",
   "enabledModels": [
     "claude-bridge/claude-fable-5",
+    "xai-auth/grok-4.5",
     "zai/glm-5.2",
     "opencode-go/minimax-m3",
     "opencode-go/kimi-k2.7-code",
     "opencode-go/deepseek-v4-pro",
     "opencode-go/deepseek-v4-flash",
-    "openai-codex/gpt-5.5"
+    "openai-codex/gpt-5.6-terra"
   ],
   "theme": "gruvbox-material",
   "lastChangelogVersion": "0.80.3",
@@ -22,11 +23,13 @@
     "npm:pi-claude-bridge",
     "npm:pi-mcp-adapter",
     "npm:@tintinweb/pi-subagents",
-
     {
       "source": "git:github.com/anthropics/skills",
-      "skills": ["skills/frontend-design/**"]
-    }
+      "skills": [
+        "skills/frontend-design/**"
+      ]
+    },
+    "npm:pi-xai-oauth"
   ],
   "extensions": [
     "/home/ammar/.pi/agent/git/github.com/annapurna-himal/pi-vim-editor/index.ts"

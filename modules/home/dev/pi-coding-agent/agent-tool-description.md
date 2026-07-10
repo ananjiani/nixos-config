@@ -23,7 +23,7 @@ Scores are Pi-local routing priors. Higher is better. Quota means this user's ef
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | `claude-bridge/claude-fable-5` | Claude | 10 | 10 | 10 | 9 | 10 | 3 | 1 | 10 | 10 |
 | `xai-auth/grok-4.5` | xAI | 9 | 8 | 8 | 7 | 7 | 7 | 7 | 8 | 8 |
-| `openai-codex/gpt-5.5` | OpenAI | 10 | 9 | 9 | 8 | 7 | 6 | 6 | 8 | 9 |
+| `openai-codex/gpt-5.6-terra` | OpenAI | 9 | 8 | 8 | 8 | 9 | 7 | 6 | 8 | 9 |
 | `zai/glm-5.2` | Z.ai | 8 | 8 | 8 | 8 | 10 | 6 | 10 | 0 | 7 |
 | `opencode-go/kimi-k2.7-code` | Go | 9 | 7 | 7 | 6 | 7 | 7 | 7 | 7 | 8 |
 | `opencode-go/deepseek-v4-pro` | Go | 8 | 9 | 8 | 7 | 10 | 5 | 7 | 0 | 7 |
@@ -45,7 +45,7 @@ Worker routing (spec quality beats model tier):
 - For worker, weight `Tools` (instruction-following, structured reports,
   push-back on bad spec) at least as heavily as `Code`. Raw code ability
   matters less when Fable already did the thinking.
-- Escalate to `grok-4.5` first for code-heavy tickets, `gpt-5.5` for debug/analysis,
+- Escalate to `grok-4.5` first for code-heavy tickets, `gpt-5.6-terra` for debug/analysis,
   then `glm-5.2` when xAI/OpenAI quota is spent; otherwise `kimi-k2.7-code`
   or `deepseek-v4-pro`.
   Escalate when ANY of: the task leaves any "figure out" unsaid, it is
