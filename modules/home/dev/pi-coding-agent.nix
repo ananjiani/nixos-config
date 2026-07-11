@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   # Absolute path to the user-editable pi resources dir in the working
@@ -641,6 +646,12 @@ in
   # pi also writes ~/.pi/agent/{auth.json,sessions/} at runtime — NOT
   # symlinked here, pi manages them as mutable runtime state.
   home = {
+    # Keep pi extensions current on every home switch. Network call —
+    # best-effort so offline/dry-run switches still succeed.
+    activation.piUpdateExtensions = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      run ${pkgs.llm-agents.pi}/bin/pi update --extensions || echo "pi: extension update failed (offline?), skipping" >&2
+    '';
+
     packages = [
       # Thin wrapper around pkgs.llm-agents.pi so we can inject flags
       # or wrap it differently in the future.
