@@ -5,7 +5,7 @@ severity: moderate
 duration: recurring; ~2h investigation on 2026-07-11
 systems: [mullvad, tailscale, openbao, direnv, desktop]
 tags: [networking, mullvad, tailscale, nftables, kernel]
-commit: pending # hosts/desktop/configuration.nix policy-routing rewrite
+commit: https://codeberg.org/ananjiani/infra/commit/9189ae71
 related:
   - 2026-04-07-1100-tailscale-mullvad-dns-triple-fault.md
   - 2026-04-08-1300-tailscale-nftables-bypass-never-loaded.md
