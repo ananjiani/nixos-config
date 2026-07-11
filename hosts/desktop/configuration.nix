@@ -104,9 +104,10 @@
           ip=${pkgs.iproute2}/bin/ip
           nft=${pkgs.nftables}/bin/nft
 
-          # Drop prior copies (priorities we own).
+          # Drop prior copies (v4 + v6 — `ip rule del` is family-specific).
           for p in 5180 5181 5190 5191 5192 5200 5201 5202; do
             while $ip rule del priority "$p" 2>/dev/null; do :; done
+            while $ip -6 rule del priority "$p" 2>/dev/null; do :; done
           done
 
           # Unmarked → Tailscale CGNAT peers (curl/bao/deploy from shell).
@@ -147,15 +148,17 @@
           }
           NFT
         '';
+        # Never fail stop — missing rules/tables are fine (old unit, partial apply).
         ExecStop = pkgs.writeShellScript "mullvad-tailscale-bypass-stop" ''
-          set -euo pipefail
           ip=${pkgs.iproute2}/bin/ip
           nft=${pkgs.nftables}/bin/nft
           for p in 5180 5181 5190 5191 5192 5200 5201 5202; do
             while $ip rule del priority "$p" 2>/dev/null; do :; done
+            while $ip -6 rule del priority "$p" 2>/dev/null; do :; done
           done
           $nft delete table inet mullvad-mark-fixup 2>/dev/null || true
           $nft delete table inet mullvad-tailscale-bypass 2>/dev/null || true
+          exit 0
         '';
       };
     };
@@ -211,28 +214,33 @@
     sunshine.enable = true;
   };
 
-  programs.ssh.knownHosts = {
-    "theoden.lan".publicKey =
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINAzH8WouJOjPIrJH3ngAxWaSEw6YLDREAbFxIgr7mjX";
-    "boromir.lan".publicKey =
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEsPlw7G8qNx5esED6AHc6EQhZk0nuLxfwh1IlZ1k5Nb";
-  };
-
   desktop.niri.enable = true;
 
   opendeck.enable = true;
 
-  # Brave browser - disable DoH since OPNsense handles DNS with Mullvad DoT
-  programs.brave = {
-    enable = true;
-    package = pkgs.brave-origin;
-    features.sync = true;
-    features.aiChat = true;
-    doh.enable = false; # Use system DNS (router-level encryption)
-    searchEngine = {
+  programs = {
+    # Experimental HDR fork — https://github.com/niri-wm/niri/discussions/1128
+    niri.package = pkgs.niri-hdr;
+
+    ssh.knownHosts = {
+      "theoden.lan".publicKey =
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINAzH8WouJOjPIrJH3ngAxWaSEw6YLDREAbFxIgr7mjX";
+      "boromir.lan".publicKey =
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEsPlw7G8qNx5esED6AHc6EQhZk0nuLxfwh1IlZ1k5Nb";
+    };
+
+    # Brave browser - disable DoH since OPNsense handles DNS with Mullvad DoT
+    brave = {
       enable = true;
-      searchUrl = "https://searxng.lan/search?q={searchTerms}";
-      suggestUrl = "https://searxng.lan/autocompleter?q={searchTerms}";
+      package = pkgs.brave-origin;
+      features.sync = true;
+      features.aiChat = true;
+      doh.enable = false; # Use system DNS (router-level encryption)
+      searchEngine = {
+        enable = true;
+        searchUrl = "https://searxng.lan/search?q={searchTerms}";
+        suggestUrl = "https://searxng.lan/autocompleter?q={searchTerms}";
+      };
     };
   };
 
