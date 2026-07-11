@@ -583,11 +583,6 @@
         shellHook = self.checks.${system}.pre-commit-check.shellHook + ''
           export KUBECONFIG="$PWD/kubeconfig"
           export PATH="$PWD/scripts:$PATH"
-          # B2 S3 state backend credentials (issue #41).
-          # Fetched transiently from OpenBao on every devShell entry.
-          # Actual values never touch disk.
-          export AWS_ACCESS_KEY_ID=$(bao kv get -field=key_id secret/nixos/backblaze 2>/dev/null || true)
-          export AWS_SECRET_ACCESS_KEY=$(bao kv get -field=application_key secret/nixos/backblaze 2>/dev/null || true)
         '';
         buildInputs = self.checks.${system}.pre-commit-check.enabledPackages ++ [
           pkgs.opentofu
