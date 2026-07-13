@@ -109,6 +109,16 @@
     };
   };
 
+  # Persistent timers fire immediately on wake-from-sleep if they missed
+  # their slot; a full-store rehash then saturates the disk (IO PSI ~60%,
+  # 2026-07-13). Idle scheduling keeps it from starving interactive I/O.
+  # Note: only honored by schedulers with priority classes (bfq); NVMe
+  # defaults to "none", where this is best-effort.
+  systemd.services.nix-optimise.serviceConfig = {
+    IOSchedulingClass = "idle";
+    CPUSchedulingPolicy = "idle";
+  };
+
   nixpkgs.config.allowUnfree = true;
 
   # Cap journald to prevent disk-pressure on servers with large root FS.
