@@ -328,7 +328,7 @@ _:
 
           backgroundMode = lib.mkOption {
             type = lib.types.bool;
-            default = false;
+            default = true;
             description = "Continue running background apps when browser is closed";
           };
         };
