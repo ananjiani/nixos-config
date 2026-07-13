@@ -105,49 +105,25 @@
     timers.nix-optimise.timerConfig.WakeSystem = true;
 
     services = {
-      mullvad-tailscale-bypass = {
-        description = "Reach Tailscale CGNAT peers through Mullvad";
-        after = [
-          "network.target"
-          "mullvad-daemon.service"
+      # nft ct-mark table. Must be up BEFORE tailscaled authenticates — its
+      # underlay leaves eno1 marked 0x80000 and Mullvad's kill-switch RSTs it
+      # ("connection refused", permanent NoState) without ct mark 0xf41. This
+      # needs no tailscale0, so it can safely order before tailscaled.
+      mullvad-tailscale-fixup = {
+        description = "ct-mark Tailscale traffic for Mullvad's firewall";
+        after = [ "mullvad-daemon.service" ];
+        wants = [ "mullvad-daemon.service" ];
+        before = [ "tailscaled.service" ];
+        wantedBy = [
+          "multi-user.target"
           "tailscaled.service"
         ];
-        wants = [
-          "mullvad-daemon.service"
-          "tailscaled.service"
-        ];
-        # Re-run if tailscaled restarts — its restart tears down tailscale0 and
-        # flushes the main-table CGNAT route, which this unit re-adds.
-        partOf = [ "tailscaled.service" ];
-        wantedBy = [ "multi-user.target" ];
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
-          # Wait for tailscale0 — tailscaled.service being "started" doesn't
-          # mean the interface exists yet, and `ip route ... dev tailscale0`
-          # fails with "Device for nexthop is not up" if it's missing.
-          ExecStartPre = pkgs.writeShellScript "wait-for-tailscale0" ''
-            for _ in $(seq 1 60); do
-              [ -e /sys/class/net/tailscale0 ] && exit 0
-              sleep 1
-            done
-            exit 0
-          '';
-          ExecStart = pkgs.writeShellScript "mullvad-tailscale-bypass-start" ''
-            set -uo pipefail
-            ip=${pkgs.iproute2}/bin/ip
-            nft=${pkgs.nftables}/bin/nft
-
-            # CGNAT + tailnet ULA via tailscale0 in MAIN table. Resolved by
-            # Mullvad's own suppress rule, so immune to its priority drift.
-            $ip    route replace 100.64.0.0/10 dev tailscale0
-            $ip -6 route replace fd7a:115c:a1e0::/48 dev tailscale0 2>/dev/null || true
-
-            # ct mark 0xf41 so Mullvad's firewall accepts:
-            #   - tailscaled's own 0x80000 underlay leaving eno1
-            #   - unmarked CGNAT traffic leaving tailscale0
-            $nft delete table inet mullvad-mark-fixup 2>/dev/null || true
-            $nft -f - <<'NFT'
+          ExecStart = pkgs.writeShellScript "mullvad-tailscale-fixup-start" ''
+            ${pkgs.nftables}/bin/nft delete table inet mullvad-mark-fixup 2>/dev/null || true
+            ${pkgs.nftables}/bin/nft -f - <<'NFT'
             table inet mullvad-mark-fixup {
               chain output {
                 type filter hook output priority -10; policy accept;
@@ -163,21 +139,50 @@
             }
             NFT
           '';
-          # Best-effort stop — missing route/table is fine.
-          ExecStop = pkgs.writeShellScript "mullvad-tailscale-bypass-stop" ''
+          ExecStop = "-${pkgs.nftables}/bin/nft delete table inet mullvad-mark-fixup";
+        };
+      };
+
+      # Main-table CGNAT route so unmarked processes (curl/vault-agent) reach
+      # tailnet peers. Needs tailscale0, so it runs AFTER tailscaled is up.
+      mullvad-tailscale-route = {
+        description = "Route Tailscale CGNAT via tailscale0 past Mullvad";
+        after = [ "tailscaled.service" ];
+        # Re-run if tailscaled restarts — that tears down tailscale0 and flushes
+        # this route.
+        partOf = [ "tailscaled.service" ];
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          # tailscaled.service being "started" doesn't mean tailscale0 exists;
+          # `ip route ... dev tailscale0` fails "Device for nexthop is not up".
+          ExecStartPre = pkgs.writeShellScript "wait-for-tailscale0" ''
+            for _ in $(seq 1 60); do
+              [ -e /sys/class/net/tailscale0 ] && exit 0
+              sleep 1
+            done
+            exit 0
+          '';
+          ExecStart = pkgs.writeShellScript "mullvad-tailscale-route-start" ''
+            set -uo pipefail
             ip=${pkgs.iproute2}/bin/ip
-            nft=${pkgs.nftables}/bin/nft
+            # Resolved by Mullvad's own suppress rule, so immune to its drift.
+            $ip    route replace 100.64.0.0/10 dev tailscale0
+            $ip -6 route replace fd7a:115c:a1e0::/48 dev tailscale0 2>/dev/null || true
+          '';
+          ExecStop = pkgs.writeShellScript "mullvad-tailscale-route-stop" ''
+            ip=${pkgs.iproute2}/bin/ip
             $ip    route del 100.64.0.0/10 dev tailscale0 2>/dev/null || true
             $ip -6 route del fd7a:115c:a1e0::/48 dev tailscale0 2>/dev/null || true
-            $nft delete table inet mullvad-mark-fixup 2>/dev/null || true
             exit 0
           '';
         };
       };
 
-      # Re-apply after mullvad-daemon restarts (it re-inits its rule set).
+      # Re-apply both after mullvad-daemon restarts (it re-inits its rule set).
       mullvad-daemon.serviceConfig.ExecStartPost = [
-        "+${pkgs.systemd}/bin/systemctl --no-block try-restart mullvad-tailscale-bypass.service"
+        "+${pkgs.systemd}/bin/systemctl --no-block try-restart mullvad-tailscale-fixup.service mullvad-tailscale-route.service"
       ];
 
       # Wake-on-LAN: re-apply magic-packet policy at boot and on every link add.
