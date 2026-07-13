@@ -87,98 +87,105 @@
   #
   # Do NOT use networking.nftables.enable — switches firewall backend
   # and breaks iptables-nft (Docker, Tailscale).
-  systemd.services = {
-    mullvad-tailscale-bypass = {
-      description = "Policy-routing bypass for Tailscale through Mullvad";
-      after = [
-        "network.target"
-        "mullvad-daemon.service"
-      ];
-      wants = [ "mullvad-daemon.service" ];
-      wantedBy = [ "multi-user.target" ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        ExecStart = pkgs.writeShellScript "mullvad-tailscale-bypass-start" ''
-          set -euo pipefail
-          ip=${pkgs.iproute2}/bin/ip
-          nft=${pkgs.nftables}/bin/nft
+  systemd = {
+    # Wake from suspend for the 03:45 store optimise (idle-scheduled in
+    # base.nix). swayidle's 30-min idle timeout should re-suspend afterwards;
+    # if the machine stays awake overnight instead, add a guarded re-suspend.
+    timers.nix-optimise.timerConfig.WakeSystem = true;
 
-          # Drop prior copies (v4 + v6 — `ip rule del` is family-specific).
-          for p in 5180 5181 5190 5191 5192 5200 5201 5202; do
-            while $ip rule del priority "$p" 2>/dev/null; do :; done
-            while $ip -6 rule del priority "$p" 2>/dev/null; do :; done
-          done
+    services = {
+      mullvad-tailscale-bypass = {
+        description = "Policy-routing bypass for Tailscale through Mullvad";
+        after = [
+          "network.target"
+          "mullvad-daemon.service"
+        ];
+        wants = [ "mullvad-daemon.service" ];
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = pkgs.writeShellScript "mullvad-tailscale-bypass-start" ''
+            set -euo pipefail
+            ip=${pkgs.iproute2}/bin/ip
+            nft=${pkgs.nftables}/bin/nft
 
-          # Unmarked → Tailscale CGNAT peers (curl/bao/deploy from shell).
-          $ip rule add priority 5180 to 100.64.0.0/10 lookup 52
-          $ip -6 rule add priority 5181 to fd7a:115c:a1e0::/48 lookup 52
+            # Drop prior copies (v4 + v6 — `ip rule del` is family-specific).
+            for p in 5180 5181 5190 5191 5192 5200 5201 5202; do
+              while $ip rule del priority "$p" 2>/dev/null; do :; done
+              while $ip -6 rule del priority "$p" 2>/dev/null; do :; done
+            done
 
-          # Mole mark (mullvad-exclude / docs mark 0x6d6f6c65).
-          $ip rule add priority 5190 fwmark 0x6d6f6c65 lookup main suppress_prefixlength 0
-          $ip rule add priority 5191 fwmark 0x6d6f6c65 lookup 52
-          $ip rule add priority 5192 fwmark 0x6d6f6c65 lookup main
+            # Unmarked → Tailscale CGNAT peers (curl/bao/deploy from shell).
+            $ip rule add priority 5180 to 100.64.0.0/10 lookup 52
+            $ip -6 rule add priority 5181 to fd7a:115c:a1e0::/48 lookup 52
 
-          # Tailscale's own SO_MARK 0x80000 (DERP, control, peer WG).
-          $ip rule add priority 5200 fwmark 0x80000/0xff0000 lookup main suppress_prefixlength 0
-          $ip rule add priority 5201 fwmark 0x80000/0xff0000 lookup 52
-          $ip rule add priority 5202 fwmark 0x80000/0xff0000 lookup main
+            # Mole mark (mullvad-exclude / docs mark 0x6d6f6c65).
+            $ip rule add priority 5190 fwmark 0x6d6f6c65 lookup main suppress_prefixlength 0
+            $ip rule add priority 5191 fwmark 0x6d6f6c65 lookup 52
+            $ip rule add priority 5192 fwmark 0x6d6f6c65 lookup main
 
-          # ct mark fixup — filter only, no re-fib.
-          $nft delete table inet mullvad-mark-fixup 2>/dev/null || true
-          $nft delete table inet mullvad-tailscale-bypass 2>/dev/null || true
-          $nft -f - <<'NFT'
-          table inet mullvad-mark-fixup {
-            chain output {
-              type filter hook output priority -10; policy accept;
-              meta mark and 0xff0000 == 0x80000 ct mark set 0x00000f41
-              meta mark 0x6d6f6c65 ct mark set 0x00000f41
-              ip daddr 100.64.0.0/10 ct mark set 0x00000f41
-              ip6 daddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41
+            # Tailscale's own SO_MARK 0x80000 (DERP, control, peer WG).
+            $ip rule add priority 5200 fwmark 0x80000/0xff0000 lookup main suppress_prefixlength 0
+            $ip rule add priority 5201 fwmark 0x80000/0xff0000 lookup 52
+            $ip rule add priority 5202 fwmark 0x80000/0xff0000 lookup main
+
+            # ct mark fixup — filter only, no re-fib.
+            $nft delete table inet mullvad-mark-fixup 2>/dev/null || true
+            $nft delete table inet mullvad-tailscale-bypass 2>/dev/null || true
+            $nft -f - <<'NFT'
+            table inet mullvad-mark-fixup {
+              chain output {
+                type filter hook output priority -10; policy accept;
+                meta mark and 0xff0000 == 0x80000 ct mark set 0x00000f41
+                meta mark 0x6d6f6c65 ct mark set 0x00000f41
+                ip daddr 100.64.0.0/10 ct mark set 0x00000f41
+                ip6 daddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41
+              }
+              chain prerouting {
+                type filter hook prerouting priority -150; policy accept;
+                ct mark 0x00000f41 meta mark set 0x6d6f6c65
+              }
+              chain input {
+                type filter hook input priority -100; policy accept;
+                ip saddr 100.64.0.0/10 ct mark set 0x00000f41
+                ip6 saddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41
+              }
             }
-            chain prerouting {
-              type filter hook prerouting priority -150; policy accept;
-              ct mark 0x00000f41 meta mark set 0x6d6f6c65
-            }
-            chain input {
-              type filter hook input priority -100; policy accept;
-              ip saddr 100.64.0.0/10 ct mark set 0x00000f41
-              ip6 saddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41
-            }
-          }
-          NFT
-        '';
-        # Never fail stop — missing rules/tables are fine (old unit, partial apply).
-        ExecStop = pkgs.writeShellScript "mullvad-tailscale-bypass-stop" ''
-          ip=${pkgs.iproute2}/bin/ip
-          nft=${pkgs.nftables}/bin/nft
-          for p in 5180 5181 5190 5191 5192 5200 5201 5202; do
-            while $ip rule del priority "$p" 2>/dev/null; do :; done
-            while $ip -6 rule del priority "$p" 2>/dev/null; do :; done
-          done
-          $nft delete table inet mullvad-mark-fixup 2>/dev/null || true
-          $nft delete table inet mullvad-tailscale-bypass 2>/dev/null || true
-          exit 0
-        '';
+            NFT
+          '';
+          # Never fail stop — missing rules/tables are fine (old unit, partial apply).
+          ExecStop = pkgs.writeShellScript "mullvad-tailscale-bypass-stop" ''
+            ip=${pkgs.iproute2}/bin/ip
+            nft=${pkgs.nftables}/bin/nft
+            for p in 5180 5181 5190 5191 5192 5200 5201 5202; do
+              while $ip rule del priority "$p" 2>/dev/null; do :; done
+              while $ip -6 rule del priority "$p" 2>/dev/null; do :; done
+            done
+            $nft delete table inet mullvad-mark-fixup 2>/dev/null || true
+            $nft delete table inet mullvad-tailscale-bypass 2>/dev/null || true
+            exit 0
+          '';
+        };
       };
-    };
 
-    # Re-apply after mullvad-daemon restarts (reinstalls rule 5209).
-    mullvad-daemon.serviceConfig.ExecStartPost = [
-      "+${pkgs.systemd}/bin/systemctl --no-block try-restart mullvad-tailscale-bypass.service"
-    ];
+      # Re-apply after mullvad-daemon restarts (reinstalls rule 5209).
+      mullvad-daemon.serviceConfig.ExecStartPost = [
+        "+${pkgs.systemd}/bin/systemctl --no-block try-restart mullvad-tailscale-bypass.service"
+      ];
 
-    # Wake-on-LAN: re-apply magic-packet policy at boot and on every link add.
-    # networking.interfaces.eno1.wakeOnLan.enable is a no-op on this driver (see comment above).
-    wake-on-lan = {
-      description = "Enable Wake-on-LAN (magic packet) on eno1";
-      after = [ "network-pre.target" ];
-      wants = [ "network-pre.target" ];
-      wantedBy = [ "multi-user.target" ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        ExecStart = "${pkgs.ethtool}/bin/ethtool -s eno1 wol g";
+      # Wake-on-LAN: re-apply magic-packet policy at boot and on every link add.
+      # networking.interfaces.eno1.wakeOnLan.enable is a no-op on this driver (see comment above).
+      wake-on-lan = {
+        description = "Enable Wake-on-LAN (magic packet) on eno1";
+        after = [ "network-pre.target" ];
+        wants = [ "network-pre.target" ];
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = "${pkgs.ethtool}/bin/ethtool -s eno1 wol g";
+        };
       };
     };
   };
