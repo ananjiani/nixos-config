@@ -13,11 +13,18 @@ let
   # live-reloads. mode="auto" keeps the SDR desktop clean; mode="on" makes DP-2
   # advertise HDR upfront (needed by games that probe HDR only at swapchain
   # creation, e.g. AC4 — auto's chicken-and-egg never engages for them).
+  # reference-luminance = nits that SDR white (1.0) maps to while DP-2 is in HDR
+  # mode, and the reference white of the blend space the game's HDR is composited
+  # into. 203 is the BT.2408 default; raise if HDR looks washed/lifted, lower if
+  # crushed. Panel is DisplayHDR True Black 400 (EDID: 400 peak / 248 avg).
+  hdrReferenceLuminance = 203;
   dp2Fragment =
     hdrMode:
     pkgs.writeText "niri-dp2-${hdrMode}.kdl" ''
       output "DP-2" {
-          hdr mode="${hdrMode}"
+          hdr mode="${hdrMode}" {
+              reference-luminance ${toString hdrReferenceLuminance}
+          }
           scale 1.000000
           transform "normal"
           position x=0 y=1440
