@@ -16,15 +16,15 @@
   };
   jacktook = {
     pname = "jacktook";
-    version = "bc767f387049c85b08fbbc5128c0eef210315496";
+    version = "c22f23fc7df9705cb7e42c1b54f631358869d182";
     src = fetchFromGitHub {
       owner = "Sam-Max";
       repo = "plugin.video.jacktook";
-      rev = "bc767f387049c85b08fbbc5128c0eef210315496";
+      rev = "c22f23fc7df9705cb7e42c1b54f631358869d182";
       fetchSubmodules = false;
-      sha256 = "sha256-zy0wHlY3bjZfxOz8Mfs7Jk6alzo8Tby/yZIQ+TE6bzY=";
+      sha256 = "sha256-JI+yfI2axUrVm/TyhGFuMaMgEEo05+XzoEfklW6yXlw=";
     };
-    date = "2026-06-17";
+    date = "2026-07-10";
   };
   moondeck-buddy = {
     pname = "moondeck-buddy";
@@ -34,12 +34,36 @@
       sha256 = "sha256-SfaqrBJJZlJwhSPLPUlwfvZ8RxIWrbwY6uys8ziRvek=";
     };
   };
+  niri-hdr = {
+    pname = "niri-hdr";
+    version = "2516a83b3eef5f3a766af5113244357a11e255a6";
+    src = fetchFromGitHub {
+      owner = "dividebysandwich";
+      repo = "niri";
+      rev = "2516a83b3eef5f3a766af5113244357a11e255a6";
+      fetchSubmodules = false;
+      sha256 = "sha256-Y8X2bTuboCAQ9E67ri9kTMkzBYU+1o3iCHCOVWctxLo=";
+    };
+    date = "2026-07-10";
+  };
   opendeck = {
     pname = "opendeck";
-    version = "2.12.1";
+    version = "2.13.1";
     src = fetchurl {
-      url = "https://github.com/nekename/OpenDeck/releases/download/v2.12.1/opendeck_2.12.1_amd64.AppImage";
-      sha256 = "sha256-fxYNr/ZSiQw5UTWHz/Q6kJ6WjGQr9NO9dPbZ3rXFKXw=";
+      url = "https://github.com/nekename/OpenDeck/releases/download/v2.13.1/opendeck_2.13.1_amd64.AppImage";
+      sha256 = "sha256-SXKZrF8fMYjoCc5cVpiOiSoJHf61+Q+r9E03xiHI4uw=";
     };
+  };
+  smithay-hdr = {
+    pname = "smithay-hdr";
+    version = "57c805c8e6d0b34601b07d89053b376905008d8a";
+    src = fetchFromGitHub {
+      owner = "dividebysandwich";
+      repo = "smithay";
+      rev = "57c805c8e6d0b34601b07d89053b376905008d8a";
+      fetchSubmodules = false;
+      sha256 = "sha256-sYvo5fPPrf6y2vFI8TbgTfTfNxeVEmzTB+BrqGS7l8o=";
+    };
+    date = "2026-07-10";
   };
 }

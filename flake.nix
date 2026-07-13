@@ -164,9 +164,13 @@
             ./hosts/desktop/configuration.nix
             inputs.sops-nix.nixosModules.sops
             # brave-origin overlay (remove when https://github.com/NixOS/nixpkgs/pull/511131 merges)
+            # niri-hdr: experimental dividebysandwich HDR fork (remove when upstream lands)
             {
               nixpkgs.overlays = [
-                (final: _prev: { brave-origin = final.callPackage ./pkgs/brave-origin/package.nix { }; })
+                (final: _prev: {
+                  brave-origin = final.callPackage ./pkgs/brave-origin/package.nix { };
+                  niri-hdr = final.callPackage ./pkgs/niri-hdr/package.nix { };
+                })
               ];
             }
             # Import dendritic moondeck NixOS module
@@ -388,6 +392,10 @@
                     inputs.nix-vscode-extensions.overlays.default
                     inputs.claude-code.overlays.default
                     inputs.llm-agents.overlays.default
+                    # niri-hdr: experimental HDR fork (desktop only; package unused elsewhere)
+                    (final: _prev: {
+                      niri-hdr = final.callPackage ./pkgs/niri-hdr/package.nix { };
+                    })
                   ];
                 }
 

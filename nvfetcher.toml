@@ -16,3 +16,15 @@ fetch.github = "Sam-Max/plugin.video.jacktook"
 [agent-lisp-paren-aid]
 src.github = "kiyoka/agent-lisp-paren-aid"
 fetch.url = "https://github.com/kiyoka/agent-lisp-paren-aid/releases/download/$ver/agent-lisp-paren-aid-linux"
+
+# Experimental niri HDR fork — https://github.com/niri-wm/niri/discussions/1128
+# Source revs only; cargoDeps vendor hash in pkgs/niri-hdr/package.nix is manual.
+[niri-hdr]
+src.git = "https://github.com/dividebysandwich/niri.git"
+src.branch = "hdr-smithay-master"
+fetch.github = "dividebysandwich/niri"
+
+[smithay-hdr]
+src.git = "https://github.com/dividebysandwich/smithay.git"
+src.branch = "ds-hdr-master"
+fetch.github = "dividebysandwich/smithay"

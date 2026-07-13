@@ -16,7 +16,7 @@
     },
     "jacktook": {
         "cargoLock": null,
-        "date": "2026-06-17",
+        "date": "2026-07-10",
         "extract": null,
         "name": "jacktook",
         "passthru": null,
@@ -28,12 +28,12 @@
             "name": null,
             "owner": "Sam-Max",
             "repo": "plugin.video.jacktook",
-            "rev": "bc767f387049c85b08fbbc5128c0eef210315496",
-            "sha256": "sha256-zy0wHlY3bjZfxOz8Mfs7Jk6alzo8Tby/yZIQ+TE6bzY=",
+            "rev": "c22f23fc7df9705cb7e42c1b54f631358869d182",
+            "sha256": "sha256-JI+yfI2axUrVm/TyhGFuMaMgEEo05+XzoEfklW6yXlw=",
             "sparseCheckout": [],
             "type": "github"
         },
-        "version": "bc767f387049c85b08fbbc5128c0eef210315496"
+        "version": "c22f23fc7df9705cb7e42c1b54f631358869d182"
     },
     "moondeck-buddy": {
         "cargoLock": null,
@@ -50,6 +50,27 @@
         },
         "version": "1.9.2"
     },
+    "niri-hdr": {
+        "cargoLock": null,
+        "date": "2026-07-10",
+        "extract": null,
+        "name": "niri-hdr",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "deepClone": false,
+            "fetchSubmodules": false,
+            "leaveDotGit": false,
+            "name": null,
+            "owner": "dividebysandwich",
+            "repo": "niri",
+            "rev": "2516a83b3eef5f3a766af5113244357a11e255a6",
+            "sha256": "sha256-Y8X2bTuboCAQ9E67ri9kTMkzBYU+1o3iCHCOVWctxLo=",
+            "sparseCheckout": [],
+            "type": "github"
+        },
+        "version": "2516a83b3eef5f3a766af5113244357a11e255a6"
+    },
     "opendeck": {
         "cargoLock": null,
         "date": null,
@@ -59,10 +80,31 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-fxYNr/ZSiQw5UTWHz/Q6kJ6WjGQr9NO9dPbZ3rXFKXw=",
+            "sha256": "sha256-SXKZrF8fMYjoCc5cVpiOiSoJHf61+Q+r9E03xiHI4uw=",
             "type": "url",
-            "url": "https://github.com/nekename/OpenDeck/releases/download/v2.12.1/opendeck_2.12.1_amd64.AppImage"
+            "url": "https://github.com/nekename/OpenDeck/releases/download/v2.13.1/opendeck_2.13.1_amd64.AppImage"
         },
-        "version": "2.12.1"
+        "version": "2.13.1"
+    },
+    "smithay-hdr": {
+        "cargoLock": null,
+        "date": "2026-07-10",
+        "extract": null,
+        "name": "smithay-hdr",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "deepClone": false,
+            "fetchSubmodules": false,
+            "leaveDotGit": false,
+            "name": null,
+            "owner": "dividebysandwich",
+            "repo": "smithay",
+            "rev": "57c805c8e6d0b34601b07d89053b376905008d8a",
+            "sha256": "sha256-sYvo5fPPrf6y2vFI8TbgTfTfNxeVEmzTB+BrqGS7l8o=",
+            "sparseCheckout": [],
+            "type": "github"
+        },
+        "version": "57c805c8e6d0b34601b07d89053b376905008d8a"
     }
 }

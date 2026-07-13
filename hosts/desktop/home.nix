@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   pkgs,
   ...
@@ -134,6 +135,26 @@
       "steam -silent -cef-disable-gpu"
     ];
   };
+
+  # Experimental HDR fork (must match NixOS programs.niri.package)
+  programs.niri.package = pkgs.niri-hdr;
+
+  # niri-flake settings schema has no `hdr` key yet — inject into final KDL.
+  # mode="auto": HDR only while a fullscreen HDR client is on this output.
+  # Override the same xdg key niri-flake uses (niri-config → niri/config.kdl).
+  xdg.configFile.niri-config.source = lib.mkForce (
+    pkgs.writeText "niri-config.kdl" (
+      builtins.replaceStrings
+        [ ''output "DP-2" {'' ]
+        [
+          ''
+            output "DP-2" {
+                hdr mode="auto"
+          ''
+        ]
+        config.programs.niri.finalConfig
+    )
+  );
 
   # niri output/workspace layout (mirrors the hyprland monitor/workspace block above)
   programs.niri.settings = {
