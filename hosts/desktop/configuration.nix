@@ -73,26 +73,28 @@
     # because networking.nftables.tables requires networking.nftables.enable which
     # switches the entire firewall backend and breaks iptables-nft rules (Docker, Tailscale).
   };
-  # Reach Tailscale CGNAT peers (100.64.0.0/10) from unmarked local
-  # processes while Mullvad is connected. See ADR-004.
+  # Make Tailscale coexist with Mullvad without the cgroup exclusion. See ADR-004.
   #
   # tailscaled is NOT excluded from Mullvad (modules.tailscale.excludeFromMullvad
-  # = false) — its DERP/WG traffic rides the tunnel to erebor's public IP,
-  # which works post-ADR-002 (Headscale on erebor, no NAT hairpin). But
-  # Mullvad installs an unmarked-catch `ip rule` ("not fwmark <mole> lookup
-  # <tunnel>") that pulls any unmarked packet — a shell curl or vault-agent
-  # to 100.64.0.21 — into the tunnel, where CGNAT is unroutable → blackhole.
+  # = false). Two independent paths need help, both fixed by an nft *filter*
+  # ct-mark (drift-immune — no type-route re-fib, no priority-ordered ip rule):
   #
-  # Fix without racing Mullvad's rule priorities: Mullvad adds its rules with
-  # NO fixed priority (talpid RuleHeader::default()), so the kernel keeps
-  # renumbering them just below our lowest rule — a fixed-priority bypass can
-  # never durably win (the 2026-07-11 incident). BUT Mullvad always also adds
-  # a companion `lookup main suppress_prefixlength 0` rule that sits ABOVE its
-  # tunnel-catch. A /10 route in the MAIN table is resolved by that suppress
-  # rule (only default /0 routes are suppressed) before the tunnel-catch is
-  # consulted. So route CGNAT via a main-table route (drift-immune) and set
-  # ct mark 0xf41 (nft filter, not type route) so Mullvad's firewall accepts
-  # the tailscale0-bound packet.
+  # 1. tailscaled's own underlay (DERP / WireGuard to peers): Tailscale marks
+  #    these SO_MARK 0x80000 and its own `ip rule` sends them out eno1 (bare
+  #    WAN — ammars-pc is VPN-exempt at the router, same egress the exclusion
+  #    gave). Mullvad's kill-switch firewall then RSTs that eno1 traffic
+  #    ("connection refused", NoState) unless it carries Mullvad's split-tunnel
+  #    ct mark 0xf41. So we set 0xf41 on fwmark 0x80000.
+  #
+  # 2. Unmarked local processes → tailnet CGNAT (curl/vault-agent →
+  #    100.64.0.21): Mullvad's unmarked-catch `ip rule` pulls these into the
+  #    tunnel, where CGNAT is unroutable → blackhole. Mullvad adds its rules
+  #    with NO fixed priority (talpid RuleHeader::default()), so a
+  #    fixed-priority bypass can never durably win (the 2026-07-11 incident).
+  #    But Mullvad always also adds a `lookup main suppress_prefixlength 0`
+  #    rule ABOVE its tunnel-catch; a /10 route in MAIN is resolved by that
+  #    suppress rule before the tunnel-catch is consulted. So route CGNAT via
+  #    a main-table route (drift-immune) + ct mark 0xf41 for firewall accept.
   #
   # Do NOT use networking.nftables.enable — switches firewall backend and
   # breaks iptables-nft (Docker, Tailscale).
@@ -114,26 +116,42 @@
           "mullvad-daemon.service"
           "tailscaled.service"
         ];
+        # Re-run if tailscaled restarts — its restart tears down tailscale0 and
+        # flushes the main-table CGNAT route, which this unit re-adds.
+        partOf = [ "tailscaled.service" ];
         wantedBy = [ "multi-user.target" ];
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
+          # Wait for tailscale0 — tailscaled.service being "started" doesn't
+          # mean the interface exists yet, and `ip route ... dev tailscale0`
+          # fails with "Device for nexthop is not up" if it's missing.
+          ExecStartPre = pkgs.writeShellScript "wait-for-tailscale0" ''
+            for _ in $(seq 1 60); do
+              [ -e /sys/class/net/tailscale0 ] && exit 0
+              sleep 1
+            done
+            exit 0
+          '';
           ExecStart = pkgs.writeShellScript "mullvad-tailscale-bypass-start" ''
-            set -euo pipefail
+            set -uo pipefail
             ip=${pkgs.iproute2}/bin/ip
             nft=${pkgs.nftables}/bin/nft
 
             # CGNAT + tailnet ULA via tailscale0 in MAIN table. Resolved by
             # Mullvad's own suppress rule, so immune to its priority drift.
             $ip    route replace 100.64.0.0/10 dev tailscale0
-            $ip -6 route replace fd7a:115c:a1e0::/48 dev tailscale0
+            $ip -6 route replace fd7a:115c:a1e0::/48 dev tailscale0 2>/dev/null || true
 
-            # ct mark 0xf41 so Mullvad's firewall accepts the tailscale0 packet.
+            # ct mark 0xf41 so Mullvad's firewall accepts:
+            #   - tailscaled's own 0x80000 underlay leaving eno1
+            #   - unmarked CGNAT traffic leaving tailscale0
             $nft delete table inet mullvad-mark-fixup 2>/dev/null || true
             $nft -f - <<'NFT'
             table inet mullvad-mark-fixup {
               chain output {
                 type filter hook output priority -10; policy accept;
+                meta mark and 0xff0000 == 0x80000 ct mark set 0x00000f41
                 ip daddr 100.64.0.0/10 ct mark set 0x00000f41
                 ip6 daddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41
               }

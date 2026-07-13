@@ -44,13 +44,13 @@ Adoption is **gated on a reboot-authentication test** (see Confirmation): tailsc
 
 ### Consequences
 
-- Good: Removes the root cause shared by four postmortems — no more `mullvad-exclude` cgroup, SO_MARK/mole bypass `ip rule`s, or `type route` re-fib dependence; tailscaled stops fighting Mullvad's routing entirely
+- Good: Removes the root cause shared by four postmortems — no more `mullvad-exclude` cgroup, SO_MARK/mole bypass `ip rule`s, or `type route` re-fib dependence
 - Good: Large net simplification in `hosts/desktop/configuration.nix` and one fewer moving part on every Mullvad reconnect/relay change
-- Neutral: A minimal CGNAT route + ct-mark fixup remains (needed for unmarked processes reaching tailnet IPs), but it is drift-immune (rides Mullvad's suppress rule) rather than racing Mullvad's rule priorities
+- Good: tailnet stays direct via `eno1` (Tailscale's own fwmark) — no latency or throughput cost; direct peer WG preserved (155 ms pong to erebor observed)
+- Good: The remnant is nft filter hooks + one main-table route — drift-immune, no racing Mullvad's rule priorities
 - Good: Edge split-tunnel and desktop Mullvad privacy egress are unchanged; `privacy.mullvadCustomDns` LAN-only invariant is untouched
-- Bad: Tailnet traffic is DERP-relayed / Mullvad-exit'd rather than direct — higher latency (~150 ms observed to erebor via DERP) and lower throughput; painful if tailnet is ever used for bulk transfer (NFS, media)
-- Bad: Tailnet reachability now depends on Mullvad being up and healthy on the desktop (previously the exclusion made tailnet independent of Mullvad state)
-- Neutral: Direct WG connections to peers may fall back to DERP because they'd source from Mullvad's exit; correctness preserved, performance reduced
+- Neutral: tailscaled's underlay egresses the residential IP (as it did under the exclusion) — fine, peers are yours and DERP is Tailscale's
+- Bad: Boot ordering matters — Mullvad's kill-switch RSTs tailscaled ("connection refused", NoState) whenever the ct-mark table is absent, so the table must exist before tailscaled authenticates; the CGNAT route also needs `tailscale0` up (handled by an `ExecStartPre` wait + `partOf = tailscaled`)
 
 ### Confirmation
 
@@ -73,10 +73,9 @@ If any fail, fall back to Option 3 (drift-proof the existing exclusion) rather t
 - Good: Deletes the exclusion/bypass fragility (cgroup wrap, SO_MARK/mole rules, type-route re-fib); simplest coexistence given two VPNs
 - Good: Newly unblocked — the erebor Headscale migration removed the NAT-hairpin dependency that forced exclusion
 - Good: Edge split-tunnel and Mullvad privacy egress unaffected; no router changes
-- Neutral: Tailnet still fully functional for management use (SSH/bao/deploy/MCP)
-- Neutral: Retains a minimal drift-immune CGNAT route + ct-mark fixup for unmarked processes reaching tailnet IPs — not a total deletion
-- Bad: Tailnet latency/throughput regresses (DERP-relayed); bad for any future bulk tailnet transfer
-- Bad: Tailnet now coupled to desktop Mullvad health
+- Good: tailnet stays direct via `eno1` — no latency/throughput regression (the exclusion was firewall-acceptance, not routing)
+- Neutral: Retains an nft ct-mark table + one main-table CGNAT route — not a total deletion, but drift-immune
+- Bad: Mullvad's kill-switch RSTs tailscaled whenever the ct-mark table is absent, so the table must be present before tailscaled authenticates (boot ordering)
 
 ### Option 2 — Router-side Mullvad + per-IP Edge exemption
 
