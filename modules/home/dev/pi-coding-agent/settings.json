@@ -1,15 +1,17 @@
 {
-  "defaultProvider": "opencode-go",
-  "defaultModel": "deepseek-v4-pro",
+  "defaultProvider": "zai",
+  "defaultModel": "glm-5.2",
   "enabledModels": [
     "claude-bridge/claude-fable-5",
+    "claude-bridge/claude-opus-4-8",
     "xai-auth/grok-4.5",
     "zai/glm-5.2",
     "opencode-go/minimax-m3",
     "opencode-go/kimi-k2.7-code",
     "opencode-go/deepseek-v4-pro",
     "opencode-go/deepseek-v4-flash",
-    "openai-codex/gpt-5.6-terra"
+    "openai-codex/gpt-5.6-terra",
+    "openai-codex/gpt-5.6-sol"
   ],
   "theme": "gruvbox-material",
   "lastChangelogVersion": "0.80.6",
