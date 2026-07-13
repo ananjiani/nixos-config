@@ -26,10 +26,17 @@
     # Mount NFS share from theoden
     nfs-client.enable = true;
 
-    # Tailscale client (not exit node - Mullvad handles regular traffic)
+    # Tailscale client (not exit node - Mullvad handles regular traffic).
+    #
+    # tailscaled runs INSIDE the Mullvad tunnel (excludeFromMullvad = false).
+    # Its DERP/WG traffic goes to erebor's public IP through Mullvad, which
+    # works fine post-ADR-002 (Headscale on erebor, no NAT hairpin). Excluding
+    # it caused four postmortems; see ADR-004. Reaching tailnet IPs from
+    # unmarked local processes is handled by the mullvad-tailscale-bypass
+    # service below (main-table CGNAT route + ct-mark fixup), not exclusion.
     tailscale = {
       enable = true;
-      excludeFromMullvad = true;
+      excludeFromMullvad = false;
       operator = "ammar";
     };
 
@@ -66,27 +73,29 @@
     # because networking.nftables.tables requires networking.nftables.enable which
     # switches the entire firewall backend and breaks iptables-nft rules (Docker, Tailscale).
   };
-  # Mullvad ↔ Tailscale coexistence on this host.
+  # Reach Tailscale CGNAT peers (100.64.0.0/10) from unmarked local
+  # processes while Mullvad is connected. See ADR-004.
   #
-  # Background (2026-07-11):
-  # Mullvad installs `ip rule 5209: not fwmark 0x6d6f6c65 lookup <tunnel>`.
-  # That sends ALL non-mole-mark traffic into the tunnel — including
-  # tailscaled's own DERP/WG packets (SO_MARK 0x80000) and packets to
-  # 100.64.0.0/10. Mullvad's built-in split-tunnel mangle uses
-  # `type route` + `meta cgroup` to set mole mark and re-fib; on kernel
-  # 6.18 that re-fib is a no-op (nft counters fire, src stays tunnel IP,
-  # then `oif wg0 ct mark 0xf41 drop` blackholes the packet).
+  # tailscaled is NOT excluded from Mullvad (modules.tailscale.excludeFromMullvad
+  # = false) — its DERP/WG traffic rides the tunnel to erebor's public IP,
+  # which works post-ADR-002 (Headscale on erebor, no NAT hairpin). But
+  # Mullvad installs an unmarked-catch `ip rule` ("not fwmark <mole> lookup
+  # <tunnel>") that pulls any unmarked packet — a shell curl or vault-agent
+  # to 100.64.0.21 — into the tunnel, where CGNAT is unroutable → blackhole.
   #
-  # Working approach — don't re-fib, fix the policy rules instead:
-  #   1. ip rules ahead of 5209 so tailscale's SO_MARK 0x80000 and mole
-  #      mark 0x6d6f6c65 use main/table 52 (never the tunnel table).
-  #   2. ip rule for daddr 100.64.0.0/10 → table 52 so unmarked local
-  #      processes (curl, bao, deploy) reach peers without SO_MARK.
-  #   3. nft *filter* (not type route) sets ct mark 0xf41 so Mullvad's
-  #      firewall accepts the now-correctly-routed packets.
+  # Fix without racing Mullvad's rule priorities: Mullvad adds its rules with
+  # NO fixed priority (talpid RuleHeader::default()), so the kernel keeps
+  # renumbering them just below our lowest rule — a fixed-priority bypass can
+  # never durably win (the 2026-07-11 incident). BUT Mullvad always also adds
+  # a companion `lookup main suppress_prefixlength 0` rule that sits ABOVE its
+  # tunnel-catch. A /10 route in the MAIN table is resolved by that suppress
+  # rule (only default /0 routes are suppressed) before the tunnel-catch is
+  # consulted. So route CGNAT via a main-table route (drift-immune) and set
+  # ct mark 0xf41 (nft filter, not type route) so Mullvad's firewall accepts
+  # the tailscale0-bound packet.
   #
-  # Do NOT use networking.nftables.enable — switches firewall backend
-  # and breaks iptables-nft (Docker, Tailscale).
+  # Do NOT use networking.nftables.enable — switches firewall backend and
+  # breaks iptables-nft (Docker, Tailscale).
   systemd = {
     # Wake from suspend for the 03:45 store optimise (idle-scheduled in
     # base.nix). swayidle's 30-min idle timeout should re-suspend afterwards;
@@ -95,12 +104,16 @@
 
     services = {
       mullvad-tailscale-bypass = {
-        description = "Policy-routing bypass for Tailscale through Mullvad";
+        description = "Reach Tailscale CGNAT peers through Mullvad";
         after = [
           "network.target"
           "mullvad-daemon.service"
+          "tailscaled.service"
         ];
-        wants = [ "mullvad-daemon.service" ];
+        wants = [
+          "mullvad-daemon.service"
+          "tailscaled.service"
+        ];
         wantedBy = [ "multi-user.target" ];
         serviceConfig = {
           Type = "oneshot";
@@ -110,41 +123,19 @@
             ip=${pkgs.iproute2}/bin/ip
             nft=${pkgs.nftables}/bin/nft
 
-            # Drop prior copies (v4 + v6 — `ip rule del` is family-specific).
-            for p in 5180 5181 5190 5191 5192 5200 5201 5202; do
-              while $ip rule del priority "$p" 2>/dev/null; do :; done
-              while $ip -6 rule del priority "$p" 2>/dev/null; do :; done
-            done
+            # CGNAT + tailnet ULA via tailscale0 in MAIN table. Resolved by
+            # Mullvad's own suppress rule, so immune to its priority drift.
+            $ip    route replace 100.64.0.0/10 dev tailscale0
+            $ip -6 route replace fd7a:115c:a1e0::/48 dev tailscale0
 
-            # Unmarked → Tailscale CGNAT peers (curl/bao/deploy from shell).
-            $ip rule add priority 5180 to 100.64.0.0/10 lookup 52
-            $ip -6 rule add priority 5181 to fd7a:115c:a1e0::/48 lookup 52
-
-            # Mole mark (mullvad-exclude / docs mark 0x6d6f6c65).
-            $ip rule add priority 5190 fwmark 0x6d6f6c65 lookup main suppress_prefixlength 0
-            $ip rule add priority 5191 fwmark 0x6d6f6c65 lookup 52
-            $ip rule add priority 5192 fwmark 0x6d6f6c65 lookup main
-
-            # Tailscale's own SO_MARK 0x80000 (DERP, control, peer WG).
-            $ip rule add priority 5200 fwmark 0x80000/0xff0000 lookup main suppress_prefixlength 0
-            $ip rule add priority 5201 fwmark 0x80000/0xff0000 lookup 52
-            $ip rule add priority 5202 fwmark 0x80000/0xff0000 lookup main
-
-            # ct mark fixup — filter only, no re-fib.
+            # ct mark 0xf41 so Mullvad's firewall accepts the tailscale0 packet.
             $nft delete table inet mullvad-mark-fixup 2>/dev/null || true
-            $nft delete table inet mullvad-tailscale-bypass 2>/dev/null || true
             $nft -f - <<'NFT'
             table inet mullvad-mark-fixup {
               chain output {
                 type filter hook output priority -10; policy accept;
-                meta mark and 0xff0000 == 0x80000 ct mark set 0x00000f41
-                meta mark 0x6d6f6c65 ct mark set 0x00000f41
                 ip daddr 100.64.0.0/10 ct mark set 0x00000f41
                 ip6 daddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41
-              }
-              chain prerouting {
-                type filter hook prerouting priority -150; policy accept;
-                ct mark 0x00000f41 meta mark set 0x6d6f6c65
               }
               chain input {
                 type filter hook input priority -100; policy accept;
@@ -154,22 +145,19 @@
             }
             NFT
           '';
-          # Never fail stop — missing rules/tables are fine (old unit, partial apply).
+          # Best-effort stop — missing route/table is fine.
           ExecStop = pkgs.writeShellScript "mullvad-tailscale-bypass-stop" ''
             ip=${pkgs.iproute2}/bin/ip
             nft=${pkgs.nftables}/bin/nft
-            for p in 5180 5181 5190 5191 5192 5200 5201 5202; do
-              while $ip rule del priority "$p" 2>/dev/null; do :; done
-              while $ip -6 rule del priority "$p" 2>/dev/null; do :; done
-            done
+            $ip    route del 100.64.0.0/10 dev tailscale0 2>/dev/null || true
+            $ip -6 route del fd7a:115c:a1e0::/48 dev tailscale0 2>/dev/null || true
             $nft delete table inet mullvad-mark-fixup 2>/dev/null || true
-            $nft delete table inet mullvad-tailscale-bypass 2>/dev/null || true
             exit 0
           '';
         };
       };
 
-      # Re-apply after mullvad-daemon restarts (reinstalls rule 5209).
+      # Re-apply after mullvad-daemon restarts (it re-inits its rule set).
       mullvad-daemon.serviceConfig.ExecStartPost = [
         "+${pkgs.systemd}/bin/systemctl --no-block try-restart mullvad-tailscale-bypass.service"
       ];
