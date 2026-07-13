@@ -186,9 +186,10 @@ do not reintroduce type-route mark-and-re-fib as the primary mechanism.
 - [ ] Add a tiny smoke check (systemd timer or script):
       `curl -sf --connect-timeout 3 http://100.64.0.21:8200/v1/sys/health`
       and alert/log on failure — catches this class without waiting for direnv
-- [ ] Write the dual-VPN ADR deferred from 2026-04-10 (options: Mullvad on
-      gateway only, Tailscale exit nodes for "VPN", netns isolation, keep
-      current with policy-rule guardrails only)
+- [x] Write the dual-VPN ADR deferred from 2026-04-10 — see
+      `docs/content/adrs/adr-004-2026-07-13-desktop-mullvad-tailscale-coexistence.md`
+      (decision: stop excluding Tailscale, route tailnet through Mullvad;
+      the erebor Headscale migration removed the NAT-hairpin blocker)
 - [ ] File or track upstream: nftables/kernel type-route re-fib no-op on
       6.18 when multiple `type route` OUTPUT chains exist (iptables-nft
       mangle + Mullvad inet mangle + custom tables)

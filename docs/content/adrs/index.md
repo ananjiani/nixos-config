@@ -9,3 +9,4 @@ ADRs capture *why* a choice was made, what alternatives were considered, and wha
 | [ADR-001](adr-001-openbao-secrets-management.md) | 2026-01-25 | OpenBao secrets management | Accepted |
 | [ADR-002](adr-002-headscale-on-erebor.md) | 2026-04-20 | Move Headscale from k3s to erebor VPS | Accepted |
 | [ADR-003](adr-003-2026-05-21-ups-graceful-shutdown-architecture.md) | 2026-05-21 | UPS graceful shutdown architecture | Accepted |
+| [ADR-004](adr-004-2026-07-13-desktop-mullvad-tailscale-coexistence.md) | 2026-07-13 | Stop excluding Tailscale from Mullvad on ammars-pc | Proposed |
