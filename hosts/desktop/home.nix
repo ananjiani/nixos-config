@@ -28,7 +28,7 @@ let
           scale 1.000000
           transform "normal"
           position x=0 y=1440
-          mode "5120x1440@239.761000"
+          mode "5120x1440@240.000"
           variable-refresh-rate on-demand=true
       }
     '';
