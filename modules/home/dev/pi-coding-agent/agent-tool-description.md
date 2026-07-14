@@ -12,7 +12,7 @@ For `scout`, `worker`, and `reviewer`, every Agent call MUST include `model`. Th
 Main session is coordinator/judge. Subagents do token-heavy work and return structured reports. Do not delegate one-liners, final judgement, or architecture decisions.
 
 Quota pools matter:
-- Claude pool is shared: Fable, Opus, Sonnet. Preserve for main judgement and hard escalations.
+- Claude/Fable is reserved for the main thread. Never route a subagent to it; escalate back to the main thread instead.
 - xAI pool: Grok 4.5 — SuperGrok $30/mo shared weekly pool; chat messages are cheap, quota is good.
 - OpenCode Go pool is shared: Kimi, DeepSeek, MiniMax.
 - Z.ai / GLM quota is abundant for this user; prefer it when fit is close.
@@ -21,9 +21,8 @@ Scores are Pi-local routing priors. Higher is better. Quota means this user's ef
 
 | Model | Pool | Code | Debug | Review | Scout | LongCtx | Speed | Quota | Vision | Tools |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| `claude-bridge/claude-fable-5` | Claude | 10 | 10 | 10 | 9 | 10 | 3 | 1 | 10 | 10 |
 | `xai-auth/grok-4.5` | xAI | 9 | 8 | 8 | 7 | 7 | 7 | 7 | 8 | 8 |
-| `openai-codex/gpt-5.6-terra` | OpenAI | 9 | 8 | 8 | 8 | 9 | 7 | 6 | 8 | 9 |
+| `openai-codex/gpt-5.6-terra` | OpenAI | 9 | 8 | 8 | 8 | 9 | 8 | 6 | 8 | 9 |
 | `zai/glm-5.2` | Z.ai | 8 | 8 | 8 | 8 | 10 | 6 | 10 | 0 | 7 |
 | `opencode-go/kimi-k2.7-code` | Go | 9 | 7 | 7 | 6 | 7 | 7 | 7 | 7 | 8 |
 | `opencode-go/deepseek-v4-pro` | Go | 8 | 9 | 8 | 7 | 10 | 5 | 7 | 0 | 7 |
@@ -33,10 +32,17 @@ Scores are Pi-local routing priors. Higher is better. Quota means this user's ef
 Selection:
 1. Apply hard constraints: vision, write/read-only role, provider separation.
 2. Choose model from matrix. Prefer highest-quota model within roughly 1 capability point of best fit.
-3. Avoid Claude subagents unless stakes require it or cheaper attempts failed twice.
+3. Never use Claude/Fable for a subagent. Escalate to the main thread instead.
 4. Prefer different providers/pools for worker vs reviewer.
-5. Grok 4.5 is strong for coding/implementation workers — prefer it over GPT-5.5 for code-heavy worker tickets.
+5. Grok 4.5 and GPT-5.6 Terra are the default workhorses. Prefer Grok for implementation and Terra for debug/analysis.
 6. Vision tasks require Vision >= 7.
+
+Thinking effort:
+- Grok 4.5: `high` by default. Use `medium` only for latency-sensitive routine work and `low` only for simple lookup/tool use.
+- GPT-5.6 Terra: `medium` by default; `high` for hard debugging or review; `xhigh` only for security-critical or long-running work.
+- GLM-5.2 and DeepSeek V4: `high` normally; `xhigh` only when provider Max is justified.
+- Kimi K2.7 Code has fixed thinking. MiniMax M3 is binary: `off` for lookup, any enabled level for complex work.
+- More effort does not repair a poor model fit. Switch models before retrying at maximum effort.
 
 Worker routing (spec quality beats model tier):
 - A detailed, unambiguous spec + a reviewer gate makes a cheap model viable.
