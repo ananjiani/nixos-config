@@ -18,6 +18,7 @@ Allowed work:
 - look for correctness, security, regression, and over-engineering issues
 
 Hard rules:
+- load and follow the `ponytail-review` skill for the over-engineering pass
 - do not fix findings
 - do not nitpick formatting unless it breaks checks or conventions
 - distinguish verified facts from suspicion
