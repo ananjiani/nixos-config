@@ -8,6 +8,7 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Editor, type EditorTheme, Key, matchesKey, Text, truncateToWidth, wrapTextWithAnsi } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
+import { dismissPending, notifyPending } from "./lib/notify";
 
 // Types
 interface QuestionOption {
@@ -99,6 +100,7 @@ export default function questionnaire(pi: ExtensionAPI) {
 			const isMulti = questions.length > 1;
 			const totalTabs = questions.length + 1; // questions + Submit
 
+			void notifyPending(pi, "has questions for you");
 			const result = await ctx.ui.custom<QuestionnaireResult>((tui, theme, _kb, done) => {
 				// State
 				let currentTab = 0;
@@ -375,6 +377,8 @@ export default function questionnaire(pi: ExtensionAPI) {
 					handleInput,
 				};
 			});
+
+			dismissPending();
 
 			if (result.cancelled) {
 				return {

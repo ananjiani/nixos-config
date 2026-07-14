@@ -16,6 +16,7 @@ import type {
   SessionBeforeSwitchEvent,
   SessionMessageEntry,
 } from "@mariozechner/pi-coding-agent";
+import { dismissPending, notifyPending } from "./lib/notify";
 
 // Shared auto-mode state set by auto-mode.ts.
 //   "auto"    → block destructive silently (safe autonomy)
@@ -82,10 +83,12 @@ export default function (pi: ExtensionAPI) {
       };
     }
 
+    void notifyPending(pi, `wants to run: ${match.reason}`);
     const choice = await ctx.ui.select(
       `⚠️  Destructive command (${match.reason}):\n\n  ${command}\n\nAllow?`,
       ["Yes", "No"],
     );
+    dismissPending();
 
     if (choice !== "Yes") {
       ctx.ui.notify("Command blocked", "warning");
