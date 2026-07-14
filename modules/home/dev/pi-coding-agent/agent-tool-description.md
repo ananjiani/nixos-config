@@ -14,7 +14,7 @@ Main session is coordinator/judge. Subagents do token-heavy work and return stru
 Quota pools matter:
 - Claude/Fable is reserved for the main thread. Never route a subagent to it; escalate back to the main thread instead.
 - xAI pool: Grok 4.5 — SuperGrok $30/mo shared weekly pool; chat messages are cheap, quota is good.
-- OpenCode Go pool is shared: Kimi, DeepSeek, MiniMax.
+- OpenCode Go supplies DeepSeek V4 Flash for fast, bounded work.
 - Z.ai / GLM quota is abundant for this user; prefer it when fit is close.
 
 Scores are Pi-local routing priors. Higher is better. Quota means this user's effective quota abundance.
@@ -24,10 +24,7 @@ Scores are Pi-local routing priors. Higher is better. Quota means this user's ef
 | `xai-auth/grok-4.5` | xAI | 9 | 8 | 8 | 7 | 7 | 7 | 7 | 8 | 8 |
 | `openai-codex/gpt-5.6-terra` | OpenAI | 9 | 8 | 8 | 8 | 9 | 8 | 6 | 8 | 9 |
 | `zai/glm-5.2` | Z.ai | 8 | 8 | 8 | 8 | 10 | 6 | 10 | 0 | 7 |
-| `opencode-go/kimi-k2.7-code` | Go | 9 | 7 | 7 | 6 | 7 | 7 | 7 | 7 | 8 |
-| `opencode-go/deepseek-v4-pro` | Go | 8 | 9 | 8 | 7 | 10 | 5 | 7 | 0 | 7 |
 | `opencode-go/deepseek-v4-flash` | Go | 6 | 6 | 5 | 8 | 10 | 9 | 8 | 0 | 6 |
-| `opencode-go/minimax-m3` | Go | 7 | 6 | 7 | 8 | 8 | 8 | 7 | 8 | 7 |
 
 Selection:
 1. Apply hard constraints: vision, write/read-only role, provider separation.
@@ -40,8 +37,7 @@ Selection:
 Thinking effort:
 - Grok 4.5: `high` by default. Use `medium` only for latency-sensitive routine work and `low` only for simple lookup/tool use.
 - GPT-5.6 Terra: `medium` by default; `high` for hard debugging or review; `xhigh` only for security-critical or long-running work.
-- GLM-5.2 and DeepSeek V4: `high` normally; `xhigh` only when provider Max is justified.
-- Kimi K2.7 Code has fixed thinking. MiniMax M3 is binary: `off` for lookup, any enabled level for complex work.
+- GLM-5.2 and DeepSeek V4 Flash: `high` normally; `xhigh` only when provider Max is justified.
 - More effort does not repair a poor model fit. Switch models before retrying at maximum effort.
 
 Worker routing (spec quality beats model tier):
@@ -52,8 +48,7 @@ Worker routing (spec quality beats model tier):
   push-back on bad spec) at least as heavily as `Code`. Raw code ability
   matters less when Fable already did the thinking.
 - Escalate to `grok-4.5` first for code-heavy tickets, `gpt-5.6-terra` for debug/analysis,
-  then `glm-5.2` when xAI/OpenAI quota is spent; otherwise `kimi-k2.7-code`
-  or `deepseek-v4-pro`.
+  then `glm-5.2` when xAI/OpenAI quota is spent.
   Escalate when ANY of: the task leaves any "figure out" unsaid, it is
   debug-shaped, or flash failed twice. Debug/root-cause work never routes to
   flash.
