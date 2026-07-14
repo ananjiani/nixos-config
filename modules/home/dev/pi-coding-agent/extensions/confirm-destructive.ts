@@ -17,8 +17,12 @@ import type {
   SessionMessageEntry,
 } from "@mariozechner/pi-coding-agent";
 
-// Shared auto-mode state set by auto-mode.ts
-const _autoMode = () => ((globalThis as any).__autoModeRef?.enabled ?? false);
+// Shared auto-mode state set by auto-mode.ts.
+//   "auto"    → block destructive silently (safe autonomy)
+//   "danger"  → allow everything, no guardrail
+//   "off"     → prompt interactively (default)
+const _mode = (): "off" | "auto" | "danger" =>
+  (globalThis as any).__autoModeRef?.mode ?? "off";
 
 export default function (pi: ExtensionAPI) {
   // ─── Bash command gate ───
@@ -63,8 +67,11 @@ export default function (pi: ExtensionAPI) {
     const match = dangerousPatterns.find((d) => d.pattern.test(command));
     if (!match) return;
 
-    // Auto mode: block silently instead of asking
-    if (_autoMode()) {
+    const mode = _mode();
+    // Danger: no guardrail — destructive commands run unimpeded.
+    if (mode === "danger") return;
+    // Safe auto: block silently instead of asking.
+    if (mode === "auto") {
       return { block: true, reason: `Auto mode: blocked ${match.reason}` };
     }
 
