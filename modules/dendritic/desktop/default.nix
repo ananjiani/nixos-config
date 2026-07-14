@@ -1003,6 +1003,7 @@ in
                   workspaces = {
                     "chat" = { };
                     "work" = { };
+                    "gaming" = { };
                   };
 
                   # XWayland support for X11-only apps like Steam.
@@ -1048,9 +1049,10 @@ in
                       matches = [ { app-id = "(?i)copyq"; } ];
                       open-floating = true;
                     }
-                    # Steam: engage on-demand VRR for the main window
+                    # Steam: route to gaming workspace, engage VRR
                     {
                       matches = [ { app-id = "^steam$"; } ];
+                      open-on-workspace = "gaming";
                       variable-refresh-rate = true;
                     }
                     # Steam notification toasts otherwise center on the
@@ -1069,10 +1071,10 @@ in
                         relative-to = "bottom-right";
                       };
                     }
-                    # gamescope: engage on-demand VRR so fullscreen games
-                    # get adaptive sync on DP-2.
+                    # gamescope: fullscreen on the gaming output with adaptive sync.
                     {
                       matches = [ { app-id = "^gamescope$"; } ];
+                      open-fullscreen = true;
                       variable-refresh-rate = true;
                     }
                     # Work browser (Edge via flatpak): route to work workspace.

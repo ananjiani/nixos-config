@@ -35,6 +35,26 @@ let
   dp2Auto = dp2Fragment "auto";
   dp2On = dp2Fragment "on";
   hdrFragmentPath = "$HOME/.config/niri/hdr.kdl";
+  hdrOn = pkgs.writeShellScriptBin "hdr-on" ''
+    install -m 0644 ${dp2On} "${hdrFragmentPath}"
+    echo "DP-2 HDR: on (niri live-reloads)"
+  '';
+  hdrOff = pkgs.writeShellScriptBin "hdr-off" ''
+    install -m 0644 ${dp2Auto} "${hdrFragmentPath}"
+    echo "DP-2 HDR: auto"
+  '';
+  gamescopeHdr = pkgs.writeShellApplication {
+    name = "gamescope-hdr";
+    text = ''
+      ${hdrOn}/bin/hdr-on
+      trap '${hdrOff}/bin/hdr-off' EXIT
+      sleep 1
+      gamescope \
+        -W 5120 -H 1440 -w 5120 -h 1440 -r 240 -f \
+        --hdr-enabled --virtual-connector-strategy PerWindow \
+        -- env ENABLE_HDR_WSI=1 DXVK_HDR=1 "$@"
+    '';
+  };
 in
 {
   # Enable SSH agent for SSH key management
@@ -44,15 +64,10 @@ in
   home = {
     packages = [
       pkgs.lxqt.lxqt-openssh-askpass
-      # Runtime DP-2 HDR toggle (rewrites the niri include; niri live-reloads)
-      (pkgs.writeShellScriptBin "hdr-on" ''
-        install -m 0644 ${dp2On} "${hdrFragmentPath}"
-        echo "DP-2 HDR: on (niri live-reloads)"
-      '')
-      (pkgs.writeShellScriptBin "hdr-off" ''
-        install -m 0644 ${dp2Auto} "${hdrFragmentPath}"
-        echo "DP-2 HDR: auto"
-      '')
+      # Runtime DP-2 HDR helpers (niri live-reloads hdr.kdl).
+      hdrOn
+      hdrOff
+      gamescopeHdr
     ];
     sessionVariables.SSH_ASKPASS = "${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass";
     shellAliases = {
@@ -243,6 +258,7 @@ in
       "work".open-on-output = "DP-2";
       "chat".open-on-output = "HDMI-A-1";
       "media".open-on-output = "DP-1";
+      "gaming".open-on-output = "DP-2";
     };
   };
 }
