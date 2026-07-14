@@ -10,7 +10,29 @@ import { type ChildProcess, execFile, spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
 
-type Pi = { getSessionName(): string | undefined | null };
+type Ctx = {
+  sessionManager: {
+    getSessionName(): string | undefined;
+    getEntries(): any[];
+  };
+};
+
+// Same fallback the resume picker uses: explicit name, else first user message.
+function sessionLabel(ctx: Ctx): string {
+  const name = ctx.sessionManager.getSessionName();
+  if (name) return name;
+  for (const e of ctx.sessionManager.getEntries()) {
+    if (e.type === "message" && e.message?.role === "user") {
+      const c = e.message.content;
+      const text = typeof c === "string" ? c : c?.find?.((b: any) => b.type === "text")?.text;
+      if (text) {
+        const oneLine = text.replace(/\s+/g, " ").trim();
+        return oneLine.length > 60 ? `${oneLine.slice(0, 60)}…` : oneLine;
+      }
+    }
+  }
+  return "";
+}
 
 let waitProc: ChildProcess | null = null;
 let lastId: number | null = null;
@@ -70,7 +92,7 @@ export function dismissPending(): void {
   }
 }
 
-export async function notifyPending(pi: Pi, body: string): Promise<void> {
+export async function notifyPending(ctx: Ctx, body: string): Promise<void> {
   const footPid = findFootPid();
   let windowId: number | null = null;
 
@@ -82,9 +104,9 @@ export async function notifyPending(pi: Pi, body: string): Promise<void> {
 
   dismissPending();
 
-  const name = pi.getSessionName();
+  const label = sessionLabel(ctx);
   const dir = basename(process.cwd());
-  const title = `π ${name ? `${name} — ${dir}` : dir}`;
+  const title = `π ${label ? `${dir}: ${label}` : dir}`;
 
   const proc = spawn(
     "notify-send",

@@ -83,7 +83,7 @@ export default function (pi: ExtensionAPI) {
       };
     }
 
-    void notifyPending(pi, `wants to run: ${match.reason}`);
+    void notifyPending(ctx, `wants to run: ${match.reason}`);
     const choice = await ctx.ui.select(
       `⚠️  Destructive command (${match.reason}):\n\n  ${command}\n\nAllow?`,
       ["Yes", "No"],
