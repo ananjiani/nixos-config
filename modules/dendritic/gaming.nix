@@ -44,10 +44,11 @@ _:
           };
           gamemode.enable = true;
           gamemode.enableRenice = true;
+          gamescope = {
+            enable = true;
+            capSysNice = false;
+          };
         };
-
-        programs.gamescope.enable = true;
-        programs.gamescope.capSysNice = true;
 
         services.udev.extraRules = ''
           # 8BitDo Ultimate 2 Wireless - 2.4GHz/Dongle (DInput: gyro + back buttons)
