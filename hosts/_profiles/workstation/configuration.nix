@@ -120,9 +120,27 @@
     pcscd.enable = true;
   };
 
-  environment.systemPackages = with pkgs; [
-    fastfetch
-  ];
+  environment = {
+    systemPackages = with pkgs; [
+      fastfetch
+    ];
+    etc."claude-code/managed-settings.d/10-security.json".text = builtins.toJSON {
+      permissions.deny = [
+        "Bash(sops -d:*)"
+        "Bash(sops --decrypt:*)"
+      ];
+      hooks.PreToolUse = [
+        {
+          hooks = [
+            {
+              type = "command";
+              command = "~/.claude/hooks/src/pre_tool_use.py";
+            }
+          ];
+        }
+      ];
+    };
+  };
 
   # Add workstation-specific groups
   users.users.ammar.extraGroups = [

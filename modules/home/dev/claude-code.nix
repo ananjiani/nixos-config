@@ -125,6 +125,7 @@ let
       wrapper = pkgs.writeShellScript "claude-with-cache-fix" ''
         set -eu
         export ANTHROPIC_BASE_URL="''${ANTHROPIC_BASE_URL:-http://127.0.0.1:9801}"
+        export ENABLE_TOOL_SEARCH="''${ENABLE_TOOL_SEARCH:-true}"
         exec ${upstreamBin} "$@"
       '';
     in
@@ -236,107 +237,11 @@ let
   cfgBase = ./claude-code;
 in
 {
-  # Declarative Claude Code configuration via the official home-manager module.
-  # Manages settings.json, agents, and commands as immutable nix store paths.
+  # Home Manager supplies Claude Code plus version-controlled agents and commands.
+  # Claude Code owns mutable ~/.claude/settings.json.
   programs.claude-code = {
     enable = true;
     package = claudeCodeWithCacheFix;
-
-    settings = {
-      attribution = {
-        commit = "";
-        pr = "";
-      };
-
-      permissions = {
-        allow = [
-          "Bash(mkdir:*)"
-          "Bash(uv:*)"
-          "Bash(mv:*)"
-          "Bash(npm:*)"
-          "Bash(ls:*)"
-          "Bash(cp:*)"
-          "Bash(chmod:*)"
-          "Bash(touch:*)"
-          "Bash(rg:*)"
-          "Bash(fd:*)"
-          "Bash(jq:*)"
-          "Bash(ls:*)"
-          "Bash(cat:*)"
-          "Bash(echo:*)"
-          "Bash(cd:*)"
-        ];
-        deny = [
-          "Bash(sops -d:*)"
-          "Bash(sops --decrypt:*)"
-        ];
-      };
-
-      hooks = {
-        PreToolUse = [
-          {
-            hooks = [
-              {
-                type = "command";
-                command = "~/.claude/hooks/src/pre_tool_use.py";
-              }
-            ];
-          }
-        ];
-        PostToolUse = [
-          {
-            hooks = [
-              {
-                type = "command";
-                command = "~/.claude/hooks/src/post_tool_use.py";
-              }
-            ];
-          }
-        ];
-        Notification = [
-          {
-            hooks = [
-              {
-                type = "command";
-                command = "~/.claude/hooks/src/notification.py";
-              }
-            ];
-          }
-        ];
-      };
-
-      statusLine = {
-        type = "command";
-        command = ''input=$(cat); current_dir=$(echo "$input" | jq -r '.workspace.current_dir'); model=$(echo "$input" | jq -r '.model.display_name'); style=$(echo "$input" | jq -r '.output_style.name'); git_info=""; if [ -d "$current_dir/.git" ]; then cd "$current_dir" && branch=$(git branch --show-current 2>/dev/null) && git_info=" [$branch]"; fi; printf "\033[2m%s in %s%s | %s\033[0m" "$model" "$(basename "$current_dir")" "$git_info" "$style"'';
-      };
-
-      enabledPlugins = {
-        "pyright-lsp@claude-plugins-official" = true;
-      };
-
-      effortLevel = "xhigh";
-
-      # Auto-compact off. Matches what pi-claude-bridge already does for
-      # spawned CC (DISABLE_AUTO_COMPACT=1) — keeps standalone claude/
-      # claude-kimi/claude-glm consistent. Sessions that fill context stop
-      # hard instead of summarizing; manual /compact still works. Acceptable
-      # tradeoff with 1M-context models where the wall is rarely reached.
-      autoCompactEnabled = false;
-
-      # Restore thinking summaries in interactive sessions — Anthropic
-      # stopped generating them by default in v2.1.89 (2026-04-01).
-      # Without this, Ctrl+O verbose mode shows no reasoning output.
-      showThinkingSummaries = true;
-
-      skipDangerousModePermissionPrompt = true;
-
-      mcpServers = {
-        persona = {
-          type = "http";
-          url = "https://mcp.persona.lan/mcp";
-        };
-      };
-    };
 
     agentsDir = "${cfgBase}/agents";
     commandsDir = "${cfgBase}/commands";
@@ -384,7 +289,6 @@ in
 
   home = {
     sessionPath = [ "$HOME/.local/bin" ];
-    sessionVariables.ANTHROPIC_DEFAULT_OPUS_MODEL = "claude-opus-4-7";
 
     activation = {
 
