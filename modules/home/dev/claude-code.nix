@@ -6,63 +6,125 @@
 
 let
   # Community fix for prompt-cache + cost regressions in Claude Code
-  # (cnighswonger/claude-code-cache-fix, v4.2.1). A Node.js preload that
-  # hooks globalThis.fetch on /v1/messages requests and rewrites the body
-  # for cache-prefix stability. Started (v2.0.3) as attachment-block
-  # relocation + tool sort + fingerprint stabilization; v4.x adds much
-  # more: TTL injection (forces 1h cache_control past GrowthBook gating),
-  # cache_control marker normalization/sticky, system-reminder smoosh
-  # split/normalize, deferred-tools restore across resume, image
-  # stripping from old tool_results (CACHE_FIX_IMAGE_KEEP_LAST), and
-  # microcompaction/context-degradation monitoring. All opt-in extras
-  # are env-gated and default-off; the core cache fixes are default-on.
-  # URL-guarded to /v1/messages requests with valid Anthropic body shape
-  # — safe no-op everywhere else (MCPs, claude-kimi/claude-glm alt-backend
-  # wrappers). Proxy mode (runtime deps hpagent/proper-lockfile) is NOT
-  # used here — preload-only, which stays pure-Node (builtin imports
-  # only) and needs no patchelf.
-  #
-  # IMPORTANT: only works against the Node runtime variant of claude-code
-  # (pkgs.claude-code-node, binary `claude-node`). The native bundled
-  # binary ignores NODE_OPTIONS entirely. See claudeCodeWithCacheFix below.
+  # (cnighswonger/claude-code-cache-fix, v4.2.1). Native Bun claude-code
+  # ignores NODE_OPTIONS, so we run the package's reverse proxy
+  # (proxy/server.mjs) as a user systemd service on 127.0.0.1:9801 and
+  # point the default claude wrapper at it via ANTHROPIC_BASE_URL.
+  # claude-kimi/claude-glm set their own base URL and bypass the proxy.
+  # Runtime deps (hpagent, proper-lockfile) come from buildNpmPackage.
+  # Upstream npm tarball has no package-lock.json — inject a generated one.
   claudeCacheFix =
     let
       version = "4.2.1";
-    in
-    pkgs.runCommand "claude-code-cache-fix-${version}"
-      {
-        src = pkgs.fetchurl {
-          url = "https://registry.npmjs.org/claude-code-cache-fix/-/claude-code-cache-fix-${version}.tgz";
-          hash = "sha256-wzqxFyblnOqlpVDstYmebq9gRAD0bd0lN4Lfz4zm17o=";
-        };
-      }
-      ''
-        mkdir -p $out/lib/node_modules/claude-code-cache-fix
-        tar -xzf $src -C $out/lib/node_modules/claude-code-cache-fix --strip-components=1
+      src = pkgs.fetchurl {
+        url = "https://registry.npmjs.org/claude-code-cache-fix/-/claude-code-cache-fix-${version}.tgz";
+        hash = "sha256-wzqxFyblnOqlpVDstYmebq9gRAD0bd0lN4Lfz4zm17o=";
+      };
+      # Generated via `npm install --package-lock-only --ignore-scripts` against v4.2.1.
+      packageLock = pkgs.writeText "package-lock.json" ''
+        {
+          "name": "claude-code-cache-fix",
+          "version": "4.2.1",
+          "lockfileVersion": 3,
+          "requires": true,
+          "packages": {
+            "": {
+              "name": "claude-code-cache-fix",
+              "version": "4.2.1",
+              "hasInstallScript": true,
+              "license": "MIT",
+              "dependencies": {
+                "hpagent": "^1.2.0",
+                "proper-lockfile": "^4.1.2"
+              },
+              "bin": {
+                "cache-fix-proxy": "bin/claude-via-proxy.mjs"
+              },
+              "engines": {
+                "node": ">=18"
+              },
+              "funding": {
+                "type": "individual",
+                "url": "https://buymeacoffee.com/vsits"
+              },
+              "peerDependenciesMeta": {
+                "sharp": {
+                  "optional": true
+                }
+              }
+            },
+            "node_modules/graceful-fs": {
+              "version": "4.2.11",
+              "resolved": "https://registry.npmjs.org/graceful-fs/-/graceful-fs-4.2.11.tgz",
+              "integrity": "sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==",
+              "license": "ISC"
+            },
+            "node_modules/hpagent": {
+              "version": "1.2.0",
+              "resolved": "https://registry.npmjs.org/hpagent/-/hpagent-1.2.0.tgz",
+              "integrity": "sha512-A91dYTeIB6NoXG+PxTQpCCDDnfHsW9kc06Lvpu1TEe9gnd6ZFeiBoRO9JvzEv6xK7EX97/dUE8g/vBMTqTS3CA==",
+              "license": "MIT",
+              "engines": {
+                "node": ">=14"
+              }
+            },
+            "node_modules/proper-lockfile": {
+              "version": "4.1.2",
+              "resolved": "https://registry.npmjs.org/proper-lockfile/-/proper-lockfile-4.1.2.tgz",
+              "integrity": "sha512-TjNPblN4BwAWMXU8s9AEz4JmQxnD1NNL7bNOY/AKUzyamc379FWASUhc/K1pL2noVb+XmZKLL68cjzLsiOAMaA==",
+              "license": "MIT",
+              "dependencies": {
+                "graceful-fs": "^4.2.4",
+                "retry": "^0.12.0",
+                "signal-exit": "^3.0.2"
+              }
+            },
+            "node_modules/retry": {
+              "version": "0.12.0",
+              "resolved": "https://registry.npmjs.org/retry/-/retry-0.12.0.tgz",
+              "integrity": "sha512-9LkiTwjUh6rT555DtE9rTX+BKByPfrMzEAtnlEtdEwr3Nkffwiihqe2bWADg+OQRjt9gl6ICdmB/ZFDCGAtSow==",
+              "license": "MIT",
+              "engines": {
+                "node": ">= 4"
+              }
+            },
+            "node_modules/signal-exit": {
+              "version": "3.0.7",
+              "resolved": "https://registry.npmjs.org/signal-exit/-/signal-exit-3.0.7.tgz",
+              "integrity": "sha512-wnD2ZE+l+SPC/uoS0vXeE9L1+0wuaMqKlfz9AMUo38JsyLSBWSFcHR1Rri62LZc12vLr1gb3jl7iwQhgwpAbGQ==",
+              "license": "ISC"
+            }
+          }
+        }
       '';
+      fixedSrc = pkgs.runCommand "claude-code-cache-fix-src-${version}" { } ''
+        mkdir -p $out
+        tar -xzf ${src} -C $out --strip-components=1
+        cp ${packageLock} $out/package-lock.json
+      '';
+    in
+    pkgs.buildNpmPackage {
+      pname = "claude-code-cache-fix";
+      inherit version;
+      src = fixedSrc;
+      npmDepsHash = "sha256-1VXn7N2jBCdiXLkJQCC3xA1Ofe7VND5InGyN1hRkO7s=";
+      dontNpmBuild = true;
+      npmInstallFlags = [ "--ignore-scripts" ];
+    };
 
-  # Wrap claude-code-node so every invocation gets the cache-fix preload.
-  # Same shape as tavilyMcpShim — small shell script that sets env then
-  # execs the upstream binary. We restore the `claude` binary name so
-  # programs.claude-code.package and the ~/.local/bin/claude symlink
-  # work unchanged downstream.
+  cacheFixProxyServer = "${claudeCacheFix}/lib/node_modules/claude-code-cache-fix/proxy/server.mjs";
+
+  # Wrap native pkgs.claude-code so default invocations hit the localhost
+  # cache-fix reverse proxy. Only set ANTHROPIC_BASE_URL when unset so
+  # claude-kimi / claude-glm (and any caller that sets its own endpoint)
+  # bypass the proxy. Restores `claude` binary name for
+  # programs.claude-code.package and ~/.local/bin/claude.
   claudeCodeWithCacheFix =
     let
-      upstreamBin = "${pkgs.claude-code-node}/bin/claude-node";
-      preload = "${claudeCacheFix}/lib/node_modules/claude-code-cache-fix/preload.mjs";
+      upstreamBin = "${pkgs.claude-code}/bin/claude";
       wrapper = pkgs.writeShellScript "claude-with-cache-fix" ''
         set -eu
-        # Append rather than overwrite — preserve any user-supplied NODE_OPTIONS.
-        export NODE_OPTIONS="''${NODE_OPTIONS:-} --import file://${preload}"
-        # Silence "Cannot open directory .../openssl-*/etc/ssl/certs" warning.
-        # claude-code-node bundles its own openssl whose default cert lookup
-        # paths point into a nix-store path that doesn't exist (openssl's
-        # `etc` output isn't propagated). The warning is specifically about a
-        # directory, so SSL_CERT_DIR is the one that suppresses it.
-        # SSL_CERT_FILE is set as well for any code path that reads a single
-        # bundle. NIX_SSL_CERT_FILE is the NixOS convention for the bundle.
-        export SSL_CERT_DIR="''${SSL_CERT_DIR:-/etc/ssl/certs}"
-        export SSL_CERT_FILE="''${SSL_CERT_FILE:-''${NIX_SSL_CERT_FILE:-/etc/ssl/certs/ca-certificates.crt}}"
+        export ANTHROPIC_BASE_URL="''${ANTHROPIC_BASE_URL:-http://127.0.0.1:9801}"
         exec ${upstreamBin} "$@"
       '';
     in
@@ -298,6 +360,27 @@ in
       "stop.py" = { };
     }
   );
+
+  # Local reverse proxy for cache-fix (default port 9801). Default claude
+  # wrapper points here; alt-backend wrappers set their own base URL.
+  systemd.user.services.cache-fix-proxy = {
+    Unit = {
+      Description = "Claude Code cache-fix reverse proxy";
+    };
+    Service = {
+      Type = "simple";
+      ExecStart = "${pkgs.nodejs}/bin/node ${cacheFixProxyServer}";
+      Restart = "on-failure";
+      RestartSec = "5";
+      Environment = [
+        "CACHE_FIX_PROXY_PORT=9801"
+        "CACHE_FIX_PROXY_BIND=127.0.0.1"
+      ];
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
 
   home = {
     sessionPath = [ "$HOME/.local/bin" ];
