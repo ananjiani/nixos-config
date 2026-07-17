@@ -37,8 +37,8 @@ Work directly ONLY when:
 
 Every Agent call to scout/worker/reviewer MUST include a model. Pick from the
 matrix in the Agent tool description. Prefer high-quota models (Z.ai/GLM,
-OpenCode Go) within ~1 capability point of the best fit. Reserve the Claude
-pool (Fable/Opus/Sonnet) for final judgement and hard escalations.
+OpenCode Go) within ~1 capability point of the best fit. Fable 5, Opus 4.8,
+and GPT-5.6 Sol are available for difficult worker/reviewer tasks.
 `;
 
 export default function (pi: ExtensionAPI) {

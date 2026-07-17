@@ -12,7 +12,7 @@ For `scout`, `worker`, and `reviewer`, every Agent call MUST include `model`. Th
 Main session is coordinator/judge. Subagents do token-heavy work and return structured reports. Do not delegate one-liners, final judgement, or architecture decisions.
 
 Quota pools matter:
-- Claude/Fable is reserved for the main thread. Never route a subagent to it; escalate back to the main thread instead.
+- Claude subscription supplies Fable 5 and Opus 4.8; both may serve as workers or reviewers.
 - xAI pool: Grok 4.5 — SuperGrok $30/mo shared weekly pool; chat messages are cheap, quota is good.
 - OpenCode Go supplies DeepSeek V4 Flash for fast, bounded work.
 - Z.ai / GLM quota is abundant for this user; prefer it when fit is close.
@@ -21,7 +21,10 @@ Scores are Pi-local routing priors. Higher is better. Quota means this user's ef
 
 | Model | Pool | Code | Debug | Review | Scout | LongCtx | Speed | Quota | Vision | Tools |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| `xai-auth/grok-4.5` | xAI | 9 | 8 | 8 | 7 | 7 | 7 | 7 | 8 | 8 |
+| `claude-bridge/claude-fable-5` | Claude | 10 | 10 | 10 | 9 | 10 | 3 | 5 | 10 | 10 |
+| `openai-codex/gpt-5.6-sol` | OpenAI | 10 | 9 | 9 | 9 | 10 | 6 | 5 | 9 | 10 |
+| `claude-bridge/claude-opus-4-8` | Claude | 9 | 9 | 10 | 8 | 9 | 5 | 7 | 9 | 9 |
+| `xai-auth/grok-4.5` | xAI | 9 | 8 | 8 | 7 | 7 | 9 | 7 | 8 | 8 |
 | `openai-codex/gpt-5.6-terra` | OpenAI | 9 | 8 | 8 | 8 | 9 | 8 | 6 | 8 | 9 |
 | `zai/glm-5.2` | Z.ai | 8 | 8 | 8 | 8 | 10 | 6 | 10 | 0 | 7 |
 | `opencode-go/deepseek-v4-flash` | Go | 6 | 6 | 5 | 8 | 10 | 9 | 8 | 0 | 6 |
@@ -29,14 +32,15 @@ Scores are Pi-local routing priors. Higher is better. Quota means this user's ef
 Selection:
 1. Apply hard constraints: vision, write/read-only role, provider separation.
 2. Choose model from matrix. Prefer highest-quota model within roughly 1 capability point of best fit.
-3. Never use Claude/Fable for a subagent. Escalate to the main thread instead.
+3. Fable 5, Opus 4.8, and GPT-5.6 Sol are eligible for worker and reviewer roles when their higher capability justifies quota and latency.
 4. Prefer different providers/pools for worker vs reviewer.
-5. Grok 4.5 and GPT-5.6 Terra are the default workhorses. Prefer Grok for implementation and Terra for debug/analysis.
+5. Prefer Grok for fast implementation, Terra for routine debug/analysis, Sol for peak coding/tool use, Opus for difficult review, and Fable for the hardest long-horizon work.
 6. Vision tasks require Vision >= 7.
 
 Thinking effort:
+- Fable 5 and Opus 4.8: `high` by default; use `xhigh` for difficult or long-running work and `max` only when quota cost is justified.
 - Grok 4.5: `high` by default. Use `medium` only for latency-sensitive routine work and `low` only for simple lookup/tool use.
-- GPT-5.6 Terra: `medium` by default; `high` for hard debugging or review; `xhigh` only for security-critical or long-running work.
+- GPT-5.6 Sol and Terra: `medium` by default; `high` for hard debugging or review; `xhigh` only for security-critical or long-running work.
 - GLM-5.2 and DeepSeek V4 Flash: `high` normally; `xhigh` only when provider Max is justified.
 - More effort does not repair a poor model fit. Switch models before retrying at maximum effort.
 
@@ -46,9 +50,10 @@ Worker routing (spec quality beats model tier):
   names exact files, exact change, and a checkable done-condition.
 - For worker, weight `Tools` (instruction-following, structured reports,
   push-back on bad spec) at least as heavily as `Code`. Raw code ability
-  matters less when Fable already did the thinking.
-- Escalate to `grok-4.5` first for code-heavy tickets, `gpt-5.6-terra` for debug/analysis,
-  then `glm-5.2` when xAI/OpenAI quota is spent.
+  matters less when the coordinator already did the thinking.
+- Escalate to `grok-4.5` first for code-heavy tickets and `gpt-5.6-terra` for debug/analysis.
+  Use Sol for peak coding/tool use, Opus for difficult review, and Fable for the hardest long-horizon work.
+  Fall back to `glm-5.2` when paid pools are spent.
   Escalate when ANY of: the task leaves any "figure out" unsaid, it is
   debug-shaped, or flash failed twice. Debug/root-cause work never routes to
   flash.
