@@ -25,22 +25,22 @@ Scores are Pi-local routing priors. Higher is better. Quota means this user's ef
 | `openai-codex/gpt-5.6-sol` | OpenAI | 10 | 9 | 9 | 9 | 10 | 6 | 5 | 9 | 10 |
 | `claude-bridge/claude-opus-4-8` | Claude | 9 | 9 | 10 | 8 | 9 | 5 | 7 | 9 | 9 |
 | `xai-auth/grok-4.5` | xAI | 9 | 8 | 8 | 7 | 7 | 9 | 7 | 8 | 8 |
-| `openai-codex/gpt-5.6-terra` | OpenAI | 9 | 8 | 8 | 8 | 9 | 8 | 6 | 8 | 9 |
 | `zai/glm-5.2` | Z.ai | 8 | 8 | 8 | 8 | 10 | 6 | 10 | 0 | 7 |
 | `opencode-go/deepseek-v4-flash` | Go | 6 | 6 | 5 | 8 | 10 | 9 | 8 | 0 | 6 |
 
 Selection:
 1. Apply hard constraints: vision, write/read-only role, provider separation.
 2. Choose model from matrix. Prefer highest-quota model within roughly 1 capability point of best fit.
-3. Fable 5, Opus 4.8, and GPT-5.6 Sol are eligible for worker and reviewer roles when their higher capability justifies quota and latency.
-4. Prefer different providers/pools for worker vs reviewer.
-5. Prefer Grok for fast implementation, Terra for routine debug/analysis, Sol for peak coding/tool use, Opus for difficult review, and Fable for the hardest long-horizon work.
+3. Fable 5 and GPT-5.6 Sol are eligible for worker and reviewer roles when their higher capability justifies quota and latency.
+4. Worker and reviewer come from different providers/pools — never burn one pool on both sides of the same ticket.
+5. Prefer Grok for fast implementation, Sol low/medium for routine debug/analysis, Sol high for hard debugging and agentic/terminal work, and Fable for code writing and the hardest long-horizon work. Opus is the Claude fallback lane (Fable capped or unavailable, or latency-sensitive work via fast mode), not a default route.
 6. Vision tasks require Vision >= 7.
 
 Thinking effort:
-- Fable 5 and Opus 4.8: `high` by default; use `xhigh` for difficult or long-running work and `max` only when quota cost is justified.
+- Fable 5: `low` for bounded, well-specified implementation (Fable-low beats Opus-xhigh on SWE-bench Pro at half the per-task cost); `medium`-`high` for hard tickets or mergeable-PR quality (the low-effort inversion does NOT hold on FrontierCode-class work); `xhigh` for the hardest long-horizon work; `max` almost never (xhigh->max buys ~1.6 pts).
+- Opus 4.8 (fallback lane): `high` default, `xhigh` for review; NEVER `max` — it scores below its own xhigh on hard engineering.
 - Grok 4.5: `high` by default. Use `medium` only for latency-sensitive routine work and `low` only for simple lookup/tool use.
-- GPT-5.6 Sol and Terra: `medium` by default; `high` for hard debugging or review; `xhigh` only for security-critical or long-running work.
+- GPT-5.6 Sol: `low` for routine debug/edit loops (best cost-per-intelligence; above prior-gen high); `medium` default; `high` for hard debugging or review; `xhigh` only for security-critical or long-running work. Terra: skip — Sol-low or Luna dominates.
 - GLM-5.2 and DeepSeek V4 Flash: `high` normally; `xhigh` only when provider Max is justified.
 - More effort does not repair a poor model fit. Switch models before retrying at maximum effort.
 
@@ -51,8 +51,12 @@ Worker routing (spec quality beats model tier):
 - For worker, weight `Tools` (instruction-following, structured reports,
   push-back on bad spec) at least as heavily as `Code`. Raw code ability
   matters less when the coordinator already did the thinking.
-- Escalate to `grok-4.5` first for code-heavy tickets and `gpt-5.6-terra` for debug/analysis.
-  Use Sol for peak coding/tool use, Opus for difficult review, and Fable for the hardest long-horizon work.
+- Escalate to `grok-4.5` first for code-heavy tickets and `gpt-5.6-sol` (low/medium) for debug/analysis.
+  Use Sol high for hard debugging and agentic/terminal work; use Fable (low for tight specs,
+  medium-high for hard tickets) when code efficiency and maintainability pay for the quota.
+  Review is cross-pool: Fable low-medium reviews non-Claude workers; Sol medium-high reviews
+  Claude workers; Sol high for high-recall issue sweeps.
+  Fable may stop early or overstate completion — accept "done" only with artifacts (test log, diff).
   Fall back to `glm-5.2` when paid pools are spent.
   Escalate when ANY of: the task leaves any "figure out" unsaid, it is
   debug-shaped, or flash failed twice. Debug/root-cause work never routes to
