@@ -84,14 +84,13 @@ _:
             flakeIgnore = [ "E501" ];
           }
           ''
-            import json
-            import subprocess
             import os
             import sys
             import re
             import glob
 
             CONFIG_PATH = os.path.expanduser("~/.config/ludusavi/config.yaml")
+            MANIFEST_PATH = os.path.expanduser("~/.config/ludusavi/manifest.yaml")
             STEAM_LIBS = [
                 os.path.expanduser("~/.local/share/Steam/steamapps"),
                 "/mnt/nvme/SteamLibrary/steamapps",
@@ -111,19 +110,35 @@ _:
                     yaml.dump(config, f, default_flow_style=False, sort_keys=False)
 
 
-            def run_preview(backup_path, cloud_exclude):
-                config = load_config()
-                config["backup"]["filter"]["cloud"] = {
-                    "exclude": cloud_exclude,
-                    "epic": True, "gog": True, "origin": True, "steam": True, "uplay": True,
-                }
-                save_config(config)
-                result = subprocess.run(
-                    [LUDUSAVI, "--try-manifest-update", "backup", "--preview",
-                     "--path", "/tmp/ludusavi-wrapper-empty", "--api"],
-                    capture_output=True, text=True, timeout=120
-                )
-                return set(json.loads(result.stdout).get("games", {}).keys())
+            def find_cloud_games(names):
+                import yaml
+                cloud_games = set()
+                current = None
+                in_cloud = False
+                stores = {"epic", "gog", "origin", "steam", "uplay"}
+                with open(MANIFEST_PATH) as manifest:
+                    for line in manifest:
+                        if line and not line[0].isspace():
+                            header = line.rstrip()
+                            if not header.endswith(":"):
+                                current = None
+                            else:
+                                name = header[:-1]
+                                if name.startswith('"'):
+                                    name = yaml.safe_load(name)
+                                current = name if name in names else None
+                            in_cloud = False
+                        elif current:
+                            if line == "  cloud:\n":
+                                in_cloud = True
+                            elif in_cloud:
+                                if not line.startswith("    "):
+                                    in_cloud = False
+                                else:
+                                    store, _, value = line.strip().partition(":")
+                                    if store in stores and value.strip() == "true":
+                                        cloud_games.add(current)
+                return cloud_games
 
 
             def build_compatdata_map(backup_path):
@@ -136,6 +151,7 @@ _:
                     with open(mapping) as f:
                         data = yaml.safe_load(f)
                     game_name = data.get("name", "")
+                    name_to_cid[game_name] = None
                     for fpath in data.get("backups", [{}])[0].get("files", {}):
                         m = re.search(r"compatdata/(\d+)", fpath)
                         if m:
@@ -153,27 +169,37 @@ _:
                 return False
 
 
-            # ── Main ──
-            backup_path = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/Games/Saves/ammars-pc")
-
-            all_games = run_preview(backup_path, cloud_exclude=False)
-            non_cloud = run_preview(backup_path, cloud_exclude=True)
-            cloud_games = all_games - non_cloud
-
-            name_to_cid = build_compatdata_map(backup_path)
-
-            rescued = set()
-            for game in cloud_games:
-                cid = name_to_cid.get(game)
-                if cid and not has_appmanifest(cid):
-                    rescued.add(game)
-
             # Live-service games with server-side state — no local saves to back up
             force_exclude = {
                 "Lethal Company", "MultiVersus", "Payday 3",
                 "The Finals", "Webfishing", "Marvel Rivals",
                 "Sea of Thieves",
             }
+
+            # ── Main ──
+            backup_path = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/Games/Saves/ammars-pc")
+            name_to_cid = build_compatdata_map(backup_path)
+
+            # Ignoring a game only prevents backup; ignoring its compatdata path
+            # prevents Ludusavi from scanning it during backup discovery.
+            config = load_config()
+            ignored_paths = set(config["backup"]["filter"].get("ignoredPaths", []))
+            for game in force_exclude:
+                if cid := name_to_cid.get(game):
+                    ignored_paths.update(f"{lib}/compatdata/{cid}" for lib in STEAM_LIBS)
+            config["backup"]["filter"]["ignoredPaths"] = sorted(ignored_paths)
+            save_config(config)
+
+            # Ludusavi's cloud filter intentionally keeps games with existing
+            # backups. Read their cloud metadata directly instead of running two
+            # full previews across the entire manifest.
+            cloud_games = find_cloud_games(name_to_cid.keys())
+
+            rescued = set()
+            for game in cloud_games:
+                cid = name_to_cid.get(game)
+                if cid and not has_appmanifest(cid):
+                    rescued.add(game)
 
             ignored = sorted((cloud_games - rescued) | force_exclude)
             config = load_config()
