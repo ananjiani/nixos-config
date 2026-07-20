@@ -19,14 +19,14 @@ Quota pools matter:
 
 Scores are Pi-local routing priors. Higher is better. Quota means this user's effective quota abundance.
 
-| Model | Pool | Code | Debug | Review | Scout | LongCtx | Speed | Quota | Vision | Tools |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| `claude-bridge/claude-fable-5` | Claude | 10 | 10 | 10 | 9 | 10 | 3 | 5 | 10 | 10 |
-| `openai-codex/gpt-5.6-sol` | OpenAI | 10 | 9 | 9 | 9 | 10 | 6 | 5 | 9 | 10 |
-| `claude-bridge/claude-opus-4-8` | Claude | 9 | 9 | 10 | 8 | 9 | 5 | 7 | 9 | 9 |
-| `xai-auth/grok-4.5` | xAI | 9 | 8 | 8 | 7 | 7 | 9 | 7 | 8 | 8 |
-| `zai/glm-5.2` | Z.ai | 8 | 8 | 8 | 8 | 10 | 6 | 10 | 0 | 7 |
-| `opencode-go/deepseek-v4-flash` | Go | 6 | 6 | 5 | 8 | 10 | 9 | 8 | 0 | 6 |
+| Model | Pool | Code | Debug | Review | Scout | LongCtx | Speed | Quota | Vision | Tools | Think (default→hard) |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| `claude-bridge/claude-fable-5` | Claude | 10 | 10 | 10 | 9 | 10 | 3 | 5 | 10 | 10 | `low`→`high` |
+| `openai-codex/gpt-5.6-sol` | OpenAI | 10 | 9 | 9 | 9 | 10 | 6 | 5 | 9 | 10 | `low`→`high` |
+| `claude-bridge/claude-opus-4-8` | Claude | 9 | 9 | 10 | 8 | 9 | 5 | 7 | 9 | 9 | `high`, never `max` |
+| `xai-auth/grok-4.5` | xAI | 9 | 8 | 8 | 7 | 7 | 9 | 7 | 8 | 8 | `high` |
+| `zai/glm-5.2` | Z.ai | 8 | 8 | 8 | 8 | 10 | 6 | 10 | 0 | 7 | `high` |
+| `opencode-go/deepseek-v4-flash` | Go | 6 | 6 | 5 | 8 | 10 | 9 | 8 | 0 | 6 | `high` |
 
 Selection:
 1. Apply hard constraints: vision, write/read-only role, provider separation.
