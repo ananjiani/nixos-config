@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pyghtcast-mcp
+  namespace: pyghtcast-mcp
+  labels:
+    app: pyghtcast-mcp
+spec:
+  type: ClusterIP
+  selector:
+    app: pyghtcast-mcp
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP

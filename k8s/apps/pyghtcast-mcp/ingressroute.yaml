@@ -1,0 +1,27 @@
+---
+# External route (via Cloudflare Tunnel on theoden). The app enforces its own
+# X-API-Key allowlist; /health is intentionally open for probes.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: pyghtcast-mcp
+  namespace: pyghtcast-mcp
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Pyghtcast MCP"
+    gethomepage.dev/group: "Services"
+    gethomepage.dev/icon: "mcp.png"
+    gethomepage.dev/description: "Lightcast MCP server"
+    gethomepage.dev/href: "https://pyghtcast-mcp.dimensiondoor.xyz"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`pyghtcast-mcp.dimensiondoor.xyz`) && (Path(`/mcp`) || Path(`/health`))
+      kind: Rule
+      services:
+        - name: pyghtcast-mcp
+          port: 8080
+  tls:
+    secretName: pyghtcast-mcp-tls

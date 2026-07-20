@@ -230,3 +230,14 @@ resource "cloudflare_dns_record" "voicemail" {
   ttl     = 1    # Auto when proxied
   comment = "Voicemail receiver (Cloudflare Tunnel) - managed by Terraform"
 }
+
+# Pyghtcast MCP server (via Cloudflare Tunnel for remote MCP clients)
+resource "cloudflare_dns_record" "pyghtcast_mcp" {
+  zone_id = local.zone_id
+  name    = "pyghtcast-mcp"
+  content = "b33ec739-7324-4c6f-b6fa-daedbe0828c8.cfargotunnel.com"
+  type    = "CNAME"
+  proxied = true # Must be proxied for Cloudflare Tunnel
+  ttl     = 1    # Auto when proxied
+  comment = "Pyghtcast Lightcast MCP server (Cloudflare Tunnel) - managed by Terraform"
+}

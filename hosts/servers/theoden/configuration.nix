@@ -552,6 +552,10 @@ in
               service = "https://192.168.1.52";
               originRequest.noTLSVerify = true; # Internal traffic, skip cert validation
             };
+            "pyghtcast-mcp.dimensiondoor.xyz" = {
+              service = "https://192.168.1.52";
+              originRequest.noTLSVerify = true; # Internal traffic, skip cert validation
+            };
           };
         };
       };

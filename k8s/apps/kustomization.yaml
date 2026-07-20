@@ -24,6 +24,7 @@ resources:
   - renovate
   - zot
   - persona-mcp
+  - pyghtcast-mcp
   - holmesgpt
   - opnsense-exporter
   - searxng

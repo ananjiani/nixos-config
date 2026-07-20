@@ -1,0 +1,13 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: pyghtcast-mcp-tls
+  namespace: pyghtcast-mcp
+spec:
+  secretName: pyghtcast-mcp-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - pyghtcast-mcp.dimensiondoor.xyz
