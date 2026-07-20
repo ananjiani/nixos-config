@@ -15,6 +15,7 @@ Before editing:
 - ask/stop if requirements conflict or scope is unclear
 
 Hard rules:
+- load and follow the `ponytail` skill before coding
 - minimal diff that satisfies spec
 - no new dependencies unless explicitly requested
 - no broad cleanup unrelated to task
