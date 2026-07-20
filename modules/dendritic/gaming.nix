@@ -26,7 +26,7 @@ _:
             enable = true;
             extraCompatPackages = with pkgs; [ proton-ge-bin ];
             package = pkgs.steam.override {
-              extraEnv = { };
+              extraArgs = "-pipewire";
               extraLibraries =
                 pkgs: with pkgs; [
                   xorg.libXcursor
