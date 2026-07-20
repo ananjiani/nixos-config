@@ -41,6 +41,8 @@ spec:
                 secretKeyRef:
                   name: pyghtcast-mcp-secrets
                   key: api-keys
+            - name: PYGHTCAST_ALLOWED_HOSTS
+              value: "pyghtcast-mcp.dimensiondoor.xyz"
           resources:
             requests:
               memory: "256Mi"
