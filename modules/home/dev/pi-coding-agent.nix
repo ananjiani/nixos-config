@@ -432,18 +432,32 @@ let
       };
     }
   );
-  # pi-claude-bridge config. The only knob that matters on NixOS is
-  # `pathToClaudeCodeExecutable`: the Claude Agent SDK bundles its own
-  # musl/glibc `claude` binary that can't run on NixOS (no dynamic linker
-  # in the expected path). Forcing the SDK to spawn our nix-managed
-  # `claude` (~/.local/bin/claude — the activation-created stable link in
-  # claude-code.nix) sidesteps that. The file is read-only at runtime
-  # (the extension only loadConfig()s it, never mutates), so a plain
-  # store-path source is the honest shape — unlike settings.json which
-  # pi mutates interactively and needs an out-of-store symlink.
+  # Claude Agent SDK normally loads Claude Code's user, project, and local
+  # settings when settingSources is omitted. pi-claude-bridge 0.6.2 ignores
+  # its settingSources config while forwarding Pi's AGENTS.md + skills, so
+  # inject the equivalent CLI flag through a dedicated executable wrapper.
+  # This keeps the bridge's programmatic prompt append while excluding
+  # ~/.claude settings/hooks, Claude filesystem instructions, project
+  # CLAUDE.md duplication, and Claude auto-memory. Managed policy and
+  # ~/.claude.json runtime/auth state still load by Agent SDK design.
+  #
+  # The second wrapper hop is also required on NixOS: the SDK's bundled
+  # musl/glibc binary cannot run here, while ~/.local/bin/claude points to
+  # the Nix-managed Claude Code wrapper from claude-code.nix.
+  claudeBridgeExecutable = pkgs.writeShellScript "claude-bridge-isolated" ''
+    export CLAUDE_CODE_DISABLE_AUTO_MEMORY=1
+    exec ${config.home.homeDirectory}/.local/bin/claude --setting-sources "" "$@"
+  '';
+
+  # Read-only bridge config; unlike Pi's mutable settings.json, a store-path
+  # source is the honest shape. Keep settingSources declared as well so a
+  # future bridge release that honors it makes the wrapper flag redundant.
   piClaudeBridgeConfig = pkgs.writeText "pi-claude-bridge.json" (
     builtins.toJSON {
-      provider.pathToClaudeCodeExecutable = "${config.home.homeDirectory}/.local/bin/claude";
+      provider = {
+        pathToClaudeCodeExecutable = "${claudeBridgeExecutable}";
+        settingSources = [ ];
+      };
       # AskClaude tool disabled — it spawns a separate Claude Code session
       # that competes with the main Fable session for Claude quota. The
       # model-router skill + scout/worker/reviewer agents cover delegation
