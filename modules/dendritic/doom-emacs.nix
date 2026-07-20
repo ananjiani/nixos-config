@@ -1,22 +1,21 @@
 # Dendritic Doom Emacs Module
 # Platform-aware Doom Emacs configuration supporting both GUI (pgtk) and terminal (nox) variants
 # This module follows the dendritic pattern - aspect-oriented configuration
-_:
-let
-  doomDir = "$HOME/.dotfiles/modules/home/editors/doom-emacs";
-in
-{
+_: {
   flake.aspects.doom-emacs.homeManager =
     {
       pkgs,
       lib,
       config,
+      inputs,
       ...
     }:
     let
-      treesitGrammars = pkgs.emacs.pkgs.treesit-grammars.with-all-grammars;
+      cfg = config.doom-emacs;
     in
     {
+      imports = [ inputs.nix-doom-emacs-unstraightened.homeModule ];
+
       options.doom-emacs = {
         enable = lib.mkEnableOption "Doom Emacs";
 
@@ -27,12 +26,6 @@ in
           ];
           default = "pgtk";
           description = "Emacs variant: pgtk (GUI) or nox (terminal-only)";
-        };
-
-        autoSync = lib.mkOption {
-          type = lib.types.bool;
-          default = true;
-          description = "Auto-run doom sync on activation";
         };
 
         service.enable = lib.mkOption {
@@ -48,7 +41,7 @@ in
         };
       };
 
-      config = lib.mkIf config.doom-emacs.enable (
+      config = lib.mkIf cfg.enable (
         lib.mkMerge [
           # Common config (all variants)
           {
@@ -59,13 +52,12 @@ in
               };
 
               packages = with pkgs; [
-                # Doom dependencies
+                # Doom runtime deps (interactive use; Unstraightened supplies git/rg/fd on Doom $PATH)
                 fd
                 ripgrep
                 nodejs
                 prettier
                 mermaid-cli
-                gcc # tree-sitter grammar compilation fallback
                 (aspellWithDicts (
                   d: with d; [
                     en
@@ -74,46 +66,30 @@ in
                   ]
                 ))
               ];
+            };
 
-              sessionVariables = {
-                DOOMDIR = doomDir;
-                TREESIT_GRAMMAR_PATH = "${treesitGrammars}/lib";
-              };
-              sessionPath = [ "$HOME/.emacs.d/bin" ];
+            programs.doom-emacs = {
+              enable = true;
+              emacs = if cfg.variant == "pgtk" then pkgs.emacs-pgtk else pkgs.emacs-nox;
+              extraPackages = epkgs: [ epkgs.treesit-grammars.with-all-grammars ];
+            };
 
-              # Clone Doom Emacs
-              activation.installDoomEmacs = lib.hm.dag.entryAfter [ "installPackages" ] ''
-                if [ ! -d "$HOME/.emacs.d" ]; then
-                  PATH="${config.home.path}/bin:$PATH"
-                  git clone --depth=1 --single-branch https://github.com/doomemacs/doomemacs $HOME/.emacs.d
-                fi
-              '';
+            services.emacs = lib.mkIf cfg.service.enable {
+              enable = true;
             };
           }
 
           # pgtk variant (GUI Emacs)
-          (lib.mkIf (config.doom-emacs.variant == "pgtk") {
-            home.shellAliases.ecc = "emacsclient -c";
+          (lib.mkIf (cfg.variant == "pgtk") {
+            home = {
+              shellAliases.ecc = "emacsclient -c";
 
-            home.packages = with pkgs; [
-              xclip
-              gzip
-              findutils
-              vscode-langservers-extracted
-            ];
-
-            programs.emacs = {
-              enable = true;
-              package = pkgs.emacs-pgtk;
-              extraPackages = epkgs: [
-                epkgs.vterm
-                treesitGrammars
+              packages = with pkgs; [
+                xclip
+                gzip
+                findutils
+                vscode-langservers-extracted
               ];
-            };
-
-            services.emacs = lib.mkIf config.doom-emacs.service.enable {
-              enable = true;
-              package = pkgs.emacs-pgtk;
             };
 
             # The GUI Emacs daemon is WantedBy=default.target, which starts it at
@@ -126,35 +102,13 @@ in
           })
 
           # nox variant (terminal Emacs)
-          (lib.mkIf (config.doom-emacs.variant == "nox") {
+          (lib.mkIf (cfg.variant == "nox") {
             home.sessionVariables.EDITOR = "emacs -nw";
-
-            programs.emacs = {
-              enable = true;
-              package = pkgs.emacs-nox;
-              extraPackages = _epkgs: [
-                treesitGrammars
-              ];
-            };
-
-            services.emacs = lib.mkIf config.doom-emacs.service.enable {
-              enable = true;
-              package = pkgs.emacs-nox;
-            };
-          })
-
-          # Doom sync activation
-          (lib.mkIf config.doom-emacs.autoSync {
-            home.activation.doomSync = lib.hm.dag.entryAfter [ "installDoomEmacs" ] ''
-              PATH="${config.home.path}/bin:$PATH"
-              export DOOMDIR=${doomDir}
-              $HOME/.emacs.d/bin/doom sync
-            '';
           })
 
           # SOPS secrets decryption
-          (lib.mkIf config.doom-emacs.secrets.enable {
-            home.activation.decryptEmacs = lib.hm.dag.entryAfter [ "installDoomEmacs" ] ''
+          (lib.mkIf cfg.secrets.enable {
+            home.activation.decryptEmacs = lib.hm.dag.entryAfter [ "installPackages" ] ''
               PATH="${config.home.path}/bin:$PATH"
               sops -d ~/.dotfiles/secrets/emacs/emacs.sops > ~/.dotfiles/secrets/emacs/emacs
               sops -d ~/.dotfiles/secrets/emacs/emacs.pub.sops > ~/.dotfiles/secrets/emacs/emacs.pub

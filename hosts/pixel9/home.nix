@@ -10,14 +10,6 @@
     ../../modules/home/config/defaults.nix
   ];
 
-  # Enable dendritic doom-emacs (terminal variant for AVF)
-  doom-emacs = {
-    enable = true;
-    variant = "nox"; # Terminal-only for now; can use "pgtk" if VNC/Wayland forwarding is set up
-    service.enable = true;
-    autoSync = true;
-  };
-
   # SSH client config
   programs.ssh = {
     enable = true;

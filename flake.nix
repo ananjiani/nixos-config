@@ -12,6 +12,15 @@
     };
     stylix.url = "github:nix-community/stylix";
     emacs-overlay.url = "github:nix-community/emacs-overlay";
+    doom-config = {
+      url = "github:ananjiani/doom-emacs";
+      flake = false;
+    };
+    nix-doom-emacs-unstraightened = {
+      url = "github:marienz/nix-doom-emacs-unstraightened";
+      inputs.doomdir.follows = "doom-config";
+      inputs.nixpkgs.follows = "";
+    };
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     sops-nix.url = "github:Mic92/sops-nix";
     xremap.url = "github:xremap/nix-flake";

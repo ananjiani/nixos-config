@@ -329,6 +329,54 @@
         "type": "github"
       }
     },
+    "doom-config": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1784578834,
+        "narHash": "sha256-UZNZ5QHPs8Ffgyf/CppCCK9e3+CK71GBZ0Z5TjEVEu4=",
+        "owner": "ananjiani",
+        "repo": "doom-emacs",
+        "rev": "980d97c29ad058f1d87b0627aeda4a9503ae9757",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ananjiani",
+        "repo": "doom-emacs",
+        "type": "github"
+      }
+    },
+    "doomemacs": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1784267066,
+        "narHash": "sha256-0zaiCyKcH2xppPwRDLi3oDlhxIsQlt7rqGAPjqui1xg=",
+        "owner": "doomemacs",
+        "repo": "core",
+        "rev": "04b2956bafd883e5da7c530f8e0fbd22b1fe7af8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "doomemacs",
+        "repo": "core",
+        "type": "github"
+      }
+    },
+    "doomemacs-modules": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1784266262,
+        "narHash": "sha256-1RxWOg8SIxBvEhZC2tKxHw/45SK9eD7LAPT5VHZ/Jek=",
+        "owner": "doomemacs",
+        "repo": "modules",
+        "rev": "3d516aab6c140e155d030387c99c3559f0861a01",
+        "type": "github"
+      },
+      "original": {
+        "owner": "doomemacs",
+        "repo": "modules",
+        "type": "github"
+      }
+    },
     "emacs-overlay": {
       "inputs": {
         "nixpkgs": "nixpkgs_4",
@@ -340,6 +388,29 @@
         "owner": "nix-community",
         "repo": "emacs-overlay",
         "rev": "d6f892bd9570237c69a3e1c42b465594d54d477a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "emacs-overlay",
+        "type": "github"
+      }
+    },
+    "emacs-overlay_2": {
+      "inputs": {
+        "nixpkgs": [
+          "nix-doom-emacs-unstraightened"
+        ],
+        "nixpkgs-stable": [
+          "nix-doom-emacs-unstraightened"
+        ]
+      },
+      "locked": {
+        "lastModified": 1784544802,
+        "narHash": "sha256-zN1RO2vEsHe0Tf4+wfqenSqcs5/HHHY0CY66dfiVh6g=",
+        "owner": "nix-community",
+        "repo": "emacs-overlay",
+        "rev": "9faf91af00053e3df18256c9db626fc2ba4507aa",
         "type": "github"
       },
       "original": {
@@ -685,7 +756,7 @@
     },
     "flake-utils_4": {
       "inputs": {
-        "systems": "systems_7"
+        "systems": "systems_8"
       },
       "locked": {
         "lastModified": 1731533236,
@@ -1008,6 +1079,31 @@
       "original": {
         "owner": "YaLTeR",
         "repo": "niri",
+        "type": "github"
+      }
+    },
+    "nix-doom-emacs-unstraightened": {
+      "inputs": {
+        "doomdir": [
+          "doom-config"
+        ],
+        "doomemacs": "doomemacs",
+        "doomemacs-modules": "doomemacs-modules",
+        "emacs-overlay": "emacs-overlay_2",
+        "nixpkgs": [],
+        "systems": "systems_7"
+      },
+      "locked": {
+        "lastModified": 1784546187,
+        "narHash": "sha256-ZrOGP6a2ljMRuzkpQ0W28mhNS1sZardab0bTsK+UAJI=",
+        "owner": "marienz",
+        "repo": "nix-doom-emacs-unstraightened",
+        "rev": "03fadc26ccb5113b4eadbd70839044500f3554f3",
+        "type": "github"
+      },
+      "original": {
+        "owner": "marienz",
+        "repo": "nix-doom-emacs-unstraightened",
         "type": "github"
       }
     },
@@ -1651,6 +1747,7 @@
         "comfyui-nix": "comfyui-nix",
         "deploy-rs": "deploy-rs",
         "disko": "disko",
+        "doom-config": "doom-config",
         "emacs-overlay": "emacs-overlay",
         "flake-aspects": "flake-aspects",
         "flake-parts": "flake-parts_3",
@@ -1665,6 +1762,7 @@
         "llm-agents": "llm-agents",
         "mkdocs-flake": "mkdocs-flake",
         "niri": "niri",
+        "nix-doom-emacs-unstraightened": "nix-doom-emacs-unstraightened",
         "nix-index-database": "nix-index-database",
         "nix-std": "nix-std",
         "nix-vscode-extensions": "nix-vscode-extensions",
@@ -1734,7 +1832,7 @@
         "gnome-shell": "gnome-shell",
         "nixpkgs": "nixpkgs_11",
         "nur": "nur",
-        "systems": "systems_8",
+        "systems": "systems_9",
         "tinted-kitty": "tinted-kitty",
         "tinted-schemes": "tinted-schemes",
         "tinted-tmux": "tinted-tmux",
@@ -1860,6 +1958,21 @@
       }
     },
     "systems_8": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_9": {
       "locked": {
         "lastModified": 1681028828,
         "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
