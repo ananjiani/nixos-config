@@ -15,7 +15,7 @@ Quota pools matter:
 - Claude subscription supplies Fable 5 and Opus 4.8; both may serve as workers or reviewers.
 - xAI pool: Grok 4.5 — SuperGrok $30/mo shared weekly pool; chat messages are cheap, quota is good.
 - OpenCode Go supplies DeepSeek V4 Flash for fast, bounded work.
-- Z.ai / GLM quota is abundant for this user; prefer it when fit is close.
+- Z.ai / GLM quota is abundant but held in reserve: GLM-5.2 is NOT a worker choice while any other paid pool has quota — worker of last resort only. Scout/read-only summary work is fine.
 
 Scores are Pi-local routing priors. Higher is better. Quota means this user's effective quota abundance.
 
@@ -30,7 +30,7 @@ Scores are Pi-local routing priors. Higher is better. Quota means this user's ef
 
 Selection:
 1. Apply hard constraints: vision, write/read-only role, provider separation.
-2. Choose model from matrix. Prefer highest-quota model within roughly 1 capability point of best fit.
+2. Choose model from matrix. Prefer highest-quota model within roughly 1 capability point of best fit — except GLM-5.2, which despite Quota 10 is a last-resort worker (see pool notes).
 3. Fable 5 and GPT-5.6 Sol are eligible for worker and reviewer roles when their higher capability justifies quota and latency.
 4. Worker and reviewer come from different providers/pools — never burn one pool on both sides of the same ticket.
 5. Prefer Grok for fast implementation, Sol low/medium for routine debug/analysis, Sol high for hard debugging and agentic/terminal work, and Fable for code writing and the hardest long-horizon work. Opus is the Claude fallback lane (Fable capped or unavailable, or latency-sensitive work via fast mode), not a default route.
