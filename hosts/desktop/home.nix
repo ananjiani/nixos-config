@@ -55,6 +55,89 @@ let
         -- env ENABLE_HDR_WSI=1 DXVK_HDR=1 "$@"
     '';
   };
+  # Upstream static pi-web binary — web UI for local Pi coding-agent sessions.
+  # HTTPS edge lives in k8s Traefik (see ADR-006); this binds LAN-only and is
+  # protected by PI_WEB_TOKEN from ~/.config/pi-web/env (never in the store).
+  # Reduced scope (ADR-006): the standalone binary is used WITHOUT the upstream
+  # Pi package extensions/skills, so /web, /remote, /refresh, the token
+  # commands, the ask-user tool, and the memory skill are unavailable in
+  # terminal Pi; browser chat works, and returning to the terminal means
+  # reopening/resuming the session rather than /refresh.
+  piWeb = pkgs.stdenvNoCC.mkDerivation {
+    pname = "pi-web";
+    version = "0.0.1-beta.34";
+    src = pkgs.fetchurl {
+      url = "https://github.com/ygncode/pi-web/releases/download/v0.0.1-beta.34/pi-web-linux-amd64";
+      hash = "sha256-SQsdtyHNBfNECq3w/4SdBd32jcWl3xUTbeRv7gkve9I=";
+    };
+    dontUnpack = true;
+    installPhase = ''
+      install -Dm755 $src $out/bin/pi-web
+    '';
+  };
+  # pi-web's in-app updater tries to imperatively `pi install
+  # npm:@ygncode/pi-web@beta`, which would fight the Nix-managed binary above.
+  # This shim (first in the service PATH) blocks only that; every other
+  # invocation — including the `pi --mode rpc` workers pi-web spawns — execs
+  # the real pi.
+  piShim = pkgs.writeShellScriptBin "pi" ''
+    if [ "''${1:-}" = "install" ]; then
+      for arg in "$@"; do
+        case "$arg" in
+          "npm:@ygncode/pi-web"*)
+            echo "pi-web is Nix-managed (hosts/desktop/home.nix); refusing 'pi install $arg'. Bump the pinned version there instead." >&2
+            exit 1
+            ;;
+        esac
+      done
+    fi
+    exec ${pkgs.llm-agents.pi}/bin/pi "$@"
+  '';
+  # Idempotent PI_WEB_TOKEN provisioning: keep a valid existing token, replace
+  # only a missing/malformed PI_WEB_TOKEN line, preserve unrelated env lines,
+  # never print the token. Nonzero exit fails HM activation.
+  piWebEnvSetup = pkgs.writeShellScript "pi-web-env-setup" ''
+    set -euo pipefail
+    umask 077
+    dir="$HOME/.config/pi-web"
+    env_file="$dir/env"
+    mkdir -p "$dir"
+    chmod 0700 "$dir"
+    token_lines=0
+    if [ -e "$env_file" ]; then
+      if token_lines="$(grep -Ec '^[[:space:]]*PI_WEB_TOKEN=' "$env_file")"; then
+        :
+      else
+        status=$?
+        [ "$status" -eq 1 ] || exit "$status"
+      fi
+    fi
+    if [ "$token_lines" -eq 1 ] && grep -Eqs '^PI_WEB_TOKEN=[0-9a-f]{64}$' "$env_file"; then
+      chmod 0600 "$env_file"
+      exit 0
+    fi
+    token="$(${pkgs.openssl}/bin/openssl rand -hex 32)"
+    printf '%s' "$token" | grep -Eq '^[0-9a-f]{64}$'
+    tmp="$(mktemp "$dir/env.XXXXXX")"
+    if [ -f "$env_file" ]; then
+      if grep -Ev '^[[:space:]]*PI_WEB_TOKEN=' "$env_file" > "$tmp"; then
+        :
+      else
+        status=$?
+        [ "$status" -eq 1 ] || exit "$status"
+      fi
+    fi
+    printf 'PI_WEB_TOKEN=%s\n' "$token" >> "$tmp"
+    mv "$tmp" "$env_file"
+    chmod 0600 "$env_file"
+  '';
+  # systemd user units get a minimal PATH; pi sessions spawned by pi-web need
+  # the usual user toolchains (npm globals, HM profile, setuid wrappers, ...).
+  # piShim must come first so pi-web's updater can't bypass it.
+  piWebLaunch = pkgs.writeShellScript "pi-web-launch" ''
+    export PATH="${piShim}/bin:$HOME/.local/bin:$HOME/.npm-global/bin:${config.home.profileDirectory}/bin:/run/wrappers/bin:/run/current-system/sw/bin:$PATH"
+    exec ${piWeb}/bin/pi-web -host 192.168.1.50
+  '';
 in
 {
   # Enable SSH agent for SSH key management
@@ -68,6 +151,7 @@ in
       hdrOn
       hdrOff
       gamescopeHdr
+      piWeb
     ];
     sessionVariables.SSH_ASKPASS = "${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass";
     shellAliases = {
@@ -209,11 +293,33 @@ in
     )
   );
 
-  # Seed the HDR fragment (auto) on every switch; hdr-on/hdr-off swap it live.
-  home.activation.niriHdrFragment = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    run mkdir -p "$HOME/.config/niri"
-    run install -m 0644 ${dp2Auto} "${hdrFragmentPath}"
-  '';
+  home.activation = {
+    # Seed the HDR fragment (auto) on every switch; hdr-on/hdr-off swap it live.
+    niriHdrFragment = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      run mkdir -p "$HOME/.config/niri"
+      run install -m 0644 ${dp2Auto} "${hdrFragmentPath}"
+    '';
+
+    # Provision PI_WEB_TOKEN in ~/.config/pi-web/env (0700 dir, 0600 file).
+    # The token is written straight to the file — never in the Nix store,
+    # never echoed. See piWebEnvSetup above.
+    piWebEnv = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      run ${piWebEnvSetup}
+    '';
+  };
+
+  # LAN-only pi-web; reachable as https://pi.dimensiondoor.xyz via the k8s
+  # Traefik edge (selectorless Service → 192.168.1.50:31415). See ADR-006.
+  systemd.user.services.pi-web = {
+    Unit.Description = "pi-web (Pi coding agent web UI)";
+    Service = {
+      ExecStart = toString piWebLaunch;
+      EnvironmentFile = "-%h/.config/pi-web/env";
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
 
   # niri output/workspace layout (mirrors the hyprland monitor/workspace block above)
   programs.niri.settings = {

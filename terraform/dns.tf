@@ -183,6 +183,17 @@ resource "cloudflare_dns_record" "lobe_s3" {
   comment = "LobeChat S3 storage (internal) - managed by Terraform"
 }
 
+# pi-web coding agent UI (on ammars-pc, HTTPS via k8s Traefik)
+resource "cloudflare_dns_record" "pi" {
+  zone_id = local.zone_id
+  name    = "pi"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "pi-web coding agent UI (internal) - managed by Terraform"
+}
+
 # =============================================================================
 # Cloudflare Tunnel Services
 # =============================================================================

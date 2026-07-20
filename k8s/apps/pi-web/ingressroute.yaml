@@ -1,0 +1,18 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: pi-web
+  namespace: pi-web
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`pi.dimensiondoor.xyz`)
+      kind: Rule
+      services:
+        - name: pi-web-external
+          port: 31415
+  tls:
+    secretName: pi-web-tls
