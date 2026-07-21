@@ -21,18 +21,8 @@ const ref = (globalThis as any).__autoModeRef as { mode: Mode };
 const ORDER: Mode[] = ["off", "auto", "danger"];
 
 const FRAMING: Record<Exclude<Mode, "off">, string> = {
-	auto: `[AUTO MODE — autonomous, destructive BLOCKED]
-You are operating autonomously. Explore, decide, implement without asking.
-
-- Read files before editing; surgical edits over rewrites
-- Run checks/tests after changes when applicable
-
-Destructive system ops (rm -rf, nixos-rebuild, deploy, sops decrypt, tofu apply, force push) are blocked by a guardrail — do not attempt them; ask the user if one is genuinely needed.`,
-
-	danger: `[AUTO MODE — DANGER: ALL COMMANDS ALLOWED, NO GUARDRAIL]
-You are operating fully autonomously. Destructive commands run without confirmation; you are authorized for rm -rf, nixos-rebuild, deploy, sops decrypt, tofu apply, force push, etc.
-
-Still: root-cause over symptom, surgical over rewrite. For genuinely irreversible ops (force push to a shared branch, rm -rf /, prod infra destroy) state your intent in one line before running, then proceed unless the user has fenced them off. Ask only on real ambiguity, not on permission.`,
+	auto: `[AUTO MODE] Work autonomously without asking. Destructive ops are blocked; surface any required destructive action to the user.`,
+	danger: `[AUTO MODE — DANGER] Work autonomously without asking. Destructive ops are authorized and unguarded; state intent before irreversible actions.`,
 };
 
 function render(ctx: any): void {
