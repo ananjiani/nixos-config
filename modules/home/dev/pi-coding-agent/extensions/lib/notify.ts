@@ -37,6 +37,20 @@ function sessionLabel(ctx: Ctx): string {
 let waitProc: ChildProcess | null = null;
 let lastId: number | null = null;
 
+// Over SSH there is no local notify-send/niri; emit OSC 99 (kitty desktop
+// notification protocol) so the local terminal (foot >= 1.27) raises the
+// notification instead. Stable id so a new notification replaces / a
+// dismissal closes the previous one from this pi process.
+const overSsh = Boolean(process.env.SSH_CONNECTION || process.env.SSH_TTY);
+const oscId = `pi-${process.pid}`;
+
+function oscNotify(title: string, body: string): void {
+  const b64 = (s: string) => Buffer.from(s, "utf8").toString("base64");
+  const meta = `i=${oscId}:e=1:u=2:o=unfocused:a=focus:w=0`;
+  process.stdout.write(`\x1b]99;${meta}:d=0:p=title;${b64(title)}\x1b\\`);
+  process.stdout.write(`\x1b]99;${meta}:d=1:p=body;${b64(body)}\x1b\\`);
+}
+
 function findFootPid(): number | null {
   let pid = process.pid;
   for (let i = 0; i < 15; i++) {
@@ -69,6 +83,10 @@ function niriWindows(): Promise<Array<{ id: number; pid: number; is_focused: boo
 }
 
 export function dismissPending(): void {
+  if (overSsh) {
+    process.stdout.write(`\x1b]99;i=${oscId}:p=close;\x1b\\`);
+    return;
+  }
   if (waitProc) {
     waitProc.kill();
     waitProc = null;
@@ -93,6 +111,13 @@ export function dismissPending(): void {
 }
 
 export async function notifyPending(ctx: Ctx, body: string): Promise<void> {
+  if (overSsh) {
+    const label = sessionLabel(ctx);
+    const dir = basename(process.cwd());
+    oscNotify(`π ${label ? `${dir}: ${label}` : dir}`, body);
+    return;
+  }
+
   const footPid = findFootPid();
   let windowId: number | null = null;
 
