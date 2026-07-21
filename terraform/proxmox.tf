@@ -12,7 +12,7 @@
 # Boromir - Main NixOS VM
 # =============================================================================
 # Minimal VM for general services. Imported from existing manually-created VM.
-# Import with: terraform import proxmox_virtual_environment_vm.boromir gondor/qemu/<vmid>
+# Import with: tofu import proxmox_virtual_environment_vm.boromir gondor/<vmid>
 
 resource "proxmox_virtual_environment_vm" "boromir" {
   name      = "boromir"
@@ -28,7 +28,7 @@ resource "proxmox_virtual_environment_vm" "boromir" {
   }
 
   memory {
-    dedicated = 28672
+    dedicated = 20480 # Shrunk from 28672 (only ~10GB used) to make room for aragorn
   }
 
   boot_order = ["scsi0", "ide2", "net0"]
@@ -81,6 +81,68 @@ resource "proxmox_virtual_environment_vm" "boromir" {
       hostpci, # GPU passthrough configured via qm (API token lacks permission)
       machine,
       cpu,
+    ]
+  }
+}
+
+# =============================================================================
+# Aragorn - Devbox / homelab command center
+# =============================================================================
+# Always-on sandbox for coding agents + deploy-rs command center.
+# NixOS config in hosts/servers/aragorn/.
+
+resource "proxmox_virtual_environment_vm" "aragorn" {
+  name      = "aragorn"
+  node_name = var.proxmox_node
+  vm_id     = 105
+
+  on_boot = true
+  started = true
+
+  cpu {
+    cores = 4 # Overcommitted with boromir (4) on 6 physical cores — builds are bursty
+    type  = "host"
+  }
+
+  memory {
+    dedicated = 8192
+    floating  = 8192 # Enable ballooning — guest returns unused RAM to host
+  }
+
+  boot_order = ["scsi0", "ide2", "net0"]
+
+  # Root disk (nix store grows — be generous)
+  disk {
+    datastore_id = var.proxmox_datastore
+    size         = 128
+    interface    = "scsi0"
+    file_format  = "raw"
+    iothread     = true
+  }
+
+  network_device {
+    bridge      = "vmbr0"
+    mac_address = local.mac_addresses.aragorn
+  }
+
+  agent {
+    enabled = true
+  }
+
+  bios          = "seabios"
+  scsi_hardware = "virtio-scsi-single"
+
+  operating_system {
+    type = "l26"
+  }
+
+  serial_device {}
+
+  lifecycle {
+    ignore_changes = [
+      disk,
+      boot_order,
+      cdrom,
     ]
   }
 }

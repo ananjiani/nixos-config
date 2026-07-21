@@ -5,6 +5,8 @@
 }:
 
 {
+  home.packages = [ pkgs.tea ];
+
   sops.secrets.codeberg_tea_token = {
     sopsFile = ../../../secrets/secrets.yaml;
     mode = "0400";

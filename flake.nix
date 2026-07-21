@@ -257,6 +257,24 @@
           ];
         };
 
+        # Aragorn - Devbox / command center (Proxmox VM on gondor)
+        aragorn = lib.nixosSystem {
+          inherit system specialArgs;
+          modules = [
+            ./hosts/servers/aragorn/configuration.nix
+            inputs.sops-nix.nixosModules.sops
+            inputs.disko.nixosModules.disko
+            # Overlays for the dev/agent home modules (servers use the HM
+            # NixOS module with global pkgs, so these must be system-level)
+            {
+              nixpkgs.overlays = [
+                inputs.claude-code.overlays.default
+                inputs.llm-agents.overlays.default
+              ];
+            }
+          ];
+        };
+
         # Theoden - k3s Server + CI/CD (Proxmox VM on rohan)
         theoden = lib.nixosSystem {
           inherit system specialArgs;
@@ -357,6 +375,14 @@
             user = "root";
             sshUser = "root";
             path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.samwise;
+          };
+        };
+        aragorn = {
+          hostname = "aragorn.lan";
+          profiles.system = {
+            user = "root";
+            sshUser = "root";
+            path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.aragorn;
           };
         };
         theoden = {
@@ -517,6 +543,7 @@
         # Server NixOS builds (includes home-manager, cached for deploy-rs checks)
         nixos-boromir = self.nixosConfigurations.boromir.config.system.build.toplevel;
         nixos-samwise = self.nixosConfigurations.samwise.config.system.build.toplevel;
+        nixos-aragorn = self.nixosConfigurations.aragorn.config.system.build.toplevel;
         nixos-theoden = self.nixosConfigurations.theoden.config.system.build.toplevel;
         nixos-rivendell = self.nixosConfigurations.rivendell.config.system.build.toplevel;
         nixos-erebor = self.nixosConfigurations.erebor.config.system.build.toplevel;

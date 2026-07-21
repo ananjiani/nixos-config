@@ -2,7 +2,8 @@ keys:
   - &desktop age1h96q7q8m88zl0cwsskmlmxgelnf863978hzrukqa3alcst5pv4dq8syj4c
   - &framework13 age1upzxx3l4ce5e0mcje59sekkwpcnczusxs0sgn8emyuv39q8gg99s5uupkn
   - &router age132wl9vjpn58utdnenmupg6d7v0dugkxphf9qlcf3w3ysvkur3yjqzdhwv3
-  # k3s cluster servers
+  # NixOS servers
+  - &aragorn age14refq8lhl88cthtada2u74c9r02v98fqkr2hxujd3fymmsgv05pqxx22kc
   - &boromir age19yh3saqcmyyk7qr0zwgy44zz7fwrpzlrhzwx5ym7qsn0rneageuq3qdws5
   - &samwise age1xjpmwgcs5wzak0v0hgzzuyw09re5weqxmqhsy7vhmz967wrnjuyqgezjxa
   - &theoden age1r3mztcslxm6a60x8maclx6stwl82aka6435jz0p8vzm7nqc4uqnqqjqts3
@@ -27,6 +28,7 @@ creation_rules:
           - *desktop
           - *framework13
           - *router
+          - *aragorn
           - *boromir
           - *samwise
           - *theoden

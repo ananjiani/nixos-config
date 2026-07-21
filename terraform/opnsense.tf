@@ -445,6 +445,14 @@ resource "opnsense_kea_reservation" "theoden" {
   description = "k3s server VM"
 }
 
+resource "opnsense_kea_reservation" "aragorn" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.28"
+  mac_address = local.mac_addresses.aragorn
+  hostname    = "aragorn"
+  description = "Devbox / command center VM"
+}
+
 resource "opnsense_kea_reservation" "rivendell" {
   subnet_id   = opnsense_kea_subnet.lan.id
   ip_address  = "192.168.1.29"

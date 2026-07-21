@@ -21,6 +21,9 @@ let
 
     # buildbot CI/CD deploy key (theoden)
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELJQcvgQUWAJl2gGXJwodH7TLhIWHJ4mcIaqpFeY5bC buildbot@theoden"
+
+    # homelab command center
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINcynfoH3k7t5uJhrKV0NShf9qRlxObuzatdBcsjgYQQ aragorn"
   ];
 in
 {

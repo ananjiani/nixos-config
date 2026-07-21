@@ -12,6 +12,7 @@ locals {
     chromecast_eth = "c8:4d:44:35:df:57" # Google Chromecast (Ethernet adapter)
     gondor         = "b4:2e:99:39:df:9e" # Proxmox VE Server
     boromir        = "bc:24:11:f9:37:2e" # NixOS VM (main server)
+    aragorn        = "bc:24:11:00:01:05" # NixOS VM (devbox / command center, on gondor)
     ammars_pc      = "30:c5:99:26:f4:c5" # Desktop PC (VPN exempt)
     phone          = "04:00:6e:82:70:17" # Phone (VPN exempt)
     the_shire      = "18:60:24:27:80:40" # The Shire
