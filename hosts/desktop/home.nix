@@ -56,9 +56,9 @@ let
     '';
   };
   # Upstream static pi-web binary — web UI for local Pi coding-agent sessions.
-  # HTTPS edge lives in k8s Traefik (see ADR-006); this binds only to the
-  # desktop's Headscale IP and is protected by PI_WEB_TOKEN from
-  # ~/.config/pi-web/env (never in the store).
+  # HTTPS edge lives in k8s Traefik (see ADR-006); this binds to the desktop's
+  # LAN IP and is protected by PI_WEB_TOKEN from ~/.config/pi-web/env (never in
+  # the store).
   # Reduced scope (ADR-006): the standalone binary is used WITHOUT the upstream
   # Pi package extensions/skills, so /web, /remote, /refresh, the token
   # commands, the ask-user tool, and the memory skill are unavailable in
@@ -137,7 +137,7 @@ let
   # piShim must come first so pi-web's updater can't bypass it.
   piWebLaunch = pkgs.writeShellScript "pi-web-launch" ''
     export PATH="${piShim}/bin:$HOME/.local/bin:$HOME/.npm-global/bin:${config.home.profileDirectory}/bin:/run/wrappers/bin:/run/current-system/sw/bin:$PATH"
-    exec ${piWeb}/bin/pi-web -host 100.64.0.4
+    exec ${piWeb}/bin/pi-web -host 192.168.1.50
   '';
 in
 {
@@ -309,8 +309,8 @@ in
     '';
   };
 
-  # Tailnet-only pi-web; reachable as https://pi.dimensiondoor.xyz via the k8s
-  # Traefik edge (selectorless Service → 100.64.0.4:31415). See ADR-006.
+  # LAN-bound pi-web; reachable as https://pi.dimensiondoor.xyz via the k8s
+  # Traefik edge (selectorless Service → 192.168.1.50:31415). See ADR-006.
   systemd.user.services.pi-web = {
     Unit.Description = "pi-web (Pi coding agent web UI)";
     Service = {
