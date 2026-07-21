@@ -79,15 +79,15 @@
   # Make Tailscale coexist with Mullvad without the cgroup exclusion. See ADR-004.
   #
   # tailscaled is NOT excluded from Mullvad (modules.tailscale.excludeFromMullvad
-  # = false). Two independent paths need help, both fixed by an nft *filter*
-  # ct-mark (drift-immune — no type-route re-fib, no priority-ordered ip rule):
+  # = false). Two independent paths need help, both fixed by nft *filter*
+  # ct/meta marks (drift-immune — no type-route re-fib or ordered ip rule):
   #
   # 1. tailscaled's own underlay (DERP / WireGuard to peers): Tailscale marks
   #    these SO_MARK 0x80000 and its own `ip rule` sends them out eno1 (bare
   #    WAN — ammars-pc is VPN-exempt at the router, same egress the exclusion
   #    gave). Mullvad's kill-switch firewall then RSTs that eno1 traffic
-  #    ("connection refused", NoState) unless it carries Mullvad's split-tunnel
-  #    ct mark 0xf41. So we set 0xf41 on fwmark 0x80000.
+  #    ("connection refused", NoState) unless it carries both Mullvad's
+  #    split-tunnel ct mark 0xf41 and routing mark 0x6d6f6c65.
   #
   # 2. Unmarked local processes → tailnet CGNAT (curl/vault-agent →
   #    100.64.0.21): Mullvad's unmarked-catch `ip rule` pulls these into the
@@ -97,7 +97,7 @@
   #    But Mullvad always also adds a `lookup main suppress_prefixlength 0`
   #    rule ABOVE its tunnel-catch; a /10 route in MAIN is resolved by that
   #    suppress rule before the tunnel-catch is consulted. So route CGNAT via
-  #    a main-table route (drift-immune) + ct mark 0xf41 for firewall accept.
+  #    a main-table route (drift-immune) + both Mullvad marks for acceptance.
   #
   # Do NOT use networking.nftables.enable — switches firewall backend and
   # breaks iptables-nft (Docker, Tailscale).
@@ -108,12 +108,12 @@
     timers.nix-optimise.timerConfig.WakeSystem = true;
 
     services = {
-      # nft ct-mark table. Must be up BEFORE tailscaled authenticates — its
+      # nft mark table. Must be up BEFORE tailscaled authenticates — its
       # underlay leaves eno1 marked 0x80000 and Mullvad's kill-switch RSTs it
-      # ("connection refused", permanent NoState) without ct mark 0xf41. This
+      # ("connection refused", permanent NoState) without both Mullvad marks. This
       # needs no tailscale0, so it can safely order before tailscaled.
       mullvad-tailscale-fixup = {
-        description = "ct-mark Tailscale traffic for Mullvad's firewall";
+        description = "Mark Tailscale traffic for Mullvad's firewall";
         after = [ "mullvad-daemon.service" ];
         wants = [ "mullvad-daemon.service" ];
         before = [ "tailscaled.service" ];
@@ -130,14 +130,14 @@
             table inet mullvad-mark-fixup {
               chain output {
                 type filter hook output priority -10; policy accept;
-                meta mark and 0xff0000 == 0x80000 ct mark set 0x00000f41
-                ip daddr 100.64.0.0/10 ct mark set 0x00000f41
-                ip6 daddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41
+                meta mark and 0xff0000 == 0x80000 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
+                ip daddr 100.64.0.0/10 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
+                ip6 daddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
               }
               chain input {
                 type filter hook input priority -100; policy accept;
-                ip saddr 100.64.0.0/10 ct mark set 0x00000f41
-                ip6 saddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41
+                ip saddr 100.64.0.0/10 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
+                ip6 saddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
               }
             }
             NFT
