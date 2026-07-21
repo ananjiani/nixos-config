@@ -8,9 +8,10 @@ export default async function (pi: ExtensionAPI) {
 		join(homedir(), ".pi/agent/skills/i-have-adhd/SKILL.md"),
 		"utf8",
 	);
-	let enabled = false;
+	let enabled = true;
 
 	pi.on("session_start", (_event, ctx) => {
+		enabled = true;
 		for (const entry of ctx.sessionManager.getEntries()) {
 			if (entry.type === "custom" && entry.customType === "i-have-adhd-enabled") {
 				enabled = (entry.data as { enabled?: boolean })?.enabled === true;
