@@ -25,4 +25,4 @@ ports:
     port: 31415
 endpoints:
   - addresses:
-      - 192.168.1.50
+      - 100.64.0.4

@@ -63,10 +63,6 @@
   networking = {
     hostName = "ammars-pc";
 
-    # pi-web user service (see hosts/desktop/home.nix) — LAN interface only,
-    # so the k8s Traefik edge can reach it but nothing outside eno1 can.
-    firewall.interfaces.eno1.allowedTCPPorts = [ 31415 ];
-
     # Wake-on-LAN via wakeOnLan.enable no-ops on this NIC driver (nixpkgs#415213:
     # `ethtool` stays `Wake-on: d` despite the option). Applied manually via the
     # systemd service + udev rule below instead. NIC keeps PHY powered in S3 so
@@ -204,9 +200,6 @@
       };
     };
   };
-
-  # Keep the pi-web user service running without an active login session.
-  users.users.ammar.linger = true;
 
   environment.systemPackages = with pkgs; [
     signal-desktop
