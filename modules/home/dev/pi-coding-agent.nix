@@ -644,6 +644,9 @@ in
     '';
 
     packages = [
+      # Pi installs and updates npm-based extensions at runtime.
+      pkgs.nodejs
+
       # Thin wrapper around pkgs.llm-agents.pi so we can inject flags
       # or wrap it differently in the future.
       (pkgs.writeShellScriptBin "pi" ''
