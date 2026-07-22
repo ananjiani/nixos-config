@@ -152,6 +152,7 @@
   # causing system-wide stalls. Set to warn-only — still logs but no penalty.
   # steam-for-linux#13037, #8003, #11740; Phoronix 2022-12-13
   boot = {
+    kernelModules = [ "ntsync" ];
     kernelParams = [ "split_lock_detect=warn" ];
     loader.systemd-boot.enable = true;
     loader.efi.canTouchEfiVariables = true;
