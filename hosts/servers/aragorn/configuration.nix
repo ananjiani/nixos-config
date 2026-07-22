@@ -62,6 +62,7 @@
       ../../../modules/home/dev/claude-code.nix
       ../../../modules/home/dev/nix-direnv.nix
       ../../../modules/home/dev/tea.nix
+      ../../../modules/home/dev/programs.nix
     ];
 
     sops = {
