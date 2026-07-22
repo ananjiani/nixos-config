@@ -68,7 +68,6 @@ in
       # inputs.opencode.packages.${pkgs.system}.default
       nodejs # for npm global packages
       gh
-      tea # Gitea/Forgejo CLI — works with Codeberg, replaces archived berg
       pgadmin4-desktopmode
       openspec
       # inputs.claude-desktop.packages.${pkgs.system}.claude-desktop-with-fhs # Temporarily disabled - hash mismatch
