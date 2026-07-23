@@ -1,6 +1,7 @@
 {
   pkgs,
   lib,
+  inputs,
   ...
 }:
 
@@ -70,6 +71,7 @@ in
       gh
       pgadmin4-desktopmode
       openspec
+      inputs.herdr.packages.${pkgs.stdenv.hostPlatform.system}.default
       # inputs.claude-desktop.packages.${pkgs.system}.claude-desktop-with-fhs # Temporarily disabled - hash mismatch
     ];
   };
