@@ -73,7 +73,7 @@ in
           apps = [
             {
               name = config.moondeck.sunshine.appName;
-              cmd = "${mkMoondeckBuddy pkgs}/bin/moondeck-buddy --exec MoonDeckStream";
+              cmd = "${lib.getExe' pkgs.util-linux "setpriv"} --inh-caps=-all --ambient-caps=-all -- ${mkMoondeckBuddy pkgs}/bin/moondeck-buddy --exec MoonDeckStream";
             }
           ];
         };

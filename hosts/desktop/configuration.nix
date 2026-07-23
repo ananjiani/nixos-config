@@ -1,9 +1,120 @@
 # ammars-pc — Primary desktop workstation
 {
+  config,
+  lib,
   pkgs,
   ...
 }:
 
+let
+  # Dedicated Sunshine stream output (DP-3). The EDID advertises 10-bit
+  # DisplayPort, BT.2020, and PQ HDR with Steam Deck OLED luminance metadata.
+  sunshineEdidName = "sunshine-hdr";
+  sunshineEdid =
+    pkgs.runCommand "sunshine-hdr-edid"
+      {
+        nativeBuildInputs = [ pkgs.edid-decode ];
+        compressFirmware = false;
+      }
+      ''
+        mkdir -p "$out/lib/firmware/edid"
+        printf '%s' \
+          'AP///////wAx2AAAAAAAAAUWAQS1IRR4Al7ApFlKmCUgUFQgAACBAAEBAQEBAQEBAQEBAQEBRTMAwFEgLTBYiDYATdAQAAAcAAAA/wBMaW51eCAjMAogICAgAAAAEAAAAAAAAAAAAAAAAAAAAAAA/ABzdW4xMjgweDgwMAogAQsCAxKA4gDK4wXAIOYGBQGKcwIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA==' \
+          | base64 --decode > "$out/lib/firmware/edid/${sunshineEdidName}.bin"
+        edid-decode --check "$out/lib/firmware/edid/${sunshineEdidName}.bin"
+      '';
+
+  mkSunshineOutput =
+    {
+      name,
+      mode,
+      hdr ? false,
+    }:
+    pkgs.writeText "niri-sunshine-${name}.kdl" ''
+      output "DP-3" {
+          ${lib.optionalString hdr ''
+            hdr mode="on" {
+                reference-luminance 203
+            }
+          ''}
+          scale 1
+          transform "normal"
+          mode custom=true "${mode}"
+      }
+    '';
+  sunshineDeckSdr = mkSunshineOutput {
+    name = "deck-sdr";
+    mode = "1280x800@90";
+  };
+  sunshineDeckHdr = mkSunshineOutput {
+    name = "deck-hdr";
+    mode = "1280x800@90";
+    hdr = true;
+  };
+  sunshineThorSdr = mkSunshineOutput {
+    name = "thor-sdr";
+    mode = "1920x1080@120";
+  };
+
+  # Sunshine provides client mode and HDR state to prep commands. Installing
+  # the matching first-priority niri fragment switches DP-3 atomically; restore
+  # removes it so the static Home Manager DP-3 `off` block takes over again.
+  sunshineDisplayHelper = pkgs.writeShellScript "sunshine-niri-display" ''
+    set -euo pipefail
+    niri=${lib.getExe config.programs.niri.package}
+    install=${lib.getExe' pkgs.coreutils "install"}
+    rm=${lib.getExe' pkgs.coreutils "rm"}
+    fragment_path="''${XDG_CONFIG_HOME:-$HOME/.config}/niri/sunshine.kdl"
+
+    setup() {
+      mode="''${SUNSHINE_CLIENT_WIDTH:-1280}x''${SUNSHINE_CLIENT_HEIGHT:-800}@''${SUNSHINE_CLIENT_FPS:-90}"
+      hdr="''${SUNSHINE_CLIENT_HDR:-false}"
+      case "$mode:$hdr" in
+        1280x800@90:false) fragment=${sunshineDeckSdr} ;;
+        1280x800@90:true) fragment=${sunshineDeckHdr} ;;
+        1920x1080@120:false) fragment=${sunshineThorSdr} ;;
+        *)
+          echo "unsupported Sunshine display profile: $mode HDR=$hdr" >&2
+          return 1
+          ;;
+      esac
+
+      "$install" -Dm0644 "$fragment" "$fragment_path" &&
+        "$niri" msg action load-config-file &&
+        "$niri" msg output DP-3 on &&
+        "$niri" msg output DP-1 off &&
+        "$niri" msg output DP-2 off &&
+        "$niri" msg output HDMI-A-1 off
+    }
+
+    restore() {
+      failed=0
+      "$niri" msg output DP-1 on || failed=1
+      "$niri" msg output DP-2 on || failed=1
+      "$niri" msg output HDMI-A-1 on || failed=1
+      "$rm" -f "$fragment_path" || failed=1
+      "$niri" msg action load-config-file || failed=1
+      "$niri" msg output DP-3 off || failed=1
+      return "$failed"
+    }
+
+    case "''${1:-}" in
+      setup)
+        if ! setup; then
+          restore || true
+          exit 1
+        fi
+        ;;
+      restore)
+        restore
+        ;;
+      *)
+        echo "usage: $0 setup|restore" >&2
+        exit 1
+        ;;
+    esac
+  '';
+in
 {
   imports = [
     ./hardware-configuration.nix
@@ -59,6 +170,17 @@
       "192.168.1.1" # OPNsense router (AdGuard upstream)
     ];
   };
+
+  # Sunshine dedicated stream connector (DP-3): HDR-capable fake EDID +
+  # force-enabled preferred mode. amdgpu is in initrd, so the EDID must be too.
+  hardware.display = {
+    edid.packages = [ sunshineEdid ];
+    outputs."DP-3" = {
+      edid = "${sunshineEdidName}.bin";
+      mode = "1280x800@90e";
+    };
+  };
+  boot.initrd.extraFirmwarePaths = [ "edid/${sunshineEdidName}.bin" ];
 
   networking = {
     hostName = "ammars-pc";
@@ -225,6 +347,17 @@
       autoStart = true;
       capSysAdmin = true;
       openFirewall = true;
+      # Linux HDR capture requires KMS; capSysAdmin above grants its DRM access.
+      settings = {
+        capture = "kms";
+        global_prep_cmd = builtins.toJSON [
+          {
+            do = "${sunshineDisplayHelper} setup";
+            undo = "${sunshineDisplayHelper} restore";
+            elevated = false;
+          }
+        ];
+      };
     };
   };
 
