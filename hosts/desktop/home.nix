@@ -35,6 +35,7 @@ let
   dp2Auto = dp2Fragment "auto";
   dp2On = dp2Fragment "on";
   hdrFragmentPath = "$HOME/.config/niri/hdr.kdl";
+  sunshineFragmentPath = "$HOME/.config/niri/sunshine.kdl";
   hdrOn = pkgs.writeShellScriptBin "hdr-on" ''
     install -m 0644 ${dp2On} "${hdrFragmentPath}"
     echo "DP-2 HDR: on (niri live-reloads)"
@@ -46,13 +47,40 @@ let
   gamescopeHdr = pkgs.writeShellApplication {
     name = "gamescope-hdr";
     text = ''
-      ${hdrOn}/bin/hdr-on
-      trap '${hdrOff}/bin/hdr-off' EXIT
-      sleep 1
-      gamescope \
-        -W 5120 -H 1440 -w 5120 -h 1440 -r 240 -f \
-        --hdr-enabled --virtual-connector-strategy PerWindow \
-        -- env ENABLE_HDR_WSI=1 DXVK_HDR=1 "$@"
+      width=5120
+      height=1440
+      refresh=240
+      hdr_args=(--hdr-enabled)
+      game_env=(${pkgs.coreutils}/bin/env ENABLE_HDR_WSI=1 DXVK_HDR=1)
+
+      if [ -f "${sunshineFragmentPath}" ]; then
+        if ${pkgs.gnugrep}/bin/grep -Fq 'mode custom=true "1280x800@90"' "${sunshineFragmentPath}"; then
+          width=1280
+          height=800
+          refresh=90
+        elif ${pkgs.gnugrep}/bin/grep -Fq 'mode custom=true "1920x1080@120"' "${sunshineFragmentPath}"; then
+          width=1920
+          height=1080
+          refresh=120
+        else
+          echo "unsupported Sunshine niri fragment" >&2
+          exit 1
+        fi
+
+        if ! ${pkgs.gnugrep}/bin/grep -Fq 'hdr mode="on"' "${sunshineFragmentPath}"; then
+          hdr_args=()
+          game_env=(${pkgs.coreutils}/bin/env -u ENABLE_HDR_WSI -u DXVK_HDR)
+        fi
+      else
+        ${hdrOn}/bin/hdr-on
+        trap '${hdrOff}/bin/hdr-off' EXIT
+        sleep 1
+      fi
+
+      ${pkgs.gamescope}/bin/gamescope \
+        -W "$width" -H "$height" -w "$width" -h "$height" -r "$refresh" -f \
+        "''${hdr_args[@]}" --virtual-connector-strategy PerWindow \
+        -- "''${game_env[@]}" "$@"
     '';
   };
   # Upstream static pi-web binary — web UI for local Pi coding-agent sessions.
@@ -281,12 +309,16 @@ in
   # Experimental HDR fork (must match NixOS programs.niri.package)
   programs.niri.package = pkgs.niri-hdr;
 
-  # niri-flake's schema has no `hdr` key and DP-2 lives in a writable include
-  # (see dp2Fragment above), so append the include to the generated config.
-  # optional=true keeps niri happy if the fragment isn't written yet.
+  # niri-flake's schema has no `hdr` key. Sunshine's optional include comes
+  # first so its active DP-3 profile shadows the generated DP-3 `off` block;
+  # removing it restores that safe idle default. DP-2 remains in hdr.kdl.
   xdg.configFile.niri-config.source = lib.mkForce (
     pkgs.writeText "niri-config.kdl" (
-      config.programs.niri.finalConfig
+      ''
+        include "~/.config/niri/sunshine.kdl" optional=true
+
+      ''
+      + config.programs.niri.finalConfig
       + ''
 
         include "~/.config/niri/hdr.kdl" optional=true
@@ -328,6 +360,16 @@ in
       # NOTE: DP-2 (HDR ultrawide) is intentionally NOT here — it's defined in the
       # writable include ~/.config/niri/hdr.kdl (see dp2Fragment) for runtime HDR
       # toggling. Putting it here too would shadow that block (first-match wins).
+
+      # Sunshine stream connector (fake EDID). Off until global_prep_cmd enables it.
+      "DP-3" = {
+        enable = false;
+        mode = {
+          width = 1280;
+          height = 800;
+        };
+        scale = 1.0;
+      };
 
       # Right 4K @ scale 1.5 → 2560x1440 logical footprint, placed to the right of HDMI-A-1
       "DP-1" = {

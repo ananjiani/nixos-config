@@ -38,6 +38,8 @@
     # nix-community.cachix.org (already trusted in hosts/_profiles/base.nix).
     llm-agents.url = "github:numtide/llm-agents.nix";
     whisper-dictation.url = "github:ananjiani/whisper-dictation";
+    # No follows — upstream pins its own nixpkgs + rust-overlay.
+    herdr.url = "github:ogulcancelik/herdr";
     git-hooks = {
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs-unstable";

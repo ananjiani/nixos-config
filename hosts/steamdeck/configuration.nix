@@ -49,21 +49,29 @@
       # Decky Loader's run() defaults env to {"LD_LIBRARY_PATH": ""},
       # which replaces the entire environment including PATH.
       # This breaks systemctl calls. Fix: change default to None.
-      # Pin v3.2.4 — fixes CEF rendering error (missing Field component in @decky/ui).
+      # Pin v3.2.6 — fixes React error #130 with June 2026 Steam UI builds.
       package = pkgs.decky-loader.overridePythonAttrs (old: rec {
-        version = "3.2.4";
+        version = "3.2.6";
         src = pkgs.fetchFromGitHub {
           owner = "SteamDeckHomebrew";
           repo = "decky-loader";
-          rev = "v3.2.4";
-          hash = "sha256-QC1vmosEY+gQGMskA+y3yz3zpHJjXNjoYk3TA93ffJw=";
+          rev = "v3.2.6";
+          hash = "sha256-p1bkLsZedTZ29POqdaXvVpPXzg9kBTKgUxkkEAyAkT0=";
         };
+        # v3.2.6 ships frontend/pnpm-workspace.yaml with only the pnpm 10
+        # `minimumReleaseAgeExclude` field; pnpm 9 requires `packages` and may
+        # reject unknown fields, so replace it with a minimal single-package
+        # workspace in both the deps fetcher and the frontend build.
         pnpmDeps = old.pnpmDeps.override {
           inherit src version;
-          hash = "sha256-rjou5KDHlF0MWAMzIKjc9UiIKk8t626SOM1Nw7WQzy4=";
+          hash = "sha256-WgKycKbaZv9lovoo0IaCuV41qS4zUqm4vZxsMQBUdNk=";
+          postPatch = ''
+            printf 'packages:\n  - "."\n' > pnpm-workspace.yaml
+          '';
         };
         postPatch = (old.postPatch or "") + ''
           find . -name localplatformlinux.py -exec sed -i 's@env: ENV | None = {"LD_LIBRARY_PATH": ""}@env: ENV | None = None@' {} +
+          printf 'packages:\n  - "."\n' > frontend/pnpm-workspace.yaml
         '';
       });
     };
@@ -100,11 +108,16 @@
     server = "theoden.lan";
   };
 
-  # ── LSFG-VK Vulkan layer (nixpkgs package, compiled for NixOS) ─────
-  # The Decky LSFG-VK plugin handles config + launch script.
-  # Use the nixpkgs-built layer instead of the plugin's prebuilt binary
-  # so library paths resolve correctly on NixOS.
-  environment.systemPackages = [ pkgs.lsfg-vk ];
+  # ── Gaming clients and Vulkan layers ───────────────────────────────
+  environment.systemPackages = with pkgs; [
+    # Stable path for MoonDeck's custom executable setting:
+    # /run/current-system/sw/bin/moonlight
+    moonlight-qt
+
+    # The Decky LSFG-VK plugin handles config + launch script. Use the
+    # nixpkgs-built layer so library paths resolve correctly on NixOS.
+    lsfg-vk
+  ];
 
   # Ensure the layer JSON is discoverable inside Proton (Steam Runtime).
   # /etc/vulkan/implicit_layer.d is always checked regardless of XDG vars.
