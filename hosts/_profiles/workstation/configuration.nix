@@ -88,10 +88,6 @@
   };
 
   programs = {
-    nh = {
-      enable = true;
-      flake = "~/.dotfiles";
-    };
     kdeconnect.enable = true;
     gnupg.agent = {
       enable = true;

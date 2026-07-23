@@ -34,6 +34,10 @@
 
   programs = {
     fish.enable = true;
+    nh = {
+      enable = true;
+      flake = "~/.dotfiles";
+    };
     nix-ld = {
       enable = true;
       libraries = with pkgs; [
