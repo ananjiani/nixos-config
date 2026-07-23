@@ -363,6 +363,25 @@
 
       # deploy-rs deployment configuration
       deploy.nodes = {
+        ammars-pc = {
+          hostname = "ammars-pc.lan";
+          profilesOrder = [
+            "system"
+            "home"
+          ];
+          profiles = {
+            system = {
+              user = "root";
+              sshUser = "root";
+              path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.ammars-pc;
+            };
+            home = {
+              user = "ammar";
+              sshUser = "root";
+              path = deploy-rs.lib.x86_64-linux.activate.home-manager self.homeConfigurations."ammar@ammars-pc";
+            };
+          };
+        };
         boromir = {
           hostname = "boromir.lan";
           profiles.system = {
