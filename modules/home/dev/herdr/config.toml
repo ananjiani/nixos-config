@@ -1,0 +1,18 @@
+onboarding = false
+
+[theme]
+name = "terminal"
+
+[ui]
+show_agent_labels_on_pane_borders = true
+hide_tab_bar_when_single_tab = true
+
+[ui.sidebar.agents]
+rows = [
+  ["state_icon", "workspace", "tab"],
+  ["agent", "state_text"],
+]
+
+[ui.toast]
+delivery = "terminal"
+delay_seconds = 1

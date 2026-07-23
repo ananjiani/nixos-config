@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   lib,
   inputs,
@@ -14,6 +15,9 @@ let
   ];
 in
 {
+  xdg.configFile."herdr/config.toml".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/home/dev/herdr/config.toml";
+
   home = {
     # npm global packages - install to ~/.npm-global instead of /usr
     sessionPath = [ "$HOME/.npm-global/bin" ];
