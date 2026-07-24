@@ -2,9 +2,9 @@
  * Delegation Bias Extension
  *
  * Injects a delegation-bias block into the system prompt on every main-session
- * user prompt. Makes Fable/main aggressively prefer scout/worker/reviewer
+ * user prompt. Makes the main session aggressively prefer scout/worker/reviewer
  * subagents for non-trivial work, keeping the main context clean and reserving
- * Claude quota for judgement.
+ * Fable for coordinator judgement.
  *
  * Fires once per user prompt via before_agent_start. Does NOT fire for
  * subagents (they run their own sessions) — that's intended: the bias belongs
@@ -37,8 +37,9 @@ Work directly ONLY when:
 
 Every Agent call to scout/worker/reviewer MUST include a model. Pick from the
 matrix in the Agent tool description. Prefer high-quota models (Z.ai/GLM,
-OpenCode Go) within ~1 capability point of the best fit. Fable 5, Opus 4.8,
-and GPT-5.6 Sol are available for difficult worker/reviewer tasks.
+OpenCode Go) within ~1 capability point of the best fit. NEVER use Fable 5
+for any subagent role; it is reserved for the main session. Opus 4.8 and
+GPT-5.6 Sol are available for difficult worker/reviewer tasks.
 `;
 
 export default function (pi: ExtensionAPI) {
