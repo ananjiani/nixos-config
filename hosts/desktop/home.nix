@@ -54,9 +54,9 @@ let
       game_env=(${pkgs.coreutils}/bin/env ENABLE_HDR_WSI=1 DXVK_HDR=1)
 
       if [ -f "${sunshineFragmentPath}" ]; then
-        if ${pkgs.gnugrep}/bin/grep -Fq 'mode custom=true "1280x800@90"' "${sunshineFragmentPath}"; then
-          width=1280
-          height=800
+        if ${pkgs.gnugrep}/bin/grep -Fq 'mode custom=true "1920x1200@90"' "${sunshineFragmentPath}"; then
+          width=1920
+          height=1200
           refresh=90
         elif ${pkgs.gnugrep}/bin/grep -Fq 'mode custom=true "1920x1080@120"' "${sunshineFragmentPath}"; then
           width=1920

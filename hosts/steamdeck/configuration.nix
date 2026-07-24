@@ -133,6 +133,28 @@
     mkdir -p /home/ammar/.local/share/vulkan/implicit_layer.d
     ln -sf ${pkgs.lsfg-vk}/lib/liblsfg-vk.so /home/ammar/.local/lib/liblsfg-vk.so
     ln -sf ${pkgs.lsfg-vk}/share/vulkan/implicit_layer.d/VkLayer_LS_frame_generation.json /home/ammar/.local/share/vulkan/implicit_layer.d/VkLayer_LS_frame_generation.json
+
+    # Buddy 1.9.2 reports Unknown because current Steam logs no longer contain
+    # its SP Desktop_/SP BPM_ markers. Keep MoonDeck's user check, but do not
+    # block the game launch on that unavailable UI-mode signal.
+    runner=/var/lib/decky-loader/plugins/moondeck/python/lib/runner/moondeckapprunner.py
+    if grep -q 'if mode == desired_mode:' "$runner" 2>/dev/null; then
+      ${pkgs.gnused}/bin/sed -i \
+        's/if mode == desired_mode:/if mode in (desired_mode, SteamUiMode.Unknown):/' \
+        "$runner"
+    fi
+    if ! grep -q 'MoonDeckAppRunner.wait_for_stream_to_stop' "$runner" 2>/dev/null; then
+      ${pkgs.gnused}/bin/sed -i \
+        '0,/                        await client.end_stream()/s//                        await client.end_stream()\n                        await MoonDeckAppRunner.wait_for_stream_to_stop(client=client,\n                                                                          timeout=stream_rdy_timeout)/' \
+        "$runner"
+    fi
+
+    moonlight_proxy=/var/lib/decky-loader/plugins/moondeck/python/lib/moonlightproxy.py
+    if ! grep -q -- '--touchscreen-trackpad' "$moonlight_proxy" 2>/dev/null; then
+      ${pkgs.gnused}/bin/sed -i \
+        '/args += \["stream", hostname, host_app\]/i\        args += ["--touchscreen-trackpad"]' \
+        "$moonlight_proxy"
+    fi
   '';
 
   # ── KDE Plasma 6 for Desktop Mode ──────────────────────────────────

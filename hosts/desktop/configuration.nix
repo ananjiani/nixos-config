@@ -62,6 +62,11 @@ let
   sunshineDisplayHelper = pkgs.writeShellScript "sunshine-niri-display" ''
     set -euo pipefail
     niri=${lib.getExe config.programs.niri.package}
+    corectrl=${lib.getExe' pkgs.corectrl "corectrl"}
+    jq=${lib.getExe pkgs.jq}
+    pgrep=${lib.getExe' pkgs.procps "pgrep"}
+    sleep=${lib.getExe' pkgs.coreutils "sleep"}
+    systemd_run=${lib.getExe' pkgs.systemd "systemd-run"}
     install=${lib.getExe' pkgs.coreutils "install"}
     rm=${lib.getExe' pkgs.coreutils "rm"}
     fragment_path="''${XDG_CONFIG_HOME:-$HOME/.config}/niri/sunshine.kdl"
@@ -82,16 +87,29 @@ let
       "$install" -Dm0644 "$fragment" "$fragment_path" &&
         "$niri" msg action load-config-file &&
         "$niri" msg output DP-3 on &&
-        "$niri" msg output DP-1 off &&
-        "$niri" msg output DP-2 off &&
-        "$niri" msg output HDMI-A-1 off
+        "$niri" msg action move-workspace-to-monitor --reference "gaming" DP-3 &&
+        "$niri" msg action focus-workspace "gaming"
+
+      steam_id=$("$niri" msg -j windows | "$jq" -r 'first(.[] | select(.app_id == "steam") | .id)')
+      "$niri" msg action focus-window --id "$steam_id"
+      "$niri" msg action expand-column-to-available-width
+
+      if ! "$pgrep" -x corectrl >/dev/null; then
+        "$systemd_run" --user --unit=corectrl-sunshine --collect --property=Type=exec -- \
+          "$corectrl" --minimize-systray
+        for _ in {1..20}; do
+          "$pgrep" -x corectrl >/dev/null && break
+          "$sleep" 0.5
+        done
+        "$pgrep" -x corectrl >/dev/null
+      fi
+      "$corectrl" --activate-manual-profile Gaming
     }
 
     restore() {
       failed=0
-      "$niri" msg output DP-1 on || failed=1
-      "$niri" msg output DP-2 on || failed=1
-      "$niri" msg output HDMI-A-1 on || failed=1
+      "$corectrl" --deactivate-manual-profile Gaming || failed=1
+      "$niri" msg action move-workspace-to-monitor --reference "gaming" DP-2 || failed=1
       "$rm" -f "$fragment_path" || failed=1
       "$niri" msg action load-config-file || failed=1
       "$niri" msg output DP-3 off || failed=1
