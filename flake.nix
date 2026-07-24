@@ -31,7 +31,7 @@
       url = "github:k3d3/claude-desktop-linux-flake/b2b040cb68231d2118906507d9cc8fd181ca6308";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
-    claude-code.url = "github:sadjow/claude-code-nix?ref=v2.1.212"; # pinned: native Bun package + localhost cache-fix reverse proxy (see modules/home/dev/claude-code.nix). Preload unsupported on native binary.
+    claude-code.url = "github:sadjow/claude-code-nix?ref=v2.1.219"; # pinned: native Bun package + localhost cache-fix reverse proxy (see modules/home/dev/claude-code.nix). Preload unsupported on native binary.
     # AI coding-agent package collection (pi, omp, codex, opencode, …).
     # No `follows` — their README warns against following a stable nixpkgs,
     # and their pinned nixpkgs-unstable gives us cache hits from

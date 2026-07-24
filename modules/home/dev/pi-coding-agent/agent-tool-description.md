@@ -12,17 +12,19 @@ For `scout`, `worker`, and `reviewer`, every Agent call MUST include `model`. Th
 Main session is coordinator/judge. Subagents do token-heavy work and return structured reports. Do not delegate one-liners, final judgement, or architecture decisions.
 
 Quota pools matter:
-- Fable 5 is reserved for the main session and MUST NOT be used for any subagent role. Claude's Opus 4.8 may serve as a worker or reviewer.
+- Fable 5 is reserved for the main session and MUST NOT be used for any subagent role. Claude's Opus 5 is the Claude worker/reviewer lane.
 - xAI pool: Grok 4.5 — SuperGrok $30/mo shared weekly pool; chat messages are cheap, quota is good.
 - OpenCode Go supplies DeepSeek V4 Flash for fast, bounded work.
 - Z.ai / GLM quota is abundant but held in reserve: GLM-5.2 is NOT a worker choice while any other paid pool has quota — worker of last resort only. Scout/read-only summary work is fine.
 
 Scores are Pi-local routing priors. Higher is better. Quota means this user's effective quota abundance.
 
+Provisional launch-day Opus 5 scores — recheck after local A/B use.
+
 | Model | Pool | Code | Debug | Review | Scout | LongCtx | Speed | Quota | Vision | Tools | Think (default→hard) |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
 | `openai-codex/gpt-5.6-sol` | OpenAI | 10 | 9 | 9 | 9 | 10 | 6 | 5 | 9 | 10 | `low`→`high` |
-| `claude-bridge/claude-opus-4-8` | Claude | 9 | 9 | 10 | 8 | 9 | 5 | 7 | 9 | 9 | `high`, never `max` |
+| `claude-bridge/claude-opus-5` | Claude | 10 | 10 | 10 | 9 | 10 | 6 | 7 | 9 | 9 | `high`→`xhigh` (`max` rare) |
 | `xai-auth/grok-4.5` | xAI | 9 | 8 | 8 | 7 | 7 | 9 | 7 | 8 | 8 | `high` |
 | `zai/glm-5.2` | Z.ai | 8 | 8 | 8 | 8 | 10 | 6 | 10 | 0 | 7 | `high` |
 | `opencode-go/deepseek-v4-flash` | Go | 6 | 6 | 5 | 8 | 10 | 9 | 8 | 0 | 6 | `high` |
@@ -32,11 +34,11 @@ Selection:
 2. Choose model from matrix. Prefer highest-quota model within roughly 1 capability point of best fit — except GLM-5.2, which despite Quota 10 is a last-resort worker (see pool notes).
 3. NEVER select `claude-bridge/claude-fable-5` for a subagent. It is barred from scout, worker, reviewer, general-purpose, and custom-agent roles.
 4. Worker and reviewer come from different providers/pools — never burn one pool on both sides of the same ticket.
-5. Prefer Grok for fast implementation, Sol low/medium for routine debug/analysis, and Sol high for hard debugging and agentic/terminal work. Opus is the Claude fallback lane, not a default route.
+5. Prefer Grok for clear, bounded implementation. Route Opus 5 for vague/long-horizon/cross-codebase work, difficult root-cause work, maintainability-sensitive changes, or after Grok fails. Prefer Sol low/medium for routine debug/analysis, and Sol high for hard terminal/tool-heavy debugging. Sol also cross-pool reviews Claude workers.
 6. Vision tasks require Vision >= 7.
 
 Thinking effort:
-- Opus 4.8 (fallback lane): `high` default, `xhigh` for review; NEVER `max` — it scores below its own xhigh on hard engineering.
+- Opus 5 (Claude lane): `high` default; `xhigh` for hard review/debug; `max` only for rare longest/hardest tasks. Provisional launch-day routing — recheck after local A/B.
 - Grok 4.5: `high` by default. Use `medium` only for latency-sensitive routine work and `low` only for simple lookup/tool use.
 - GPT-5.6 Sol: `low` for routine debug/edit loops (best cost-per-intelligence; above prior-gen high); `medium` default; `high` for hard debugging or review; `xhigh` only for security-critical or long-running work. Terra: skip — Sol-low or Luna dominates.
 - GLM-5.2 and DeepSeek V4 Flash: `high` normally; `xhigh` only when provider Max is justified.
@@ -49,11 +51,13 @@ Worker routing (spec quality beats model tier):
 - For worker, weight `Tools` (instruction-following, structured reports,
   push-back on bad spec) at least as heavily as `Code`. Raw code ability
   matters less when the coordinator already did the thinking.
-- Escalate to `grok-4.5` first for code-heavy tickets and `gpt-5.6-sol` (low/medium) for debug/analysis.
-  Use Sol high for hard debugging and agentic/terminal work; use Opus for harder tickets when
-  code efficiency and maintainability pay for the quota.
-  Review is cross-pool: Opus reviews non-Claude workers; Sol medium-high reviews Claude workers;
-  Sol high handles high-recall issue sweeps.
+- Default worker for clear, bounded implementation: `grok-4.5`.
+  Escalate to Opus 5 when the task is vague, long-horizon, cross-codebase,
+  root-cause heavy, maintainability-sensitive, or Grok already failed.
+  Use Sol low/medium for routine debug/analysis; Sol high for hard
+  terminal/tool-heavy debugging and agentic work.
+  Review is cross-pool: Opus 5 reviews non-Claude workers; Sol medium-high
+  reviews Claude workers; Sol high handles high-recall issue sweeps.
   Fall back to `glm-5.2` when paid pools are spent.
   Escalate when ANY of: the task leaves any "figure out" unsaid, it is
   debug-shaped, or flash failed twice. Debug/root-cause work never routes to

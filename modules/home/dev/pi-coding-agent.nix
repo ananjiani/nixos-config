@@ -435,9 +435,10 @@ let
   # Claude Agent SDK normally loads Claude Code's user, project, and local
   # settings when settingSources is omitted. pi-claude-bridge 0.6.2 ignores
   # its settingSources config, so inject the equivalent CLI flag through a
-  # dedicated executable wrapper. A post-update activation patch replaces the
-  # bridge's Claude Code systemPrompt preset with Pi's full context.systemPrompt
-  # (AGENTS.md, skills, extension rules). Wrapper still excludes ~/.claude
+  # dedicated executable wrapper. The post-update activation preserves the
+  # stock Claude Code system-prompt preset: replacing it with Pi's full prompt
+  # makes subscription requests require extra usage. The bridge still appends
+  # AGENTS.md and skills through systemPromptAppend. Wrapper still excludes ~/.claude
   # settings/hooks, Claude filesystem instructions, project CLAUDE.md
   # duplication, and Claude auto-memory. Managed policy and ~/.claude.json
   # runtime/auth state still load by Agent SDK design.
@@ -643,47 +644,170 @@ in
     #
     # piPatchClaudeBridge runs after that: pi installs pi-claude-bridge
     # mutably under ~/.pi/agent/npm/node_modules, so each update can
-    # restore the stock Claude Code systemPrompt preset. Patch it to
-    # pass Pi's final context.systemPrompt instead.
+    # restore stock models.ts. Patch it to expose claude-opus-5 until
+    # pi-ai/bridge ship it: order it before older Opus, synthesize metadata
+    # from the prior Opus entry, and map the runtime id to bare claude-opus-5.
+    # Claude Code >=2.1.219 serves bare Opus 5 through included Max usage;
+    # the [1m] suffix forces paid extra usage.
+    #
+    # Keep bridge's stock Claude Code system-prompt preset. Replacing it with
+    # Pi's full third-party harness prompt makes subscription-backed requests
+    # require extra usage. The stock bridge still appends AGENTS.md and skills.
     activation = {
       piUpdateExtensions = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         run ${pkgs.llm-agents.pi}/bin/pi update --extensions || echo "pi: extension update failed (offline?), skipping" >&2
       '';
 
       piPatchClaudeBridge = lib.hm.dag.entryAfter [ "piUpdateExtensions" ] ''
-                target="$HOME/.pi/agent/npm/node_modules/pi-claude-bridge/src/index.ts"
-                if [ ! -f "$target" ]; then
-                  echo "pi: pi-claude-bridge not installed, skipping systemPrompt patch" >&2
-                else
-                  # Exact text replace on the provider fresh-query systemPrompt block.
-                  # Idempotent: stock form is patched, already-patched form is accepted.
-                  run ${pkgs.python3}/bin/python3 - "$target" <<'PY'
+                bridge_src="$HOME/.pi/agent/npm/node_modules/pi-claude-bridge/src"
+                index_ts="$bridge_src/index.ts"
+                models_ts="$bridge_src/models.ts"
+
+                # Undo the old full-Pi-system-prompt patch. Claude subscription
+                # usage requires the stock Claude Code preset; bridge still
+                # appends AGENTS.md and skills through systemPromptAppend.
+                if [ -f "$index_ts" ]; then
+                  run ${pkgs.python3}/bin/python3 - "$index_ts" <<'PY'
         import sys
         from pathlib import Path
 
         path = Path(sys.argv[1])
         text = path.read_text()
-        old = (
+        old = "\t\tsystemPrompt: context.systemPrompt,\n\t\textraArgs,"
+        stock = (
             "\t\tsystemPrompt: {\n"
             "\t\t\ttype: \"preset\", preset: \"claude_code\",\n"
             "\t\t\tappend: systemPromptAppend ? systemPromptAppend : undefined,\n"
-            "\t\t},"
+            "\t\t},\n"
+            "\t\textraArgs,"
         )
-        new = "\t\tsystemPrompt: context.systemPrompt,"
-        # Unique to the patched fresh-query block (compact-summary already uses
-        # context.systemPrompt without a following extraArgs).
-        patched = new + "\n\t\textraArgs,"
-
-        if old in text:
-            path.write_text(text.replace(old, new, 1))
-            print(f"pi: patched {path} systemPrompt -> context.systemPrompt")
-        elif patched in text:
-            print(f"pi: {path} already patched")
+        old_count = text.count(old)
+        stock_count = text.count(stock)
+        if old_count == 1 and stock_count == 0:
+            path.write_text(text.replace(old, stock, 1))
+            print(f"pi: restored {path} stock Claude Code system-prompt preset")
+        elif old_count == 0 and stock_count == 1:
+            print(f"pi: {path} already uses stock Claude Code system-prompt preset")
         else:
             raise SystemExit(
-                f"pi: {path}: neither stock nor patched fresh-query "
-                f"systemPrompt block found; bridge shape changed?"
+                f"pi: {path}: unexpected system-prompt shape; "
+                f"old_count={old_count} stock_count={stock_count}"
             )
+        PY
+                fi
+
+                if [ ! -f "$models_ts" ]; then
+                  echo "pi: pi-claude-bridge not installed, skipping Opus 5 patch" >&2
+                else
+                  # models.ts: Opus 5 order + metadata synthesize + bare runtime.
+                  # Migrates old patched [1m] runtime; accepts already-desired ids/buildModels.
+                  run ${pkgs.python3}/bin/python3 - "$models_ts" <<'PY'
+        import sys
+        from pathlib import Path
+
+        path = Path(sys.argv[1])
+        text = path.read_text()
+
+        stock_ids = (
+            'export const MODEL_IDS_IN_ORDER = ["claude-fable-5", "claude-opus-4-8", '
+            '"claude-opus-4-7", "claude-opus-4-6", "claude-sonnet-5", '
+            '"claude-sonnet-4-6", "claude-haiku-4-5"];'
+        )
+        desired_ids = (
+            'export const MODEL_IDS_IN_ORDER = ["claude-fable-5", "claude-opus-5", '
+            '"claude-opus-4-8", "claude-opus-4-7", "claude-opus-4-6", '
+            '"claude-sonnet-5", "claude-sonnet-4-6", "claude-haiku-4-5"];'
+        )
+
+        stock_build = (
+            "export function buildModels<T extends { id: string; [key: string]: any }>(piAiModels: T[]) {\n"
+            "\treturn MODEL_IDS_IN_ORDER\n"
+            "\t\t.map((id) => piAiModels.find((m) => m.id === id))\n"
+            "\t\t.filter((m) => m != null)\n"
+        )
+        desired_build = (
+            "export function buildModels<T extends { id: string; [key: string]: any }>(piAiModels: T[]) {\n"
+            "\treturn MODEL_IDS_IN_ORDER\n"
+            "\t\t.map((id) => {\n"
+            "\t\t\tconst found = piAiModels.find((m) => m.id === id);\n"
+            "\t\t\tif (found) return found;\n"
+            "\t\t\t// pi-ai lacks Opus 5 metadata: reuse Opus 4.8 fields, override id/name.\n"
+            "\t\t\tif (id === \"claude-opus-5\") {\n"
+            "\t\t\t\tconst base = piAiModels.find((m) => m.id === \"claude-opus-4-8\");\n"
+            "\t\t\t\tif (!base) return undefined;\n"
+            "\t\t\t\treturn { ...base, id: \"claude-opus-5\", name: \"Claude Opus 5\" };\n"
+            "\t\t\t}\n"
+            "\t\t\treturn undefined;\n"
+            "\t\t})\n"
+            "\t\t.filter((m) => m != null)\n"
+        )
+
+        stock_runtime = (
+            '\t\tcase "claude-opus-4-8":\n'
+            '\t\t\treturn { cliModelId: "claude-opus-4-8[1m]", contextWindow: ONE_M_CONTEXT };'
+        )
+        old_patched_runtime = (
+            '\t\tcase "claude-opus-5":\n'
+            '\t\t\treturn { cliModelId: "claude-opus-5[1m]", contextWindow: ONE_M_CONTEXT };\n'
+            '\t\tcase "claude-opus-4-8":\n'
+            '\t\t\treturn { cliModelId: "claude-opus-4-8[1m]", contextWindow: ONE_M_CONTEXT };'
+        )
+        desired_runtime = (
+            '\t\tcase "claude-opus-5":\n'
+            '\t\t\treturn { cliModelId: "claude-opus-5", contextWindow: ONE_M_CONTEXT };\n'
+            '\t\tcase "claude-opus-4-8":\n'
+            '\t\t\treturn { cliModelId: "claude-opus-4-8[1m]", contextWindow: ONE_M_CONTEXT };'
+        )
+
+        def once(label, *variants):
+            # Longer first: stock_runtime is a suffix of old-patched/desired
+            # runtime blocks. Accept substring hits of an already-matched
+            # longer variant; reject two independent shapes.
+            matched = None
+            for v in sorted(variants, key=len, reverse=True):
+                n = text.count(v)
+                if n == 0:
+                    continue
+                if n != 1:
+                    raise SystemExit(
+                        f"pi: {path}: {label}: variant duplicated (count={n}); "
+                        f"bridge shape changed?"
+                    )
+                if matched is not None:
+                    if v in matched:
+                        continue
+                    raise SystemExit(
+                        f"pi: {path}: {label}: multiple independent shapes present; "
+                        f"bridge shape changed?"
+                    )
+                matched = v
+            if matched is None:
+                raise SystemExit(
+                    f"pi: {path}: {label}: none of stock/old-patched/desired found; "
+                    f"bridge shape changed?"
+                )
+            return matched
+
+        ids = once("model ids", stock_ids, desired_ids)
+        build = once("buildModels", stock_build, desired_build)
+        runtime = once("runtime map", stock_runtime, old_patched_runtime, desired_runtime)
+
+        # Partial desired (e.g. old [1m] runtime + desired ids) still needs migrate.
+        changed = []
+        if ids != desired_ids:
+            text = text.replace(ids, desired_ids, 1)
+            changed.append("ids")
+        if build != desired_build:
+            text = text.replace(build, desired_build, 1)
+            changed.append("buildModels")
+        if runtime != desired_runtime:
+            text = text.replace(runtime, desired_runtime, 1)
+            changed.append("runtime")
+        path.write_text(text)
+        print(
+            f"pi: patched {path} for bare claude-opus-5 "
+            f"({'+'.join(changed) or 'noop'}; CC>=2.1.219 included Max 1M, not [1m] extra)"
+        )
         PY
                 fi
       '';
