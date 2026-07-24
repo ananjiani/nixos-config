@@ -434,12 +434,13 @@ let
   );
   # Claude Agent SDK normally loads Claude Code's user, project, and local
   # settings when settingSources is omitted. pi-claude-bridge 0.6.2 ignores
-  # its settingSources config while forwarding Pi's AGENTS.md + skills, so
-  # inject the equivalent CLI flag through a dedicated executable wrapper.
-  # This keeps the bridge's programmatic prompt append while excluding
-  # ~/.claude settings/hooks, Claude filesystem instructions, project
-  # CLAUDE.md duplication, and Claude auto-memory. Managed policy and
-  # ~/.claude.json runtime/auth state still load by Agent SDK design.
+  # its settingSources config, so inject the equivalent CLI flag through a
+  # dedicated executable wrapper. A post-update activation patch replaces the
+  # bridge's Claude Code systemPrompt preset with Pi's full context.systemPrompt
+  # (AGENTS.md, skills, extension rules). Wrapper still excludes ~/.claude
+  # settings/hooks, Claude filesystem instructions, project CLAUDE.md
+  # duplication, and Claude auto-memory. Managed policy and ~/.claude.json
+  # runtime/auth state still load by Agent SDK design.
   #
   # The second wrapper hop is also required on NixOS: the SDK's bundled
   # musl/glibc binary cannot run here, while ~/.local/bin/claude points to
@@ -639,9 +640,54 @@ in
   home = {
     # Keep pi extensions current on every home switch. Network call —
     # best-effort so offline/dry-run switches still succeed.
-    activation.piUpdateExtensions = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      run ${pkgs.llm-agents.pi}/bin/pi update --extensions || echo "pi: extension update failed (offline?), skipping" >&2
-    '';
+    #
+    # piPatchClaudeBridge runs after that: pi installs pi-claude-bridge
+    # mutably under ~/.pi/agent/npm/node_modules, so each update can
+    # restore the stock Claude Code systemPrompt preset. Patch it to
+    # pass Pi's final context.systemPrompt instead.
+    activation = {
+      piUpdateExtensions = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        run ${pkgs.llm-agents.pi}/bin/pi update --extensions || echo "pi: extension update failed (offline?), skipping" >&2
+      '';
+
+      piPatchClaudeBridge = lib.hm.dag.entryAfter [ "piUpdateExtensions" ] ''
+                target="$HOME/.pi/agent/npm/node_modules/pi-claude-bridge/src/index.ts"
+                if [ ! -f "$target" ]; then
+                  echo "pi: pi-claude-bridge not installed, skipping systemPrompt patch" >&2
+                else
+                  # Exact text replace on the provider fresh-query systemPrompt block.
+                  # Idempotent: stock form is patched, already-patched form is accepted.
+                  run ${pkgs.python3}/bin/python3 - "$target" <<'PY'
+        import sys
+        from pathlib import Path
+
+        path = Path(sys.argv[1])
+        text = path.read_text()
+        old = (
+            "\t\tsystemPrompt: {\n"
+            "\t\t\ttype: \"preset\", preset: \"claude_code\",\n"
+            "\t\t\tappend: systemPromptAppend ? systemPromptAppend : undefined,\n"
+            "\t\t},"
+        )
+        new = "\t\tsystemPrompt: context.systemPrompt,"
+        # Unique to the patched fresh-query block (compact-summary already uses
+        # context.systemPrompt without a following extraArgs).
+        patched = new + "\n\t\textraArgs,"
+
+        if old in text:
+            path.write_text(text.replace(old, new, 1))
+            print(f"pi: patched {path} systemPrompt -> context.systemPrompt")
+        elif patched in text:
+            print(f"pi: {path} already patched")
+        else:
+            raise SystemExit(
+                f"pi: {path}: neither stock nor patched fresh-query "
+                f"systemPrompt block found; bridge shape changed?"
+            )
+        PY
+                fi
+      '';
+    };
 
     packages = [
       # Pi installs and updates npm-based extensions at runtime.
@@ -678,6 +724,8 @@ in
       ".pi/agent/prompts".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/prompts";
       ".pi/agent/skills".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/skills";
       ".pi/agent/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/settings.json";
+      ".pi/agent/APPEND_SYSTEM.md".source =
+        config.lib.file.mkOutOfStoreSymlink "${piUserDir}/APPEND_SYSTEM.md";
       ".pi/agent/caveman.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/caveman.json";
       ".pi/agent/subagents.json".source =
         config.lib.file.mkOutOfStoreSymlink "${piUserDir}/subagents.json";
