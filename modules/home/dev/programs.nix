@@ -73,7 +73,6 @@ in
       # inputs.opencode.packages.${pkgs.system}.default
       nodejs # for npm global packages
       gh
-      openspec
       inputs.herdr.packages.${pkgs.stdenv.hostPlatform.system}.default
       # inputs.claude-desktop.packages.${pkgs.system}.claude-desktop-with-fhs # Temporarily disabled - hash mismatch
     ];
