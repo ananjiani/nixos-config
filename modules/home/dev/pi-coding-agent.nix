@@ -646,9 +646,10 @@ in
     # mutably under ~/.pi/agent/npm/node_modules, so each update can
     # restore stock models.ts. Patch it to expose claude-opus-5 until
     # pi-ai/bridge ship it: order it before older Opus, synthesize metadata
-    # from the prior Opus entry, and map the runtime id to bare claude-opus-5.
-    # Claude Code >=2.1.219 serves bare Opus 5 through included Max usage;
-    # the [1m] suffix forces paid extra usage.
+    # from the prior Opus entry, and map the runtime id to claude-opus-5[1m].
+    # Bare Opus 5 only serves a 200K window, so pi would register 1M and
+    # compact at the real limit instead. [1m] serves the full window and stays
+    # on included Max usage (verified while extra usage is disabled).
     #
     # Keep bridge's stock Claude Code system-prompt preset. Replacing it with
     # Pi's full third-party harness prompt makes subscription-backed requests
@@ -700,7 +701,7 @@ in
                   echo "pi: pi-claude-bridge not installed, skipping Opus 5 patch" >&2
                 else
                   # models.ts: Opus 5 order + metadata synthesize + bare runtime.
-                  # Migrates old patched [1m] runtime; accepts already-desired ids/buildModels.
+                  # Migrates old patched bare runtime; accepts already-desired ids/buildModels.
                   run ${pkgs.python3}/bin/python3 - "$models_ts" <<'PY'
         import sys
         from pathlib import Path
@@ -748,13 +749,13 @@ in
         )
         old_patched_runtime = (
             '\t\tcase "claude-opus-5":\n'
-            '\t\t\treturn { cliModelId: "claude-opus-5[1m]", contextWindow: ONE_M_CONTEXT };\n'
+            '\t\t\treturn { cliModelId: "claude-opus-5", contextWindow: ONE_M_CONTEXT };\n'
             '\t\tcase "claude-opus-4-8":\n'
             '\t\t\treturn { cliModelId: "claude-opus-4-8[1m]", contextWindow: ONE_M_CONTEXT };'
         )
         desired_runtime = (
             '\t\tcase "claude-opus-5":\n'
-            '\t\t\treturn { cliModelId: "claude-opus-5", contextWindow: ONE_M_CONTEXT };\n'
+            '\t\t\treturn { cliModelId: "claude-opus-5[1m]", contextWindow: ONE_M_CONTEXT };\n'
             '\t\tcase "claude-opus-4-8":\n'
             '\t\t\treturn { cliModelId: "claude-opus-4-8[1m]", contextWindow: ONE_M_CONTEXT };'
         )
@@ -792,7 +793,7 @@ in
         build = once("buildModels", stock_build, desired_build)
         runtime = once("runtime map", stock_runtime, old_patched_runtime, desired_runtime)
 
-        # Partial desired (e.g. old [1m] runtime + desired ids) still needs migrate.
+        # Partial desired (e.g. old bare runtime + desired ids) still needs migrate.
         changed = []
         if ids != desired_ids:
             text = text.replace(ids, desired_ids, 1)
@@ -805,8 +806,8 @@ in
             changed.append("runtime")
         path.write_text(text)
         print(
-            f"pi: patched {path} for bare claude-opus-5 "
-            f"({'+'.join(changed) or 'noop'}; CC>=2.1.219 included Max 1M, not [1m] extra)"
+            f"pi: patched {path} for claude-opus-5[1m] "
+            f"({'+'.join(changed) or 'noop'}; bare Opus 5 only serves 200K)"
         )
         PY
                 fi
