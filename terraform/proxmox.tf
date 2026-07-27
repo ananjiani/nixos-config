@@ -28,7 +28,7 @@ resource "proxmox_virtual_environment_vm" "boromir" {
   }
 
   memory {
-    dedicated = 20480 # Shrunk from 28672 (only ~10GB used) to make room for aragorn
+    dedicated = 16384 # Shrunk from 20480 to make room for denethor (4GiB)
   }
 
   boot_order = ["scsi0", "ide2", "net0"]
@@ -143,6 +143,75 @@ resource "proxmox_virtual_environment_vm" "aragorn" {
       disk,
       boot_order,
       cdrom,
+    ]
+  }
+}
+
+# =============================================================================
+# Denethor - Work VM (isolated, Work VLAN 30)
+# =============================================================================
+# Employer-approved work machine. Tagged onto VLAN 30 at the NIC so it never
+# touches the homelab LAN; firewall policy lives in vlans.tf.
+# NixOS config in hosts/servers/denethor/. Not deployed via deploy-rs.
+
+resource "proxmox_virtual_environment_vm" "denethor" {
+  name      = "denethor"
+  node_name = var.proxmox_node
+  vm_id     = 106
+
+  # Create stopped and do not autostart: a Gondor reboot must not boot Denethor
+  # before VLAN 30 (OPNsense + vmbr0 + switch trunk) and the install media are
+  # ready. After a successful install, flip on_boot = true in a later tracked
+  # change. started is ignored so later tofu applies do not stop a manually
+  # started installed VM.
+  on_boot = false
+  started = false
+
+  cpu {
+    cores = 2
+    type  = "host"
+  }
+
+  memory {
+    dedicated = 4096 # Fixed (no ballooning) — freed by shrinking boromir
+  }
+
+  boot_order = ["scsi0", "ide2", "net0"]
+
+  # Root disk
+  disk {
+    datastore_id = var.proxmox_datastore
+    size         = 64
+    interface    = "scsi0"
+    file_format  = "raw"
+    iothread     = true
+  }
+
+  network_device {
+    bridge      = "vmbr0"
+    mac_address = local.mac_addresses.denethor
+    vlan_id     = var.work_vlan_tag
+  }
+
+  agent {
+    enabled = true
+  }
+
+  bios          = "seabios"
+  scsi_hardware = "virtio-scsi-single"
+
+  operating_system {
+    type = "l26"
+  }
+
+  serial_device {}
+
+  lifecycle {
+    ignore_changes = [
+      disk,
+      boot_order,
+      cdrom,
+      started, # manual start after install; do not stop on re-apply
     ]
   }
 }

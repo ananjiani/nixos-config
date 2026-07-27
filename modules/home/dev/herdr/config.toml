@@ -5,14 +5,102 @@ name = "terminal"
 
 [keys]
 prefix = "ctrl+space"
+
+# General
+help = "prefix+?"
+settings = "prefix+s"
+goto = "prefix+g"
+detach = "prefix+q"
+reload_config = "prefix+shift+r"
+open_notification_target = "prefix+o"
+toggle_sidebar = "prefix+b"
+remote_image_paste = "ctrl+v"
+
+# Workspaces
+new_workspace = "prefix+ctrl+c"
+rename_workspace = "prefix+ctrl+m"
+close_workspace = "prefix+ctrl+x"
+workspace_picker = "prefix+ctrl+w"
+previous_workspace = "prefix+ctrl+k"
+next_workspace = "prefix+ctrl+j"
+switch_workspace = "prefix+ctrl+1..9"
+
+# Worktrees
+new_worktree = "prefix+shift+g"
+open_worktree = ""
+remove_worktree = ""
+
+# Tabs
+new_tab = "prefix+shift+c"
+rename_tab = "prefix+shift+m"
+close_tab = "prefix+shift+x"
+previous_tab = "prefix+shift+p"
+next_tab = "prefix+shift+n"
+switch_tab = "prefix+shift+1..9"
+
+# Panes
+rename_pane = "prefix+m"
+edit_scrollback = "prefix+e"
 copy_mode = "prefix+y"
-previous_tab = "prefix+["
-next_tab = "prefix+]"
-previous_workspace = "prefix+alt+k"
-next_workspace = "prefix+alt+j"
-previous_agent = "prefix+alt+["
-next_agent = "prefix+alt+]"
+
+focus_pane_left = "prefix+h"
+focus_pane_down = "prefix+j"
+focus_pane_up = "prefix+k"
+focus_pane_right = "prefix+l"
+
+swap_pane_left = "prefix+shift+h"
+swap_pane_down = "prefix+shift+j"
+swap_pane_up = "prefix+shift+k"
+swap_pane_right = "prefix+shift+l"
+
+cycle_pane_previous = "prefix+p"
+cycle_pane_next = "prefix+n"
+last_pane = ""
+
+split_vertical = "prefix+v"
+split_horizontal = "prefix+minus"
+close_pane = "prefix+x"
+zoom = "prefix+z"
+resize_mode = "prefix+r"
+
+# Agents
+previous_agent = "prefix+alt+k"
+next_agent = "prefix+alt+j"
 focus_agent = "prefix+alt+1..9"
+
+# Keys used inside navigate mode
+navigate_workspace_up = "up"
+navigate_workspace_down = "down"
+navigate_pane_left = "h"
+navigate_pane_down = "j"
+navigate_pane_up = "k"
+navigate_pane_right = "l"
+
+[[keys.command]]
+key = "prefix+alt+w"
+type = "popup"
+description = "create workspace on remote host"
+width = "50%"
+height = "50%"
+command = '''
+choice="$(
+  python3 - <<'PY' | fzf --delimiter="$(printf '\t')" --with-nth=1 --prompt='Remote host> '
+import pathlib
+import tomllib
+
+config = tomllib.loads(pathlib.Path.home().joinpath('.config/herdr-mirror/hosts.toml').read_text())
+for name, host in config.get('hosts', {}).items():
+    if host.get('enabled', True):
+        print(name, host['target'], host.get('remote_bin', '~/.local/bin/herdr'), sep='\t')
+PY
+)" || exit 0
+target="$(printf '%s' "$choice" | cut -f2)"
+remote_bin="$(printf '%s' "$choice" | cut -f3)"
+if ! ssh -o BatchMode=yes "$target" "$remote_bin" workspace create --no-focus; then
+  printf '\nFailed. Press Enter to close.'
+  read -r _
+fi
+'''
 
 [ui]
 show_agent_labels_on_pane_borders = true

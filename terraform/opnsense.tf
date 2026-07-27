@@ -176,11 +176,67 @@ resource "opnsense_firewall_filter" "anti_lockout" {
   }
 }
 
+# Work VLAN access control (LAN side)
+# These must stay ahead of every LAN pass rule below: vpn_exempt_lan (7) and
+# lan_to_lan (8) would otherwise let LAN hosts into 10.30.30.0/24.
+
+# Allow SSH from the two admin hosts to the work VM. No gateway = direct
+# routing to the locally-attached Work VLAN (never WAN/Mullvad).
+resource "opnsense_firewall_filter" "lan_ssh_to_work" {
+  count       = var.work_vlan_interface_configured ? 1 : 0
+  enabled     = true
+  sequence    = 4
+  description = "Allow admin hosts SSH to Denethor"
+
+  interface = {
+    interface = ["lan"]
+  }
+
+  filter = {
+    action    = "pass"
+    direction = "in"
+    protocol  = "TCP"
+
+    source = {
+      net = opnsense_firewall_alias.work_admin_hosts[0].name
+    }
+
+    destination = {
+      net  = opnsense_firewall_alias.denethor_host[0].name
+      port = "22"
+    }
+  }
+}
+
+# Everything else on the LAN is blocked from the Work VLAN
+resource "opnsense_firewall_filter" "lan_block_work" {
+  count       = var.work_vlan_interface_configured ? 1 : 0
+  enabled     = true
+  sequence    = 5
+  description = "Block LAN to Work VLAN"
+
+  interface = {
+    interface = ["lan"]
+  }
+
+  filter = {
+    action    = "block"
+    direction = "in"
+    protocol  = "any"
+
+    destination = {
+      net = opnsense_firewall_alias.work_network[0].name
+    }
+  }
+}
+
 # VPN-exempt destinations bypass VPN (for services that block Mullvad IPs)
+# Sequences below shifted by 2 to make room for the work rules above; the
+# relative order of all pre-existing LAN rules is unchanged.
 resource "opnsense_firewall_filter" "vpn_exempt_destinations" {
   count       = var.vpn_gateway_configured ? 1 : 0
   enabled     = true
-  sequence    = 4
+  sequence    = 6
   description = "VPN exempt: Route to specific destinations via WAN"
 
   interface = {
@@ -207,7 +263,7 @@ resource "opnsense_firewall_filter" "vpn_exempt_destinations" {
 resource "opnsense_firewall_filter" "vpn_exempt_lan" {
   count       = var.vpn_gateway_configured ? 1 : 0
   enabled     = true
-  sequence    = 5
+  sequence    = 7
   description = "VPN exempt: LAN devices bypass VPN"
 
   interface = {
@@ -232,7 +288,7 @@ resource "opnsense_firewall_filter" "vpn_exempt_lan" {
 # Block IPv6 DNS to force Chromecast to use IPv4 DNS (which gets NAT redirected to AdGuard)
 resource "opnsense_firewall_filter" "block_ipv6_dns_udp" {
   enabled     = true
-  sequence    = 7
+  sequence    = 9
   description = "Block IPv6 DNS UDP (force IPv4 DNS for Chromecast)"
 
   interface = {
@@ -253,7 +309,7 @@ resource "opnsense_firewall_filter" "block_ipv6_dns_udp" {
 
 resource "opnsense_firewall_filter" "block_ipv6_dns_tcp" {
   enabled     = true
-  sequence    = 8
+  sequence    = 10
   description = "Block IPv6 DNS TCP (force IPv4 DNS for Chromecast)"
 
   interface = {
@@ -276,7 +332,7 @@ resource "opnsense_firewall_filter" "block_ipv6_dns_tcp" {
 resource "opnsense_firewall_filter" "lan_to_lan" {
   count       = var.vpn_gateway_configured ? 1 : 0
   enabled     = true
-  sequence    = 6
+  sequence    = 8
   description = "Allow LAN to local destinations (no VPN)"
 
   interface = {
@@ -300,7 +356,7 @@ resource "opnsense_firewall_filter" "lan_to_lan" {
 # When VPN gateway is configured, routes through Mullvad VPN
 resource "opnsense_firewall_filter" "lan_to_any" {
   enabled     = true
-  sequence    = 10
+  sequence    = 11
   description = var.vpn_gateway_configured ? "Allow LAN to any destination (via VPN)" : "Allow LAN to any destination"
 
   interface = {

@@ -30,6 +30,23 @@
     "vault": {
       "type": "http",
       "url": "http://100.64.0.21:8282/mcp"
+    },
+    "chrome-desktop": {
+      "command": "ssh",
+      "args": [
+        "-T",
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "ConnectTimeout=5",
+        "ammars-pc.lan",
+        "npx",
+        "-y",
+        "chrome-devtools-mcp@1.6.0",
+        "--browser-url=http://127.0.0.1:9222"
+      ],
+      "type": "stdio",
+      "lifecycle": "keep-alive"
     }
   }
 }

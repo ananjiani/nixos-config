@@ -101,11 +101,50 @@ variable "iot_interface" {
   default     = "opt1"
 }
 
+# Work VLAN (VLAN 30) - isolated employer-approved VM (denethor)
+variable "work_vlan_tag" {
+  description = "VLAN tag for Work network"
+  type        = number
+  default     = 30
+}
+
+variable "work_subnet" {
+  description = "Work network CIDR"
+  type        = string
+  default     = "10.30.30.0/24"
+}
+
+variable "work_gateway" {
+  description = "Work network gateway IP"
+  type        = string
+  default     = "10.30.30.1"
+}
+
+variable "work_dhcp_pool" {
+  description = "Work DHCP pool range"
+  type        = string
+  default     = "10.30.30.100-10.30.30.254"
+}
+
+variable "work_interface" {
+  description = "OPNsense interface name for Work VLAN (set after manual assignment)"
+  type        = string
+  default     = "opt4"
+}
+
 # Deployment control - set to true after manually configuring VLAN interfaces in OPNsense UI
 variable "vlan_interfaces_configured" {
   description = "Set to true after manually assigning VLAN interfaces in OPNsense UI"
   type        = bool
   default     = true
+}
+
+# Separate from vlan_interfaces_configured: the Work VLAN still needs manual
+# interface assignment (opt4 @ 10.30.30.1/24) and a Kea active-interface entry.
+variable "work_vlan_interface_configured" {
+  description = "Set to true after manually assigning the Work VLAN interface in OPNsense UI and adding it to Kea active interfaces"
+  type        = bool
+  default     = false
 }
 
 # =============================================================================

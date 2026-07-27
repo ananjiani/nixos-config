@@ -354,6 +354,23 @@ in
     Install.WantedBy = [ "default.target" ];
   };
 
+  # CDP (Chrome DevTools Protocol) on 127.0.0.1:9222. Loopback-only — CDP
+  # grants full browser control (tabs, cookies, filesystem access). Profile
+  # is separate from personal browser to limit blast radius.
+  systemd.user.services.brave-agent = {
+    Unit = {
+      Description = "Brave Origin browser with remote debugging for MCP";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${pkgs.brave-origin}/bin/brave-origin --remote-debugging-address=127.0.0.1 --remote-debugging-port=9222 --user-data-dir=%h/.local/share/brave-agent --no-first-run --no-default-browser-check";
+      Restart = "on-failure";
+      RestartSec = 3;
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+
   # niri output/workspace layout (mirrors the hyprland monitor/workspace block above)
   programs.niri.settings = {
     outputs = {

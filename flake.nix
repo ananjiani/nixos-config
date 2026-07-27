@@ -104,6 +104,8 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     jovian.follows = "chaotic/jovian";
+    # Hermes Agent (Tier 2 Nix support) — keep upstream pins, no follows.
+    hermes-agent.url = "github:NousResearch/hermes-agent";
   };
 
   outputs =
@@ -266,8 +268,27 @@
             ./hosts/servers/aragorn/configuration.nix
             inputs.sops-nix.nixosModules.sops
             inputs.disko.nixosModules.disko
+            inputs.hermes-agent.nixosModules.default
             # Overlays for the dev/agent home modules (servers use the HM
             # NixOS module with global pkgs, so these must be system-level)
+            {
+              nixpkgs.overlays = [
+                inputs.claude-code.overlays.default
+                inputs.llm-agents.overlays.default
+              ];
+            }
+          ];
+        };
+
+        # Denethor - Work VM (Proxmox VM on gondor, isolated Work VLAN 30)
+        # No deploy.nodes entry: the VM is not installed yet and `deploy .`
+        # must not gain a dead target.
+        denethor = lib.nixosSystem {
+          inherit system specialArgs;
+          modules = [
+            ./hosts/servers/denethor/configuration.nix
+            inputs.disko.nixosModules.disko
+            # Agent packages come from the overlays (no home-manager here)
             {
               nixpkgs.overlays = [
                 inputs.claude-code.overlays.default
@@ -449,7 +470,9 @@
                     inputs.claude-code.overlays.default
                     inputs.llm-agents.overlays.default
                     # niri-hdr: experimental HDR fork (desktop only; package unused elsewhere)
+                    # brave-origin: overlay until nixpkgs PR #511131 merges
                     (final: _prev: {
+                      brave-origin = final.callPackage ./pkgs/brave-origin/package.nix { };
                       niri-hdr = final.callPackage ./pkgs/niri-hdr/package.nix { };
                     })
                   ];
@@ -565,6 +588,7 @@
         nixos-boromir = self.nixosConfigurations.boromir.config.system.build.toplevel;
         nixos-samwise = self.nixosConfigurations.samwise.config.system.build.toplevel;
         nixos-aragorn = self.nixosConfigurations.aragorn.config.system.build.toplevel;
+        nixos-denethor = self.nixosConfigurations.denethor.config.system.build.toplevel;
         nixos-theoden = self.nixosConfigurations.theoden.config.system.build.toplevel;
         nixos-rivendell = self.nixosConfigurations.rivendell.config.system.build.toplevel;
         nixos-erebor = self.nixosConfigurations.erebor.config.system.build.toplevel;

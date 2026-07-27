@@ -206,3 +206,39 @@ data:
           meta_launch_url: https://actual.lan
           meta_icon: https://actualbudget.org/favicon.ico
           policy_engine_mode: any
+
+  collie.yaml: |
+    # Collie forward-auth (single app) via Authentik embedded outpost
+    version: 1
+    metadata:
+      name: Collie forward auth
+    entries:
+      - model: authentik_providers_proxy.proxyprovider
+        id: collie-provider
+        identifiers:
+          name: Collie
+        attrs:
+          name: Collie
+          mode: forward_single
+          external_host: https://collie.dimensiondoor.xyz
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+
+      - model: authentik_core.application
+        id: collie-app
+        identifiers:
+          slug: collie
+        attrs:
+          name: Collie
+          slug: collie
+          provider: !KeyOf collie-provider
+          meta_launch_url: https://collie.dimensiondoor.xyz
+          policy_engine_mode: any
+
+      # Own embedded outpost providers list (currently empty) with Collie only.
+      - model: authentik_outposts.outpost
+        identifiers:
+          managed: goauthentik.io/outposts/embedded
+        attrs:
+          providers:
+            - !KeyOf collie-provider
