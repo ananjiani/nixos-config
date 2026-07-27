@@ -194,6 +194,17 @@ resource "cloudflare_dns_record" "pi" {
   comment = "pi-web coding agent UI (internal) - managed by Terraform"
 }
 
+# Collie mobile UI (on aragorn, HTTPS via k8s Traefik)
+resource "cloudflare_dns_record" "collie" {
+  zone_id = local.zone_id
+  name    = "collie"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "Collie mobile UI (internal) - managed by Terraform"
+}
+
 # =============================================================================
 # Cloudflare Tunnel Services
 # =============================================================================
