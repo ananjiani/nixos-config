@@ -75,12 +75,6 @@ in
     algorithm = "zstd";
   };
 
-  zramSwap = {
-    enable = true;
-    memoryPercent = 50;
-    algorithm = "zstd";
-  };
-
   # Plain tailnet client — not routing infrastructure
   modules = {
     tailscale = {
@@ -135,7 +129,7 @@ in
       settings = {
         model = {
           provider = "openai-codex";
-          default = "gpt-5.5";
+          default = "gpt-5.6-sol";
         };
         terminal = {
           backend = "local";
