@@ -18,6 +18,12 @@
 
   networking.hostName = "aragorn";
 
+  zramSwap = {
+    enable = true;
+    memoryPercent = 50;
+    algorithm = "zstd";
+  };
+
   # Plain tailnet client — not routing infrastructure
   modules = {
     tailscale = {
