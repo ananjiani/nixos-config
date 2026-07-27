@@ -470,7 +470,9 @@
                     inputs.claude-code.overlays.default
                     inputs.llm-agents.overlays.default
                     # niri-hdr: experimental HDR fork (desktop only; package unused elsewhere)
+                    # brave-origin: overlay until nixpkgs PR #511131 merges
                     (final: _prev: {
+                      brave-origin = final.callPackage ./pkgs/brave-origin/package.nix { };
                       niri-hdr = final.callPackage ./pkgs/niri-hdr/package.nix { };
                     })
                   ];
