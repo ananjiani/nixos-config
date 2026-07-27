@@ -14,6 +14,32 @@ previous_agent = "prefix+alt+["
 next_agent = "prefix+alt+]"
 focus_agent = "prefix+alt+1..9"
 
+[[keys.command]]
+key = "prefix+alt+w"
+type = "popup"
+description = "create workspace on remote host"
+width = "50%"
+height = "50%"
+command = '''
+choice="$(
+  python3 - <<'PY' | fzf --delimiter="$(printf '\t')" --with-nth=1 --prompt='Remote host> '
+import pathlib
+import tomllib
+
+config = tomllib.loads(pathlib.Path.home().joinpath('.config/herdr-mirror/hosts.toml').read_text())
+for name, host in config.get('hosts', {}).items():
+    if host.get('enabled', True):
+        print(name, host['target'], host.get('remote_bin', '~/.local/bin/herdr'), sep='\t')
+PY
+)" || exit 0
+target="$(printf '%s' "$choice" | cut -f2)"
+remote_bin="$(printf '%s' "$choice" | cut -f3)"
+if ! ssh -o BatchMode=yes "$target" "$remote_bin" workspace create --no-focus; then
+  printf '\nFailed. Press Enter to close.'
+  read -r _
+fi
+'''
+
 [ui]
 show_agent_labels_on_pane_borders = true
 hide_tab_bar_when_single_tab = true
