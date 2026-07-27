@@ -172,6 +172,7 @@ in
 
           # Install pinned herdr-ntfysh plugin only when missing or at the wrong revision.
           installNtfyPlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+            export CGO_ENABLED=0
             export PATH="${
               lib.makeBinPath [
                 herdrPkg
