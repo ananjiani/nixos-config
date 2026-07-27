@@ -5,7 +5,7 @@
  * - web_search / web_fetch / web_fetch_jina wrap PATH CLIs
  * - repo_browse / repo_ingest wrap PATH CLIs
  * - ast_grep wraps ast-grep for structural code search
- * - Emacs Lisp writes auto-run agent-lisp-paren-aid
+ * - Emacs Lisp writes auto-run Emacs' check-parens
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
@@ -152,7 +152,22 @@ export default function workflowTools(pi: ExtensionAPI) {
 
 		const cleanPath = filePath.replace(/^@/, "");
 		const absolutePath = resolve(ctx.cwd, cleanPath);
-		const result = (await pi.exec("agent-lisp-paren-aid", [absolutePath], { signal: ctx.signal, timeout: 30_000 })) as ExecResult;
+		const checkForm = `(progn
+  (emacs-lisp-mode)
+  (condition-case err
+      (let ((inhibit-message t))
+        (check-parens)
+        (princ "ok"))
+    (error
+     (princ (format "Error: line %d: %s"
+                    (line-number-at-pos)
+                    (error-message-string err)))
+     (kill-emacs 1))))`;
+		// Insert instead of visiting the file: avoids running file-local variables.
+		const result = (await pi.exec("emacs", ["--batch", "--quick", "--insert", absolutePath, "--eval", checkForm], {
+			signal: ctx.signal,
+			timeout: 30_000,
+		})) as ExecResult;
 		const check = [result.stdout, result.stderr].filter(Boolean).join("\n").trim();
 
 		if (result.code === 0 && check === "ok") {
@@ -160,7 +175,7 @@ export default function workflowTools(pi: ExtensionAPI) {
 			return;
 		}
 
-		const message = `Elisp paren check failed for ${cleanPath}:\n${check || `agent-lisp-paren-aid exited ${result.code}`}`;
+		const message = `Elisp paren check failed for ${cleanPath}:\n${check || `Emacs exited ${result.code}`}`;
 		event.content.push({ type: "text", text: message });
 		if (ctx.hasUI) ctx.ui.notify(message, "warning");
 		return { content: event.content, isError: true, details: { ...event.details, elispParenCheck: check, elispParenCheckCode: result.code } };
