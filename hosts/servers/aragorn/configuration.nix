@@ -235,6 +235,7 @@ in
             export PATH="${
               lib.makeBinPath [
                 herdrPkg
+                pkgs.openssh
                 pkgs.jq
                 pkgs.coreutils
               ]
