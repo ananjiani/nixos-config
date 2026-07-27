@@ -24,6 +24,8 @@ let
     lanHosts.theoden
     lanHosts.rivendell
   ];
+  ntfyPluginRef = "f07462439b7dde0ac08ffe90d30661520037d561";
+  ntfyPluginId = "cobanov.herdr-ntfysh";
   herdrPkg = inputs.herdr.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
 {
@@ -119,10 +121,6 @@ in
         polarity = "dark";
       };
 
-      home.packages = [
-        pkgs.bun
-      ];
-
       xdg.configFile."herdr/plugins/config/herdr.collie/.env".text = ''
         COLLIE_PORT=${toString collieLoopbackPort}
         COLLIE_HOST=127.0.0.1
@@ -136,31 +134,69 @@ in
         COLLIE_DEVICE_ALLOWLIST=22fb6423c4bb0c1f65d8720b50cbfcfd993da9b47bd0375bd007b1051412d07f
       '';
 
-      # Install pinned Collie plugin only when missing or at the wrong revision.
-      home.activation.installColliePlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        export PATH="${
-          lib.makeBinPath [
-            herdrPkg
-            pkgs.bun
-            pkgs.git
-            pkgs.jq
-            pkgs.coreutils
-          ]
-        }:$PATH"
-        plugins_json="$HOME/.config/herdr/plugins.json"
-        want_ref="${collieRef}"
-        have_ref=""
-        if [ -f "$plugins_json" ]; then
-          have_ref="$(jq -r --arg id "${colliePluginId}" \
-            '.[] | select(.plugin_id == $id) | .source.resolved_commit // empty' \
-            "$plugins_json" 2>/dev/null || true)"
-        fi
-        if [ "$have_ref" != "$want_ref" ]; then
-          if ! run herdr plugin install AltanS/collie --ref "$want_ref" --yes; then
-            echo "warning: collie plugin install failed (GitHub/Bun); deploy continues without collie" >&2
-          fi
-        fi
+      xdg.configFile."herdr/plugins/config/cobanov.herdr-ntfysh/.env".text = ''
+        HERDR_NTFY_SERVER=https://ntfy.dimensiondoor.xyz
+        HERDR_NTFY_TOPIC=herdr
+        HERDR_NTFY_NOTIFY_ON=done,blocked
+        HERDR_NTFY_CLICK=https://collie.dimensiondoor.xyz
       '';
+
+      home = {
+        packages = [ pkgs.bun ];
+        activation = {
+          # Install pinned Collie plugin only when missing or at the wrong revision.
+          installColliePlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+            export PATH="${
+              lib.makeBinPath [
+                herdrPkg
+                pkgs.bun
+                pkgs.git
+                pkgs.jq
+                pkgs.coreutils
+              ]
+            }:$PATH"
+            plugins_json="$HOME/.config/herdr/plugins.json"
+            want_ref="${collieRef}"
+            have_ref=""
+            if [ -f "$plugins_json" ]; then
+              have_ref="$(jq -r --arg id "${colliePluginId}" \
+                '.[] | select(.plugin_id == $id) | .source.resolved_commit // empty' \
+                "$plugins_json" 2>/dev/null || true)"
+            fi
+            if [ "$have_ref" != "$want_ref" ]; then
+              if ! run herdr plugin install AltanS/collie --ref "$want_ref" --yes; then
+                echo "warning: collie plugin install failed (GitHub/Bun); deploy continues without collie" >&2
+              fi
+            fi
+          '';
+
+          # Install pinned herdr-ntfysh plugin only when missing or at the wrong revision.
+          installNtfyPlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+            export PATH="${
+              lib.makeBinPath [
+                herdrPkg
+                pkgs.go
+                pkgs.git
+                pkgs.jq
+                pkgs.coreutils
+              ]
+            }:$PATH"
+            plugins_json="$HOME/.config/herdr/plugins.json"
+            want_ref="${ntfyPluginRef}"
+            have_ref=""
+            if [ -f "$plugins_json" ]; then
+              have_ref="$(jq -r --arg id "${ntfyPluginId}" \
+                '.[] | select(.plugin_id == $id) | .source.resolved_commit // empty' \
+                "$plugins_json" 2>/dev/null || true)"
+            fi
+            if [ "$have_ref" != "$want_ref" ]; then
+              if ! run herdr plugin install cobanov/herdr-ntfysh --ref "$want_ref" --yes; then
+                echo "warning: herdr-ntfysh plugin install failed (Go build); deploy continues without ntfy" >&2
+              fi
+            fi
+          '';
+        };
+      };
 
       systemd.user = {
         services = {
