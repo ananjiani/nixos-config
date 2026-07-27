@@ -70,6 +70,7 @@
         "https://cache.garnix.io"
         "https://cache.flox.dev"
         "https://pre-commit-hooks.cachix.org"
+        "https://hermes-agent.cachix.org"
         # "https://attic.dimensiondoor.xyz/middle-earth" # Attic via Traefik (disabled until K8s routing ready)
         "http://theoden.lan:8080/middle-earth?priority=10" # Attic direct (override server priority 41 so LAN cache beats cache.nixos.org=40)
         "https://nyx-cache.chaotic.cx/"
@@ -83,6 +84,7 @@
         "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
         "flox-cache-public-1:7F4OyH7ZCnFhcze3fJdfyXYLQw/aV7GEed86nQ7IsOs="
         "pre-commit-hooks.cachix.org-1:Fh9gmh3LNW5ql37bCKCQ3UPE7AXrBVOeHLiuTJfV7Jo="
+        "hermes-agent.cachix.org-1:jN3pjR50Mxi4SESKC/FIMNM6/LCosvPk2VUwzVvebzU="
         "middle-earth:QJM6g097RUDyZA0OG00fXc7JxFMOXN3J5ZBX8j+QfFI="
         "nyx-cache.chaotic.cx:dJxTrgMC3V3cFfyIiBQDQorG6k1LsqurH/srpMSq7qk="
       ];
