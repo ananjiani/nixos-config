@@ -206,6 +206,17 @@ in
     # pi-web backend for the k8s Traefik edge (see ADR-006).
     firewall.interfaces.eno1.allowedTCPPorts = [ 31415 ];
 
+    # Mullvad routes RFC1918 through its tunnel. Keep Denethor's one allowed
+    # admin path on the LAN after every NetworkManager reconnect.
+    networkmanager.dispatcherScripts = [
+      {
+        source = pkgs.writeShellScript "denethor-route" ''
+          [ "$1" = eno1 ] && [ "$2" = up ] || exit 0
+          ip route replace 10.30.30.10/32 via 192.168.1.1 dev eno1
+        '';
+      }
+    ];
+
     # Wake-on-LAN via wakeOnLan.enable no-ops on this NIC driver (nixpkgs#415213:
     # `ethtool` stays `Wake-on: d` despite the option). Applied manually via the
     # systemd service + udev rule below instead. NIC keeps PHY powered in S3 so

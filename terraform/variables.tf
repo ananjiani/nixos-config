@@ -144,7 +144,7 @@ variable "vlan_interfaces_configured" {
 variable "work_vlan_interface_configured" {
   description = "Set to true after manually assigning the Work VLAN interface in OPNsense UI and adding it to Kea active interfaces"
   type        = bool
-  default     = false
+  default     = true
 }
 
 # =============================================================================

@@ -159,12 +159,9 @@ resource "proxmox_virtual_environment_vm" "denethor" {
   node_name = var.proxmox_node
   vm_id     = 106
 
-  # Create stopped and do not autostart: a Gondor reboot must not boot Denethor
-  # before VLAN 30 (OPNsense + vmbr0 + switch trunk) and the install media are
-  # ready. After a successful install, flip on_boot = true in a later tracked
-  # change. started is ignored so later tofu applies do not stop a manually
-  # started installed VM.
-  on_boot = false
+  # Installed after VLAN 30 was verified. Start with Gondor, but keep runtime
+  # state ignored so later tofu applies do not stop a manually controlled VM.
+  on_boot = true
   started = false
 
   cpu {
