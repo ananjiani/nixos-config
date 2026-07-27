@@ -26,6 +26,8 @@ let
   ];
   ntfyPluginRef = "f07462439b7dde0ac08ffe90d30661520037d561";
   ntfyPluginId = "cobanov.herdr-ntfysh";
+  mirrorPluginRef = "f3340d38ac4edddfd80bc7d0942b88fd457f1eab";
+  mirrorPluginId = "mirror";
   herdrPkg = inputs.herdr.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
 {
@@ -121,25 +123,38 @@ in
         polarity = "dark";
       };
 
-      xdg.configFile."herdr/plugins/config/herdr.collie/.env".text = ''
-        COLLIE_PORT=${toString collieLoopbackPort}
-        COLLIE_HOST=127.0.0.1
-        COLLIE_SKIP_SERVE=1
-        COLLIE_PUBLIC_URL=https://collie.dimensiondoor.xyz
-        COLLIE_PUBLIC_HOSTS=collie.dimensiondoor.xyz
-        COLLIE_ALLOWED_ORIGINS=https://collie.dimensiondoor.xyz
-        COLLIE_MULTI_SESSION=on
-        # Write gate only — firewall remains the read/confidentiality boundary.
-        COLLIE_DEVICE_HEADER=X-authentik-uid
-        COLLIE_DEVICE_ALLOWLIST=22fb6423c4bb0c1f65d8720b50cbfcfd993da9b47bd0375bd007b1051412d07f
-      '';
+      xdg.configFile = {
+        "herdr/plugins/config/herdr.collie/.env".text = ''
+          COLLIE_PORT=${toString collieLoopbackPort}
+          COLLIE_HOST=127.0.0.1
+          COLLIE_SKIP_SERVE=1
+          COLLIE_PUBLIC_URL=https://collie.dimensiondoor.xyz
+          COLLIE_PUBLIC_HOSTS=collie.dimensiondoor.xyz
+          COLLIE_ALLOWED_ORIGINS=https://collie.dimensiondoor.xyz
+          COLLIE_MULTI_SESSION=on
+          # Write gate only — firewall remains the read/confidentiality boundary.
+          COLLIE_DEVICE_HEADER=X-authentik-uid
+          COLLIE_DEVICE_ALLOWLIST=22fb6423c4bb0c1f65d8720b50cbfcfd993da9b47bd0375bd007b1051412d07f
+        '';
 
-      xdg.configFile."herdr/plugins/config/cobanov.herdr-ntfysh/.env".text = ''
-        HERDR_NTFY_SERVER=https://ntfy.dimensiondoor.xyz
-        HERDR_NTFY_TOPIC=herdr
-        HERDR_NTFY_NOTIFY_ON=done,blocked
-        HERDR_NTFY_CLICK=https://collie.dimensiondoor.xyz
-      '';
+        "herdr/plugins/config/cobanov.herdr-ntfysh/.env".text = ''
+          HERDR_NTFY_SERVER=https://ntfy.dimensiondoor.xyz
+          HERDR_NTFY_TOPIC=herdr
+          HERDR_NTFY_NOTIFY_ON=done,blocked
+          HERDR_NTFY_CLICK=https://collie.dimensiondoor.xyz
+        '';
+
+        "herdr-mirror/hosts.toml".text = ''
+          autostart = true
+          close_remote_on_local_close = false
+          always_control = false
+
+          [hosts.desktop]
+          target = "ammars-pc.lan"
+          prefix = "desktop"
+          remote_bin = "/home/ammar/.nix-profile/bin/herdr"
+        '';
+      };
 
       home = {
         packages = [ pkgs.bun ];
@@ -194,6 +209,39 @@ in
               if ! run herdr plugin install cobanov/herdr-ntfysh --ref "$want_ref" --yes; then
                 echo "warning: herdr-ntfysh plugin install failed (Go build); deploy continues without ntfy" >&2
               fi
+            fi
+          '';
+
+          # Install pinned herdr-mirror plugin only when missing or at the wrong revision.
+          installMirrorPlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+            export PATH="${
+              lib.makeBinPath [
+                herdrPkg
+                pkgs.bash
+                pkgs.git
+                pkgs.curl
+                pkgs.coreutils
+                pkgs.gnused
+                pkgs.gnugrep
+                pkgs.jq
+              ]
+            }:$PATH"
+            plugins_json="$HOME/.config/herdr/plugins.json"
+            want_ref="${mirrorPluginRef}"
+            have_ref=""
+            if [ -f "$plugins_json" ]; then
+              have_ref="$(jq -r --arg id "${mirrorPluginId}" \
+                '.[] | select(.plugin_id == $id) | .source.resolved_commit // empty' \
+                "$plugins_json" 2>/dev/null || true)"
+            fi
+            if [ "$have_ref" != "$want_ref" ]; then
+              if ! run herdr plugin install nikok6/herdr-mirror --ref "$want_ref" --yes; then
+                echo "warning: herdr-mirror plugin install failed; deploy continues without mirror" >&2
+              fi
+            fi
+            # Reload server config if Herdr is running so mirror is picked up.
+            if herdr status server >/dev/null 2>&1; then
+              herdr server reload-config 2>/dev/null || echo "warning: herdr server reload-config failed" >&2
             fi
           '';
         };
