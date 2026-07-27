@@ -104,6 +104,8 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     jovian.follows = "chaotic/jovian";
+    # Hermes Agent (Tier 2 Nix support) — keep upstream pins, no follows.
+    hermes-agent.url = "github:NousResearch/hermes-agent";
   };
 
   outputs =
@@ -266,6 +268,7 @@
             ./hosts/servers/aragorn/configuration.nix
             inputs.sops-nix.nixosModules.sops
             inputs.disko.nixosModules.disko
+            inputs.hermes-agent.nixosModules.default
             # Overlays for the dev/agent home modules (servers use the HM
             # NixOS module with global pkgs, so these must be system-level)
             {
