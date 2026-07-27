@@ -26,8 +26,26 @@ let
   ];
   ntfyPluginRef = "f07462439b7dde0ac08ffe90d30661520037d561";
   ntfyPluginId = "cobanov.herdr-ntfysh";
-  mirrorPluginRef = "f3340d38ac4edddfd80bc7d0942b88fd457f1eab";
   mirrorPluginId = "mirror";
+  # Fully pin herdr-mirror source + prebuilt binary so activation never
+  # downloads mutable GitHub release assets at deploy time.
+  mirrorPluginSrc = pkgs.fetchFromGitHub {
+    owner = "nikok6";
+    repo = "herdr-mirror";
+    rev = "f3340d38ac4edddfd80bc7d0942b88fd457f1eab";
+    hash = "sha256-Qd805gn4pFGLUHB9d1b+wa9GmS7/StrUpQWBQNbUahs=";
+  };
+  mirrorPluginBin = pkgs.fetchurl {
+    url = "https://github.com/nikok6/herdr-mirror/releases/download/v0.1.13/herdr-mirror-linux-x86_64";
+    hash = "sha256-fewx/Voe4yEp89KtBGPcxsvQ7usBSIOpBAPSR39pQKU=";
+  };
+  mirrorPluginRoot = pkgs.runCommand "herdr-mirror-plugin" { } ''
+    mkdir -p $out
+    cp -a ${mirrorPluginSrc}/. $out/
+    chmod -R u+w $out
+    mkdir -p $out/target/release
+    install -m 755 ${mirrorPluginBin} $out/target/release/herdr-mirror
+  '';
   herdrPkg = inputs.herdr.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
 {
@@ -212,35 +230,57 @@ in
             fi
           '';
 
-          # Install pinned herdr-mirror plugin only when missing or at the wrong revision.
+          # Link Nix-pinned herdr-mirror plugin tree when plugin_root drifts.
           installMirrorPlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
             export PATH="${
               lib.makeBinPath [
                 herdrPkg
-                pkgs.bash
-                pkgs.git
-                pkgs.curl
-                pkgs.coreutils
-                pkgs.gnused
-                pkgs.gnugrep
                 pkgs.jq
+                pkgs.coreutils
               ]
             }:$PATH"
             plugins_json="$HOME/.config/herdr/plugins.json"
-            want_ref="${mirrorPluginRef}"
-            have_ref=""
+            want_root="${mirrorPluginRoot}"
+            have_root=""
             if [ -f "$plugins_json" ]; then
-              have_ref="$(jq -r --arg id "${mirrorPluginId}" \
-                '.[] | select(.plugin_id == $id) | .source.resolved_commit // empty' \
+              have_root="$(jq -r --arg id "${mirrorPluginId}" \
+                '.[] | select(.plugin_id == $id) | .plugin_root // empty' \
                 "$plugins_json" 2>/dev/null || true)"
             fi
-            if [ "$have_ref" != "$want_ref" ]; then
-              if ! run herdr plugin install nikok6/herdr-mirror --ref "$want_ref" --yes; then
-                echo "warning: herdr-mirror plugin install failed; deploy continues without mirror" >&2
+            if [ "$have_root" != "$want_root" ]; then
+              # Pause daemon first so mirrors/remote sessions stay open across relink.
+              if [ -n "$have_root" ] && [ -x "$have_root/target/release/herdr-mirror" ]; then
+                run "$have_root/target/release/herdr-mirror" pause 2>/dev/null || true
               fi
-            fi
-            # Reload server config if Herdr is running so mirror is picked up.
-            if herdr status server >/dev/null 2>&1; then
+              if [ -n "$have_root" ]; then
+                kind="$(jq -r --arg id "${mirrorPluginId}" \
+                  '.[] | select(.plugin_id == $id) | .source.kind // empty' \
+                  "$plugins_json" 2>/dev/null || true)"
+                case "$kind" in
+                  github)
+                    run herdr plugin uninstall "${mirrorPluginId}" 2>/dev/null || true
+                    ;;
+                  *)
+                    # Local link (or unknown): unlink first, fall back to uninstall.
+                    if ! run herdr plugin unlink "${mirrorPluginId}" 2>/dev/null; then
+                      run herdr plugin uninstall "${mirrorPluginId}" 2>/dev/null || true
+                    fi
+                    ;;
+                esac
+              fi
+              if ! run herdr plugin link "$want_root"; then
+                echo "warning: herdr-mirror plugin link failed; deploy continues without mirror" >&2
+              else
+                # Reload then resume daemon with the new pinned binary.
+                if herdr status server >/dev/null 2>&1; then
+                  herdr server reload-config 2>/dev/null || echo "warning: herdr server reload-config failed" >&2
+                  if [ -x "$want_root/target/release/herdr-mirror" ]; then
+                    run "$want_root/target/release/herdr-mirror" start 2>/dev/null \
+                      || echo "warning: herdr-mirror start failed after relink" >&2
+                  fi
+                fi
+              fi
+            elif herdr status server >/dev/null 2>&1; then
               herdr server reload-config 2>/dev/null || echo "warning: herdr server reload-config failed" >&2
             fi
           '';
