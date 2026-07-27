@@ -280,6 +280,24 @@
           ];
         };
 
+        # Denethor - Work VM (Proxmox VM on gondor, isolated Work VLAN 30)
+        # No deploy.nodes entry: the VM is not installed yet and `deploy .`
+        # must not gain a dead target.
+        denethor = lib.nixosSystem {
+          inherit system specialArgs;
+          modules = [
+            ./hosts/servers/denethor/configuration.nix
+            inputs.disko.nixosModules.disko
+            # Agent packages come from the overlays (no home-manager here)
+            {
+              nixpkgs.overlays = [
+                inputs.claude-code.overlays.default
+                inputs.llm-agents.overlays.default
+              ];
+            }
+          ];
+        };
+
         # Theoden - k3s Server + CI/CD (Proxmox VM on rohan)
         theoden = lib.nixosSystem {
           inherit system specialArgs;
@@ -568,6 +586,7 @@
         nixos-boromir = self.nixosConfigurations.boromir.config.system.build.toplevel;
         nixos-samwise = self.nixosConfigurations.samwise.config.system.build.toplevel;
         nixos-aragorn = self.nixosConfigurations.aragorn.config.system.build.toplevel;
+        nixos-denethor = self.nixosConfigurations.denethor.config.system.build.toplevel;
         nixos-theoden = self.nixosConfigurations.theoden.config.system.build.toplevel;
         nixos-rivendell = self.nixosConfigurations.rivendell.config.system.build.toplevel;
         nixos-erebor = self.nixosConfigurations.erebor.config.system.build.toplevel;

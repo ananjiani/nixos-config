@@ -19,6 +19,9 @@
   theoden = "192.168.1.27";
   aragorn = "192.168.1.28";
   rivendell = "192.168.1.29";
+  # Work VM on the isolated Work VLAN 30 (reachable from LAN over SSH only,
+  # from ammars-pc and aragorn — see terraform/vlans.tf)
+  denethor = "10.30.30.10";
   ammars-pc = "192.168.1.50";
   steamdeck = "192.168.1.110";
 }

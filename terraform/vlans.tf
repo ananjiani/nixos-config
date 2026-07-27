@@ -6,10 +6,17 @@
 # 1. Interfaces > Assignments: Add VLAN interfaces and assign IPs
 #    - Guest: 10.10.10.1/24
 #    - IoT: 10.20.20.1/24
-# 2. Services > Kea DHCPv4 > Settings: Add Guest/IoT to "Active Interfaces"
+#    - Work: 10.30.30.1/24 (then set work_vlan_interface_configured = true)
+#      Work/opt4 IPv6 Configuration Type = None
+# 2. Services > Kea DHCPv4 > Settings: Add Guest/IoT/Work to "Active Interfaces"
 # 3. Services > mDNS Repeater (for Chromecast discovery from Guest network):
 #    - Enable: checked
 #    - Interfaces: select LAN and Guest
+# 4. Firewall > NAT > Outbound: verify automatic/hybrid WAN outbound NAT covers 10.30.30.0/24
+# 5. Firewall > Rules / DNS redirect: verify manual DNS redirect rules do NOT include Work/opt4
+# 6. Before first Denethor boot:
+#    - Gondor vmbr0: VLAN-aware + VID 30 tagged
+#    - Switch trunk: VID 30 tagged toward Gondor
 
 # =============================================================================
 # VLAN Interfaces
@@ -31,6 +38,13 @@ resource "opnsense_interfaces_vlan" "iot" {
   description = "IoT Network"
 }
 
+resource "opnsense_interfaces_vlan" "work" {
+  parent      = var.vlan_parent_interface
+  tag         = var.work_vlan_tag
+  priority    = 0
+  description = "Work Network"
+}
+
 # =============================================================================
 # Firewall Aliases
 # =============================================================================
@@ -50,6 +64,49 @@ resource "opnsense_firewall_alias" "iot_network" {
   type        = "network"
   description = "IoT VLAN subnet"
   content     = [var.iot_subnet]
+}
+
+resource "opnsense_firewall_alias" "work_network" {
+  count       = var.work_vlan_interface_configured ? 1 : 0
+  name        = "work_network"
+  type        = "network"
+  description = "Work VLAN subnet"
+  content     = [var.work_subnet]
+}
+
+resource "opnsense_firewall_alias" "denethor_host" {
+  count       = var.work_vlan_interface_configured ? 1 : 0
+  name        = "denethor"
+  type        = "host"
+  description = "Denethor work VM"
+  content     = ["10.30.30.10"]
+}
+
+# Only these two LAN hosts may reach the work VM (SSH admin access).
+resource "opnsense_firewall_alias" "work_admin_hosts" {
+  count       = var.work_vlan_interface_configured ? 1 : 0
+  name        = "work_admin_hosts"
+  type        = "host"
+  description = "LAN hosts allowed to SSH into the work VM"
+  content = [
+    "192.168.1.50", # ammars-pc
+    "192.168.1.28", # aragorn
+  ]
+}
+
+# Superset of rfc1918 plus Tailscale's CGNAT range — the work VM must not
+# reach the homelab LAN, the other VLANs, or anything on the tailnet.
+resource "opnsense_firewall_alias" "work_blocked_networks" {
+  count       = var.work_vlan_interface_configured ? 1 : 0
+  name        = "work_blocked_networks"
+  type        = "network"
+  description = "Private + Tailscale CGNAT ranges blocked from the Work VLAN"
+  content = [
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16",
+    "100.64.0.0/10",
+  ]
 }
 
 resource "opnsense_firewall_alias" "chromecast_ips" {
@@ -240,6 +297,28 @@ resource "opnsense_firewall_filter" "guest_block_iot" {
   }
 }
 
+# Block Guest -> Work (only when both Guest and Work aliases exist)
+resource "opnsense_firewall_filter" "guest_block_work" {
+  count       = var.vlan_interfaces_configured && var.work_vlan_interface_configured ? 1 : 0
+  enabled     = true
+  sequence    = 112
+  description = "Block Guest to Work"
+
+  interface = {
+    interface = [var.guest_interface]
+  }
+
+  filter = {
+    action    = "block"
+    direction = "in"
+    protocol  = "any"
+
+    destination = {
+      net = opnsense_firewall_alias.work_network[0].name
+    }
+  }
+}
+
 # Allow Guest -> Internet
 # When VPN gateway is configured, routes through Mullvad VPN
 resource "opnsense_firewall_filter" "guest_to_internet" {
@@ -380,6 +459,28 @@ resource "opnsense_firewall_filter" "iot_block_guest" {
   }
 }
 
+# Block IoT -> Work (only when both IoT and Work aliases exist)
+resource "opnsense_firewall_filter" "iot_block_work" {
+  count       = var.vlan_interfaces_configured && var.work_vlan_interface_configured ? 1 : 0
+  enabled     = true
+  sequence    = 212
+  description = "Block IoT to Work"
+
+  interface = {
+    interface = [var.iot_interface]
+  }
+
+  filter = {
+    action    = "block"
+    direction = "in"
+    protocol  = "any"
+
+    destination = {
+      net = opnsense_firewall_alias.work_network[0].name
+    }
+  }
+}
+
 # Allow IoT -> Internet
 resource "opnsense_firewall_filter" "iot_to_internet" {
   count       = var.vlan_interfaces_configured ? 1 : 0
@@ -395,6 +496,101 @@ resource "opnsense_firewall_filter" "iot_to_internet" {
     action    = "pass"
     direction = "in"
     protocol  = "any"
+  }
+}
+
+# =============================================================================
+# Work VLAN Firewall Rules (Sequence 300-399)
+# =============================================================================
+# Router DHCP only (no DNS to the router — OPNsense Unbound is stopped, so
+# 10.30.30.1:53 is dead). Hosts use public Quad9; DNS egress rides the
+# direct-WAN internet rule below. Everything private is blocked, then internet
+# via the WAN gateway — never the Mullvad gateway, so corporate VPN and SAML
+# MFA see a normal residential IP.
+
+# Allow Work to access router for DHCP
+resource "opnsense_firewall_filter" "work_to_router_dhcp" {
+  count       = var.work_vlan_interface_configured ? 1 : 0
+  enabled     = true
+  sequence    = 300
+  description = "Allow Work DHCP"
+
+  interface = {
+    interface = [var.work_interface]
+  }
+
+  filter = {
+    action    = "pass"
+    direction = "in"
+    protocol  = "UDP"
+
+    destination = {
+      net  = "(self)"
+      port = "67-68"
+    }
+  }
+}
+
+# Block Work -> LAN / Guest / IoT / Tailscale (everything private)
+resource "opnsense_firewall_filter" "work_block_private" {
+  count       = var.work_vlan_interface_configured ? 1 : 0
+  enabled     = true
+  sequence    = 310
+  description = "Block Work to private networks"
+
+  interface = {
+    interface = [var.work_interface]
+  }
+
+  filter = {
+    action    = "block"
+    direction = "in"
+    protocol  = "any"
+
+    destination = {
+      net = opnsense_firewall_alias.work_blocked_networks[0].name
+    }
+  }
+}
+
+# Block all IPv6 on Work (host also disables IPv6; this hardens the boundary)
+resource "opnsense_firewall_filter" "work_block_ipv6" {
+  count       = var.work_vlan_interface_configured ? 1 : 0
+  enabled     = true
+  sequence    = 311
+  description = "Block Work IPv6"
+
+  interface = {
+    interface = [var.work_interface]
+  }
+
+  filter = {
+    action      = "block"
+    direction   = "in"
+    ip_protocol = "inet6"
+    protocol    = "any"
+  }
+}
+
+# Allow Work -> Internet, pinned to the WAN gateway (never Mullvad)
+resource "opnsense_firewall_filter" "work_to_internet" {
+  count       = var.work_vlan_interface_configured ? 1 : 0
+  enabled     = true
+  sequence    = 390
+  description = "Allow Work to Internet (direct WAN)"
+
+  interface = {
+    interface = [var.work_interface]
+  }
+
+  filter = {
+    action    = "pass"
+    direction = "in"
+    protocol  = "any"
+  }
+
+  source_routing = {
+    gateway = var.wan_gateway_name
   }
 }
 
@@ -418,4 +614,24 @@ resource "opnsense_kea_subnet" "iot" {
   pools       = [var.iot_dhcp_pool]
   routers     = [var.iot_gateway]
   dns_servers = [var.iot_gateway]
+}
+
+resource "opnsense_kea_subnet" "work" {
+  count       = var.work_vlan_interface_configured ? 1 : 0
+  subnet      = var.work_subnet
+  description = "Work VLAN DHCP"
+  pools       = [var.work_dhcp_pool]
+  routers     = [var.work_gateway]
+  # Public Quad9 only — router DNS is dead (Unbound stopped). Matches
+  # hosts/servers/denethor nameservers. Egress via work_to_internet WAN rule.
+  dns_servers = ["9.9.9.9", "149.112.112.112"]
+}
+
+resource "opnsense_kea_reservation" "denethor" {
+  count       = var.work_vlan_interface_configured ? 1 : 0
+  subnet_id   = opnsense_kea_subnet.work[0].id
+  ip_address  = "10.30.30.10"
+  mac_address = local.mac_addresses.denethor
+  hostname    = "denethor"
+  description = "Work VM (Proxmox VM on gondor)"
 }
