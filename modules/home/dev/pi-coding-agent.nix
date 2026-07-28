@@ -979,6 +979,7 @@ in
           # Denethor's LightDM autologin desktop. Keep an explicit DISPLAY
           # (for example SSH forwarding) when the caller already supplied one.
           export DISPLAY="''${DISPLAY:-:0}"
+          export CUA_TELEMETRY_ENABLED=false
         ''}
         exec ${pkgs.llm-agents.pi}/bin/pi "$@"
       '')
