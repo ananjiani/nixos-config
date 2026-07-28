@@ -392,9 +392,47 @@ let
     '') homelabExtensionFiles}
   '';
 
+  # Desktop control package (@amaster.ai/pi-computer-use). Built from npm
+  # tarball + staged lockfile; host-gated via computerUse.enable. Full
+  # logged-in desktop access — enable only on hosts that should expose it
+  # (currently Denethor).
+  piComputerUse = pkgs.buildNpmPackage {
+    pname = "pi-computer-use";
+    version = "0.1.6";
+    src = pkgs.fetchurl {
+      url = "https://registry.npmjs.org/@amaster.ai/pi-computer-use/-/pi-computer-use-0.1.6.tgz";
+      hash = "sha512-C3hUzx86nT10DXC97be5hpb0UeopTxgvEomBj4riEPMZ46USyLIXYli4CCHpWg0bLpPPdRAYxUldu67zJoAx7g==";
+    };
+    postPatch = ''
+      ${pkgs.jq}/bin/jq 'del(.devDependencies)' package.json > package.json.new
+      mv package.json.new package.json
+      cp ${./pi-coding-agent/pi-computer-use-package-lock.json} package-lock.json
+    '';
+    npmDepsHash = "sha256-nVtNkAuZgIJAgrnBp5GxPmrYqIdS7qtwkzcm4nyEbA8=";
+    npmFlags = [ "--legacy-peer-deps" ];
+    dontNpmBuild = true;
+    nativeBuildInputs = [ pkgs.autoPatchelfHook ];
+    buildInputs = [
+      pkgs.libx11
+      pkgs.libxi
+      pkgs.libxkbcommon
+      pkgs.stdenv.cc.cc.lib
+    ];
+    postInstall = ''
+      rm -rf $out/lib/node_modules/@amaster.ai/pi-computer-use/bin/darwin-universal
+      rm -rf $out/lib/node_modules/@amaster.ai/pi-computer-use/bin/win32-x64
+      rm -rf $out/lib/node_modules/@amaster.ai/pi-computer-use/bin/win32-arm64
+      rm -rf $out/lib/node_modules/@amaster.ai/pi-computer-use/bin/linux-arm64
+    '';
+  };
+  piComputerUseRoot = "${piComputerUse}/lib/node_modules/@amaster.ai/pi-computer-use";
+
   # Denethor-safe settings: same tracked settings.json, but drop enabledModels
   # whose provider prefix is a homelab secret backend. OAuth models stay.
   # Immutable store path — /settings is repo-managed on isolated hosts.
+  # When computerUse.enable, append the store package path. The package asks
+  # before launching apps and six high-risk actions. Screen reads, clicks,
+  # typing, and browser driving remain intentionally available without prompts.
   piSettingsSafe =
     let
       raw = builtins.fromJSON (builtins.readFile ./pi-coding-agent/settings.json);
@@ -410,6 +448,14 @@ let
         raw
         // {
           enabledModels = builtins.filter (m: !isBlocked m) raw.enabledModels;
+          packages = raw.packages ++ lib.optionals cfg.computerUse.enable [ piComputerUseRoot ];
+        }
+        // lib.optionalAttrs cfg.computerUse.enable {
+          "pi-computer-use" = {
+            mode = "bundled";
+            confirmAppLaunch = true;
+            confirmDangerousActions = true;
+          };
         }
       )
     );
@@ -722,6 +768,10 @@ in
         lib/ remain. Set false on isolated hosts (e.g. Denethor).
       '';
     };
+
+    # Host-specific: full logged-in desktop access via Cua Driver. Only enable
+    # on machines that should expose the session to Pi (e.g. Denethor work VM).
+    computerUse.enable = lib.mkEnableOption "Pi desktop control through Cua Driver";
   };
 
   # numtide/llm-agents.nix's default overlay namespaces everything under
@@ -925,6 +975,11 @@ in
       # Thin wrapper around pkgs.llm-agents.pi so we can inject flags
       # or wrap it differently in the future.
       (pkgs.writeShellScriptBin "pi" ''
+        ${lib.optionalString cfg.computerUse.enable ''
+          # Denethor's LightDM autologin desktop. Keep an explicit DISPLAY
+          # (for example SSH forwarding) when the caller already supplied one.
+          export DISPLAY="''${DISPLAY:-:0}"
+        ''}
         exec ${pkgs.llm-agents.pi}/bin/pi "$@"
       '')
       webSearch

@@ -151,6 +151,9 @@
       user = "ammar";
     };
     getty.autologinUser = "ammar";
+
+    # a11y bus for Pi computer-use / Cua Driver UI automation.
+    gnome.at-spi2-core.enable = true;
   };
 
   programs.mosh.enable = lib.mkForce false;
@@ -182,6 +185,7 @@
           searxngUrl = null;
           homelabProviders.enable = false; # empty models + immutable safe settings
           homelabExtensions.enable = false; # drop nvidia-nim + usage-tracker
+          computerUse.enable = true; # Cua Driver desktop control (host-only)
         };
         claudeCode.homelabBackends.enable = false;
         # null = no install and no uninstall (do not use [] — that cleans up)
