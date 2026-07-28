@@ -7,15 +7,20 @@
 # policy route) so Cisco AnyConnect and its SAML MFA flow see a normal
 # residential IP.
 #
-# Only the base profile (SSH/nix/locale) and the NetworkManager OpenConnect
-# module are shared with the rest of the fleet.
+# Only the base profile (SSH/nix/locale), the NetworkManager OpenConnect
+# module, and the portable HM profiles (essentials + dev) are shared.
+# Homelab overlays (sops, tea, Collie/ntfy/mirror Herdr plugins, vault-agent)
+# must never land here.
 #
-# WARNING: `nh home switch` is intentionally unsupported until a
-# denethor-specific homeConfiguration exists. Do not add one casually —
-# this host must stay free of homelab HM modules (secrets, LAN CA, etc.).
+# WARNING: embedded portable Home Manager (essentials + dev) is supported.
+# Standalone `nh home switch` / homeConfiguration remains unsupported — do
+# not add one casually; this host must stay free of homelab HM modules
+# (secrets, LAN CA, Tailscale, Collie, etc.).
 {
   lib,
   pkgs,
+  inputs,
+  pkgs-stable,
   ...
 }:
 
@@ -24,6 +29,7 @@
     ../../_profiles/server/proxmox-disk-config.nix
     ../../_profiles/base.nix
     ../../../modules/nixos/openconnect.nix
+    inputs.home-manager-unstable.nixosModules.home-manager
   ];
 
   networking = {
@@ -152,11 +158,38 @@
   environment.systemPackages = with pkgs; [
     microsoft-edge # corporate SSO / Azure DevOps web
     (azure-cli.withExtensions [ azure-cli.extensions.azure-devops ])
-    # Upstream agent packages, OAuth login only — no homelab wrapper modules
-    # (those reference /run/secrets and searxng.lan).
-    claude-code
-    llm-agents.pi
   ];
+
+  # Portable embedded HM only — essentials + dev. No server profile, no sops,
+  # no tea, no homelab Herdr plugins. Homelab Claude backends + Pi secret
+  # providers/extensions + searxng.lan + npm management are all off. Pi
+  # settings/extensions become immutable filtered store paths here; other
+  # Pi/Herdr paths still need a ~/.dotfiles checkout (encrypted secret files
+  # may be present but are not decrypted here).
+  home-manager = {
+    useGlobalPkgs = true;
+    useUserPackages = true;
+    backupFileExtension = "hm-bak";
+    extraSpecialArgs = { inherit inputs pkgs-stable; };
+    users.ammar =
+      { lib, ... }:
+      {
+        imports = [
+          ../../_profiles/essentials/home.nix
+          ../../_profiles/dev/home.nix
+        ];
+        piCodingAgent = {
+          searxngUrl = null;
+          homelabProviders.enable = false; # empty models + immutable safe settings
+          homelabExtensions.enable = false; # drop nvidia-nim + usage-tracker
+        };
+        claudeCode.homelabBackends.enable = false;
+        # null = no install and no uninstall (do not use [] — that cleans up)
+        devPrograms.npmGlobalPackages = null;
+        # Memory-only git credentials; personal identity residual risk retained
+        programs.git.settings.credential.helper = lib.mkForce "cache --timeout=3600";
+      };
+  };
 
   system.stateVersion = "25.11";
 }

@@ -288,7 +288,7 @@
           modules = [
             ./hosts/servers/denethor/configuration.nix
             inputs.disko.nixosModules.disko
-            # Agent packages come from the overlays (no home-manager here)
+            # Overlays for agent packages; portable HM is embedded in the host module
             {
               nixpkgs.overlays = [
                 inputs.claude-code.overlays.default

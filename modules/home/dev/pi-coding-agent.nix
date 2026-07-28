@@ -6,6 +6,8 @@
 }:
 
 let
+  cfg = config.piCodingAgent;
+
   # Absolute path to the user-editable pi resources dir in the working
   # tree. Hardcoded to ~/.dotfiles — the canonical checkout location this
   # repo assumes elsewhere (e.g. vault-agent bootstrap). Each subdirectory
@@ -78,30 +80,45 @@ let
   # bodies. If higher-quality search becomes load-bearing, add a
   # `web-search-brave` wrapping Mario's pi-skills/brave-search.
 
-  webSearch = pkgs.writeShellApplication {
-    name = "web-search";
-    runtimeInputs = with pkgs; [
-      curl
-      jq
-    ];
-    text = ''
-      # Usage: web-search <query...>
-      #
-      # Queries the self-hosted SearXNG at searxng.lan and prints the
-      # top 10 results as markdown-ish plain text (title, URL, snippet).
-      # For reading a specific URL use `web-fetch`.
-      if [ $# -eq 0 ]; then
-        echo "usage: web-search <query...>" >&2
-        exit 1
-      fi
-      query=$(printf '%s' "$*" | jq -sRr @uri)
-      # -k: searxng.lan has a self-signed cert (same reason mcp-searxng
-      # sets NODE_TLS_REJECT_UNAUTHORIZED=0 in claude-code.nix).
-      curl -fsSLk --max-time 15 \
-        "https://searxng.lan/search?q=''${query}&format=json&safesearch=0" \
-        | jq -r '.results[:10] | .[] | "## \(.title)\n\(.url)\n\(.content // "")\n"'
-    '';
-  };
+  # Endpoint is an option so portable/isolated hosts (e.g. Denethor) can
+  # set null and keep searxng.lan out of the store path entirely.
+  webSearch =
+    if cfg.searxngUrl == null then
+      pkgs.writeShellApplication {
+        name = "web-search";
+        text = ''
+          # Usage: web-search <query...>
+          #
+          # SearXNG endpoint not configured on this host (piCodingAgent.searxngUrl = null).
+          echo "web-search: not configured (piCodingAgent.searxngUrl is null)" >&2
+          exit 1
+        '';
+      }
+    else
+      pkgs.writeShellApplication {
+        name = "web-search";
+        runtimeInputs = with pkgs; [
+          curl
+          jq
+        ];
+        text = ''
+          # Usage: web-search <query...>
+          #
+          # Queries the self-hosted SearXNG at searxng.lan and prints the
+          # top 10 results as markdown-ish plain text (title, URL, snippet).
+          # For reading a specific URL use `web-fetch`.
+          if [ $# -eq 0 ]; then
+            echo "usage: web-search <query...>" >&2
+            exit 1
+          fi
+          query=$(printf '%s' "$*" | jq -sRr @uri)
+          # -k: searxng.lan has a self-signed cert (same reason mcp-searxng
+          # sets NODE_TLS_REJECT_UNAUTHORIZED=0 in claude-code.nix).
+          curl -fsSLk --max-time 15 \
+            "${cfg.searxngUrl}/search?q=''${query}&format=json&safesearch=0" \
+            | jq -r '.results[:10] | .[] | "## \(.title)\n\(.url)\n\(.content // "")\n"'
+        '';
+      };
 
   # Two separate tools, model decides which to use. Local extraction is
   # private (URL stays on-box, only the curl request leaves, routed
@@ -355,81 +372,130 @@ let
     '';
   };
 
+  # Homelab-secret-backed extensions (vault-agent / LAN). Filtered out of
+  # the store-path extensions dir when homelabExtensions.enable = false.
+  homelabExtensionFiles = [
+    "nvidia-nim.ts"
+    "usage-tracker.ts"
+  ];
+
+  # Immutable filtered extensions: every file from the tracked tree except
+  # the homelab-secret ones above. lib/ stays intact. Used only when
+  # homelabExtensions.enable = false; default true keeps the out-of-store
+  # whole-directory symlink for Aragorn/workstations.
+  piExtensionsFiltered = pkgs.runCommand "pi-extensions-filtered" { } ''
+    mkdir -p "$out"
+    cp -a ${./pi-coding-agent/extensions}/. "$out/"
+    chmod -R u+w "$out"
+    ${lib.concatMapStrings (f: ''
+      rm -f "$out/${f}"
+    '') homelabExtensionFiles}
+  '';
+
+  # Denethor-safe settings: same tracked settings.json, but drop enabledModels
+  # whose provider prefix is a homelab secret backend. OAuth models stay.
+  # Immutable store path — /settings is repo-managed on isolated hosts.
+  piSettingsSafe =
+    let
+      raw = builtins.fromJSON (builtins.readFile ./pi-coding-agent/settings.json);
+      blockedPrefixes = [
+        "kimi-coding/"
+        "zai/"
+        "opencode-go/"
+      ];
+      isBlocked = id: lib.any (p: lib.hasPrefix p id) blockedPrefixes;
+    in
+    pkgs.writeText "pi-settings-safe.json" (
+      builtins.toJSON (
+        raw
+        // {
+          enabledModels = builtins.filter (m: !isBlocked m) raw.enabledModels;
+        }
+      )
+    );
+
+  # Homelab providers read vault-agent secrets at runtime. Gated so
+  # portable hosts ship a valid empty providers map with no /run/secrets
+  # strings. OAuth/default Pi + Claude bridge stay always-on.
   piModels = pkgs.writeText "pi-models.json" (
     builtins.toJSON {
-      providers = {
-        # Use pi's built-in kimi-coding + zai providers (see pi-mono
-        # packages/ai/src/models.generated.ts) — correct baseUrls, model
-        # ids, and API protocols already wired. We only supply apiKeys.
-        #
-        # NOTE: kimi-coding uses anthropic-messages at api.kimi.com/coding
-        # (same as claude-kimi). zai uses openai-completions at
-        # api.z.ai/api/coding/paas/v4 — DIFFERENT from claude-glm, which
-        # speaks anthropic-messages at api.z.ai/api/anthropic. Pi doesn't
-        # need Anthropic-protocol-everywhere like Claude Code does, so
-        # the Coding-PaaS endpoint is the right default.
-        #
-        # `baseUrl` redeclaration is required: pi 0.68.1's model-registry
-        # rejects override-only configs that don't declare one of baseUrl/
-        # compat/modelOverrides/models. apiKey-only configs trigger
-        # "Failed to load models.json: Provider X: must specify …",
-        # visible only via `pi --list-models`; at request time pi just
-        # reports "No API key found". Redeclaring the built-in baseUrl
-        # here is a harmless no-op that unblocks the apiKey override.
-        kimi-coding = {
-          apiKey = "!cat /run/secrets/kimi_code_api_key";
-          baseUrl = "https://api.kimi.com/coding";
-          compat = {
-            supportsLongCacheRetention = false;
-          };
-        };
-
-        # z.ai's Coding-PaaS endpoint (openai-completions protocol).
-        # Different from claude-glm's api.z.ai/api/anthropic — pi doesn't
-        # need Anthropic-protocol-everywhere like Claude Code does, so the
-        # native PaaS endpoint is the right default.
-        # Pi knows GLM-5.2's protocol and thinking-level metadata; only its
-        # stale context-window value needs overriding.
-        zai = {
-          apiKey = "!cat /run/secrets/zai_api_key";
-          baseUrl = "https://api.z.ai/api/coding/paas/v4";
-          modelOverrides."glm-5.2".contextWindow = 1000000;
-        };
-
-        # OpenCode Go ($10/month) — pi's built-in opencode-go provider.
-        # Same !cat /run/secrets/* pattern as kimi-coding and zai.
-        # Renders to /run/secrets/opencode_api_key by vault-agent
-        # (see hosts/_profiles/workstation/configuration.nix).
-        #
-        # Pi already knows the baseUrl, model IDs, and API protocols for
-        # opencode-go — some models use openai-completions at
-        # /zen/go/v1, others use anthropic-messages at /zen/go.
-        # We only supply apiKey + modelOverrides (which satisfies the
-        # model-registry's "must specify one of…" check).
-        #
-        # IMPORTANT: do NOT set a provider-level baseUrl here — it
-        # overrides the per-model built-in base URLs and breaks models
-        # that use a different API protocol/path (e.g. minimax-m3 uses
-        # anthropic-messages at /zen/go, not /zen/go/v1).
-        "opencode-go" = {
-          apiKey = "!cat /run/secrets/opencode_api_key";
-          modelOverrides = {
-            "kimi-k2.6" = {
+      providers =
+        if cfg.homelabProviders.enable then
+          {
+            # Use pi's built-in kimi-coding + zai providers (see pi-mono
+            # packages/ai/src/models.generated.ts) — correct baseUrls, model
+            # ids, and API protocols already wired. We only supply apiKeys.
+            #
+            # NOTE: kimi-coding uses anthropic-messages at api.kimi.com/coding
+            # (same as claude-kimi). zai uses openai-completions at
+            # api.z.ai/api/coding/paas/v4 — DIFFERENT from claude-glm, which
+            # speaks anthropic-messages at api.z.ai/api/anthropic. Pi doesn't
+            # need Anthropic-protocol-everywhere like Claude Code does, so
+            # the Coding-PaaS endpoint is the right default.
+            #
+            # `baseUrl` redeclaration is required: pi 0.68.1's model-registry
+            # rejects override-only configs that don't declare one of baseUrl/
+            # compat/modelOverrides/models. apiKey-only configs trigger
+            # "Failed to load models.json: Provider X: must specify …",
+            # visible only via `pi --list-models`; at request time pi just
+            # reports "No API key found". Redeclaring the built-in baseUrl
+            # here is a harmless no-op that unblocks the apiKey override.
+            kimi-coding = {
+              apiKey = "!cat /run/secrets/kimi_code_api_key";
+              baseUrl = "https://api.kimi.com/coding";
               compat = {
                 supportsLongCacheRetention = false;
               };
             };
-            # MiniMax M3 (launched 2026-06-01) — already in pi's built-in
-            # registry; we override context window sizes from OpenCode
-            # Go's /models endpoint. Pi uses these to populate
-            # --list-models and enforce context limits.
-            "minimax-m3" = {
-              contextWindow = 512 * 1024; # 512K on OpenCode Go (full 1M needs direct MiniMax plan)
-              maxOutputTokens = 131072; # 128K output, same as minimax-m2.7
+
+            # z.ai's Coding-PaaS endpoint (openai-completions protocol).
+            # Different from claude-glm's api.z.ai/api/anthropic — pi doesn't
+            # need Anthropic-protocol-everywhere like Claude Code does, so the
+            # native PaaS endpoint is the right default.
+            # Pi knows GLM-5.2's protocol and thinking-level metadata; only its
+            # stale context-window value needs overriding.
+            zai = {
+              apiKey = "!cat /run/secrets/zai_api_key";
+              baseUrl = "https://api.z.ai/api/coding/paas/v4";
+              modelOverrides."glm-5.2".contextWindow = 1000000;
             };
-          };
-        };
-      };
+
+            # OpenCode Go ($10/month) — pi's built-in opencode-go provider.
+            # Same !cat /run/secrets/* pattern as kimi-coding and zai.
+            # Renders to /run/secrets/opencode_api_key by vault-agent
+            # (see hosts/_profiles/workstation/configuration.nix).
+            #
+            # Pi already knows the baseUrl, model IDs, and API protocols for
+            # opencode-go — some models use openai-completions at
+            # /zen/go/v1, others use anthropic-messages at /zen/go.
+            # We only supply apiKey + modelOverrides (which satisfies the
+            # model-registry's "must specify one of…" check).
+            #
+            # IMPORTANT: do NOT set a provider-level baseUrl here — it
+            # overrides the per-model built-in base URLs and breaks models
+            # that use a different API protocol/path (e.g. minimax-m3 uses
+            # anthropic-messages at /zen/go, not /zen/go/v1).
+            "opencode-go" = {
+              apiKey = "!cat /run/secrets/opencode_api_key";
+              modelOverrides = {
+                "kimi-k2.6" = {
+                  compat = {
+                    supportsLongCacheRetention = false;
+                  };
+                };
+                # MiniMax M3 (launched 2026-06-01) — already in pi's built-in
+                # registry; we override context window sizes from OpenCode
+                # Go's /models endpoint. Pi uses these to populate
+                # --list-models and enforce context limits.
+                "minimax-m3" = {
+                  contextWindow = 512 * 1024; # 512K on OpenCode Go (full 1M needs direct MiniMax plan)
+                  maxOutputTokens = 131072; # 128K output, same as minimax-m2.7
+                };
+              };
+            };
+          }
+        else
+          { };
     }
   );
   # Claude Agent SDK normally loads Claude Code's user, project, and local
@@ -620,6 +686,44 @@ let
 
 in
 {
+  options.piCodingAgent = {
+    searxngUrl = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = "https://searxng.lan";
+      description = ''
+        Base URL for the web-search CLI's SearXNG endpoint (no trailing path).
+        Set to null on hosts that must not contact or embed searxng.lan;
+        web-search then fails fast with a not-configured message.
+      '';
+    };
+
+    homelabProviders.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Include models.json provider entries that read vault-agent secrets
+        at /run/secrets/{kimi_code,zai,opencode}_api_key. Set false on
+        isolated hosts (e.g. Denethor); models.json then has an empty
+        providers map and no /run/secrets strings. Also filters settings.json
+        enabledModels for kimi-coding/, zai/, and opencode-go/ prefixes and
+        uses an immutable store-path settings file (repo-managed; /settings
+        cannot mutate it). OAuth models and the Claude bridge stay on.
+      '';
+    };
+
+    homelabExtensions.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        When true (default), .pi/agent/extensions is an out-of-store symlink
+        into the dotfiles working tree. When false, use a generated immutable
+        filtered directory that excludes nvidia-nim.ts and usage-tracker.ts
+        (homelab-secret-backed integrations). All other extension files and
+        lib/ remain. Set false on isolated hosts (e.g. Denethor).
+      '';
+    };
+  };
+
   # numtide/llm-agents.nix's default overlay namespaces everything under
   # pkgs.llm-agents.* (not top-level pkgs.pi).
   #
@@ -638,7 +742,7 @@ in
   #
   # pi also writes ~/.pi/agent/{auth.json,sessions/} at runtime — NOT
   # symlinked here, pi manages them as mutable runtime state.
-  home = {
+  config.home = {
     # Keep pi extensions current on every home switch. Network call —
     # best-effort so offline/dry-run switches still succeed.
     #
@@ -842,13 +946,23 @@ in
     sessionVariables.PI_CACHE_RETENTION = "long";
     file = {
       ".pi/agent/models.json".source = piModels;
-      ".pi/agent/extensions".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/extensions";
+      ".pi/agent/extensions".source =
+        if cfg.homelabExtensions.enable then
+          config.lib.file.mkOutOfStoreSymlink "${piUserDir}/extensions"
+        else
+          piExtensionsFiltered;
       ".pi/agent/agents".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/agents";
       ".pi/agent/agent-tool-description.md".source =
         config.lib.file.mkOutOfStoreSymlink "${piUserDir}/agent-tool-description.md";
       ".pi/agent/prompts".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/prompts";
       ".pi/agent/skills".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/skills";
-      ".pi/agent/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/settings.json";
+      # Mutable out-of-store when homelab providers on; immutable filtered
+      # store path when off (Denethor — /settings is repo-managed there).
+      ".pi/agent/settings.json".source =
+        if cfg.homelabProviders.enable then
+          config.lib.file.mkOutOfStoreSymlink "${piUserDir}/settings.json"
+        else
+          piSettingsSafe;
       ".pi/agent/APPEND_SYSTEM.md".source =
         config.lib.file.mkOutOfStoreSymlink "${piUserDir}/APPEND_SYSTEM.md";
       ".pi/agent/caveman.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/caveman.json";
