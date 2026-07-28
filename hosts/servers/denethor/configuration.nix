@@ -183,7 +183,7 @@
         ];
         piCodingAgent = {
           searxngUrl = null;
-          homelabProviders.enable = false; # empty models + immutable safe settings
+          homelabProviders.enable = false; # empty providers + filtered model list
           homelabExtensions.enable = false; # drop nvidia-nim + usage-tracker
           computerUse.enable = true; # Cua Driver desktop control (host-only)
         };

@@ -427,123 +427,164 @@ let
   };
   piComputerUseRoot = "${piComputerUse}/lib/node_modules/@amaster.ai/pi-computer-use";
 
-  # Denethor-safe settings: same tracked settings.json, but drop enabledModels
-  # whose provider prefix is a homelab secret backend. OAuth models stay.
-  # Immutable store path — /settings is repo-managed on isolated hosts.
-  # When computerUse.enable, append the store package path. The package asks
-  # before launching apps and six high-risk actions. Screen reads, clicks,
-  # typing, and browser driving remain intentionally available without prompts.
-  piSettingsSafe =
-    let
-      raw = builtins.fromJSON (builtins.readFile ./pi-coding-agent/settings.json);
-      blockedPrefixes = [
-        "kimi-coding/"
-        "zai/"
-        "opencode-go/"
-      ];
-      isBlocked = id: lib.any (p: lib.hasPrefix p id) blockedPrefixes;
-    in
-    pkgs.writeText "pi-settings-safe.json" (
-      builtins.toJSON (
-        raw
-        // {
-          enabledModels = builtins.filter (m: !isBlocked m) raw.enabledModels;
-          packages = raw.packages ++ lib.optionals cfg.computerUse.enable [ piComputerUseRoot ];
-        }
-        // lib.optionalAttrs cfg.computerUse.enable {
-          "pi-computer-use" = {
-            mode = "bundled";
-            confirmAppLaunch = true;
-            confirmDangerousActions = true;
-          };
-        }
-      )
-    );
+  # Declarative settings for programs.pi-coding-agent (read-only store path).
+  # When computerUse.enable, append the store package path + CUA config.
+  # The package asks before launching apps and six high-risk actions.
+  # Screen reads, clicks, typing, and browser driving stay unprompted.
+  piSettings = {
+    defaultProvider = "openai-codex";
+    defaultModel = "gpt-5.6-sol";
+    enabledModels =
+      let
+        all = [
+          "claude-bridge/claude-fable-5"
+          "claude-bridge/claude-opus-5"
+          "xai-auth/grok-4.5"
+          "zai/glm-5.2"
+          "opencode-go/minimax-m3"
+          "opencode-go/deepseek-v4-pro"
+          "opencode-go/deepseek-v4-flash"
+          "openai-codex/gpt-5.6-sol"
+        ];
+        blockedPrefixes = [
+          "kimi-coding/"
+          "zai/"
+          "opencode-go/"
+        ];
+      in
+      if cfg.homelabProviders.enable then
+        all
+      else
+        builtins.filter (model: !lib.any (prefix: lib.hasPrefix prefix model) blockedPrefixes) all;
+    theme = "gruvbox-material";
+    lastChangelogVersion = pkgs.llm-agents.pi.version;
+    packages = [
+      "git:github.com/annapurna-himal/pi-vim-editor"
+      "npm:pi-mermaid"
+      "npm:pi-btw"
+      "npm:pi-init"
+      "git:github.com/DietrichGebert/ponytail"
+      "npm:pi-caveman"
+      "npm:pi-claude-bridge"
+      "npm:pi-mcp-adapter"
+      "npm:@tintinweb/pi-subagents"
+      {
+        source = "git:github.com/anthropics/skills";
+        skills = [ "skills/frontend-design/**" ];
+      }
+      "npm:pi-xai-oauth"
+      "npm:pi-sense"
+    ]
+    ++ lib.optionals cfg.computerUse.enable [ piComputerUseRoot ];
+    extensions = [
+      "${config.home.homeDirectory}/.pi/agent/git/github.com/annapurna-himal/pi-vim-editor/index.ts"
+    ];
+    hideThinkingBlock = false;
+    defaultThinkingLevel = "high";
+  }
+  // lib.optionalAttrs cfg.computerUse.enable {
+    "pi-computer-use" = {
+      mode = "bundled";
+      confirmAppLaunch = true;
+      confirmDangerousActions = true;
+    };
+  };
 
   # Homelab providers read vault-agent secrets at runtime. Gated so
   # portable hosts ship a valid empty providers map with no /run/secrets
   # strings. OAuth/default Pi + Claude bridge stay always-on.
-  piModels = pkgs.writeText "pi-models.json" (
-    builtins.toJSON {
-      providers =
-        if cfg.homelabProviders.enable then
-          {
-            # Use pi's built-in kimi-coding + zai providers (see pi-mono
-            # packages/ai/src/models.generated.ts) — correct baseUrls, model
-            # ids, and API protocols already wired. We only supply apiKeys.
-            #
-            # NOTE: kimi-coding uses anthropic-messages at api.kimi.com/coding
-            # (same as claude-kimi). zai uses openai-completions at
-            # api.z.ai/api/coding/paas/v4 — DIFFERENT from claude-glm, which
-            # speaks anthropic-messages at api.z.ai/api/anthropic. Pi doesn't
-            # need Anthropic-protocol-everywhere like Claude Code does, so
-            # the Coding-PaaS endpoint is the right default.
-            #
-            # `baseUrl` redeclaration is required: pi 0.68.1's model-registry
-            # rejects override-only configs that don't declare one of baseUrl/
-            # compat/modelOverrides/models. apiKey-only configs trigger
-            # "Failed to load models.json: Provider X: must specify …",
-            # visible only via `pi --list-models`; at request time pi just
-            # reports "No API key found". Redeclaring the built-in baseUrl
-            # here is a harmless no-op that unblocks the apiKey override.
-            kimi-coding = {
-              apiKey = "!cat /run/secrets/kimi_code_api_key";
-              baseUrl = "https://api.kimi.com/coding";
-              compat = {
-                supportsLongCacheRetention = false;
-              };
+  # Passed to programs.pi-coding-agent.models (official HM writes models.json).
+  piModelSettings = {
+    providers =
+      if cfg.homelabProviders.enable then
+        {
+          # Use pi's built-in kimi-coding + zai providers (see pi-mono
+          # packages/ai/src/models.generated.ts) — correct baseUrls, model
+          # ids, and API protocols already wired. We only supply apiKeys.
+          #
+          # NOTE: kimi-coding uses anthropic-messages at api.kimi.com/coding
+          # (same as claude-kimi). zai uses openai-completions at
+          # api.z.ai/api/coding/paas/v4 — DIFFERENT from claude-glm, which
+          # speaks anthropic-messages at api.z.ai/api/anthropic. Pi doesn't
+          # need Anthropic-protocol-everywhere like Claude Code does, so
+          # the Coding-PaaS endpoint is the right default.
+          #
+          # `baseUrl` redeclaration is required: pi 0.68.1's model-registry
+          # rejects override-only configs that don't declare one of baseUrl/
+          # compat/modelOverrides/models. apiKey-only configs trigger
+          # "Failed to load models.json: Provider X: must specify …",
+          # visible only via `pi --list-models`; at request time pi just
+          # reports "No API key found". Redeclaring the built-in baseUrl
+          # here is a harmless no-op that unblocks the apiKey override.
+          kimi-coding = {
+            apiKey = "!cat /run/secrets/kimi_code_api_key";
+            baseUrl = "https://api.kimi.com/coding";
+            compat = {
+              supportsLongCacheRetention = false;
             };
+          };
 
-            # z.ai's Coding-PaaS endpoint (openai-completions protocol).
-            # Different from claude-glm's api.z.ai/api/anthropic — pi doesn't
-            # need Anthropic-protocol-everywhere like Claude Code does, so the
-            # native PaaS endpoint is the right default.
-            # Pi knows GLM-5.2's protocol and thinking-level metadata; only its
-            # stale context-window value needs overriding.
-            zai = {
-              apiKey = "!cat /run/secrets/zai_api_key";
-              baseUrl = "https://api.z.ai/api/coding/paas/v4";
-              modelOverrides."glm-5.2".contextWindow = 1000000;
-            };
+          # z.ai's Coding-PaaS endpoint (openai-completions protocol).
+          # Different from claude-glm's api.z.ai/api/anthropic — pi doesn't
+          # need Anthropic-protocol-everywhere like Claude Code does, so the
+          # native PaaS endpoint is the right default.
+          # Pi knows GLM-5.2's protocol and thinking-level metadata; only its
+          # stale context-window value needs overriding.
+          zai = {
+            apiKey = "!cat /run/secrets/zai_api_key";
+            baseUrl = "https://api.z.ai/api/coding/paas/v4";
+            modelOverrides."glm-5.2".contextWindow = 1000000;
+          };
 
-            # OpenCode Go ($10/month) — pi's built-in opencode-go provider.
-            # Same !cat /run/secrets/* pattern as kimi-coding and zai.
-            # Renders to /run/secrets/opencode_api_key by vault-agent
-            # (see hosts/_profiles/workstation/configuration.nix).
-            #
-            # Pi already knows the baseUrl, model IDs, and API protocols for
-            # opencode-go — some models use openai-completions at
-            # /zen/go/v1, others use anthropic-messages at /zen/go.
-            # We only supply apiKey + modelOverrides (which satisfies the
-            # model-registry's "must specify one of…" check).
-            #
-            # IMPORTANT: do NOT set a provider-level baseUrl here — it
-            # overrides the per-model built-in base URLs and breaks models
-            # that use a different API protocol/path (e.g. minimax-m3 uses
-            # anthropic-messages at /zen/go, not /zen/go/v1).
-            "opencode-go" = {
-              apiKey = "!cat /run/secrets/opencode_api_key";
-              modelOverrides = {
-                "kimi-k2.6" = {
-                  compat = {
-                    supportsLongCacheRetention = false;
-                  };
-                };
-                # MiniMax M3 (launched 2026-06-01) — already in pi's built-in
-                # registry; we override context window sizes from OpenCode
-                # Go's /models endpoint. Pi uses these to populate
-                # --list-models and enforce context limits.
-                "minimax-m3" = {
-                  contextWindow = 512 * 1024; # 512K on OpenCode Go (full 1M needs direct MiniMax plan)
-                  maxOutputTokens = 131072; # 128K output, same as minimax-m2.7
+          # OpenCode Go ($10/month) — pi's built-in opencode-go provider.
+          # Same !cat /run/secrets/* pattern as kimi-coding and zai.
+          # Renders to /run/secrets/opencode_api_key by vault-agent
+          # (see hosts/_profiles/workstation/configuration.nix).
+          #
+          # Pi already knows the baseUrl, model IDs, and API protocols for
+          # opencode-go — some models use openai-completions at
+          # /zen/go/v1, others use anthropic-messages at /zen/go.
+          # We only supply apiKey + modelOverrides (which satisfies the
+          # model-registry's "must specify one of…" check).
+          #
+          # IMPORTANT: do NOT set a provider-level baseUrl here — it
+          # overrides the per-model built-in base URLs and breaks models
+          # that use a different API protocol/path (e.g. minimax-m3 uses
+          # anthropic-messages at /zen/go, not /zen/go/v1).
+          "opencode-go" = {
+            apiKey = "!cat /run/secrets/opencode_api_key";
+            modelOverrides = {
+              "kimi-k2.6" = {
+                compat = {
+                  supportsLongCacheRetention = false;
                 };
               };
+              # MiniMax M3 (launched 2026-06-01) — already in pi's built-in
+              # registry; we override context window sizes from OpenCode
+              # Go's /models endpoint. Pi uses these to populate
+              # --list-models and enforce context limits.
+              "minimax-m3" = {
+                contextWindow = 512 * 1024; # 512K on OpenCode Go (full 1M needs direct MiniMax plan)
+                maxOutputTokens = 131072; # 128K output, same as minimax-m2.7
+              };
             };
-          }
-        else
-          { };
-    }
-  );
+          };
+        }
+      else
+        { };
+  };
+
+  # Thin wrapper around pkgs.llm-agents.pi so we can inject flags
+  # (DISPLAY/CUA on computerUse hosts) before the real binary.
+  piPackage = pkgs.writeShellScriptBin "pi" ''
+    ${lib.optionalString cfg.computerUse.enable ''
+      # Denethor's LightDM autologin desktop. Keep an explicit DISPLAY
+      # (for example SSH forwarding) when the caller already supplied one.
+      export DISPLAY="''${DISPLAY:-:0}"
+      export CUA_TELEMETRY_ENABLED=false
+    ''}
+    exec ${pkgs.llm-agents.pi}/bin/pi "$@"
+  '';
   # Claude Agent SDK normally loads Claude Code's user, project, and local
   # settings when settingSources is omitted. pi-claude-bridge 0.6.2 ignores
   # its settingSources config, so inject the equivalent CLI flag through a
@@ -602,7 +643,7 @@ let
   # firefox/webkit test matrices become load-bearing.
   #
   # `${pkgs.nodejs}` and `${pkgs.chromium}` interpolate at BUILD time (JSON
-  # can't interpolate at runtime) — same store-path pattern as piModels /
+  # can't interpolate at runtime) — same store-path pattern as
   # piClaudeBridgeConfig. npx -y ...@latest mirrors the tavily-mcp pattern in
   # claude-code.nix. lifecycle=lazy is the adapter default but stated for
   # clarity. --headless = no visible window; drop it when you want eyes on
@@ -750,10 +791,9 @@ in
         Include models.json provider entries that read vault-agent secrets
         at /run/secrets/{kimi_code,zai,opencode}_api_key. Set false on
         isolated hosts (e.g. Denethor); models.json then has an empty
-        providers map and no /run/secrets strings. Also filters settings.json
-        enabledModels for kimi-coding/, zai/, and opencode-go/ prefixes and
-        uses an immutable store-path settings file (repo-managed; /settings
-        cannot mutate it). OAuth models and the Claude bridge stay on.
+        providers map and no /run/secrets strings. Settings also omit models
+        backed by those unavailable providers. OAuth models and the Claude
+        bridge stay on.
       '';
     };
 
@@ -777,257 +817,243 @@ in
   # numtide/llm-agents.nix's default overlay namespaces everything under
   # pkgs.llm-agents.* (not top-level pkgs.pi).
   #
-  # models.json is a /nix/store symlink (immutable — secrets-config).
-  # extensions/, prompts/, skills/, settings.json are OUT-OF-STORE
-  # symlinks into the dotfiles working tree so pi's `/reload`, `/settings`,
-  # `/scoped-models` and `pi config` interactive edits land directly in
-  # git. Changing the SHAPE (adding a folder, bumping the package) still
-  # needs `nh home switch`; iterating on individual files does not.
+  # Official programs.pi-coding-agent owns package + settings.json +
+  # models.json (read-only store paths). Companion module keeps options,
+  # helpers, extensions/resources, theme, MCP, bridge, CUA, activations.
   #
-  # settings.json holds defaults pi can mutate via /settings, /scoped-
-  # models (Ctrl+S), pi config, and `pi install`. We seed it with our
-  # canonical defaults (default provider/model/thinking level + the
-  # scoped-model cycle list for Ctrl+P) and let pi accumulate any
-  # interactive changes back into git.
+  # extensions/, prompts/, skills/, and other resources stay OUT-OF-STORE
+  # symlinks into the dotfiles working tree so pi's `/reload` and similar
+  # land in git. Changing SHAPE still needs `nh home switch`.
   #
   # pi also writes ~/.pi/agent/{auth.json,sessions/} at runtime — NOT
-  # symlinked here, pi manages them as mutable runtime state.
-  config.home = {
-    # Keep pi extensions current on every home switch. Network call —
-    # best-effort so offline/dry-run switches still succeed.
-    #
-    # piPatchClaudeBridge runs after that: pi installs pi-claude-bridge
-    # mutably under ~/.pi/agent/npm/node_modules, so each update can
-    # restore stock models.ts. Patch it to expose claude-opus-5 until
-    # pi-ai/bridge ship it: order it before older Opus, synthesize metadata
-    # from the prior Opus entry, and map the runtime id to claude-opus-5[1m].
-    # Bare Opus 5 only serves a 200K window, so pi would register 1M and
-    # compact at the real limit instead. [1m] serves the full window and stays
-    # on included Max usage (verified while extra usage is disabled).
-    #
-    # Keep bridge's stock Claude Code system-prompt preset. Replacing it with
-    # Pi's full third-party harness prompt makes subscription-backed requests
-    # require extra usage. The stock bridge still appends AGENTS.md and skills.
-    activation = {
-      piUpdateExtensions = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        run ${pkgs.llm-agents.pi}/bin/pi update --extensions || echo "pi: extension update failed (offline?), skipping" >&2
-      '';
-
-      piPatchClaudeBridge = lib.hm.dag.entryAfter [ "piUpdateExtensions" ] ''
-                bridge_src="$HOME/.pi/agent/npm/node_modules/pi-claude-bridge/src"
-                index_ts="$bridge_src/index.ts"
-                models_ts="$bridge_src/models.ts"
-
-                # Undo the old full-Pi-system-prompt patch. Claude subscription
-                # usage requires the stock Claude Code preset; bridge still
-                # appends AGENTS.md and skills through systemPromptAppend.
-                if [ -f "$index_ts" ]; then
-                  run ${pkgs.python3}/bin/python3 - "$index_ts" <<'PY'
-        import sys
-        from pathlib import Path
-
-        path = Path(sys.argv[1])
-        text = path.read_text()
-        old = "\t\tsystemPrompt: context.systemPrompt,\n\t\textraArgs,"
-        stock = (
-            "\t\tsystemPrompt: {\n"
-            "\t\t\ttype: \"preset\", preset: \"claude_code\",\n"
-            "\t\t\tappend: systemPromptAppend ? systemPromptAppend : undefined,\n"
-            "\t\t},\n"
-            "\t\textraArgs,"
-        )
-        old_count = text.count(old)
-        stock_count = text.count(stock)
-        if old_count == 1 and stock_count == 0:
-            path.write_text(text.replace(old, stock, 1))
-            print(f"pi: restored {path} stock Claude Code system-prompt preset")
-        elif old_count == 0 and stock_count == 1:
-            print(f"pi: {path} already uses stock Claude Code system-prompt preset")
-        else:
-            raise SystemExit(
-                f"pi: {path}: unexpected system-prompt shape; "
-                f"old_count={old_count} stock_count={stock_count}"
-            )
-        PY
-                fi
-
-                if [ ! -f "$models_ts" ]; then
-                  echo "pi: pi-claude-bridge not installed, skipping Opus 5 patch" >&2
-                else
-                  # models.ts: Opus 5 order + metadata synthesize + bare runtime.
-                  # Migrates old patched bare runtime; accepts already-desired ids/buildModels.
-                  run ${pkgs.python3}/bin/python3 - "$models_ts" <<'PY'
-        import sys
-        from pathlib import Path
-
-        path = Path(sys.argv[1])
-        text = path.read_text()
-
-        stock_ids = (
-            'export const MODEL_IDS_IN_ORDER = ["claude-fable-5", "claude-opus-4-8", '
-            '"claude-opus-4-7", "claude-opus-4-6", "claude-sonnet-5", '
-            '"claude-sonnet-4-6", "claude-haiku-4-5"];'
-        )
-        desired_ids = (
-            'export const MODEL_IDS_IN_ORDER = ["claude-fable-5", "claude-opus-5", '
-            '"claude-opus-4-8", "claude-opus-4-7", "claude-opus-4-6", '
-            '"claude-sonnet-5", "claude-sonnet-4-6", "claude-haiku-4-5"];'
-        )
-
-        stock_build = (
-            "export function buildModels<T extends { id: string; [key: string]: any }>(piAiModels: T[]) {\n"
-            "\treturn MODEL_IDS_IN_ORDER\n"
-            "\t\t.map((id) => piAiModels.find((m) => m.id === id))\n"
-            "\t\t.filter((m) => m != null)\n"
-        )
-        desired_build = (
-            "export function buildModels<T extends { id: string; [key: string]: any }>(piAiModels: T[]) {\n"
-            "\treturn MODEL_IDS_IN_ORDER\n"
-            "\t\t.map((id) => {\n"
-            "\t\t\tconst found = piAiModels.find((m) => m.id === id);\n"
-            "\t\t\tif (found) return found;\n"
-            "\t\t\t// pi-ai lacks Opus 5 metadata: reuse Opus 4.8 fields, override id/name.\n"
-            "\t\t\tif (id === \"claude-opus-5\") {\n"
-            "\t\t\t\tconst base = piAiModels.find((m) => m.id === \"claude-opus-4-8\");\n"
-            "\t\t\t\tif (!base) return undefined;\n"
-            "\t\t\t\treturn { ...base, id: \"claude-opus-5\", name: \"Claude Opus 5\" };\n"
-            "\t\t\t}\n"
-            "\t\t\treturn undefined;\n"
-            "\t\t})\n"
-            "\t\t.filter((m) => m != null)\n"
-        )
-
-        stock_runtime = (
-            '\t\tcase "claude-opus-4-8":\n'
-            '\t\t\treturn { cliModelId: "claude-opus-4-8[1m]", contextWindow: ONE_M_CONTEXT };'
-        )
-        old_patched_runtime = (
-            '\t\tcase "claude-opus-5":\n'
-            '\t\t\treturn { cliModelId: "claude-opus-5", contextWindow: ONE_M_CONTEXT };\n'
-            '\t\tcase "claude-opus-4-8":\n'
-            '\t\t\treturn { cliModelId: "claude-opus-4-8[1m]", contextWindow: ONE_M_CONTEXT };'
-        )
-        desired_runtime = (
-            '\t\tcase "claude-opus-5":\n'
-            '\t\t\treturn { cliModelId: "claude-opus-5[1m]", contextWindow: ONE_M_CONTEXT };\n'
-            '\t\tcase "claude-opus-4-8":\n'
-            '\t\t\treturn { cliModelId: "claude-opus-4-8[1m]", contextWindow: ONE_M_CONTEXT };'
-        )
-
-        def once(label, *variants):
-            # Longer first: stock_runtime is a suffix of old-patched/desired
-            # runtime blocks. Accept substring hits of an already-matched
-            # longer variant; reject two independent shapes.
-            matched = None
-            for v in sorted(variants, key=len, reverse=True):
-                n = text.count(v)
-                if n == 0:
-                    continue
-                if n != 1:
-                    raise SystemExit(
-                        f"pi: {path}: {label}: variant duplicated (count={n}); "
-                        f"bridge shape changed?"
-                    )
-                if matched is not None:
-                    if v in matched:
-                        continue
-                    raise SystemExit(
-                        f"pi: {path}: {label}: multiple independent shapes present; "
-                        f"bridge shape changed?"
-                    )
-                matched = v
-            if matched is None:
-                raise SystemExit(
-                    f"pi: {path}: {label}: none of stock/old-patched/desired found; "
-                    f"bridge shape changed?"
-                )
-            return matched
-
-        ids = once("model ids", stock_ids, desired_ids)
-        build = once("buildModels", stock_build, desired_build)
-        runtime = once("runtime map", stock_runtime, old_patched_runtime, desired_runtime)
-
-        # Partial desired (e.g. old bare runtime + desired ids) still needs migrate.
-        changed = []
-        if ids != desired_ids:
-            text = text.replace(ids, desired_ids, 1)
-            changed.append("ids")
-        if build != desired_build:
-            text = text.replace(build, desired_build, 1)
-            changed.append("buildModels")
-        if runtime != desired_runtime:
-            text = text.replace(runtime, desired_runtime, 1)
-            changed.append("runtime")
-        path.write_text(text)
-        print(
-            f"pi: patched {path} for claude-opus-5[1m] "
-            f"({'+'.join(changed) or 'noop'}; bare Opus 5 only serves 200K)"
-        )
-        PY
-                fi
-      '';
+  # managed here, pi owns that mutable state.
+  config = {
+    programs.pi-coding-agent = {
+      enable = true;
+      package = piPackage;
+      settings = piSettings;
+      models = piModelSettings;
     };
 
-    packages = [
-      # Pi installs and updates npm-based extensions at runtime.
-      pkgs.nodejs
+    home = {
+      # Keep pi extensions current on every home switch. Network call —
+      # best-effort so offline/dry-run switches still succeed.
+      #
+      # piPatchClaudeBridge runs after that: pi installs pi-claude-bridge
+      # mutably under ~/.pi/agent/npm/node_modules, so each update can
+      # restore stock models.ts. Patch it to expose claude-opus-5 until
+      # pi-ai/bridge ship it: order it before older Opus, synthesize metadata
+      # from the prior Opus entry, and map the runtime id to claude-opus-5[1m].
+      # Bare Opus 5 only serves a 200K window, so pi would register 1M and
+      # compact at the real limit instead. [1m] serves the full window and stays
+      # on included Max usage (verified while extra usage is disabled).
+      #
+      # Keep bridge's stock Claude Code system-prompt preset. Replacing it with
+      # Pi's full third-party harness prompt makes subscription-backed requests
+      # require extra usage. The stock bridge still appends AGENTS.md and skills.
+      activation = {
+        piUpdateExtensions = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+          run ${pkgs.llm-agents.pi}/bin/pi update --extensions || echo "pi: extension update failed (offline?), skipping" >&2
+        '';
 
-      # Thin wrapper around pkgs.llm-agents.pi so we can inject flags
-      # or wrap it differently in the future.
-      (pkgs.writeShellScriptBin "pi" ''
-        ${lib.optionalString cfg.computerUse.enable ''
-          # Denethor's LightDM autologin desktop. Keep an explicit DISPLAY
-          # (for example SSH forwarding) when the caller already supplied one.
-          export DISPLAY="''${DISPLAY:-:0}"
-          export CUA_TELEMETRY_ENABLED=false
-        ''}
-        exec ${pkgs.llm-agents.pi}/bin/pi "$@"
-      '')
-      webSearch
-      webFetch
-      webFetchJina
-      repoIngest
-      repoBrowse
+        piPatchClaudeBridge = lib.hm.dag.entryAfter [ "piUpdateExtensions" ] ''
+                  bridge_src="$HOME/.pi/agent/npm/node_modules/pi-claude-bridge/src"
+                  index_ts="$bridge_src/index.ts"
+                  models_ts="$bridge_src/models.ts"
 
-      # Structural code search via tree-sitter. No wrapper — ast-grep's
-      # CLI is already clean (`ast-grep run -l python -p '...'`). The
-      # code-nav skill teaches the model when to reach for it over rg
-      # (definition/reference lookups, structural shapes).
-      pkgs.ast-grep
+                  # Undo the old full-Pi-system-prompt patch. Claude subscription
+                  # usage requires the stock Claude Code preset; bridge still
+                  # appends AGENTS.md and skills through systemPromptAppend.
+                  if [ -f "$index_ts" ]; then
+                    run ${pkgs.python3}/bin/python3 - "$index_ts" <<'PY'
+          import sys
+          from pathlib import Path
 
-      # Paren checker for Emacs Lisp the agent writes. See the comment
-      # on the derivation above and skills/elisp/SKILL.md.
-      agent-lisp-paren-aid
-    ];
-    sessionVariables.PI_CACHE_RETENTION = "long";
-    file = {
-      ".pi/agent/models.json".source = piModels;
-      ".pi/agent/extensions".source =
-        if cfg.homelabExtensions.enable then
-          config.lib.file.mkOutOfStoreSymlink "${piUserDir}/extensions"
-        else
-          piExtensionsFiltered;
-      ".pi/agent/agents".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/agents";
-      ".pi/agent/agent-tool-description.md".source =
-        config.lib.file.mkOutOfStoreSymlink "${piUserDir}/agent-tool-description.md";
-      ".pi/agent/prompts".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/prompts";
-      ".pi/agent/skills".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/skills";
-      # Mutable out-of-store when homelab providers on; immutable filtered
-      # store path when off (Denethor — /settings is repo-managed there).
-      ".pi/agent/settings.json".source =
-        if cfg.homelabProviders.enable then
-          config.lib.file.mkOutOfStoreSymlink "${piUserDir}/settings.json"
-        else
-          piSettingsSafe;
-      ".pi/agent/APPEND_SYSTEM.md".source =
-        config.lib.file.mkOutOfStoreSymlink "${piUserDir}/APPEND_SYSTEM.md";
-      ".pi/agent/caveman.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/caveman.json";
-      ".pi/agent/subagents.json".source =
-        config.lib.file.mkOutOfStoreSymlink "${piUserDir}/subagents.json";
-      ".pi/agent/pi-sense.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/pi-sense.json";
-      ".pi/agent/claude-bridge.json".source = piClaudeBridgeConfig;
-      ".pi/agent/mcp.json".source = piMcp;
-      ".pi/agent/themes/gruvbox-material.json".source = piTheme;
+          path = Path(sys.argv[1])
+          text = path.read_text()
+          old = "\t\tsystemPrompt: context.systemPrompt,\n\t\textraArgs,"
+          stock = (
+              "\t\tsystemPrompt: {\n"
+              "\t\t\ttype: \"preset\", preset: \"claude_code\",\n"
+              "\t\t\tappend: systemPromptAppend ? systemPromptAppend : undefined,\n"
+              "\t\t},\n"
+              "\t\textraArgs,"
+          )
+          old_count = text.count(old)
+          stock_count = text.count(stock)
+          if old_count == 1 and stock_count == 0:
+              path.write_text(text.replace(old, stock, 1))
+              print(f"pi: restored {path} stock Claude Code system-prompt preset")
+          elif old_count == 0 and stock_count == 1:
+              print(f"pi: {path} already uses stock Claude Code system-prompt preset")
+          else:
+              raise SystemExit(
+                  f"pi: {path}: unexpected system-prompt shape; "
+                  f"old_count={old_count} stock_count={stock_count}"
+              )
+          PY
+                  fi
+
+                  if [ ! -f "$models_ts" ]; then
+                    echo "pi: pi-claude-bridge not installed, skipping Opus 5 patch" >&2
+                  else
+                    # models.ts: Opus 5 order + metadata synthesize + bare runtime.
+                    # Migrates old patched bare runtime; accepts already-desired ids/buildModels.
+                    run ${pkgs.python3}/bin/python3 - "$models_ts" <<'PY'
+          import sys
+          from pathlib import Path
+
+          path = Path(sys.argv[1])
+          text = path.read_text()
+
+          stock_ids = (
+              'export const MODEL_IDS_IN_ORDER = ["claude-fable-5", "claude-opus-4-8", '
+              '"claude-opus-4-7", "claude-opus-4-6", "claude-sonnet-5", '
+              '"claude-sonnet-4-6", "claude-haiku-4-5"];'
+          )
+          desired_ids = (
+              'export const MODEL_IDS_IN_ORDER = ["claude-fable-5", "claude-opus-5", '
+              '"claude-opus-4-8", "claude-opus-4-7", "claude-opus-4-6", '
+              '"claude-sonnet-5", "claude-sonnet-4-6", "claude-haiku-4-5"];'
+          )
+
+          stock_build = (
+              "export function buildModels<T extends { id: string; [key: string]: any }>(piAiModels: T[]) {\n"
+              "\treturn MODEL_IDS_IN_ORDER\n"
+              "\t\t.map((id) => piAiModels.find((m) => m.id === id))\n"
+              "\t\t.filter((m) => m != null)\n"
+          )
+          desired_build = (
+              "export function buildModels<T extends { id: string; [key: string]: any }>(piAiModels: T[]) {\n"
+              "\treturn MODEL_IDS_IN_ORDER\n"
+              "\t\t.map((id) => {\n"
+              "\t\t\tconst found = piAiModels.find((m) => m.id === id);\n"
+              "\t\t\tif (found) return found;\n"
+              "\t\t\t// pi-ai lacks Opus 5 metadata: reuse Opus 4.8 fields, override id/name.\n"
+              "\t\t\tif (id === \"claude-opus-5\") {\n"
+              "\t\t\t\tconst base = piAiModels.find((m) => m.id === \"claude-opus-4-8\");\n"
+              "\t\t\t\tif (!base) return undefined;\n"
+              "\t\t\t\treturn { ...base, id: \"claude-opus-5\", name: \"Claude Opus 5\" };\n"
+              "\t\t\t}\n"
+              "\t\t\treturn undefined;\n"
+              "\t\t})\n"
+              "\t\t.filter((m) => m != null)\n"
+          )
+
+          stock_runtime = (
+              '\t\tcase "claude-opus-4-8":\n'
+              '\t\t\treturn { cliModelId: "claude-opus-4-8[1m]", contextWindow: ONE_M_CONTEXT };'
+          )
+          old_patched_runtime = (
+              '\t\tcase "claude-opus-5":\n'
+              '\t\t\treturn { cliModelId: "claude-opus-5", contextWindow: ONE_M_CONTEXT };\n'
+              '\t\tcase "claude-opus-4-8":\n'
+              '\t\t\treturn { cliModelId: "claude-opus-4-8[1m]", contextWindow: ONE_M_CONTEXT };'
+          )
+          desired_runtime = (
+              '\t\tcase "claude-opus-5":\n'
+              '\t\t\treturn { cliModelId: "claude-opus-5[1m]", contextWindow: ONE_M_CONTEXT };\n'
+              '\t\tcase "claude-opus-4-8":\n'
+              '\t\t\treturn { cliModelId: "claude-opus-4-8[1m]", contextWindow: ONE_M_CONTEXT };'
+          )
+
+          def once(label, *variants):
+              # Longer first: stock_runtime is a suffix of old-patched/desired
+              # runtime blocks. Accept substring hits of an already-matched
+              # longer variant; reject two independent shapes.
+              matched = None
+              for v in sorted(variants, key=len, reverse=True):
+                  n = text.count(v)
+                  if n == 0:
+                      continue
+                  if n != 1:
+                      raise SystemExit(
+                          f"pi: {path}: {label}: variant duplicated (count={n}); "
+                          f"bridge shape changed?"
+                      )
+                  if matched is not None:
+                      if v in matched:
+                          continue
+                      raise SystemExit(
+                          f"pi: {path}: {label}: multiple independent shapes present; "
+                          f"bridge shape changed?"
+                      )
+                  matched = v
+              if matched is None:
+                  raise SystemExit(
+                      f"pi: {path}: {label}: none of stock/old-patched/desired found; "
+                      f"bridge shape changed?"
+                  )
+              return matched
+
+          ids = once("model ids", stock_ids, desired_ids)
+          build = once("buildModels", stock_build, desired_build)
+          runtime = once("runtime map", stock_runtime, old_patched_runtime, desired_runtime)
+
+          # Partial desired (e.g. old bare runtime + desired ids) still needs migrate.
+          changed = []
+          if ids != desired_ids:
+              text = text.replace(ids, desired_ids, 1)
+              changed.append("ids")
+          if build != desired_build:
+              text = text.replace(build, desired_build, 1)
+              changed.append("buildModels")
+          if runtime != desired_runtime:
+              text = text.replace(runtime, desired_runtime, 1)
+              changed.append("runtime")
+          path.write_text(text)
+          print(
+              f"pi: patched {path} for claude-opus-5[1m] "
+              f"({'+'.join(changed) or 'noop'}; bare Opus 5 only serves 200K)"
+          )
+          PY
+                  fi
+        '';
+      };
+
+      packages = [
+        # Pi installs and updates npm-based extensions at runtime.
+        # (pi binary itself comes from programs.pi-coding-agent.package)
+        pkgs.nodejs
+
+        webSearch
+        webFetch
+        webFetchJina
+        repoIngest
+        repoBrowse
+
+        # Structural code search via tree-sitter. No wrapper — ast-grep's
+        # CLI is already clean (`ast-grep run -l python -p '...'`). The
+        # code-nav skill teaches the model when to reach for it over rg
+        # (definition/reference lookups, structural shapes).
+        pkgs.ast-grep
+
+        # Paren checker for Emacs Lisp the agent writes. See the comment
+        # on the derivation above and skills/elisp/SKILL.md.
+        agent-lisp-paren-aid
+      ];
+      sessionVariables.PI_CACHE_RETENTION = "long";
+      file = {
+        ".pi/agent/extensions".source =
+          if cfg.homelabExtensions.enable then
+            config.lib.file.mkOutOfStoreSymlink "${piUserDir}/extensions"
+          else
+            piExtensionsFiltered;
+        ".pi/agent/agents".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/agents";
+        ".pi/agent/agent-tool-description.md".source =
+          config.lib.file.mkOutOfStoreSymlink "${piUserDir}/agent-tool-description.md";
+        ".pi/agent/prompts".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/prompts";
+        ".pi/agent/skills".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/skills";
+        ".pi/agent/APPEND_SYSTEM.md".source =
+          config.lib.file.mkOutOfStoreSymlink "${piUserDir}/APPEND_SYSTEM.md";
+        ".pi/agent/caveman.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/caveman.json";
+        ".pi/agent/subagents.json".source =
+          config.lib.file.mkOutOfStoreSymlink "${piUserDir}/subagents.json";
+        ".pi/agent/pi-sense.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/pi-sense.json";
+        ".pi/agent/claude-bridge.json".source = piClaudeBridgeConfig;
+        ".pi/agent/mcp.json".source = piMcp;
+        ".pi/agent/themes/gruvbox-material.json".source = piTheme;
+      };
     };
   };
 }
