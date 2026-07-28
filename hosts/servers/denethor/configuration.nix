@@ -53,22 +53,40 @@
       # Keep SSH to LAN admin hosts working after AnyConnect installs corporate
       # RFC1918 routes that would otherwise blackhole 192.168.1.0/24. Only the
       # two admin hosts — not the whole LAN subnet.
-      ensureProfiles.profiles.ens18 = {
-        connection = {
-          id = "ens18";
-          type = "ethernet";
-          interface-name = "ens18";
-          autoconnect = true;
+      ensureProfiles.profiles = {
+        ens18 = {
+          connection = {
+            id = "ens18";
+            type = "ethernet";
+            interface-name = "ens18";
+            autoconnect = true;
+          };
+          ipv4 = {
+            method = "auto";
+            # NM keyfile: semicolon-separated DNS; ignore DHCP DNS (dead Unbound).
+            dns = "9.9.9.9;149.112.112.112";
+            ignore-auto-dns = "true";
+            route1 = "192.168.1.28/32,10.30.30.1"; # aragorn
+            route2 = "192.168.1.50/32,10.30.30.1"; # ammars-pc
+          };
+          ipv6.method = "disabled";
         };
-        ipv4 = {
-          method = "auto";
-          # NM keyfile: semicolon-separated DNS; ignore DHCP DNS (dead Unbound).
-          dns = "9.9.9.9;149.112.112.112";
-          ignore-auto-dns = "true";
-          route1 = "192.168.1.28/32,10.30.30.1"; # aragorn
-          route2 = "192.168.1.50/32,10.30.30.1"; # ammars-pc
+
+        "Work VPN" = {
+          connection = {
+            id = "Work VPN";
+            type = "vpn";
+            autoconnect = false;
+          };
+          vpn = {
+            gateway = "https://dscvpn1.dcccd.edu";
+            protocol = "anyconnect";
+            service-type = "org.freedesktop.NetworkManager.openconnect";
+            user-name = "e8000808";
+          };
+          ipv4.method = "auto";
+          ipv6.method = "auto";
         };
-        ipv6.method = "disabled";
       };
     };
   };
