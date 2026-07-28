@@ -202,6 +202,11 @@ in
           target = "ammars-pc.lan"
           prefix = "desktop"
           remote_bin = "/home/ammar/.nix-profile/bin/herdr"
+
+          [hosts.denethor]
+          target = "denethor.lan"
+          prefix = "denethor"
+          remote_bin = "/etc/profiles/per-user/ammar/bin/herdr"
         '';
       };
 
