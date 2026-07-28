@@ -186,8 +186,13 @@
         claudeCode.homelabBackends.enable = false;
         # null = no install and no uninstall (do not use [] — that cleans up)
         devPrograms.npmGlobalPackages = null;
-        # Memory-only git credentials; personal identity residual risk retained
-        programs.git.settings.credential.helper = lib.mkForce "cache --timeout=3600";
+        programs = {
+          git.settings = {
+            credential.helper = lib.mkForce "cache --timeout=3600";
+            user.email = lib.mkForce "ananjiani@dallascollege.edu";
+          };
+          jujutsu.settings.user.email = lib.mkForce "ananjiani@dallascollege.edu";
+        };
       };
   };
 

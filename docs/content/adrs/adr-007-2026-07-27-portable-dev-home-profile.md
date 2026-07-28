@@ -37,7 +37,7 @@ Chosen option: **portable dev profile + host overlay + module-level homelab gate
 - `piCodingAgent.homelabExtensions.enable = false` — immutable extensions dir excluding `nvidia-nim.ts` and `usage-tracker.ts`
 - `claudeCode.homelabBackends.enable = false` — no claude-kimi/claude-glm fish functions or Tavily/SearXNG/z.ai MCP derivations
 - `devPrograms.npmGlobalPackages = null` — npm-global management fully off (no install and no uninstall); do not use `[]` (that still cleans up)
-- `programs.git.settings.credential.helper = lib.mkForce "cache --timeout=3600"` — memory-only credentials (not plaintext `store`)
+- Git/JJ email is overridden to `ananjiani@dallascollege.edu`; Git credentials use memory-only `cache --timeout=3600` (not plaintext `store`)
 - `home-manager.backupFileExtension = "hm-bak"` — first activation renames regular-file clobbers instead of failing
 - Claude stable link is HM-managed (`home.file.".local/bin/claude"`), not an activation `rm -f` + `ln -s`
 
@@ -50,7 +50,7 @@ Module defaults stay true so Aragorn/workstations need no extra knobs (full exte
 - Good: npm global install/uninstall is best-effort (`|| echo … >&2`) when non-null; null leaves employer-VM globals alone
 - Good: filtered Pi extensions/settings on Denethor cannot re-enable secret-backed models/extensions via shared mutable symlinks
 - Bad: Denethor still requires a checkout at `~/.dotfiles` for remaining out-of-store Pi/Herdr paths. Checkout includes encrypted-but-undecryptable secret files and homelab topology docs/config — present on disk, not activated
-- Bad: personal Git/JJ identity remains in portable profiles (not changed here) — residual policy risk on the employer VM; only the credential helper is hardened to memory cache
+- Good: Denethor overrides the shared personal Git/JJ email with the Dallas College work address and keeps Git credentials in memory only
 - Bad: Denethor has embedded HM activation on `nixos-rebuild`/`deploy`; mis-importing a homelab module would ship secrets or LAN deps (review gate: imports list + false gates + null npm)
 - Neutral: standalone `nh home switch` / `homeConfigurations.denethor` remains unsupported — embedded HM only
 - Neutral: workstation profile left alone; Stylix interaction is a separate cleanup
