@@ -1,10 +1,11 @@
 /**
  * Auto Mode — autonomous operation toggle.
  *
- * Three levels, cycled by /auto (Ctrl+Alt+A, --auto CLI flag forces safe):
+ * Three levels. Set via `/auto safe|danger|off` or cycle with Ctrl+Alt+A.
+ * `--auto` CLI flag forces safe (internal mode `auto`).
  * - off:     normal interactive mode
  * - auto:    autonomous; destructive ops BLOCKED silently by
- *            confirm-destructive.ts
+ *            confirm-destructive.ts  (slash arg: `safe`)
  * - danger:  fully autonomous; ALL commands allowed, no guardrail
  *
  * Shared global __autoModeRef.mode is read by confirm-destructive.ts.
@@ -19,6 +20,12 @@ type Mode = "off" | "auto" | "danger";
 const ref = (globalThis as any).__autoModeRef as { mode: Mode };
 
 const ORDER: Mode[] = ["off", "auto", "danger"];
+const ARGS = ["safe", "danger", "off"] as const;
+const ARG_TO_MODE: Record<(typeof ARGS)[number], Mode> = {
+	safe: "auto",
+	danger: "danger",
+	off: "off",
+};
 
 const FRAMING: Record<Exclude<Mode, "off">, string> = {
 	auto: `[AUTO MODE] Work autonomously without asking. Destructive ops are blocked; surface any required destructive action to the user.`,
@@ -42,21 +49,36 @@ export default function (pi: ExtensionAPI) {
 		default: false,
 	});
 
-	function cycle(ctx: any): void {
-		ref.mode = ORDER[(ORDER.indexOf(ref.mode) + 1) % ORDER.length];
+	function setMode(ctx: any, mode: Mode): void {
+		ref.mode = mode;
 		ctx.ui.notify(
-			ref.mode === "off" ? "Auto mode OFF"
-				: ref.mode === "auto" ? "Auto mode: autonomous, destructive BLOCKED"
+			mode === "off" ? "Auto mode OFF"
+				: mode === "auto" ? "Auto mode: autonomous, destructive BLOCKED"
 				: "⚠ Auto mode: DANGER — all commands allowed",
-			ref.mode === "danger" ? "error" : "info",
+			mode === "danger" ? "error" : "info",
 		);
 		render(ctx);
-		pi.appendEntry("auto-mode", { mode: ref.mode });
+		pi.appendEntry("auto-mode", { mode });
+	}
+
+	function cycle(ctx: any): void {
+		setMode(ctx, ORDER[(ORDER.indexOf(ref.mode) + 1) % ORDER.length]);
 	}
 
 	pi.registerCommand("auto", {
-		description: "Cycle auto mode: off → auto (safe) → danger (allow all) → off",
-		handler: async (_args, ctx) => cycle(ctx),
+		description: "Set auto mode: /auto safe | danger | off",
+		getArgumentCompletions: (prefix) => {
+			const filtered = ARGS.filter((a) => a.startsWith(prefix.toLowerCase()));
+			return filtered.length > 0 ? filtered.map((a) => ({ value: a, label: a })) : null;
+		},
+		handler: async (args, ctx) => {
+			const arg = args.trim().toLowerCase();
+			if (!(ARGS as readonly string[]).includes(arg)) {
+				ctx.ui.notify("Usage: /auto safe | danger | off", "error");
+				return;
+			}
+			setMode(ctx, ARG_TO_MODE[arg as keyof typeof ARG_TO_MODE]);
+		},
 	});
 
 	pi.registerShortcut(Key.ctrlAlt("a"), {
