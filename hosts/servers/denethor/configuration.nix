@@ -83,6 +83,7 @@
             protocol = "anyconnect";
             service-type = "org.freedesktop.NetworkManager.openconnect";
             user-name = "e8000808";
+            useragent = "AnyConnect";
           };
           ipv4.method = "auto";
           ipv6.method = "auto";
