@@ -56,19 +56,88 @@ let
     mode = "1920x1080@120";
   };
 
+  # Lease CoreCtrl's manual Gaming profile across Sunshine + GameMode so one
+  # client does not deactivate while the other still needs it.
+  corectrlLeaseHelper = pkgs.writeShellScript "corectrl-gaming-lease" ''
+    set -euo pipefail
+    corectrl=${lib.getExe' pkgs.corectrl "corectrl"}
+    pgrep=${lib.getExe' pkgs.procps "pgrep"}
+    sleep=${lib.getExe' pkgs.coreutils "sleep"}
+    timeout=${lib.getExe' pkgs.coreutils "timeout"}
+    systemd_run=${lib.getExe' pkgs.systemd "systemd-run"}
+    mkdir=${lib.getExe' pkgs.coreutils "mkdir"}
+    rm=${lib.getExe' pkgs.coreutils "rm"}
+    touch=${lib.getExe' pkgs.coreutils "touch"}
+    flock=${lib.getExe' pkgs.util-linux "flock"}
+    find=${lib.getExe' pkgs.findutils "find"}
+
+    state_dir="''${XDG_RUNTIME_DIR:?}/corectrl-gaming-leases"
+    lock_file="''${XDG_RUNTIME_DIR}/corectrl-gaming-leases.lock"
+    socket_path="''${TMPDIR:-/tmp}/CoreCtrl"
+
+    usage() {
+      echo "usage: $0 acquire|release sunshine|gamemode" >&2
+      exit 1
+    }
+
+    [ "$#" -eq 2 ] || usage
+    action=$1
+    owner=$2
+    case "$action" in
+      acquire | release) ;;
+      *) usage ;;
+    esac
+    case "$owner" in
+      sunshine | gamemode) ;;
+      *) usage ;;
+    esac
+
+    "$mkdir" -p "$state_dir"
+    exec 9>"$lock_file"
+    "$flock" -w 5 9
+
+    case "$action" in
+      acquire)
+        if ! "$pgrep" --uid "$UID" -x corectrl >/dev/null; then
+          "$rm" -f "$socket_path"
+          "$systemd_run" --user --unit=corectrl-lease --collect --property=Type=exec -- \
+            "$corectrl" --minimize-systray
+        fi
+        for _ in {1..20}; do
+          if "$pgrep" --uid "$UID" -x corectrl >/dev/null && [ -S "$socket_path" ]; then
+            break
+          fi
+          "$sleep" 0.5
+        done
+        "$pgrep" --uid "$UID" -x corectrl >/dev/null
+        [ -S "$socket_path" ]
+        "$timeout" 5 "$corectrl" --activate-manual-profile Gaming
+        "$touch" "$state_dir/$owner"
+        ;;
+      release)
+        if [ ! -e "$state_dir/$owner" ]; then
+          exit 0
+        fi
+        "$rm" -f "$state_dir/$owner"
+        if [ -z "$("$find" "$state_dir" -mindepth 1 -maxdepth 1 -print -quit)" ]; then
+          if "$pgrep" --uid "$UID" -x corectrl >/dev/null && [ -S "$socket_path" ]; then
+            "$timeout" 5 "$corectrl" --deactivate-manual-profile Gaming
+          fi
+        fi
+        ;;
+    esac
+  '';
+
   # Sunshine provides client mode and HDR state to prep commands. Installing
   # the matching first-priority niri fragment switches DP-3 atomically; restore
   # removes it so the static Home Manager DP-3 `off` block takes over again.
   sunshineDisplayHelper = pkgs.writeShellScript "sunshine-niri-display" ''
     set -euo pipefail
     niri=${lib.getExe config.programs.niri.package}
-    corectrl=${lib.getExe' pkgs.corectrl "corectrl"}
     jq=${lib.getExe pkgs.jq}
-    pgrep=${lib.getExe' pkgs.procps "pgrep"}
-    sleep=${lib.getExe' pkgs.coreutils "sleep"}
-    systemd_run=${lib.getExe' pkgs.systemd "systemd-run"}
     install=${lib.getExe' pkgs.coreutils "install"}
     rm=${lib.getExe' pkgs.coreutils "rm"}
+    lease=${corectrlLeaseHelper}
     fragment_path="''${XDG_CONFIG_HOME:-$HOME/.config}/niri/sunshine.kdl"
 
     setup() {
@@ -94,21 +163,12 @@ let
       "$niri" msg action focus-window --id "$steam_id"
       "$niri" msg action expand-column-to-available-width
 
-      if ! "$pgrep" -x corectrl >/dev/null; then
-        "$systemd_run" --user --unit=corectrl-sunshine --collect --property=Type=exec -- \
-          "$corectrl" --minimize-systray
-        for _ in {1..20}; do
-          "$pgrep" -x corectrl >/dev/null && break
-          "$sleep" 0.5
-        done
-        "$pgrep" -x corectrl >/dev/null
-      fi
-      "$corectrl" --activate-manual-profile Gaming
+      "$lease" acquire sunshine
     }
 
     restore() {
       failed=0
-      "$corectrl" --deactivate-manual-profile Gaming || failed=1
+      "$lease" release sunshine || failed=1
       "$niri" msg action move-workspace-to-monitor --reference "gaming" DP-2 || failed=1
       "$rm" -f "$fragment_path" || failed=1
       "$niri" msg action load-config-file || failed=1
@@ -353,6 +413,11 @@ in
         };
       };
     };
+
+    user.services = {
+      sunshine.serviceConfig.ExecStopPost = "${corectrlLeaseHelper} release sunshine";
+      gamemoded.serviceConfig.ExecStopPost = "${corectrlLeaseHelper} release gamemode";
+    };
   };
 
   environment.systemPackages = with pkgs; [
@@ -406,6 +471,14 @@ in
   programs = {
     # Experimental HDR fork — https://github.com/niri-wm/niri/discussions/1128
     niri.package = pkgs.niri-hdr;
+
+    # Desktop-only: shared gaming aspect enables GameMode, but only this host
+    # has CoreCtrl's Gaming manual profile.
+    gamemode.settings.custom = {
+      start = "${corectrlLeaseHelper} acquire gamemode";
+      end = "${corectrlLeaseHelper} release gamemode";
+      script_timeout = 30;
+    };
 
     ssh.knownHosts = {
       "theoden.lan".publicKey =
