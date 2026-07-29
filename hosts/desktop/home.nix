@@ -120,7 +120,9 @@ let
         esac
       done
     fi
-    exec ${pkgs.llm-agents.pi}/bin/pi "$@"
+    # Managed wrapper (telemetry/Wayland env), not raw pkgs.llm-agents.pi.
+    # That wrapper execs the real binary — no recursion through this shim.
+    exec ${config.programs.pi-coding-agent.package}/bin/pi "$@"
   '';
   # Idempotent PI_WEB_TOKEN provisioning: keep a valid existing token, replace
   # only a missing/malformed PI_WEB_TOKEN line, preserve unrelated env lines,
@@ -210,6 +212,11 @@ in
       "HDMI-A-1" = [ 4 ];
       "DP-1" = [ 5 ];
     };
+  };
+
+  piCodingAgent.computerUse = {
+    enable = true;
+    wayland = true;
   };
 
   crypto = {

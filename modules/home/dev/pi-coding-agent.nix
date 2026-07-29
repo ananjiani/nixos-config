@@ -394,8 +394,7 @@ let
 
   # Desktop control package (@amaster.ai/pi-computer-use). Built from npm
   # tarball + staged lockfile; host-gated via computerUse.enable. Full
-  # logged-in desktop access — enable only on hosts that should expose it
-  # (currently Denethor).
+  # logged-in desktop access — enable only on hosts that should expose it.
   piComputerUse = pkgs.buildNpmPackage {
     pname = "pi-computer-use";
     version = "0.1.6";
@@ -574,14 +573,20 @@ let
         { };
   };
 
-  # Thin wrapper around pkgs.llm-agents.pi so we can inject flags
-  # (DISPLAY/CUA on computerUse hosts) before the real binary.
+  # Thin wrapper around pkgs.llm-agents.pi so we can inject CUA env
+  # (and optional DISPLAY fallback) on computerUse hosts before the real binary.
   piPackage = pkgs.writeShellScriptBin "pi" ''
     ${lib.optionalString cfg.computerUse.enable ''
-      # Denethor's LightDM autologin desktop. Keep an explicit DISPLAY
-      # (for example SSH forwarding) when the caller already supplied one.
-      export DISPLAY="''${DISPLAY:-:0}"
       export CUA_TELEMETRY_ENABLED=false
+      ${lib.optionalString cfg.computerUse.wayland ''
+        export CUA_DRIVER_RS_ENABLE_WAYLAND=1
+      ''}
+      ${lib.optionalString (cfg.computerUse.displayFallback != null) ''
+        # Optional X11 DISPLAY fallback for launches without DISPLAY set.
+        # Keep an explicit DISPLAY (e.g. SSH forwarding) when already supplied.
+        # Wayland hosts leave displayFallback null and inherit the session env.
+        export DISPLAY="''${DISPLAY:-${cfg.computerUse.displayFallback}}"
+      ''}
     ''}
     exec ${pkgs.llm-agents.pi}/bin/pi "$@"
   '';
@@ -810,8 +815,20 @@ in
     };
 
     # Host-specific: full logged-in desktop access via Cua Driver. Only enable
-    # on machines that should expose the session to Pi (e.g. Denethor work VM).
-    computerUse.enable = lib.mkEnableOption "Pi desktop control through Cua Driver";
+    # on machines that should expose the session to Pi.
+    computerUse = {
+      enable = lib.mkEnableOption "Pi desktop control through Cua Driver";
+      wayland = lib.mkEnableOption "native Wayland CUA driver (sets CUA_DRIVER_RS_ENABLE_WAYLAND=1)";
+      displayFallback = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = ''
+          Optional X11 DISPLAY fallback used when the process has no DISPLAY set
+          (e.g. ":0" for a headless LightDM session). Wayland hosts should leave
+          this null so the wrapper does not invent a DISPLAY value.
+        '';
+      };
+    };
   };
 
   # numtide/llm-agents.nix's default overlay namespaces everything under
@@ -1031,6 +1048,10 @@ in
         # Paren checker for Emacs Lisp the agent writes. See the comment
         # on the derivation above and skills/elisp/SKILL.md.
         agent-lisp-paren-aid
+      ]
+      ++ lib.optionals (cfg.computerUse.enable && cfg.computerUse.wayland) [
+        # cua-driver 0.9.0 types via wtype on native Wayland.
+        pkgs.wtype
       ];
       sessionVariables.PI_CACHE_RETENTION = "long";
       file = {

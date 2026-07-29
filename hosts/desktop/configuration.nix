@@ -371,6 +371,8 @@ in
         ACTION=="add", SUBSYSTEM=="net", KERNEL=="eno1", RUN+="${pkgs.ethtool}/bin/ethtool -s eno1 wol g"
       '';
     };
+    # a11y bus for Pi computer-use / Cua Driver UI automation.
+    gnome.at-spi2-core.enable = true;
     sunshine = {
       enable = true;
       autoStart = true;

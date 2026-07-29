@@ -185,7 +185,10 @@
           searxngUrl = null;
           homelabProviders.enable = false; # empty providers + filtered model list
           homelabExtensions.enable = false; # drop nvidia-nim + usage-tracker
-          computerUse.enable = true; # Cua Driver desktop control (host-only)
+          computerUse = {
+            enable = true; # Cua Driver desktop control (host-only)
+            displayFallback = ":0"; # LightDM X11 session when DISPLAY unset
+          };
         };
         claudeCode.homelabBackends.enable = false;
         # null = no install and no uninstall (do not use [] — that cleans up)
