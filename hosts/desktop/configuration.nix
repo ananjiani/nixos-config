@@ -80,6 +80,10 @@ let
       exit 1
     }
 
+    corectrl_running() {
+      "$pgrep" --uid "$UID" -f '(^|/)corectrl( |$)' >/dev/null
+    }
+
     [ "$#" -eq 2 ] || usage
     action=$1
     owner=$2
@@ -98,18 +102,18 @@ let
 
     case "$action" in
       acquire)
-        if ! "$pgrep" --uid "$UID" -x corectrl >/dev/null; then
+        if ! corectrl_running; then
           "$rm" -f "$socket_path"
           "$systemd_run" --user --unit=corectrl-lease --collect --property=Type=exec -- \
             "$corectrl" --minimize-systray
         fi
         for _ in {1..20}; do
-          if "$pgrep" --uid "$UID" -x corectrl >/dev/null && [ -S "$socket_path" ]; then
+          if corectrl_running && [ -S "$socket_path" ]; then
             break
           fi
           "$sleep" 0.5
         done
-        "$pgrep" --uid "$UID" -x corectrl >/dev/null
+        corectrl_running
         [ -S "$socket_path" ]
         "$timeout" 5 "$corectrl" --activate-manual-profile Gaming
         "$touch" "$state_dir/$owner"
@@ -120,7 +124,7 @@ let
         fi
         "$rm" -f "$state_dir/$owner"
         if [ -z "$("$find" "$state_dir" -mindepth 1 -maxdepth 1 -print -quit)" ]; then
-          if "$pgrep" --uid "$UID" -x corectrl >/dev/null && [ -S "$socket_path" ]; then
+          if corectrl_running && [ -S "$socket_path" ]; then
             "$timeout" 5 "$corectrl" --deactivate-manual-profile Gaming
           fi
         fi
@@ -458,6 +462,7 @@ in
   };
 
   gaming.enable = true;
+  users.users.ammar.extraGroups = [ "gamemode" ];
 
   moondeck = {
     enable = true;
