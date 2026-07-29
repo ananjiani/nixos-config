@@ -35,20 +35,14 @@ wait_focused() {
     return 1
 }
 
-# Jump to a fresh dynamic workspace and name it "reading".
-# niri creates numbered workspaces on demand; set-workspace-name
-# (25.01+) then labels it so Waybar and window rules see it by name.
-# This avoids the pre-declared named workspace sitting around empty
-# on every boot — the workspace only exists when reading mode is
-# actually fired.
-niri msg action focus-workspace 99
-niri msg action set-workspace-name "$WORKSPACE"
+# Focus the persistent named workspace declared by niri config.
+niri msg action focus-workspace "$WORKSPACE"
 
-# 1. Readwise Reader as a Brave PWA-style window (left half).
+# 1. Readwise Reader as a Brave Origin PWA-style window (left half).
 #    Brave's --app=URL mode generates a per-URL hashed app_id of the form
 #    "brave-read.readwise.io__-Default", NOT "brave-browser". Match the
 #    stable "brave-read.readwise.io" prefix.
-brave --app="https://read.readwise.io" >/dev/null 2>&1 &
+brave-origin --app="https://read.readwise.io" >/dev/null 2>&1 &
 wait_focused "brave-read\\.readwise\\.io" 10 || true
 niri msg action set-column-width "50%"
 

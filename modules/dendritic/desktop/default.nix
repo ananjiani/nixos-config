@@ -1004,6 +1004,7 @@ in
                     "chat" = { };
                     "work" = { };
                     "gaming" = { };
+                    "reading" = { };
                   };
 
                   # XWayland support for X11-only apps like Steam.
@@ -1362,7 +1363,7 @@ in
                 };
 
                 # Fuzzel entry for reading-mode.sh so "reading" is findable
-                # from the launcher as well as the Mod+Shift+E keybind.
+                # from the launcher.
                 xdg.desktopEntries.reading-mode = {
                   name = "Reading";
                   genericName = "Reading Workspace";
