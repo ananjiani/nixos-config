@@ -46,7 +46,7 @@
         "--browser-url=http://127.0.0.1:9222"
       ],
       "type": "stdio",
-      "lifecycle": "keep-alive"
+      "lifecycle": "lazy"
     }
   }
 }
