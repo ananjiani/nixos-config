@@ -144,7 +144,12 @@
         enable = true;
         enableScreensaver = false;
       };
-      displayManager.lightdm.enable = true;
+      displayManager = {
+        lightdm.enable = true;
+        setupCommands = ''
+          ${lib.getExe pkgs.xrandr} --output Virtual-1 --mode 1920x1080 --rate 60
+        '';
+      };
     };
     displayManager.autoLogin = {
       enable = true;
