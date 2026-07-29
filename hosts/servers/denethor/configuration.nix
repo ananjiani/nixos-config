@@ -185,8 +185,10 @@
           searxngUrl = null;
           homelabProviders.enable = false; # empty providers + filtered model list
           homelabExtensions.enable = false; # drop nvidia-nim + usage-tracker
+          edgeDevtoolsUrl = "http://127.0.0.1:9222";
           computerUse = {
             enable = true; # Cua Driver desktop control (host-only)
+            blockForegroundInput = true; # no global/foreground input steal
             displayFallback = ":0"; # LightDM X11 session when DISPLAY unset
           };
         };
@@ -199,6 +201,26 @@
             user.email = lib.mkForce "ananjiani@dallascollege.edu";
           };
           jujutsu.settings.user.email = lib.mkForce "ananjiani@dallascollege.edu";
+        };
+
+        # Edge with CDP on 127.0.0.1:9222 for Pi edge-devtools MCP. Separate
+        # profile from personal Edge; loopback-only (CDP = full browser control).
+        systemd.user.services.edge-agent = {
+          Unit = {
+            Description = "Microsoft Edge with remote debugging for Pi MCP";
+            After = [ "graphical-session.target" ];
+            PartOf = [ "graphical-session.target" ];
+          };
+          Service = {
+            ExecStart = "${pkgs.microsoft-edge}/bin/microsoft-edge --remote-debugging-address=127.0.0.1 --remote-debugging-port=9222 --user-data-dir=%h/.local/share/edge-agent --no-first-run --no-default-browser-check";
+            Environment = [
+              "DISPLAY=:0"
+              "XAUTHORITY=%h/.Xauthority"
+            ];
+            Restart = "on-failure";
+            RestartSec = 3;
+          };
+          Install.WantedBy = [ "graphical-session.target" ];
         };
       };
   };

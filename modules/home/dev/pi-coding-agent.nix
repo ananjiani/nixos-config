@@ -426,6 +426,59 @@ let
   };
   piComputerUseRoot = "${piComputerUse}/lib/node_modules/@amaster.ai/pi-computer-use";
 
+  # Narrow CUA safety guard, generated here rather than tracked in the
+  # extensions tree because it is host-gated (computerUse.blockForegroundInput)
+  # and the tree is loaded wholesale on every host.
+  #
+  # Blocks ONLY the computer_use_* actions that steal global/foreground input
+  # — those fight Pi for the keyboard and mouse of the session it runs in.
+  # Window-scoped background actions, browser CDP work (edge-devtools MCP),
+  # list/read/screenshot tools, and the app-launch confirmation are untouched.
+  # get_desktop_state stays allowed: it carries no input.scope field.
+  piForegroundInputGuard = pkgs.writeText "block-foreground-input.ts" ''
+    /**
+     * Foreground Input Guard
+     *
+     * Blocks global/foreground computer-use input so the agent cannot take
+     * over the keyboard and mouse of the session Pi itself is running in.
+     * Window-scoped background actions and read-only inspection still pass.
+     */
+
+    import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
+    const REASON =
+      "Global/foreground computer input is disabled because it can interfere " +
+      "with Pi. For browser work use the edge-devtools MCP; otherwise use " +
+      "window-scoped background actions.";
+
+    export default function (pi: ExtensionAPI) {
+      pi.on("tool_call", async (event) => {
+        const name = event.toolName;
+        if (typeof name !== "string" || !name.startsWith("computer_use_")) {
+          return;
+        }
+
+        if (
+          name === "computer_use_bring_to_front" ||
+          name === "computer_use_replay_trajectory"
+        ) {
+          return { block: true, reason: REASON };
+        }
+
+        // Unknown/non-object input is not a foreground action we can identify.
+        const input = event.input;
+        if (typeof input !== "object" || input === null) {
+          return;
+        }
+
+        const record = input as Record<string, unknown>;
+        if (record.scope === "desktop" || record.delivery_mode === "foreground") {
+          return { block: true, reason: REASON };
+        }
+      });
+    }
+  '';
+
   # Declarative settings for programs.pi-coding-agent (read-only store path).
   # When computerUse.enable, append the store package path + CUA config.
   # The package asks before launching apps and six high-risk actions.
@@ -477,7 +530,8 @@ let
     ++ lib.optionals cfg.computerUse.enable [ piComputerUseRoot ];
     extensions = [
       "${config.home.homeDirectory}/.pi/agent/git/github.com/annapurna-himal/pi-vim-editor/index.ts"
-    ];
+    ]
+    ++ lib.optional cfg.computerUse.blockForegroundInput "${piForegroundInputGuard}";
     hideThinkingBlock = false;
     defaultThinkingLevel = "high";
   }
@@ -667,6 +721,19 @@ let
           ];
           lifecycle = "lazy";
         };
+      }
+      // lib.optionalAttrs (cfg.edgeDevtoolsUrl != null) {
+        "edge-devtools" = {
+          command = "${pkgs.nodejs}/bin/npx";
+          args = [
+            "-y"
+            "chrome-devtools-mcp@1.6.0"
+            "--browser-url=${cfg.edgeDevtoolsUrl}"
+            "--no-usage-statistics"
+            "--no-performance-crux"
+          ];
+          lifecycle = "lazy";
+        };
       };
     }
   );
@@ -814,11 +881,29 @@ in
       '';
     };
 
+    # When set, add lazy edge-devtools MCP that attaches to an already-running
+    # Chromium/Edge CDP endpoint (normally loopback). Null = omit server.
+    edgeDevtoolsUrl = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        When non-null, add a lazy edge-devtools MCP server that attaches to an
+        already-running Chromium/Edge CDP endpoint via --browser-url. URL should
+        normally be loopback (e.g. http://127.0.0.1:9222). Null omits the server.
+      '';
+    };
+
     # Host-specific: full logged-in desktop access via Cua Driver. Only enable
     # on machines that should expose the session to Pi.
     computerUse = {
       enable = lib.mkEnableOption "Pi desktop control through Cua Driver";
       wayland = lib.mkEnableOption "native Wayland CUA driver (sets CUA_DRIVER_RS_ENABLE_WAYLAND=1)";
+      blockForegroundInput = lib.mkEnableOption ''
+        an extension that blocks global/foreground computer_use_* input actions
+        (input.scope == "desktop", input.delivery_mode == "foreground", and
+        computer_use_bring_to_front). Window-scoped background actions,
+        read-only inspection, and browser CDP work stay allowed
+      '';
       displayFallback = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
         default = null;
