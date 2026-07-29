@@ -7,15 +7,19 @@
  * from being interrupted by systemd suspend.
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { spawn, type ChildProcess } from "node:child_process";
 
 export default function sleepInhibitExtension(pi: ExtensionAPI): void {
+  // Host-gated via PI_SLEEP_INHIBIT from the managed pi wrapper.
+  // No spawn / handlers when unset — avoids Polkit prompts on hosts that never sleep.
+  if (process.env.PI_SLEEP_INHIBIT !== "1") return;
+
   let inhibitor: ChildProcess | null = null;
 
   function takeInhibitor(): void {
     if (inhibitor) return;
-    inhibitor = spawn(
+    const child = spawn(
       "systemd-inhibit",
       [
         "--what=sleep",
@@ -27,9 +31,10 @@ export default function sleepInhibitExtension(pi: ExtensionAPI): void {
       ],
       { stdio: "ignore" },
     );
-    inhibitor.unref();
-    inhibitor.on("exit", () => {
-      inhibitor = null;
+    inhibitor = child;
+    child.unref();
+    child.on("exit", () => {
+      if (inhibitor === child) inhibitor = null;
     });
   }
 
@@ -44,6 +49,7 @@ export default function sleepInhibitExtension(pi: ExtensionAPI): void {
   const cleanup = () => releaseInhibitor();
   process.on("SIGTERM", cleanup);
   process.on("SIGINT", cleanup);
+  process.on("SIGHUP", cleanup);
   process.on("beforeExit", cleanup);
 
   pi.on("before_agent_start", async () => {
@@ -52,5 +58,13 @@ export default function sleepInhibitExtension(pi: ExtensionAPI): void {
 
   pi.on("agent_end", async () => {
     releaseInhibitor();
+  });
+
+  pi.on("session_shutdown", async () => {
+    cleanup();
+    process.off("SIGTERM", cleanup);
+    process.off("SIGINT", cleanup);
+    process.off("SIGHUP", cleanup);
+    process.off("beforeExit", cleanup);
   });
 }

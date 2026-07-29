@@ -629,7 +629,11 @@ let
 
   # Thin wrapper around pkgs.llm-agents.pi so we can inject CUA env
   # (and optional DISPLAY fallback) on computerUse hosts before the real binary.
+  # PI_SLEEP_INHIBIT gates the sleep-inhibit extension (opt-in per host).
   piPackage = pkgs.writeShellScriptBin "pi" ''
+    ${lib.optionalString cfg.sleepInhibit.enable ''
+      export PI_SLEEP_INHIBIT=1
+    ''}
     ${lib.optionalString cfg.computerUse.enable ''
       export CUA_TELEMETRY_ENABLED=false
       ${lib.optionalString cfg.computerUse.wayland ''
@@ -892,6 +896,10 @@ in
         normally be loopback (e.g. http://127.0.0.1:9222). Null omits the server.
       '';
     };
+
+    # Host-specific: systemd-inhibit sleep while Pi is mid-turn. Default off
+    # so hosts without a sleep policy (and no Polkit rule) never prompt.
+    sleepInhibit.enable = lib.mkEnableOption "systemd-inhibit sleep while Pi is actively working";
 
     # Host-specific: full logged-in desktop access via Cua Driver. Only enable
     # on machines that should expose the session to Pi.

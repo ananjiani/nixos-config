@@ -214,9 +214,12 @@ in
     };
   };
 
-  piCodingAgent.computerUse = {
-    enable = true;
-    wayland = true;
+  piCodingAgent = {
+    sleepInhibit.enable = true;
+    computerUse = {
+      enable = true;
+      wayland = true;
+    };
   };
 
   crypto = {
