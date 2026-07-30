@@ -739,6 +739,8 @@ in
       atticd = {
         after = [ "vault-agent-default.service" ];
         wants = [ "vault-agent-default.service" ];
+        partOf = [ "srv-nfs-attic.mount" ];
+        unitConfig.RequiresMountsFor = [ "/srv/nfs/attic" ];
       };
       cloudflared-tunnel-b33ec739-7324-4c6f-b6fa-daedbe0828c8 = {
         after = [ "vault-agent-default.service" ];
@@ -759,6 +761,7 @@ in
           config.services.postgresql.package
           pkgs.findutils
         ];
+        unitConfig.RequiresMountsFor = [ "/srv/nfs/attic" ];
         serviceConfig = {
           Type = "oneshot";
           User = "atticd";
