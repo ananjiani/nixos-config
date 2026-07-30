@@ -1,0 +1,13 @@
+{
+  "name": "aragorn-actual-cli",
+  "version": "26.6.0",
+  "private": true,
+  "description": "Local pin of the official Actual Budget CLI, packaged with buildNpmPackage",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@actual-app/cli": "26.6.0"
+  }
+}

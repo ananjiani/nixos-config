@@ -52,6 +52,21 @@
       ]
     },
     {
+      "description": "Actual Budget CLI must stay compatible with the running Actual sync server - review the server version before merging, then redeploy aragorn",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["@actual-app/cli"],
+      "automerge": false,
+      "labels": ["dependencies", "automated", "manual-upgrade-required"]
+    },
+    {
+      "description": "Actual Budget CLI transitive lock updates also require review",
+      "matchManagers": ["npm"],
+      "matchFileNames": ["hosts/servers/aragorn/actual-cli/package.json"],
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "automerge": false,
+      "labels": ["dependencies", "automated", "manual-upgrade-required"]
+    },
+    {
       "description": "Postgres major upgrades require pg_dump/restore - never automerge",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["postgres"],

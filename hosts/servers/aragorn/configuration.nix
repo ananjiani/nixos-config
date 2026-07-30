@@ -53,6 +53,7 @@ in
     ../../_profiles/server/proxmox-disk-config.nix
     ../../_profiles/server/configuration.nix
     ../../../modules/nixos/networking.nix
+    ./hermes.nix
   ];
 
   networking = {
@@ -107,48 +108,8 @@ in
     };
   };
 
-  users = {
-    # Keep the user manager alive for persistent agent sessions and user secrets.
-    users.ammar = {
-      linger = true;
-      extraGroups = [ "hermes" ];
-    };
-    groups.hermes = { };
-  };
-
-  # Hermes Agent trial — native mode on existing ammar account (Codex OAuth).
-  # Auth bootstrap after deploy: hermes auth add openai-codex
-  services = {
-    hermes-agent = {
-      enable = true;
-      user = "ammar";
-      group = "hermes";
-      createUser = false;
-      addToSystemPackages = true;
-      extraPackages = [ pkgs.openssh ];
-      settings = {
-        model = {
-          provider = "openai-codex";
-          default = "gpt-5.6-sol";
-        };
-        terminal = {
-          backend = "local";
-          env_passthrough = [ ];
-        };
-        approvals = {
-          mode = "manual";
-          cron_mode = "deny";
-        };
-        security = {
-          allow_lazy_installs = false;
-          allow_private_urls = false;
-        };
-        code_execution = {
-          mode = "strict";
-        };
-      };
-    };
-  };
+  # Keep the user manager alive for persistent agent sessions and user secrets.
+  users.users.ammar.linger = true;
 
   # Dev/agent tooling on top of the minimal shared server home profile.
   # Function form so lib.hm (home-manager) is in scope for activation scripts.
