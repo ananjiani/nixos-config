@@ -129,6 +129,12 @@
     ];
   };
 
+  zramSwap = {
+    enable = true;
+    memoryPercent = 50;
+    algorithm = "zstd";
+  };
+
   # base modules.ssh opens SSH + mosh globally; pin SSH to ens18 only (above).
   services = {
     openssh.openFirewall = lib.mkForce false;
