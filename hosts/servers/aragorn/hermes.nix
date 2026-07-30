@@ -15,19 +15,19 @@ let
 
   # @actual-app/cli requires Node >= 22 (better-sqlite3 is built from source).
   nodejs = pkgs.nodejs_22;
+  nodePkgs = pkgs.extend (_final: _prev: { inherit nodejs; });
 
   # Raw CLI. Intentionally NOT added to any PATH — only the `actual`
   # wrapper below invokes it, so credentials are never optional.
-  actualCli = pkgs.buildNpmPackage {
+  actualCli = nodePkgs.buildNpmPackage {
     pname = "actual-cli";
     version = manifest.dependencies."@actual-app/cli";
     src = ./actual-cli;
-    inherit nodejs;
 
     # importNpmLock reads package-lock.json directly: no npmDepsHash to
     # keep in sync, and Renovate's lockfile update is the whole change.
-    npmDeps = pkgs.importNpmLock { npmRoot = ./actual-cli; };
-    inherit (pkgs.importNpmLock) npmConfigHook;
+    npmDeps = nodePkgs.importNpmLock { npmRoot = ./actual-cli; };
+    inherit (nodePkgs.importNpmLock) npmConfigHook;
 
     nativeBuildInputs = [
       pkgs.python3
