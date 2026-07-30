@@ -271,8 +271,20 @@ in
     groups.hermes = { };
   };
 
-  # Actual Budget credentials. Values live only in OpenBao; nothing here.
+  # Hermes and Actual Budget credentials. Values live only in OpenBao.
   modules.vault-agent.secrets = {
+    hermes_telegram_env = {
+      path = "secret/nixos/hermes";
+      field = "bot_token"; # ignored — template is set
+      template = ''
+        TELEGRAM_BOT_TOKEN={{ with secret "secret/data/nixos/hermes" }}{{ index .Data.data "bot_token" }}{{ end }}
+        TELEGRAM_ALLOWED_USERS={{ with secret "secret/data/nixos/hermes" }}{{ index .Data.data "allowed_users" }}{{ end }}
+        TELEGRAM_HOME_CHANNEL={{ with secret "secret/data/nixos/hermes" }}{{ index .Data.data "home_channel" }}{{ end }}
+      '';
+      owner = "ammar";
+      group = "hermes";
+      mode = "0440";
+    };
     actual_session_token = {
       path = "secret/nixos/actual-budget";
       field = "session-token";
@@ -327,12 +339,20 @@ in
     };
   };
 
-  # The gateway runs with HERMES_HOME=/var/lib/hermes/.hermes, so the
-  # home-manager copy under ~/.hermes alone would never be discovered.
-  systemd.tmpfiles.rules = [
-    "d /var/lib/hermes/.hermes/skills/finance 0750 ammar hermes -"
-    "d /var/lib/hermes/.hermes/skills/finance/actual-budget 0750 ammar hermes -"
-    "L+ /var/lib/hermes/.hermes/skills/finance/actual-budget/SKILL.md - - - - ${actualSkill}"
-  ];
+  systemd = {
+    services.hermes-agent = {
+      after = [ "vault-agent-default.service" ];
+      requires = [ "vault-agent-default.service" ];
+      serviceConfig.EnvironmentFile = [ "/run/secrets/hermes_telegram_env" ];
+    };
+
+    # The gateway runs with HERMES_HOME=/var/lib/hermes/.hermes, so the
+    # home-manager copy under ~/.hermes alone would never be discovered.
+    tmpfiles.rules = [
+      "d /var/lib/hermes/.hermes/skills/finance 0750 ammar hermes -"
+      "d /var/lib/hermes/.hermes/skills/finance/actual-budget 0750 ammar hermes -"
+      "L+ /var/lib/hermes/.hermes/skills/finance/actual-budget/SKILL.md - - - - ${actualSkill}"
+    ];
+  };
 
 }
