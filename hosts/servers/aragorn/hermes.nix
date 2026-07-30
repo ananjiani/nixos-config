@@ -298,6 +298,7 @@ in
       ];
       environment = {
         SEARXNG_URL = "https://searxng.lan";
+        SSL_CERT_FILE = "/etc/ssl/certs/ca-certificates.crt";
       };
       settings = {
         model = {
