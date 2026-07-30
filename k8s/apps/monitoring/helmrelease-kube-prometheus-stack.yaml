@@ -23,6 +23,7 @@ spec:
     # ---- Prometheus ----
     prometheus:
       prometheusSpec:
+        maximumStartupDurationSeconds: 3600
         retention: 5d
         retentionSize: 9GB
         storageSpec:
