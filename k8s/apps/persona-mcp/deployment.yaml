@@ -51,13 +51,10 @@ spec:
             limits:
               memory: "2Gi"
               cpu: "1000m"
-          # Extra exec probe touches NFS mount so stale mounts trigger restart
           livenessProbe:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - "wget -qO- http://localhost:8080/health && test -d /app/personas && test -w /app/personas"
+            httpGet:
+              path: /health
+              port: http
             initialDelaySeconds: 300
             periodSeconds: 30
             timeoutSeconds: 10
