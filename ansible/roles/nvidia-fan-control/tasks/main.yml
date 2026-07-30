@@ -22,30 +22,73 @@
   register: kernel_6_14_version
   changed_when: false
 
-- name: Set kernel 6.14 as default boot kernel
+# proxmox-boot-tool only drives the boot order on hosts where it manages the
+# ESPs (systemd-boot / UEFI). It records those in /etc/kernel/proxmox-boot-uuids;
+# without that file 'proxmox-boot-tool kernel pin' just writes an inert
+# /etc/kernel/proxmox-boot-pin and GRUB keeps booting whatever GRUB_DEFAULT
+# selects. Pick the mechanism that actually applies to this host.
+- name: Detect proxmox-boot-tool managed ESPs
+  ansible.builtin.stat:
+    path: /etc/kernel/proxmox-boot-uuids
+  register: proxmox_boot_uuids
+
+- name: Set kernel 6.14 as default boot kernel (proxmox-boot-tool hosts)
   ansible.builtin.command:
     cmd: proxmox-boot-tool kernel pin {{ kernel_6_14_version.stdout }}
   register: kernel_pin_result
   changed_when: "'Setting' in kernel_pin_result.stdout"
+  when: proxmox_boot_uuids.stat.exists
 
 - name: Refresh boot configuration
   ansible.builtin.command:
     cmd: proxmox-boot-tool refresh
-  when: kernel_pin_result.changed
+  when:
+    - proxmox_boot_uuids.stat.exists
+    - kernel_pin_result.changed
+
+# GRUB-booted hosts (e.g. rohan, legacy BIOS): GRUB_DEFAULT=0 boots the newest
+# installed kernel, and proxmox-default-kernel keeps pulling 6.17+, which has no
+# nvidia 550.x DKMS module. Pin the menu entry for 6.14 explicitly instead.
+- name: Get GRUB filesystem UUID for /boot
+  ansible.builtin.command:
+    cmd: grub-probe --target=fs_uuid /boot
+  register: grub_fs_uuid
+  changed_when: false
+  when: not proxmox_boot_uuids.stat.exists
+
+- name: Pin GRUB default menu entry to kernel 6.14
+  ansible.builtin.copy:
+    dest: /etc/default/grub.d/proxmox-kernel-pin.cfg
+    content: |
+      # Managed by Ansible (nvidia-fan-control role).
+      # Boot {{ kernel_6_14_version.stdout }} explicitly so the nvidia {{ nvidia_driver_version }}
+      # DKMS module always matches the running kernel.
+      GRUB_DEFAULT="gnulinux-advanced-{{ grub_fs_uuid.stdout }}>gnulinux-{{ kernel_6_14_version.stdout }}-advanced-{{ grub_fs_uuid.stdout }}"
+    mode: '0644'
+  register: grub_kernel_pin
+  when: not proxmox_boot_uuids.stat.exists
+
+- name: Regenerate GRUB configuration
+  ansible.builtin.command:
+    cmd: update-grub
+  changed_when: true  # only runs when the pin drop-in actually changed
+  when:
+    - not proxmox_boot_uuids.stat.exists
+    - grub_kernel_pin.changed
 
 - name: Check current kernel version
   ansible.builtin.command: uname -r
   register: current_kernel
   changed_when: false
 
-- name: Notify if reboot needed for kernel 6.14
-  ansible.builtin.debug:
-    msg: "WARNING: Reboot into kernel 6.14 required! Current kernel: {{ current_kernel.stdout }}. Run 'reboot' then re-run this playbook."
-  when: "'6.14' not in current_kernel.stdout"
-
 - name: Fail if not running kernel 6.14
   ansible.builtin.fail:
-    msg: "Must reboot into kernel 6.14 before NVIDIA driver can be built. Run 'reboot' and re-run playbook."
+    msg: >-
+      Running kernel is {{ current_kernel.stdout }}, but the nvidia
+      {{ nvidia_driver_version }} DKMS module only builds against 6.14
+      ({{ kernel_6_14_version.stdout }}). The bootloader is now pinned to 6.14 --
+      reboot rohan and re-run this playbook. Until then wyoming-whisper is not
+      deployed here and the whisper VIP stays on boromir.
   when: "'6.14' not in current_kernel.stdout"
 
 - name: Add Debian non-free repository
