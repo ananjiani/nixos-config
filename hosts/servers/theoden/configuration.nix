@@ -292,10 +292,22 @@ in
     };
 
     # NFS Server
+    # /srv/nfs is the NFSv4 pseudo-root (fsid=0). The four disk2 binds are
+    # separate filesystems from the server's point of view, so each is
+    # exported explicitly with `mountpoint` — the export only activates if the
+    # bind is actually mounted, which fails closed instead of silently serving
+    # the empty directory underneath. crossmnt is deliberately not used: it
+    # would export whatever happens to be mounted below /srv/nfs.
+    # Explicit fsid per export because all four binds live on the same ext4
+    # (disk2); nfsd's UUID-derived fsid would collide across them.
     nfs.server = {
       enable = true;
       exports = ''
         /srv/nfs 192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,insecure,fsid=0,anonuid=1500,anongid=1500)
+        /srv/nfs/zot 192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,insecure,mountpoint,fsid=1,anonuid=1500,anongid=1500)
+        /srv/nfs/voicemails 192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,insecure,mountpoint,fsid=2,anonuid=1500,anongid=1500)
+        /srv/nfs/persona-mcp 192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,insecure,mountpoint,fsid=3,anonuid=1500,anongid=1500)
+        /srv/nfs/attic 192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash,insecure,mountpoint,fsid=4,anonuid=1500,anongid=1500)
       '';
     };
 
@@ -396,6 +408,21 @@ in
           '';
           timerConfig = {
             OnCalendar = "04:30";
+            Persistent = true;
+          };
+        };
+        # Voicemails + persona-mcp: small, irreplaceable, and now served from a
+        # single disk (no mergerfs redundancy of any kind). Backed up from the
+        # disk2 source paths rather than /srv/nfs so the job doesn't depend on
+        # the bind or the NFS server being up.
+        nfs-small-offsite = offsiteDefaults // {
+          repository = "s3:s3.us-east-005.backblazeb2.com/ammars-homelab-offsite/theoden/nfs-small";
+          paths = [
+            "/mnt/disk2/voicemails"
+            "/mnt/disk2/persona-mcp"
+          ];
+          timerConfig = {
+            OnCalendar = "03:30";
             Persistent = true;
           };
         };
@@ -633,6 +660,19 @@ in
         "romm-db.service"
       ];
       restic-backups-paperless-offsite.after = [ "vault-agent-default.service" ];
+      restic-backups-nfs-small-offsite = {
+        after = [ "vault-agent-default.service" ];
+        unitConfig.RequiresMountsFor = [ "/mnt/disk2" ];
+      };
+
+      # Fail the export rather than serve an empty directory if a disk2 bind
+      # didn't come up (nixpkgs has no `requiresMountsFor` option here).
+      nfs-server.unitConfig.RequiresMountsFor = [
+        "/srv/nfs/zot"
+        "/srv/nfs/voicemails"
+        "/srv/nfs/persona-mcp"
+        "/srv/nfs/attic"
+      ];
 
       # Restic backup for game saves (S3-ready via S3_REPO env var)
       restic-backup-game-saves = {
