@@ -64,7 +64,6 @@ spec:
           memory: "2Gi"
       persistence:
         enabled: true
-        enableStatefulSetRecreationForSizeChange: true
         storageClass: longhorn-monitoring
         size: 20Gi
 
