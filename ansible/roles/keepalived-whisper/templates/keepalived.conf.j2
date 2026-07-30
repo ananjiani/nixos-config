@@ -10,12 +10,15 @@ global_defs {
     enable_script_security
 }
 
+# weight 0 => a failing check forces FAULT and releases the VIP, so this host
+# never advertises 192.168.1.54 without a listening wyoming-whisper.
 vrrp_script check_whisper {
-    script "/usr/bin/nc -z localhost {{ wyoming_whisper_port | default('10300') }}"
+    script "/usr/bin/nc -z -w 2 127.0.0.1 {{ wyoming_whisper_port | default('10300') }}"
     interval 5
-    weight -60
+    weight 0
     fall 3
     rise 2
+    timeout 3
 }
 
 vrrp_instance WHISPER {

@@ -38,28 +38,6 @@
     };
   };
 
-  # Keepalived notify scripts for Wyoming Whisper failover
-  # These start/stop the wyoming-whisper service when VIP ownership changes
-  # NOTE: Must use pkgs.bash for NixOS - /bin/bash doesn't exist
-  environment.etc = {
-    "keepalived/whisper-master.sh" = {
-      mode = "0755";
-      text = ''
-        #!${pkgs.bash}/bin/bash
-        logger "Keepalived WHISPER: Becoming MASTER - starting wyoming-whisper"
-        systemctl start wyoming-whisper
-      '';
-    };
-    "keepalived/whisper-backup.sh" = {
-      mode = "0755";
-      text = ''
-        #!${pkgs.bash}/bin/bash
-        logger "Keepalived WHISPER: Becoming BACKUP - stopping wyoming-whisper"
-        systemctl stop wyoming-whisper
-      '';
-    };
-  };
-
   # Docker for model conversion (bypasses NixOS library isolation)
   virtualisation.docker.enable = true;
   hardware.nvidia-container-toolkit.enable = true; # GPU passthrough for containers
@@ -84,9 +62,25 @@
   };
 
   services = {
+    # Health check for the Whisper VIP: the local wyoming-whisper must accept
+    # Wyoming connections, otherwise this host must not advertise 192.168.1.54.
+    # weight 0 => a failing check forces FAULT and releases the VIP.
+    keepalived.vrrpScripts.check_whisper = {
+      script = "${pkgs.netcat-openbsd}/bin/nc -z -w 2 127.0.0.1 10300";
+      interval = 5;
+      fall = 3;
+      rise = 2;
+      timeout = 3;
+      weight = 0;
+      user = "keepalived_script";
+      group = "keepalived_script";
+    };
+
     # Second VRRP instance for Wyoming Whisper HA (alongside adguard_vip from module)
     # Rohan (192.168.1.24) is MASTER with priority 100
     # Boromir (this host) is BACKUP with priority 50
+    # wyoming-whisper runs unconditionally here (see ai.nix); the VIP follows the
+    # service, not the other way round.
     keepalived.vrrpInstances.whisper_vip = {
       interface = "ens18";
       state = "BACKUP";
@@ -95,11 +89,7 @@
       noPreempt = false;
       unicastPeers = [ "192.168.1.24" ]; # rohan
       virtualIps = [ { addr = "192.168.1.54/24"; } ];
-      extraConfig = ''
-        notify_master "/etc/keepalived/whisper-master.sh"
-        notify_backup "/etc/keepalived/whisper-backup.sh"
-        notify_fault "/etc/keepalived/whisper-backup.sh"
-      '';
+      trackScripts = [ "check_whisper" ];
     };
   };
 

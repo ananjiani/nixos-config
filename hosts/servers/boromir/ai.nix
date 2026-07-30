@@ -1,7 +1,6 @@
 {
   pkgs,
   pkgs-stable,
-  lib,
   ...
 }:
 let
@@ -68,8 +67,9 @@ in
         };
       };
 
-      # Wyoming Faster Whisper for voicemail transcription (Keepalived BACKUP)
-      # Primary runs on rohan; this instance is on-demand via Keepalived failover.
+      # Wyoming Faster Whisper for voicemail transcription
+      # Always on: the whisper VIP (192.168.1.54) follows service health via a
+      # keepalived track_script, so the service must never depend on VRRP state.
       # Logs: journalctl -u wyoming-whisper.service
       wyoming-whisper = {
         containerConfig = {
@@ -82,9 +82,6 @@ in
       };
     };
   };
-
-  # Disable auto-start - Keepalived notify scripts manage this service
-  systemd.services.wyoming-whisper.wantedBy = lib.mkForce [ ];
 
   # Data directory for whisper models
   systemd.tmpfiles.rules = [
