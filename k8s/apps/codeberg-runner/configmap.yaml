@@ -12,7 +12,10 @@ data:
       capacity: 2
       timeout: 3h
       labels:
-        - "ubuntu-latest:docker://zot.zot.svc.cluster.local:5000/ghcr.io/catthehacker/ubuntu:act-latest"
+        # Pinned by digest: act-latest moves upstream and a silent refresh broke CI.
+        # Must stay a bare @sha256 ref - the tag@digest form fails to parse.
+        # Re-pin deliberately: skopeo inspect --no-tags docker://ghcr.io/catthehacker/ubuntu:act-latest
+        - "ubuntu-latest:docker://zot.zot.svc.cluster.local:5000/ghcr.io/catthehacker/ubuntu@sha256:8bbfe9e0da9b403b099a185a6962b9e3fb8d8dd057be3abd2daef2945ffc489e"
     cache:
       enabled: false
     container:
