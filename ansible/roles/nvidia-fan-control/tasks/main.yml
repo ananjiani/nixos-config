@@ -17,10 +17,15 @@
       Pin-Priority: -1
     mode: '0644'
 
-- name: Get installed 6.14 kernel version
-  ansible.builtin.shell: ls /boot/vmlinuz-6.14* | head -1 | sed 's|/boot/vmlinuz-||'
-  register: kernel_6_14_version
-  changed_when: false
+- name: Use verified NVIDIA-compatible kernel
+  ansible.builtin.set_fact:
+    kernel_6_14_version: 6.14.11-5-bpo12-pve
+
+- name: Verify NVIDIA-compatible kernel is installed
+  ansible.builtin.stat:
+    path: /boot/vmlinuz-{{ kernel_6_14_version }}
+  register: kernel_6_14_image
+  failed_when: not kernel_6_14_image.stat.exists
 
 # proxmox-boot-tool only drives the boot order on hosts where it manages the
 # ESPs (systemd-boot / UEFI). It records those in /etc/kernel/proxmox-boot-uuids;
@@ -34,7 +39,7 @@
 
 - name: Set kernel 6.14 as default boot kernel (proxmox-boot-tool hosts)
   ansible.builtin.command:
-    cmd: proxmox-boot-tool kernel pin {{ kernel_6_14_version.stdout }}
+    cmd: proxmox-boot-tool kernel pin {{ kernel_6_14_version }}
   register: kernel_pin_result
   changed_when: "'Setting' in kernel_pin_result.stdout"
   when: proxmox_boot_uuids.stat.exists
@@ -61,9 +66,9 @@
     dest: /etc/default/grub.d/proxmox-kernel-pin.cfg
     content: |
       # Managed by Ansible (nvidia-fan-control role).
-      # Boot {{ kernel_6_14_version.stdout }} explicitly so the nvidia {{ nvidia_driver_version }}
+      # Boot {{ kernel_6_14_version }} explicitly so the nvidia {{ nvidia_driver_version }}
       # DKMS module always matches the running kernel.
-      GRUB_DEFAULT="gnulinux-advanced-{{ grub_fs_uuid.stdout }}>gnulinux-{{ kernel_6_14_version.stdout }}-advanced-{{ grub_fs_uuid.stdout }}"
+      GRUB_DEFAULT="gnulinux-advanced-{{ grub_fs_uuid.stdout }}>gnulinux-{{ kernel_6_14_version }}-advanced-{{ grub_fs_uuid.stdout }}"
     mode: '0644'
   register: grub_kernel_pin
   when: not proxmox_boot_uuids.stat.exists
@@ -86,7 +91,7 @@
     msg: >-
       Running kernel is {{ current_kernel.stdout }}, but the nvidia
       {{ nvidia_driver_version }} DKMS module only builds against 6.14
-      ({{ kernel_6_14_version.stdout }}). The bootloader is now pinned to 6.14 --
+      ({{ kernel_6_14_version }}). The bootloader is now pinned to 6.14 --
       reboot rohan and re-run this playbook. Until then wyoming-whisper is not
       deployed here and the whisper VIP stays on boromir.
   when: "'6.14' not in current_kernel.stdout"
