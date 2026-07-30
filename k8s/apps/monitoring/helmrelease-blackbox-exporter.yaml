@@ -54,6 +54,12 @@ spec:
             preferred_ip_protocol: "ip4"
             tls_config:
               insecure_skip_verify: true
+        # TCP connect probe — for non-HTTP services (e.g. Wyoming protocol)
+        tcp_connect:
+          prober: tcp
+          timeout: 5s
+          tcp:
+            preferred_ip_protocol: "ip4"
         # Module with body assertion — for services where HTTP 200 != healthy
         http_2xx_body:
           prober: http
@@ -135,6 +141,12 @@ spec:
           url: http://homepage.homepage.svc:3000
         - name: headscale
           url: http://headscale.headscale.svc:8080/health
+        # ── Voicemail pipeline dependencies ──
+        - name: whisper-vip
+          url: 192.168.1.54:10300
+          module: tcp_connect
+        - name: zot
+          url: http://zot.zot.svc:5000/v2/
         # ── External probes (full path: DNS → Cloudflare → Traefik → Service) ──
         - name: external-bifrost
           url: https://bifrost.dimensiondoor.xyz/v1/models

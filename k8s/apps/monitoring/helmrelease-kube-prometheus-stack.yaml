@@ -149,8 +149,10 @@ spec:
         groups:
           - name: blackbox-exporter
             rules:
+              # whisper-vip and zot have dedicated, actionable alerts below — excluded
+              # from every generic rule here so each failure pages exactly once.
               - alert: BlackboxProbeFailed
-                expr: probe_success == 0
+                expr: probe_success{target!~"whisper-vip|zot"} == 0
                 for: 2m
                 labels:
                   severity: critical
@@ -158,7 +160,7 @@ spec:
                   summary: "Endpoint {{ $labels.instance }} is down"
                   description: "Blackbox probe failed for {{ $labels.instance }} for more than 2 minutes."
               - alert: BlackboxProbeSlowResponse
-                expr: probe_duration_seconds > 10
+                expr: probe_duration_seconds{target!~"whisper-vip|zot"} > 10
                 for: 5m
                 labels:
                   severity: warning
@@ -166,7 +168,7 @@ spec:
                   summary: "Endpoint {{ $labels.instance }} is slow"
                   description: "Blackbox probe for {{ $labels.instance }} took more than 10 seconds for 5 minutes."
               - alert: BlackboxProbeHttpFailure
-                expr: probe_http_status_code != 200 and probe_http_status_code != 0
+                expr: probe_http_status_code{target!~"whisper-vip|zot"} != 200 and probe_http_status_code{target!~"whisper-vip|zot"} != 0
                 for: 2m
                 labels:
                   severity: warning
@@ -193,6 +195,33 @@ spec:
                 annotations:
                   summary: "{{ $labels.instance }} returns 200 but body assertion failed"
                   description: "{{ $labels.instance }} is responding with HTTP 200 but the response body does not match expected content. The service may be functionally broken."
+      voicemail-dependency-alerts:
+        groups:
+          - name: voicemail-dependencies
+            rules:
+              # Wyoming Whisper is a bare TCP protocol (no HTTP health endpoint).
+              # The VIP can answer ARP with no listener behind it, so probe the port.
+              - alert: WhisperVIPDown
+                expr: probe_success{target="whisper-vip"} == 0
+                for: 2m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Wyoming Whisper VIP 192.168.1.54:10300 is not accepting connections"
+                  description: >-
+                    TCP connect to the Whisper VIP has failed for 2 minutes. Voicemail
+                    transcription will fail. Check the keepalived VIP holder and the
+                    wyoming-faster-whisper service on that host.
+              - alert: ZotRegistryDown
+                expr: probe_success{target="zot"} == 0
+                for: 2m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Zot registry /v2/ is unreachable"
+                  description: >-
+                    The zot registry API has failed its probe for 2 minutes. Image pulls
+                    cluster-wide will fail. Check zot pod endpoints and its NFS-backed storage.
       vm-alerts:
         groups:
           - name: host-health
@@ -467,22 +496,71 @@ spec:
             rules:
               # Faster than the default KubeContainerWaiting (which fires after 1h).
               # Catches ContainerCreating failures (e.g. missing NFS client, bad image)
-              # within 15 minutes instead of waiting an hour.
+              # within 5 minutes instead of waiting an hour.
               - alert: PodStuckInContainerCreating
                 expr: |
                   kube_pod_container_status_waiting_reason{
                     job="kube-state-metrics",
                     reason="ContainerCreating"
                   } == 1
-                for: 15m
+                for: 5m
                 labels:
                   severity: warning
                 annotations:
                   summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} stuck in ContainerCreating"
                   description: >-
                     Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }}
-                    has been waiting in ContainerCreating for >15 minutes.
+                    has been waiting in ContainerCreating for >5 minutes.
                     Common causes: missing volume drivers, bad image pull secrets, NFS client not installed.
+              # Hard start failures (bad mount, bad config) never resolve on their own,
+              # so alert quickly rather than waiting out a ContainerCreating window.
+              - alert: PodContainerCreateFailed
+                expr: |
+                  kube_pod_container_status_waiting_reason{
+                    job="kube-state-metrics",
+                    reason=~"CreateContainerError|CreateContainerConfigError"
+                  } == 1
+                for: 2m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} cannot start"
+                  description: >-
+                    Kubelet reports {{ $labels.reason }} for container {{ $labels.container }}
+                    in {{ $labels.namespace }}/{{ $labels.pod }}. Usually a failed volume mount
+                    (stale NFS handle, missing PV) or a missing ConfigMap/Secret key.
+                    Check: kubectl describe pod -n {{ $labels.namespace }} {{ $labels.pod }}
+              # Services whose loss breaks the cluster silently: zot (all image pulls)
+              # and voicemail-receiver. Scoped on purpose — a generic version would alert
+              # on intentionally empty and headless Services.
+              # kube-state-metrics 2.18 ships the EndpointSlice collector only (no
+              # kube_endpoint_*). Slice names are generated, hence the <service>-* match.
+              # Aggregated by namespace, not per slice: a service may be spread over several
+              # slices and is healthy as long as any one of them has a ready endpoint. Each
+              # target service owns its same-named namespace, so namespace == service here.
+              # `unless` because the ready="true" series disappears entirely at zero ready
+              # endpoints — a `== 0` comparison would never fire.
+              - alert: CriticalServiceNoReadyEndpoints
+                expr: |
+                  sum by (namespace) (
+                    kube_endpointslice_info{namespace="zot", endpointslice=~"zot-.*"}
+                    or
+                    kube_endpointslice_info{namespace="voicemail-receiver", endpointslice=~"voicemail-receiver-.*"}
+                  )
+                  unless
+                  sum by (namespace) (
+                    kube_endpointslice_endpoints{namespace="zot", endpointslice=~"zot-.*", ready="true"}
+                    or
+                    kube_endpointslice_endpoints{namespace="voicemail-receiver", endpointslice=~"voicemail-receiver-.*", ready="true"}
+                  )
+                for: 2m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Service in namespace {{ $labels.namespace }} has zero ready endpoints"
+                  description: >-
+                    No EndpointSlice in {{ $labels.namespace }} has a ready endpoint. Traffic to this
+                    Service is blackholed even though the Service object still exists.
               # Catches pods that are scheduled but cannot start for any reason
               # (insufficient resources, unresolvable PVCs, node taints, etc.)
               - alert: PodStuckPending
