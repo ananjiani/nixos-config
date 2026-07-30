@@ -296,6 +296,9 @@ in
         pkgs.openssh
         actualWrapper
       ];
+      environment = {
+        SEARXNG_URL = "https://searxng.lan";
+      };
       settings = {
         model = {
           provider = "openai-codex";
@@ -311,7 +314,10 @@ in
         };
         security = {
           allow_lazy_installs = false;
-          allow_private_urls = false;
+          allow_private_urls = true;
+        };
+        web = {
+          search_backend = "searxng";
         };
         code_execution = {
           mode = "strict";
