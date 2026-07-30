@@ -19,6 +19,19 @@
     name: netcat-openbsd
     state: present
 
+- name: Create keepalived script group
+  ansible.builtin.group:
+    name: keepalived_script
+    system: true
+
+- name: Create keepalived script user
+  ansible.builtin.user:
+    name: keepalived_script
+    group: keepalived_script
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+
 - name: Deploy keepalived configuration
   ansible.builtin.template:
     src: keepalived.conf.j2
