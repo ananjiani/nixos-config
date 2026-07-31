@@ -140,7 +140,8 @@
       [Service]
       Type=simple
       ExecStart=/usr/local/bin/nut_exporter \
-        --nut.server=127.0.0.1:{{ nut_listen_port }} \
+        --nut.server=127.0.0.1 \
+        --nut.serverport={{ nut_listen_port }} \
         --nut.vars_enable=battery.charge,battery.runtime,battery.voltage,ups.load,ups.status,input.voltage,ups.temperature \
         --nut.statuses=OL,OB,LB,HB,RB,CHRG,DISCHRG,BYPASS,CAL,OFF,OVER \
         --web.listen-address=:{{ nut_exporter_port }}

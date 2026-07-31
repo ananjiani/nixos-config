@@ -34,7 +34,6 @@ data:
               "urls": ["https://ghcr.io"],
               "onDemand": true,
               "tlsVerify": true,
-              "pollInterval": "6h",
               "content": [
                 { "prefix": "catthehacker/ubuntu", "tags": { "regex": "^act-latest$" } },
                 { "prefix": "**" }

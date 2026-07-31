@@ -35,10 +35,11 @@ spec:
               mountPath: /var/lib/zot
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
+              memory: "512Mi"
+              cpu: "250m"
             limits:
               memory: "2Gi"
+              cpu: "2"
           startupProbe:
             httpGet:
               path: /v2/
@@ -47,14 +48,16 @@ spec:
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /v2/_catalog?n=1
+              path: /v2/
               port: 5000
             periodSeconds: 10
+            timeoutSeconds: 5
           livenessProbe:
             httpGet:
-              path: /v2/_catalog?n=1
+              path: /v2/
               port: 5000
             periodSeconds: 30
+            timeoutSeconds: 5
             failureThreshold: 3
       volumes:
         - name: config

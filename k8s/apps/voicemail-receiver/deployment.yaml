@@ -39,31 +39,26 @@ spec:
           resources:
             requests:
               memory: "64Mi"
-              cpu: "50m"
+              cpu: "100m"
             limits:
               memory: "256Mi"
-              cpu: "200m"
-          # Exec probe touches the NFS mount so stale handles trigger a restart.
-          # The image has no shell — Python is exec'd directly (no /bin/sh).
+              cpu: "500m"
+          # App liveness is HTTP-only; storage write health belongs in monitoring, not pod liveness.
           livenessProbe:
-            exec:
-              command:
-                - /bin/python3
-                - -c
-                - |
-                  import urllib.request
-                  urllib.request.urlopen("http://localhost:8080/health", timeout=5).read()
-                  with open("/data/voicemails/.liveness", "w") as f:
-                      f.write("ok")
+            httpGet:
+              path: /health
+              port: 8080
             initialDelaySeconds: 5
             periodSeconds: 30
-            timeoutSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /health
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
+            timeoutSeconds: 3
       volumes:
         - name: voicemail-storage
           persistentVolumeClaim:
