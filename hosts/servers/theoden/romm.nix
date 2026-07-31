@@ -94,6 +94,12 @@ in
               After = [ "vault-agent-default.service" ];
               Wants = [ "vault-agent-default.service" ];
             };
+            # An unclean reboot left InnoDB needing crash recovery; mariadb
+            # died on start, and the default 100ms restart spacing burned the
+            # 5-starts/10s limit instantly, latching the unit failed before
+            # recovery could be looked at. 30s spacing keeps the start limit
+            # meaningful (it still gives up) without the fast-fail flood.
+            serviceConfig.RestartSec = 30;
           };
 
           romm-redis = {
@@ -146,8 +152,12 @@ in
               After = [
                 "vault-agent-default.service"
                 "mnt-storage.mount"
+                "romm-db.service"
               ];
-              Wants = [ "vault-agent-default.service" ];
+              Wants = [
+                "vault-agent-default.service"
+                "romm-db.service"
+              ];
               PartOf = [ "mnt-storage.mount" ];
             };
             # Probe: verify the /romm/library bind is live right after start. A
@@ -158,7 +168,12 @@ in
             # (no retry loop). On a stale bind, stat exits 1 -> unit fails ->
             # Restart=always retries. Complements PartOf (which triggers the
             # restart on mount cycle); this confirms the restart landed clean.
-            serviceConfig.ExecStartPost = "${pkgs.podman}/bin/podman exec romm stat /romm/library";
+            serviceConfig = {
+              ExecStartPost = "${pkgs.podman}/bin/podman exec romm stat /romm/library";
+              # Same crash-loop lesson as romm-db: slow the retries down so a
+              # DB outage costs the journal seconds, not milliseconds.
+              RestartSec = 30;
+            };
           };
         };
       };

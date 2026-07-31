@@ -402,9 +402,14 @@ in
           ];
           # MYSQL_PWD comes from the container's own environment (romm-env),
           # so the password never appears in host argv.
+          #
+          # Dump to .tmp and only move it into place on success: the shell
+          # truncates the redirect target before podman runs, so a dead romm-db
+          # used to destroy the last good dump before failing.
           backupPrepareCommand = ''
             install -d -m 700 /var/backup/romm
-            ${pkgs.podman}/bin/podman exec romm-db sh -c 'MYSQL_PWD=$MARIADB_PASSWORD exec mariadb-dump -u romm romm' > /var/backup/romm/romm.sql
+            ${pkgs.podman}/bin/podman exec romm-db sh -c 'MYSQL_PWD=$MARIADB_PASSWORD exec mariadb-dump -u romm romm' > /var/backup/romm/romm.sql.tmp \
+              && mv /var/backup/romm/romm.sql.tmp /var/backup/romm/romm.sql
           '';
           timerConfig = {
             OnCalendar = "04:30";
@@ -683,9 +688,13 @@ in
         environment = {
           RESTIC_REPOSITORY = "/mnt/storage/games/.restic-saves";
           RESTIC_PASSWORD_FILE = "/dev/null"; # No encryption for LAN storage; swap for S3 key file when migrating
+          # systemd units have no HOME, so restic's default ~/.cache lookup
+          # fails and the job never ran. Point it at a managed cache dir.
+          RESTIC_CACHE_DIR = "/var/cache/restic-game-saves";
         };
         serviceConfig = {
           Type = "oneshot";
+          CacheDirectory = "restic-game-saves";
           ExecStart = pkgs.writeShellScript "restic-backup-game-saves" ''
             set -euo pipefail
             REPO="''${S3_REPO:-$RESTIC_REPOSITORY}"
@@ -708,9 +717,11 @@ in
         environment = {
           RESTIC_REPOSITORY = "/mnt/storage/games/.restic-saves";
           RESTIC_PASSWORD_FILE = "/dev/null";
+          RESTIC_CACHE_DIR = "/var/cache/restic-game-saves";
         };
         serviceConfig = {
           Type = "oneshot";
+          CacheDirectory = "restic-game-saves";
           ExecStart = pkgs.writeShellScript "restic-forget-game-saves" ''
             set -euo pipefail
             REPO="''${S3_REPO:-$RESTIC_REPOSITORY}"
@@ -837,6 +848,17 @@ in
         timerConfig = {
           OnCalendar = "daily";
           RandomizedDelaySec = "1h";
+          Persistent = true;
+        };
+      };
+
+      # forget/prune was only ever ordered after the backup unit — with no
+      # timer it never ran, so snapshots were never pruned.
+      restic-forget-game-saves = {
+        description = "Run Restic forget/prune for game saves weekly";
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnCalendar = "Sun *-*-* 03:00:00";
           Persistent = true;
         };
       };
