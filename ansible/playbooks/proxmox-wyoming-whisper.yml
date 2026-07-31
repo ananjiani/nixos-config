@@ -13,7 +13,6 @@
 #   - Running kernel must be compatible with NVIDIA drivers (6.14 pinned)
 #
 # Variables (optional, with defaults):
-#   - wyoming_whisper_version: Container image tag (default: latest)
 #   - wyoming_whisper_model: Whisper model size (default: medium)
 #   - wyoming_whisper_language: Language code (default: en)
 #   - wyoming_whisper_port: Host port (default: 10300)

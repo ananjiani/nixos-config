@@ -4,15 +4,19 @@ After=network-online.target nvidia-persistenced.service
 Wants=network-online.target
 
 [Container]
-Image=docker.io/rhasspy/wyoming-whisper:{{ wyoming_whisper_version | default('latest') }}
+Image=lscr.io/linuxserver/faster-whisper@sha256:d5ccb1a02f36dd82402c3ab99cfda96ed6e78a27211a1e1283c9c7dac37d767c
 ContainerName=wyoming-whisper
 PublishPort={{ wyoming_whisper_port | default('10300') }}:10300
-Volume=/var/lib/wyoming-whisper:/data
+Volume=/var/lib/wyoming-whisper:/config
 AddDevice=nvidia.com/gpu=all
+Environment=PUID=0
+Environment=PGID=0
+Environment=TZ=America/Chicago
+Environment=WHISPER_MODEL={{ wyoming_whisper_model | default('medium') }}
+Environment=WHISPER_LANG={{ wyoming_whisper_language | default('en') }}
 Environment=NVIDIA_VISIBLE_DEVICES=all
 Environment=NVIDIA_DRIVER_CAPABILITIES=compute,utility
 PodmanArgs=--security-opt apparmor=wyoming-whisper
-Exec=--model {{ wyoming_whisper_model | default('medium') }} --language {{ wyoming_whisper_language | default('en') }} --device cuda --compute-type float32 --uri tcp://0.0.0.0:10300 --data-dir /data --download-dir /data
 
 [Service]
 Restart=always
