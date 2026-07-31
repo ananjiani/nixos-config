@@ -11,6 +11,20 @@
     state: directory
     mode: '0755'
 
+# AppArmor profile must load before Quadlet starts the container.
+# ABI-pinned (4.0) — kernel 6.14 network_v9/AF_UNIX vs apparmor_parser 4.1.1 mismatch.
+- name: Deploy wyoming-whisper AppArmor profile
+  ansible.builtin.template:
+    src: wyoming-whisper.apparmor.j2
+    dest: /etc/apparmor.d/wyoming-whisper
+    mode: '0644'
+  register: wyoming_whisper_apparmor
+
+- name: Load wyoming-whisper AppArmor profile
+  ansible.builtin.command:
+    cmd: apparmor_parser -r /etc/apparmor.d/wyoming-whisper
+  changed_when: wyoming_whisper_apparmor.changed
+
 - name: Deploy wyoming-whisper Quadlet container
   ansible.builtin.template:
     src: wyoming-whisper.container.j2

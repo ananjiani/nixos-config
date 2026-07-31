@@ -11,7 +11,8 @@ Volume=/var/lib/wyoming-whisper:/data
 AddDevice=nvidia.com/gpu=all
 Environment=NVIDIA_VISIBLE_DEVICES=all
 Environment=NVIDIA_DRIVER_CAPABILITIES=compute,utility
-Exec=--model {{ wyoming_whisper_model | default('medium') }} --language {{ wyoming_whisper_language | default('en') }} --uri tcp://0.0.0.0:10300 --data-dir /data --download-dir /data
+PodmanArgs=--security-opt apparmor=wyoming-whisper
+Exec=--model {{ wyoming_whisper_model | default('medium') }} --language {{ wyoming_whisper_language | default('en') }} --device cuda --compute-type float32 --uri tcp://0.0.0.0:10300 --data-dir /data --download-dir /data
 
 [Service]
 Restart=always
