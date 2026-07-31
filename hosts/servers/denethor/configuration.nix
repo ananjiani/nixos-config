@@ -169,10 +169,18 @@
 
   programs.mosh.enable = lib.mkForce false;
 
-  environment.systemPackages = with pkgs; [
-    microsoft-edge # corporate SSO / Azure DevOps web
-    (azure-cli.withExtensions [ azure-cli.extensions.azure-devops ])
-  ];
+  # AD DFS referrals need kernel DNS upcalls to resolve their target servers.
+  environment = {
+    etc."request-key.conf".text = ''
+      create dns_resolver * * ${pkgs.keyutils}/bin/key.dns_resolver %k
+    '';
+    systemPackages = with pkgs; [
+      cifs-utils
+      keyutils
+      microsoft-edge # corporate SSO / Azure DevOps web
+      (azure-cli.withExtensions [ azure-cli.extensions.azure-devops ])
+    ];
+  };
 
   # Portable embedded HM only — essentials + dev. No server profile, no sops,
   # no tea, no homelab Herdr plugins. Homelab Claude backends + Pi secret
