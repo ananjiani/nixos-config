@@ -34,10 +34,7 @@ data:
               "urls": ["https://ghcr.io"],
               "onDemand": true,
               "tlsVerify": true,
-              "content": [
-                { "prefix": "catthehacker/ubuntu", "tags": { "regex": "^act-latest$" } },
-                { "prefix": "**" }
-              ]
+              "content": [{ "prefix": "catthehacker/ubuntu" }]
             },
             {
               "urls": ["https://code.forgejo.org"],
