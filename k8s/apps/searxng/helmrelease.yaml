@@ -16,32 +16,27 @@ spec:
         namespace: flux-system
       interval: 1h
   values:
-    env:
-      - name: SEARXNG_SECRET
-        valueFrom:
-          secretKeyRef:
-            name: searxng-secret
-            key: secret-key
     config:
+      # settings.yml comes from the searxng-settings Secret (see
+      # externalsecret.yaml) because engine API keys can only live in the
+      # settings file, not env vars. secret_key is in there too, replacing
+      # the old SEARXNG_SECRET env / plaintext secret.yaml.
       settings:
-        enabled: true
-        data: |-
-          use_default_settings: true
-          server:
-            limiter: false
-            image_proxy: true
-            method: "GET"
-          search:
-            formats:
-              - html
-              - json
-            default_lang: "en"
-
+        enabled: false
       limiter:
         enabled: true
         data: |-
           [botdetection.ip_limit]
           link_token = true
+    volumes:
+      - name: searxng-settings
+        secret:
+          secretName: searxng-settings
+    volumeMounts:
+      - mountPath: /etc/searxng/settings.yml
+        name: searxng-settings
+        subPath: settings.yml
+        readOnly: true
     resources:
       requests:
         memory: "128Mi"
