@@ -74,11 +74,18 @@ let
   #                         agent use (article extraction vs blind
   #                         HTML→markdown).
   #
-  # Tavily and pandoc were considered and dropped — Tavily isn't used
-  # anywhere in the pi ecosystem (it's a Claude Code pattern), and
-  # pandoc converts HTML-as-markup instead of extracting article
-  # bodies. If higher-quality search becomes load-bearing, add a
-  # `web-search-brave` wrapping Mario's pi-skills/brave-search.
+  # - `web-research <query>`: Tavily — returns extracted, reranked page
+  #                         content (not just links), so one call replaces
+  #                         a search plus several fetches. Metered: shares
+  #                         the 1k/mo free-tier pool with claude-code's
+  #                         tavily-mcp, so it's a distinct tool rather than
+  #                         a web-search fallback — the model should choose
+  #                         it deliberately for research-shaped tasks.
+  #
+  # pandoc was considered and dropped — it converts HTML-as-markup
+  # instead of extracting article bodies. SearXNG's baseline quality
+  # comes from the braveapi engine (Brave Search API) server-side, so a
+  # separate `web-search-brave` client tool is unnecessary.
 
   # Endpoint is an option so portable/isolated hosts (e.g. Denethor) can
   # set null and keep searxng.lan out of the store path entirely.
@@ -117,6 +124,64 @@ let
           curl -fsSLk --max-time 15 \
             "${cfg.searxngUrl}/search?q=''${query}&format=json&safesearch=0" \
             | jq -r '.results[:10] | .[] | "## \(.title)\n\(.url)\n\(.content // "")\n"'
+        '';
+      };
+
+  # Tavily research search: the pipeline (live-fetch, extract, chunk,
+  # rerank) runs on Tavily's side, so unlike web-search the query AND the
+  # result pages' selection happen off-box. Key comes from vault-agent's
+  # rendered secret at runtime (claude-code's tavily-mcp shim pattern) —
+  # never embedded in the store.
+  webResearch =
+    if cfg.tavilyKeyFile == null then
+      pkgs.writeShellApplication {
+        name = "web-research";
+        text = ''
+          # Usage: web-research <query...>
+          #
+          # Tavily not configured on this host (piCodingAgent.tavilyKeyFile = null).
+          echo "web-research: not configured (piCodingAgent.tavilyKeyFile is null)" >&2
+          exit 1
+        '';
+      }
+    else
+      pkgs.writeShellApplication {
+        name = "web-research";
+        runtimeInputs = with pkgs; [
+          curl
+          jq
+        ];
+        text = ''
+          # Usage: web-research <query...>
+          #
+          # Tavily search: returns extracted page content chunks reranked
+          # against the query, not just links — one call replaces a
+          # web-search plus several web-fetches. Use for research-shaped
+          # questions ("how does X work", multi-source comparisons).
+          # For cheap lookups ("find the docs page") use `web-search`;
+          # for reading a known URL use `web-fetch`.
+          #
+          # Costs metered Tavily credits (advanced depth = 2/call, free
+          # tier 1000/mo shared with claude-code). Query and result
+          # selection happen on Tavily's servers.
+          if [ $# -eq 0 ]; then
+            echo "usage: web-research <query...>" >&2
+            echo "  Tavily: extracted content chunks, not links. Metered." >&2
+            echo "  For cheap link search use web-search." >&2
+            exit 1
+          fi
+          key_file=${cfg.tavilyKeyFile}
+          if [ ! -r "$key_file" ]; then
+            echo "web-research: $key_file not readable — is vault-agent configured on this host?" >&2
+            exit 1
+          fi
+          jq -n --arg q "$*" \
+            '{query: $q, search_depth: "advanced", max_results: 5}' \
+            | curl -fsSL --max-time 30 \
+                -H "Authorization: Bearer $(cat "$key_file")" \
+                -H "Content-Type: application/json" \
+                -d @- https://api.tavily.com/search \
+            | jq -r '.results[] | "## \(.title)\n\(.url)\n\(.content)\n"'
         '';
       };
 
@@ -860,6 +925,16 @@ in
       '';
     };
 
+    tavilyKeyFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = "/run/secrets/tavily_api_key";
+      description = ''
+        Path to the Tavily API key rendered by vault-agent, read at
+        invocation time by the web-research CLI. Set to null on isolated
+        hosts; web-research then fails fast with a not-configured message.
+      '';
+    };
+
     homelabProviders.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
@@ -1127,6 +1202,7 @@ in
         pkgs.nodejs
 
         webSearch
+        webResearch
         webFetch
         webFetchJina
         repoIngest
