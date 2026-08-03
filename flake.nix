@@ -573,9 +573,6 @@
                 ./hosts/pixel9/home.nix
               ];
             };
-
-          # Fallback configuration (if hostname doesn't match)
-          "ammar" = mkHomeConfig ./hosts/_profiles/workstation/home.nix;
         };
 
       # Pre-commit hooks and deploy-rs checks

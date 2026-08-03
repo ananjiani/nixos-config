@@ -1,0 +1,13 @@
+{
+  "name": "denethor-m365-cli",
+  "version": "11.10.0",
+  "private": true,
+  "description": "Local pin of the CLI for Microsoft 365, packaged with buildNpmPackage",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@pnp/cli-microsoft365": "11.10.0"
+  }
+}
