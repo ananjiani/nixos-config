@@ -24,74 +24,6 @@
   ...
 }:
 
-let
-  # CLI for Microsoft 365 (@pnp/cli-microsoft365), pinned from a local
-  # package.json/package-lock.json like aragorn's actual-cli. Nothing is
-  # installed at activation time: this is a plain store path on PATH.
-  #
-  # Two upstream quirks are worked around here:
-  #  1. The published npm-shrinkwrap.json is missing `resolved`/`integrity`
-  #     for ~426 of 670 packages (npm/cli#6301), and npm copies it verbatim
-  #     into any lockfile generated against it. m365-cli/package-lock.json is
-  #     therefore a *repaired* lockfile — every entry was backfilled from the
-  #     registry. A plain `npm install --package-lock-only` regenerates the
-  #     broken form, so re-run the repair after any version bump (see the
-  #     Renovate caveat below).
-  #  2. npm honours the shrinkwrap bundled inside the dependency tarball over
-  #     our lockfile, which sends it back to the network mid-build. The
-  #     tarball is repacked without it and injected via packageSourceOverrides
-  #     (integrity dropped for that one entry, since repacking changes it).
-  m365Lock = builtins.fromJSON (builtins.readFile ./m365-cli/package-lock.json);
-  m365Entry = m365Lock.packages."node_modules/@pnp/cli-microsoft365";
-  m365Tarball = pkgs.runCommand "cli-microsoft365-${m365Entry.version}.tgz" { } ''
-    tar -xzf ${
-      pkgs.fetchurl {
-        url = m365Entry.resolved;
-        hash = m365Entry.integrity;
-      }
-    }
-    chmod -R u+w package
-    rm package/npm-shrinkwrap.json
-    tar -czf $out --sort=name --mtime=@1 --owner=0 --group=0 --numeric-owner package
-  '';
-  m365Cli = pkgs.buildNpmPackage {
-    pname = "cli-microsoft365";
-    inherit (m365Entry) version;
-    src = ./m365-cli;
-
-    npmDeps = pkgs.importNpmLock {
-      npmRoot = ./m365-cli;
-      packageLock = m365Lock // {
-        packages = m365Lock.packages // {
-          "node_modules/@pnp/cli-microsoft365" = builtins.removeAttrs m365Entry [ "integrity" ];
-        };
-      };
-      packageSourceOverrides."node_modules/@pnp/cli-microsoft365" = m365Tarball;
-    };
-    inherit (pkgs.importNpmLock) npmConfigHook;
-
-    nativeBuildInputs = [ pkgs.makeWrapper ];
-
-    # Upstream ships a prebuilt dist/; this is a pure dependency pin.
-    dontNpmBuild = true;
-
-    installPhase = ''
-      runHook preInstall
-      mkdir -p $out/lib/m365-cli
-      cp -r node_modules package.json $out/lib/m365-cli/
-      makeWrapper ${lib.getExe pkgs.nodejs} $out/bin/m365 \
-        --add-flags $out/lib/m365-cli/node_modules/@pnp/cli-microsoft365/dist/index.js
-      runHook postInstall
-    '';
-
-    meta = {
-      description = "CLI for Microsoft 365, pinned to ${m365Entry.version}";
-      homepage = "https://pnp.github.io/cli-microsoft365/";
-      mainProgram = "m365";
-    };
-  };
-in
-
 {
   imports = [
     ../../_profiles/server/proxmox-disk-config.nix
@@ -280,11 +212,8 @@ in
           };
         };
         claudeCode.homelabBackends.enable = false;
-        # null = no install and no uninstall (do not use [] — that cleans up),
-        # so employer-installed npm globals stay intact. The Microsoft 365 CLI
-        # is a store path instead of an `npm install -g`.
+        # null = no install and no uninstall (do not use [] — that cleans up)
         devPrograms.npmGlobalPackages = null;
-        home.packages = [ m365Cli ];
         programs = {
           git.settings = {
             credential.helper = lib.mkForce "cache --timeout=3600";
