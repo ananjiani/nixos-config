@@ -109,6 +109,17 @@ resource "opnsense_firewall_alias" "work_blocked_networks" {
   ]
 }
 
+# SearXNG's k3s ingress VIP — the one LAN service the work VM may reach
+# (agent web-search). The VM pins a /32 route via the VLAN gateway so this
+# traffic never enters the work VPN's full-tunnel default route.
+resource "opnsense_firewall_alias" "searxng_ingress" {
+  count       = var.work_vlan_interface_configured ? 1 : 0
+  name        = "searxng_ingress"
+  type        = "host"
+  description = "SearXNG k3s ingress VIP (allowed from Work VLAN)"
+  content     = ["192.168.1.52"]
+}
+
 resource "opnsense_firewall_alias" "chromecast_ips" {
   count       = var.vlan_interfaces_configured ? 1 : 0
   name        = "chromecast_ips"
@@ -527,6 +538,35 @@ resource "opnsense_firewall_filter" "work_to_router_dhcp" {
     destination = {
       net  = "(self)"
       port = "67-68"
+    }
+  }
+}
+
+# Allow the work VM to reach SearXNG (HTTPS only). Must precede the
+# private-networks block at 310. No gateway = direct routing to the
+# locally-attached LAN (never WAN/Mullvad).
+resource "opnsense_firewall_filter" "work_searxng" {
+  count       = var.work_vlan_interface_configured ? 1 : 0
+  enabled     = true
+  sequence    = 305
+  description = "Allow Denethor to SearXNG HTTPS"
+
+  interface = {
+    interface = [var.work_interface]
+  }
+
+  filter = {
+    action    = "pass"
+    direction = "in"
+    protocol  = "TCP"
+
+    source = {
+      net = opnsense_firewall_alias.denethor_host[0].name
+    }
+
+    destination = {
+      net  = opnsense_firewall_alias.searxng_ingress[0].name
+      port = "443"
     }
   }
 }

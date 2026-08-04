@@ -2,7 +2,10 @@
 #
 # Employer-approved workstation, deliberately isolated from the homelab:
 # no Tailscale, no OpenBao/vault-agent, no SOPS secrets, no k3s/AdGuard,
-# no LAN CA trust, no LAN Attic cache. It sits on VLAN 30 (10.30.30.0/24)
+# no LAN CA trust, no LAN Attic cache. One deliberate exception: HTTPS to
+# SearXNG's k3s ingress VIP (OPNsense pass rule + pinned /32 below), kept
+# off the work VPN's full-tunnel default route so nothing homelab-bound
+# ever enters tun0. It sits on VLAN 30 (10.30.30.0/24)
 # and reaches the internet straight through WAN (not the router's Mullvad
 # policy route) so Cisco AnyConnect and its SAML MFA flow see a normal
 # residential IP.
@@ -35,6 +38,11 @@
   networking = {
     hostName = "denethor";
     enableIPv6 = false;
+
+    # searxng.lan resolves via AdGuard split-DNS on the LAN only; this host
+    # uses Quad9/corporate DNS, so pin it statically — no .lan queries leave
+    # the box, and no LAN resolver dependency comes back in.
+    hosts."192.168.1.52" = [ "searxng.lan" ];
 
     # NetworkManager owns the NIC (it sets networking.useDHCP = false itself);
     # the Work VLAN lease comes from Kea on the OPNsense opt4 interface.
@@ -74,6 +82,7 @@
             ignore-auto-dns = "true";
             route1 = "192.168.1.28/32,10.30.30.1"; # aragorn
             route2 = "192.168.1.50/32,10.30.30.1"; # ammars-pc
+            route3 = "192.168.1.52/32,10.30.30.1"; # searxng.lan (k3s ingress VIP)
           };
           ipv6.method = "disabled";
         };
@@ -201,7 +210,9 @@
           ../../_profiles/dev/home.nix
         ];
         piCodingAgent = {
-          searxngUrl = null;
+          # web-search uses searxng.lan via the pinned /32 + firewall pinhole
+          # (module default URL). Tavily stays off: no vault-agent here.
+          tavilyKeyFile = null;
           homelabProviders.enable = false; # empty providers + filtered model list
           homelabExtensions.enable = false; # drop nvidia-nim + usage-tracker
           edgeDevtoolsUrl = "http://127.0.0.1:9222";
