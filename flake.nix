@@ -281,8 +281,6 @@
         };
 
         # Denethor - Work VM (Proxmox VM on gondor, isolated Work VLAN 30)
-        # No deploy.nodes entry: the VM is not installed yet and `deploy .`
-        # must not gain a dead target.
         denethor = lib.nixosSystem {
           inherit system specialArgs;
           modules = [
@@ -425,6 +423,14 @@
             user = "root";
             sshUser = "root";
             path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.aragorn;
+          };
+        };
+        denethor = {
+          hostname = "denethor.lan";
+          profiles.system = {
+            user = "root";
+            sshUser = "root";
+            path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.denethor;
           };
         };
         theoden = {
