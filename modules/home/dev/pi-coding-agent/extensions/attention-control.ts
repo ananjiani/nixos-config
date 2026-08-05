@@ -5,7 +5,10 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 export default async function (pi: ExtensionAPI) {
 	const instructions = await readFile(
-		join(homedir(), ".pi/agent/skills/i-have-adhd/SKILL.md"),
+		join(
+			homedir(),
+			".pi/agent/git/github.com/aaddrick/attention-control/skills/attention-control/SKILL.md",
+		),
 		"utf8",
 	);
 	let enabled = true;
@@ -13,28 +16,34 @@ export default async function (pi: ExtensionAPI) {
 	pi.on("session_start", (_event, ctx) => {
 		enabled = true;
 		for (const entry of ctx.sessionManager.getEntries()) {
-			if (entry.type === "custom" && entry.customType === "i-have-adhd-enabled") {
+			if (
+				entry.type === "custom" &&
+				entry.customType === "attention-control-enabled"
+			) {
 				enabled = (entry.data as { enabled?: boolean })?.enabled === true;
 			}
 		}
-		ctx.ui.setStatus("i-have-adhd", enabled ? "ADHD" : undefined);
+		ctx.ui.setStatus("attention-control", enabled ? "ATTN" : undefined);
 	});
 
-	pi.registerCommand("adhd", {
-		description: "Toggle ADHD-friendly output, or use on/off",
+	pi.registerCommand("attention-control", {
+		description: "Toggle Attention Control, or use on/off",
 		handler: async (args, ctx) => {
 			const arg = args.trim().toLowerCase();
 			if (!arg) enabled = !enabled;
 			else if (arg === "on") enabled = true;
 			else if (arg === "off" || arg === "stop") enabled = false;
 			else {
-				ctx.ui.notify('Use "/adhd", "/adhd on", or "/adhd off".', "error");
+				ctx.ui.notify(
+					'Use "/attention-control", "/attention-control on", or "/attention-control off".',
+					"error",
+				);
 				return;
 			}
 
-			pi.appendEntry("i-have-adhd-enabled", { enabled });
-			ctx.ui.setStatus("i-have-adhd", enabled ? "ADHD" : undefined);
-			ctx.ui.notify(`ADHD output ${enabled ? "on" : "off"}.`, "info");
+			pi.appendEntry("attention-control-enabled", { enabled });
+			ctx.ui.setStatus("attention-control", enabled ? "ATTN" : undefined);
+			ctx.ui.notify(`Attention Control ${enabled ? "on" : "off"}.`, "info");
 		},
 	});
 

@@ -582,7 +582,7 @@ let
       "npm:pi-init"
       "git:github.com/DietrichGebert/ponytail"
       "git:github.com/mattpocock/skills"
-      "npm:pi-caveman"
+      "git:github.com/aaddrick/attention-control"
       "npm:pi-claude-bridge"
       "npm:pi-mcp-adapter"
       "npm:@tintinweb/pi-subagents"
@@ -1237,7 +1237,6 @@ in
         ".pi/agent/skills".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/skills";
         ".pi/agent/APPEND_SYSTEM.md".source =
           config.lib.file.mkOutOfStoreSymlink "${piUserDir}/APPEND_SYSTEM.md";
-        ".pi/agent/caveman.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/caveman.json";
         ".pi/agent/subagents.json".source =
           config.lib.file.mkOutOfStoreSymlink "${piUserDir}/subagents.json";
         ".pi/agent/pi-sense.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/pi-sense.json";
