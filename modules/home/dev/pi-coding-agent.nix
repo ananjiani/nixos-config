@@ -581,6 +581,7 @@ let
       "npm:pi-btw"
       "npm:pi-init"
       "git:github.com/DietrichGebert/ponytail"
+      "git:github.com/mattpocock/skills"
       "npm:pi-caveman"
       "npm:pi-claude-bridge"
       "npm:pi-mcp-adapter"
