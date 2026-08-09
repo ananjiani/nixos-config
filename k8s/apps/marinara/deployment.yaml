@@ -1,0 +1,201 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: marinara
+  namespace: marinara
+  labels:
+    app: marinara
+spec:
+  replicas: 1
+  strategy:
+    # Longhorn PVC is ReadWriteOnce, so the old pod must die before the new one starts
+    type: Recreate
+  selector:
+    matchLabels:
+      app: marinara
+  template:
+    metadata:
+      labels:
+        app: marinara
+    spec:
+      containers:
+        - name: marinara
+          image: ghcr.io/pasta-devs/marinara-engine:2.4.1-lite
+          ports:
+            - name: http
+              containerPort: 7860
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: DATA_DIR
+              value: /app/data
+            - name: FILE_STORAGE_DIR
+              value: /app/data/storage
+            - name: MARINARA_DOCKER
+              value: "true"
+            - name: AUTO_OPEN_BROWSER
+              value: "false"
+            - name: AUTO_UPDATE_ENABLED
+              value: "false"
+            - name: AUTO_CREATE_DEFAULT_CONNECTION
+              value: "false"
+            - name: TRUSTED_HOSTS
+              value: marinara.dimensiondoor.xyz
+            - name: CORS_ORIGINS
+              value: https://marinara.dimensiondoor.xyz
+            - name: CSRF_TRUSTED_ORIGINS
+              value: https://marinara.dimensiondoor.xyz
+            - name: ALLOW_UNAUTHENTICATED_PRIVATE_NETWORK
+              value: "true"
+            - name: ALLOW_UNAUTHENTICATED_REMOTE
+              value: "false"
+            - name: BYPASS_AUTH_TAILSCALE
+              value: "false"
+            - name: BYPASS_AUTH_DOCKER
+              value: "false"
+            - name: LOG_LEVEL
+              value: warn
+            - name: TZ
+              value: America/Chicago
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: marinara-secrets
+                  key: encryption-key
+            - name: ADMIN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: marinara-secrets
+                  key: admin-secret
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: secrets
+              mountPath: /secrets
+              readOnly: true
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - node
+                  - -e
+                  - |
+                    (async () => {
+                      const fs = require("fs");
+
+                      const key = fs.readFileSync("/secrets/deepseek-api-key", "utf8").trim();
+                      if (!key) {
+                        console.error("deepseek-api-key is empty; refusing to configure");
+                        process.exit(1);
+                      }
+
+                      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+                      const fetchWithTimeout = async (url, options = {}, ms = 5000) => {
+                        const controller = new AbortController();
+                        const timer = setTimeout(() => controller.abort(), ms);
+                        try {
+                          return await fetch(url, { ...options, signal: controller.signal });
+                        } finally {
+                          clearTimeout(timer);
+                        }
+                      };
+
+                      let ready = false;
+                      for (let i = 0; i < 120; i++) {
+                        try {
+                          const health = await fetchWithTimeout("http://127.0.0.1:7860/api/health");
+                          if (health.ok) {
+                            ready = true;
+                            break;
+                          }
+                        } catch (_) {
+                          // not ready yet
+                        }
+                        await sleep(1000);
+                      }
+                      if (!ready) {
+                        console.error("Marinara health endpoint never became ready");
+                        process.exit(1);
+                      }
+
+                      const listRes = await fetchWithTimeout("http://127.0.0.1:7860/api/connections");
+                      if (!listRes.ok) {
+                        console.error("list connections failed: " + listRes.status);
+                        process.exit(1);
+                      }
+                      const connections = await listRes.json();
+                      const existing = Array.isArray(connections)
+                        ? connections.find((c) => c && c.name === "DeepSeek (OpenBao)")
+                        : null;
+
+                      const body = {
+                        name: "DeepSeek (OpenBao)",
+                        provider: "custom",
+                        baseUrl: "https://api.deepseek.com",
+                        apiKey: key,
+                        model: "deepseek-v4-pro",
+                        maxContext: 131072,
+                        isDefault: true,
+                        defaultForAgents: true,
+                        treatAsLocalEndpoint: false,
+                      };
+
+                      let res;
+                      if (existing && existing.id != null) {
+                        const id = encodeURIComponent(String(existing.id));
+                        res = await fetchWithTimeout(
+                          "http://127.0.0.1:7860/api/connections/" + id,
+                          {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(body),
+                          },
+                        );
+                      } else {
+                        res = await fetchWithTimeout("http://127.0.0.1:7860/api/connections", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(body),
+                        });
+                      }
+
+                      if (!res.ok) {
+                        console.error("configure connection failed: " + res.status);
+                        process.exit(1);
+                      }
+                      console.log("DeepSeek connection configured");
+                    })().catch((err) => {
+                      console.error(err && err.message ? err.message : "postStart failed");
+                      process.exit(1);
+                    });
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: marinara-data
+        - name: secrets
+          secret:
+            secretName: marinara-secrets
+            defaultMode: 0400

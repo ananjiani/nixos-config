@@ -1,0 +1,37 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: marinara
+  namespace: marinara
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Marinara"
+    gethomepage.dev/group: "AI"
+    gethomepage.dev/description: "AI roleplay engine"
+    gethomepage.dev/href: "https://marinara.dimensiondoor.xyz"
+    gethomepage.dev/pod-selector: "app=marinara"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    # Authentik outpost path must bypass forwardAuth middleware
+    - match: Host(`marinara.dimensiondoor.xyz`) && PathPrefix(`/outpost.goauthentik.io/`)
+      kind: Rule
+      priority: 15
+      services:
+        - name: authentik-server
+          namespace: authentik
+          port: 80
+    - match: Host(`marinara.dimensiondoor.xyz`)
+      kind: Rule
+      priority: 10
+      middlewares:
+        - name: authentik-forward-auth
+          namespace: authentik
+      services:
+        - name: marinara
+          port: 7860
+  tls:
+    secretName: marinara-tls

@@ -196,6 +196,10 @@ in
                 answer = "192.168.1.52";
               }
               {
+                domain = "marinara.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
                 domain = "home.dimensiondoor.xyz";
                 answer = "192.168.1.52";
               }

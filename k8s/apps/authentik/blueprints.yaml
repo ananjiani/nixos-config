@@ -264,6 +264,35 @@ data:
         attrs:
           group: !Find [authentik_core.group, [name, authentik Admins]]
 
+      - model: authentik_providers_proxy.proxyprovider
+        id: marinara-provider
+        identifiers:
+          name: Marinara
+        attrs:
+          name: Marinara
+          mode: forward_single
+          external_host: https://marinara.dimensiondoor.xyz
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+
+      - model: authentik_core.application
+        id: marinara-app
+        identifiers:
+          slug: marinara
+        attrs:
+          name: Marinara
+          slug: marinara
+          provider: !KeyOf marinara-provider
+          meta_launch_url: https://marinara.dimensiondoor.xyz
+          policy_engine_mode: any
+
+      - model: authentik_policies.policybinding
+        identifiers:
+          target: !KeyOf marinara-app
+          order: 0
+        attrs:
+          group: !Find [authentik_core.group, [name, authentik Admins]]
+
       # Single blueprint owns the embedded outpost provider list so every
       # forward-auth provider can use !KeyOf (no cross-blueprint !Find).
       - model: authentik_outposts.outpost
@@ -273,3 +302,4 @@ data:
           providers:
             - !KeyOf collie-provider
             - !KeyOf sillytavern-provider
+            - !KeyOf marinara-provider

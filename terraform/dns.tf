@@ -106,6 +106,17 @@ resource "cloudflare_dns_record" "sillytavern" {
   comment = "SillyTavern LLM chat frontend (internal) - managed by Terraform"
 }
 
+# Marinara AI roleplay engine
+resource "cloudflare_dns_record" "marinara" {
+  zone_id = local.zone_id
+  name    = "marinara"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "Marinara AI roleplay engine (internal) - managed by Terraform"
+}
+
 # Homepage dashboard
 resource "cloudflare_dns_record" "home" {
   zone_id = local.zone_id
