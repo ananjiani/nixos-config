@@ -192,6 +192,10 @@ in
                 answer = "192.168.1.52";
               }
               {
+                domain = "sillytavern.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
                 domain = "home.dimensiondoor.xyz";
                 answer = "192.168.1.52";
               }

@@ -1,0 +1,145 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sillytavern
+  namespace: sillytavern
+  labels:
+    app: sillytavern
+spec:
+  replicas: 1
+  strategy:
+    # Longhorn PVC is ReadWriteOnce, so the old pod must die before the new one starts
+    type: Recreate
+  selector:
+    matchLabels:
+      app: sillytavern
+  template:
+    metadata:
+      labels:
+        app: sillytavern
+    spec:
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      initContainers:
+        # Seeds the DeepSeek key from OpenBao and, on first start only, the UI defaults
+        - name: seed-secrets
+          image: ghcr.io/sillytavern/sillytavern:1.18.0
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+          command:
+            - node
+            - -e
+          args:
+            - |
+              const fs = require("fs");
+              const path = require("path");
+
+              const dataDir = "/data/default-user";
+              const secretsPath = path.join(dataDir, "secrets.json");
+              const settingsPath = path.join(dataDir, "settings.json");
+              const stockSettingsPath = "/home/node/app/default/content/settings.json";
+
+              const key = fs.readFileSync("/secrets/deepseek-api-key", "utf8").trim();
+              if (!key) {
+                console.error("deepseek-api-key is empty; refusing to seed");
+                process.exit(1);
+              }
+
+              fs.mkdirSync(dataDir, { recursive: true });
+
+              // Preserve every unrelated key; OpenBao owns api_key_deepseek outright
+              let secrets = {};
+              if (fs.existsSync(secretsPath)) {
+                try {
+                  secrets = JSON.parse(fs.readFileSync(secretsPath, "utf8")) || {};
+                } catch (err) {
+                  console.error("existing secrets.json is not valid JSON; refusing to overwrite");
+                  process.exit(1);
+                }
+                fs.chmodSync(secretsPath, 0o600);
+              }
+              secrets.api_key_deepseek = [
+                {
+                  id: "openbao-deepseek",
+                  value: key,
+                  label: "DeepSeek (OpenBao)",
+                  active: true,
+                },
+              ];
+              fs.writeFileSync(secretsPath, JSON.stringify(secrets, null, 4), { mode: 0o600 });
+              fs.chmodSync(secretsPath, 0o600);
+              console.log("seeded api_key_deepseek");
+
+              // First-use UI defaults only; never clobber user settings on later restarts
+              if (!fs.existsSync(settingsPath)) {
+                const settings = JSON.parse(fs.readFileSync(stockSettingsPath, "utf8"));
+                settings.main_api = "openai";
+                settings.oai_settings = settings.oai_settings || {};
+                settings.oai_settings.chat_completion_source = "deepseek";
+                settings.oai_settings.deepseek_model = "deepseek-v4-flash";
+                fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 4));
+                console.log("seeded default settings.json");
+              }
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: secrets
+              mountPath: /secrets
+              readOnly: true
+      containers:
+        - name: sillytavern
+          image: ghcr.io/sillytavern/sillytavern:1.18.0
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: SILLYTAVERN_HEARTBEATINTERVAL
+              value: "30"
+            - name: SILLYTAVERN_BROWSERLAUNCH_ENABLED
+              value: "false"
+            # Authentik and the NetworkPolicy gate access outside SillyTavern
+            - name: SILLYTAVERN_WHITELISTMODE
+              value: "false"
+            - name: SILLYTAVERN_SECURITYOVERRIDE
+              value: "true"
+          volumeMounts:
+            - name: data
+              mountPath: /home/node/app/data
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "100m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - node
+                - src/healthcheck.js
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: sillytavern-data
+        - name: secrets
+          secret:
+            secretName: sillytavern-secrets

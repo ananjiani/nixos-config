@@ -95,6 +95,17 @@ resource "cloudflare_dns_record" "ai" {
   comment = "Open WebUI AI chat (internal) - managed by Terraform"
 }
 
+# SillyTavern LLM chat frontend
+resource "cloudflare_dns_record" "sillytavern" {
+  zone_id = local.zone_id
+  name    = "sillytavern"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "SillyTavern LLM chat frontend (internal) - managed by Terraform"
+}
+
 # Homepage dashboard
 resource "cloudflare_dns_record" "home" {
   zone_id = local.zone_id

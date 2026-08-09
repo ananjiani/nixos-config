@@ -1,0 +1,37 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: sillytavern
+  namespace: sillytavern
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "SillyTavern"
+    gethomepage.dev/group: "AI"
+    gethomepage.dev/description: "LLM chat frontend"
+    gethomepage.dev/href: "https://sillytavern.dimensiondoor.xyz"
+    gethomepage.dev/pod-selector: "app=sillytavern"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    # Authentik outpost path must bypass forwardAuth middleware
+    - match: Host(`sillytavern.dimensiondoor.xyz`) && PathPrefix(`/outpost.goauthentik.io/`)
+      kind: Rule
+      priority: 15
+      services:
+        - name: authentik-server
+          namespace: authentik
+          port: 80
+    - match: Host(`sillytavern.dimensiondoor.xyz`)
+      kind: Rule
+      priority: 10
+      middlewares:
+        - name: authentik-forward-auth
+          namespace: authentik
+      services:
+        - name: sillytavern
+          port: 8000
+  tls:
+    secretName: sillytavern-tls

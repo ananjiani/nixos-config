@@ -208,10 +208,10 @@ data:
           policy_engine_mode: any
 
   collie.yaml: |
-    # Collie forward-auth (single app) via Authentik embedded outpost
+    # Forward-auth apps via Authentik embedded outpost
     version: 1
     metadata:
-      name: Collie forward auth
+      name: Forward auth apps
     entries:
       - model: authentik_providers_proxy.proxyprovider
         id: collie-provider
@@ -235,10 +235,41 @@ data:
           meta_launch_url: https://collie.dimensiondoor.xyz
           policy_engine_mode: any
 
-      # Own embedded outpost providers list (currently empty) with Collie only.
+      - model: authentik_providers_proxy.proxyprovider
+        id: sillytavern-provider
+        identifiers:
+          name: SillyTavern
+        attrs:
+          name: SillyTavern
+          mode: forward_single
+          external_host: https://sillytavern.dimensiondoor.xyz
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+
+      - model: authentik_core.application
+        id: sillytavern-app
+        identifiers:
+          slug: sillytavern
+        attrs:
+          name: SillyTavern
+          slug: sillytavern
+          provider: !KeyOf sillytavern-provider
+          meta_launch_url: https://sillytavern.dimensiondoor.xyz
+          policy_engine_mode: any
+
+      - model: authentik_policies.policybinding
+        identifiers:
+          target: !KeyOf sillytavern-app
+          order: 0
+        attrs:
+          group: !Find [authentik_core.group, [name, authentik Admins]]
+
+      # Single blueprint owns the embedded outpost provider list so every
+      # forward-auth provider can use !KeyOf (no cross-blueprint !Find).
       - model: authentik_outposts.outpost
         identifiers:
           managed: goauthentik.io/outposts/embedded
         attrs:
           providers:
             - !KeyOf collie-provider
+            - !KeyOf sillytavern-provider
