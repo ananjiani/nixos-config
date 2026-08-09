@@ -111,6 +111,8 @@ spec:
               value: "false"
             - name: SILLYTAVERN_SECURITYOVERRIDE
               value: "true"
+            - name: SILLYTAVERN_PRIVATEADDRESSWHITELIST_ENABLED
+              value: "true"
           volumeMounts:
             - name: data
               mountPath: /home/node/app/data
