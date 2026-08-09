@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: marinara-admin-proxy
+  namespace: marinara
+data:
+  Caddyfile: |
+    :7861 {
+      reverse_proxy 127.0.0.1:7860 {
+        header_up X-Admin-Secret {$ADMIN_SECRET}
+      }
+    }

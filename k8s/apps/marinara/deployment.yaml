@@ -191,6 +191,44 @@ spec:
                       console.error(err && err.message ? err.message : "postStart failed");
                       process.exit(1);
                     });
+        - name: admin-proxy
+          image: caddy:2.11.4-alpine
+          ports:
+            - name: proxy
+              containerPort: 7861
+              protocol: TCP
+          env:
+            - name: ADMIN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: marinara-secrets
+                  key: admin-secret
+          volumeMounts:
+            - name: admin-proxy
+              mountPath: /etc/caddy/Caddyfile
+              subPath: Caddyfile
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: proxy
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: proxy
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
       volumes:
         - name: data
           persistentVolumeClaim:
@@ -199,3 +237,6 @@ spec:
           secret:
             secretName: marinara-secrets
             defaultMode: 0400
+        - name: admin-proxy
+          configMap:
+            name: marinara-admin-proxy

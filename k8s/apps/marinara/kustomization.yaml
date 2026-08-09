@@ -6,6 +6,7 @@ resources:
   - namespace.yaml
   - pvc.yaml
   - externalsecret.yaml
+  - admin-proxy.yaml
   - deployment.yaml
   - service.yaml
   - certificate.yaml

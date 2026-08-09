@@ -11,5 +11,5 @@ spec:
   ports:
     - name: http
       port: 7860
-      targetPort: 7860
+      targetPort: proxy
       protocol: TCP

@@ -20,4 +20,4 @@ spec:
               app.kubernetes.io/name: traefik
       ports:
         - protocol: TCP
-          port: 7860
+          port: 7861
