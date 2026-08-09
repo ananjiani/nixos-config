@@ -194,6 +194,11 @@ resource "proxmox_virtual_environment_vm" "denethor" {
     enabled = true
   }
 
+  vga {
+    type      = "std"
+    clipboard = "vnc"
+  }
+
   bios          = "seabios"
   scsi_hardware = "virtio-scsi-single"
 

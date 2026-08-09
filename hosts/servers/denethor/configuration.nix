@@ -149,6 +149,7 @@
     openssh.openFirewall = lib.mkForce false;
 
     qemuGuest.enable = true;
+    spice-vdagentd.enable = true;
 
     # Stock minimal desktop: XFCE on LightDM. ammar has no password (SSH is
     # key-only), so both the console and the greeter log straight in.
