@@ -272,6 +272,7 @@ data:
           name: Marinara
           mode: forward_single
           external_host: https://marinara.dimensiondoor.xyz
+          access_token_validity: hours=24
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
 
