@@ -555,8 +555,8 @@ let
       let
         all = [
           "claude-bridge/claude-fable-5"
-          "claude-bridge/claude-opus-5"
           "xai-auth/grok-4.5"
+          "xai-auth/grok-4.6"
           "zai/glm-5.2"
           "opencode-go/minimax-m3"
           "opencode-go/deepseek-v4-pro"

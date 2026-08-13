@@ -39,8 +39,8 @@ Every Agent call to scout/worker/reviewer MUST include a model. Pick from the
 matrix in the Agent tool description. Prefer high-quota models (Z.ai/GLM,
 OpenCode Go) within ~1 capability point of the best fit. NEVER use Fable 5
 for any subagent role; it is reserved for the main session. Use Grok 4.5 for
-fully specified workers and Opus 5 at medium only for workers needing
-investigation or judgment. GPT-5.6 Sol reviews and MUST NOT be used as a worker.
+fully specified workers and Grok 4.6 high for workers needing investigation
+or judgment. GPT-5.6 Sol reviews and MUST NOT be used as a worker.
 `;
 
 export default function (pi: ExtensionAPI) {

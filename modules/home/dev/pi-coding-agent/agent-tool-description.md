@@ -12,23 +12,24 @@ For `scout`, `worker`, and `reviewer`, every Agent call MUST include `model`. Th
 Main session is coordinator/judge. Subagents do token-heavy work and return structured reports. Do not delegate one-liners, final judgement, or architecture decisions.
 
 Quota pools matter:
-- Fable 5 is reserved for the main session and MUST NOT be used for any subagent role. Claude's Opus 5 is the Claude worker lane.
+- Fable 5 is reserved for the main session and MUST NOT be used for any subagent role.
 - GPT-5.6 Sol is the review lane and MUST NOT be used as a worker.
-- xAI pool: Grok 4.5 — SuperGrok $30/mo shared weekly pool; chat messages are cheap, quota is good.
+- xAI pool: Grok 4.5 and Grok 4.6 — SuperGrok $30/mo shared weekly pool; chat messages are cheap, quota is good.
 - OpenCode Go supplies DeepSeek V4 Flash for fast, bounded work.
 - Z.ai / GLM quota is abundant but held in reserve: GLM-5.2 is NOT a worker choice while any other paid pool has quota — worker of last resort only. Scout/read-only summary work is fine.
 
 Scores are Pi-local routing priors. Higher is better. Quota means this user's effective quota abundance.
 
 Scores reflect current public evidence and local use, but remain harness-sensitive.
+Start and Tok/s are separate routing priors: a faster start is not a faster generation.
 
-| Model | Pool | Code | Debug | Review | Scout | LongCtx | Speed | Quota | Vision | Tools | Think (default→hard) |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| `openai-codex/gpt-5.6-sol` | OpenAI | 10 | 9 | 9 | 9 | 10 | 6 | 5 | 9 | 10 | `medium`→`high` (review) |
-| `claude-bridge/claude-opus-5` | Claude | 10 | 10 | 10 | 9 | 10 | 6 | 7 | 9 | 9 | `medium` only (worker) |
-| `xai-auth/grok-4.5` | xAI | 9 | 8 | 8 | 7 | 7 | 9 | 7 | 8 | 8 | `high` |
-| `zai/glm-5.2` | Z.ai | 8 | 8 | 8 | 8 | 10 | 6 | 10 | 0 | 7 | `high` |
-| `opencode-go/deepseek-v4-flash` | Go | 6 | 6 | 5 | 8 | 10 | 9 | 8 | 0 | 6 | `high` |
+| Model | Pool | Code | Debug | Review | Scout | LongCtx | Start | Tok/s | Quota | Vision | Tools | Think (default→hard) |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| `openai-codex/gpt-5.6-sol` | OpenAI | 10 | 9 | 9 | 9 | 10 | 2 | 8 | 5 | 9 | 10 | `medium`→`high` (review) |
+| `xai-auth/grok-4.5` | xAI | 9 | 8 | 8 | 7 | 7 | 9 | 8 | 7 | 8 | 8 | `high` |
+| `xai-auth/grok-4.6` | xAI | 10 | 9 | 9 | 8 | 8 | 6 | 9 | 7 | 8 | 9 | `high`→`xhigh` |
+| `zai/glm-5.2` | Z.ai | 8 | 8 | 8 | 8 | 10 | 6 | 6 | 10 | 0 | 7 | `high` |
+| `opencode-go/deepseek-v4-flash` | Go | 6 | 6 | 5 | 8 | 10 | 9 | 9 | 8 | 0 | 6 | `high` |
 
 Selection:
 1. Apply hard constraints: vision, write/read-only role, provider separation.
@@ -39,8 +40,8 @@ Selection:
 6. Vision tasks require Vision >= 7.
 
 Thinking effort:
-- Opus 5 workers: `medium` only. `high`, `xhigh`, and `max` are forbidden. After failure, improve the ticket or switch models instead of raising effort.
 - Grok 4.5 workers: `high`.
+- Grok 4.6 workers: `high` normally; `xhigh` only for hard investigation after the task is understood.
 - GPT-5.6 Sol: never a worker. Review at `medium` by default, `high` for hard/high-recall review, and `xhigh` only for security-critical or long-running review.
 - GLM-5.2 and DeepSeek V4 Flash: `high` normally; `xhigh` only when provider Max is justified.
 - More effort does not repair a poor model fit. Switch models before retrying at maximum effort.
@@ -53,15 +54,14 @@ Worker routing (spec quality beats model tier):
   push-back on bad spec) at least as heavily as `Code`. Raw code ability
   matters less when the coordinator already did the thinking.
 - Ask: can the coordinator fully specify the work before delegating?
-- Use Grok 4.5 at `high` only when ALL are true: exact files, exact change,
-  and checkable done-condition are known; the worker needs no investigation
-  or design choice.
-- Use Opus 5 at `medium` when ANY are true: root cause is unknown; the worker
+- Use Grok 4.5 at `high` for fully specified work: exact files, exact change,
+  and a checkable done-condition.
+- Use Grok 4.6 at `high` when ANY are true: root cause is unknown; the worker
   must explore or choose an approach; cross-system or multi-module coherence
-  matters; shared or security-sensitive code needs judgment; or Grok failed
-  once. Multi-file work alone does not force Opus: bounded mechanical changes
-  may use Grok.
-- GPT-5.6 Sol is never a worker. It reviews either Grok or Opus workers.
+  matters; shared or security-sensitive code needs judgment; or Grok 4.5
+  failed. Multi-file work alone does not force 4.6: bounded mechanical
+  changes may use Grok 4.5.
+- GPT-5.6 Sol is never a worker. It reviews either Grok worker.
 - Fall back to `glm-5.2` when paid pools are spent.
 - Escalate when ANY of: the task leaves any "figure out" unsaid, it is
   debug-shaped, or flash failed twice. Debug/root-cause work never routes to
