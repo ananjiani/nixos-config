@@ -557,7 +557,7 @@ let
           "claude-bridge/claude-fable-5"
           "xai-auth/grok-4.5"
           "xai-auth/grok-4.6"
-          "zai/glm-5.2"
+          "zai/glm-5.3"
           "opencode-go/minimax-m3"
           "opencode-go/deepseek-v4-pro"
           "opencode-go/deepseek-v4-flash"
@@ -647,12 +647,27 @@ let
           # Different from claude-glm's api.z.ai/api/anthropic — pi doesn't
           # need Anthropic-protocol-everywhere like Claude Code does, so the
           # native PaaS endpoint is the right default.
-          # Pi knows GLM-5.2's protocol and thinking-level metadata; only its
-          # stale context-window value needs overriding.
+          # GLM-5.3: built-in direct-zai metadata lacks reasoning-level support
+          # (supportsReasoningEffort=false, no thinkingLevelMap). Official API
+          # supports low/high/max only and cannot disable thinking. Override
+          # context, maxTokens, thinkingLevelMap, and supportsReasoningEffort.
           zai = {
             apiKey = "!cat /run/secrets/zai_api_key";
             baseUrl = "https://api.z.ai/api/coding/paas/v4";
-            modelOverrides."glm-5.2".contextWindow = 1000000;
+            modelOverrides."glm-5.3" = {
+              contextWindow = 1000000;
+              maxTokens = 131072;
+              thinkingLevelMap = {
+                off = null;
+                minimal = null;
+                low = "low";
+                medium = null;
+                high = "high";
+                xhigh = null;
+                max = "max";
+              };
+              compat.supportsReasoningEffort = true;
+            };
           };
 
           # OpenCode Go ($10/month) — pi's built-in opencode-go provider.
