@@ -46,6 +46,14 @@
     };
     date = "2026-07-10";
   };
+  octowow = {
+    pname = "octowow";
+    version = "1.0";
+    src = fetchurl {
+      url = "https://github.com/nikany96/OctoLauncherForLinuxDistros/releases/download/v1.0/OctoLauncher.AppImage";
+      sha256 = "sha256-QIukv7VYn+dleOsvuuNWt4QdI4pdSyhuRdWeuD4mtlc=";
+    };
+  };
   opendeck = {
     pname = "opendeck";
     version = "2.13.1";

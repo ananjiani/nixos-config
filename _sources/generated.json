@@ -71,6 +71,21 @@
         },
         "version": "2516a83b3eef5f3a766af5113244357a11e255a6"
     },
+    "octowow": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "octowow",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-QIukv7VYn+dleOsvuuNWt4QdI4pdSyhuRdWeuD4mtlc=",
+            "type": "url",
+            "url": "https://github.com/nikany96/OctoLauncherForLinuxDistros/releases/download/v1.0/OctoLauncher.AppImage"
+        },
+        "version": "1.0"
+    },
     "opendeck": {
         "cargoLock": null,
         "date": null,

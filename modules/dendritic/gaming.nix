@@ -76,6 +76,45 @@ _:
     let
       cfg = config.gaming;
 
+      # Community OctoWoW launcher (AppImage). Game/client data stays mutable outside Nix.
+      # Version/hash managed by nvfetcher (nvfetcher.toml [octowow]).
+      octowow =
+        let
+          sources = import ../../_sources/generated.nix {
+            inherit (pkgs)
+              fetchurl
+              fetchFromGitHub
+              fetchgit
+              dockerTools
+              ;
+          };
+          pname = "octo-launcher";
+          inherit (sources.octowow) version src;
+          appimageContents = pkgs.appimageTools.extractType2 { inherit pname version src; };
+          unwrapped = pkgs.appimageTools.wrapType2 {
+            inherit pname version src;
+            extraInstallCommands = ''
+              install -Dm644 ${appimageContents}/usr/share/icons/hicolor/0x0/apps/octo-launcher.png \
+                $out/share/icons/hicolor/280x280/apps/octo-launcher.png
+
+              install -Dm644 ${appimageContents}/octo-launcher.desktop \
+                $out/share/applications/octo-launcher.desktop
+              substituteInPlace $out/share/applications/octo-launcher.desktop \
+                --replace-fail 'Exec=AppRun --no-sandbox %U' 'Exec=octo-launcher %U'
+            '';
+          };
+        in
+        # Always pass --no-sandbox so terminal and menu launches both work.
+        pkgs.symlinkJoin {
+          name = "${pname}-${version}";
+          paths = [ unwrapped ];
+          buildInputs = [ pkgs.makeWrapper ];
+          postBuild = ''
+            wrapProgram $out/bin/${pname} \
+              --add-flags "--no-sandbox"
+          '';
+        };
+
       # Wrapper that excludes cloud-save games, rescues DRM-free/non-Steam games
       ludusaviBackupWrapper =
         pkgs.writers.writePython3Bin "ludusavi-backup-wrapper"
@@ -241,6 +280,10 @@ _:
             description = "Systemd timer OnCalendar interval";
           };
         };
+
+        octowow = {
+          enable = lib.mkEnableOption "OctoWoW community Linux launcher";
+        };
       };
 
       config = lib.mkIf cfg.enable {
@@ -263,6 +306,9 @@ _:
           ]
           ++ lib.optionals cfg.ludusavi.enable [
             ludusavi
+          ]
+          ++ lib.optionals cfg.octowow.enable [
+            octowow
           ]
           ++ [
             boilr

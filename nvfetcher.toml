@@ -8,6 +8,11 @@ src.github = "nekename/OpenDeck"
 src.prefix = "v"
 fetch.url = "https://github.com/nekename/OpenDeck/releases/download/v$ver/opendeck_$ver_amd64.AppImage"
 
+[octowow]
+src.github = "nikany96/OctoLauncherForLinuxDistros"
+src.prefix = "v"
+fetch.url = "https://github.com/nikany96/OctoLauncherForLinuxDistros/releases/download/v$ver/OctoLauncher.AppImage"
+
 [jacktook]
 src.git = "https://github.com/Sam-Max/plugin.video.jacktook.git"
 src.branch = "main"

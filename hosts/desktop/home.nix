@@ -231,6 +231,7 @@ in
     enable = true;
     syncthing.enable = true;
     ludusavi.backupPath = "/home/ammar/Games/Saves/ammars-pc";
+    octowow.enable = true;
   };
 
   moondeck = {
