@@ -4,6 +4,8 @@ kind: Service
 metadata:
   name: zot
   namespace: zot
+  labels:
+    app: zot
   annotations:
     metallb.universe.tf/loadBalancerIPs: "192.168.1.56"
 spec:
