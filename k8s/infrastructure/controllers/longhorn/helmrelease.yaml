@@ -25,6 +25,11 @@ spec:
       defaultReplicaCount: 3
       # Use less aggressive resource settings for homelab
       guaranteedInstanceManagerCPU: 5
+      # Protect the shared control-plane disks from rebuild I/O storms.
+      concurrentReplicaRebuildPerNodeLimit: 1
+      # Automatically remove stale replica data after a one-hour recovery window.
+      orphanResourceAutoDeletion: replica-data
+      orphanResourceAutoDeletionGracePeriod: 3600
       # Faster failover: delete pods when node goes down (instead of waiting for k8s)
       nodeDownPodDeletionPolicy: delete-statefulset-pod
       # Offsite S3 volume backups (issue #41). Block-level incremental
