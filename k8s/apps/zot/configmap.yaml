@@ -43,6 +43,12 @@ data:
               "content": [{ "prefix": "**" }]
             }
           ]
+        },
+        "metrics": {
+          "enable": true,
+          "prometheus": {
+            "path": "/metrics"
+          }
         }
       }
     }

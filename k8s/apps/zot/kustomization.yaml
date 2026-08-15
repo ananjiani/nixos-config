@@ -9,3 +9,5 @@ resources:
   - pv.yaml
   - deployment.yaml
   - service.yaml
+  - servicemonitor.yaml
+  - prometheusrule.yaml

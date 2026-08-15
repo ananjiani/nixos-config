@@ -13,6 +13,9 @@ spec:
       app: zot
   template:
     metadata:
+      annotations:
+        # Bump when zot-config changes so Flux rolls the pod and reloads the subPath mount.
+        dimensiondoor.xyz/config-revision: "metrics-v1"
       labels:
         app: zot
     spec:

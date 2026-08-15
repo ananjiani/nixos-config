@@ -1,0 +1,19 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: zot-alerts
+  namespace: zot
+spec:
+  groups:
+    - name: zot
+      rules:
+        - alert: ZotHttp5xxErrors
+          expr: sum(increase(zot_http_requests_total{code=~"5.."}[5m])) > 0
+          labels:
+            severity: warning
+          annotations:
+            summary: "Zot registry returned HTTP 5xx errors"
+            description: >-
+              Zot returned {{ $value }} HTTP 5xx response(s) in the last 5 minutes.
+              Check the zot pod logs and its NFS-backed storage before image pulls fail.
