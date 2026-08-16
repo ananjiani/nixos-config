@@ -1,0 +1,77 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: longhorn-backup-alerts
+  namespace: longhorn-system
+spec:
+  groups:
+    - name: longhorn-backups
+      rules:
+        - alert: LonghornManagerMetricsUnavailable
+          expr: |
+            absent(up{job="longhorn-backend"})
+            or
+            max(up{job="longhorn-backend"}) == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Longhorn manager metrics are unavailable
+            description: Prometheus cannot scrape any Longhorn manager, so storage and backup health are unobservable.
+        - alert: LonghornBackupTargetReconcileRetries
+          expr: |
+            sum(increase(longhorn_workqueue_retries_total{name="longhorn-backup-target"}[15m])) > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Longhorn is repeatedly retrying its backup target
+            description: Backup-target reconciliation has retried continuously; verify the BackupTarget status, B2 endpoint, and credential Secret.
+        - alert: LonghornBackupStale
+          expr: |
+            time() - max by (volume, pvc, pvc_namespace) (longhorn_volume_last_backup_at) > 36 * 60 * 60
+          for: 30m
+          labels:
+            severity: critical
+          annotations:
+            summary: Longhorn volume {{ $labels.volume }} has a stale backup
+            description: The latest successful backup for {{ $labels.pvc_namespace }}/{{ $labels.pvc }} is more than 36 hours old.
+    - name: longhorn-control-plane
+      rules:
+        - alert: LonghornControlPlaneWriteStorm
+          expr: |
+            sum(rate(apiserver_request_total{verb="PUT",resource=~"replicas|volumes|engines|nodes|instancemanagers"}[5m])) > 25
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: Longhorn is overwhelming the Kubernetes control plane
+            description: Longhorn custom resources have exceeded 25 updates per second for two minutes, risking etcd latency, leader-election loss, and service interruption.
+        - alert: EtcdRequestLatencyHigh
+          expr: |
+            histogram_quantile(0.99, sum by (le) (rate(etcd_request_duration_seconds_bucket[5m]))) > 0.5
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: etcd p99 request latency exceeds 500 milliseconds
+            description: Sustained etcd latency can cause K3s control-plane components to lose leader election and exit. Check API mutation rate and node disk I/O pressure.
+        - alert: LonghornFleetDegraded
+          expr: |
+            sum(max by (volume) (longhorn_volume_robustness{state="degraded"})) >= 3
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: Multiple Longhorn volumes have lost redundancy
+            description: At least three Longhorn volumes are degraded. Preserve bounded rebuild concurrency and investigate node or control-plane instability before intervening.
+        - alert: LonghornVolumeDegraded
+          expr: |
+            max by (volume, pvc, pvc_namespace) (longhorn_volume_robustness{state="degraded"}) == 1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: Longhorn volume {{ $labels.volume }} remains degraded
+            description: The volume backing {{ $labels.pvc_namespace }}/{{ $labels.pvc }} has had reduced redundancy for at least 15 minutes.

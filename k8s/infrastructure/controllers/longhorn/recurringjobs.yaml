@@ -1,7 +1,7 @@
 ---
-# Offsite volume backups to Backblaze B2 (issue #41). One RecurringJob
-# targets all volumes in the "offsite" group — volumes are annotated with
-# recurring-job-group.longhorn.io/offsite=enabled.
+# Daily offsite backups to Backblaze B2 (issue #41). Membership in the
+# reserved "default" group covers volumes without explicit job selectors;
+# the "offsite" group remains available for explicit enrollment.
 #
 # Block-level incremental snapshots → Longhorn's S3 backup target
 # (configured in the Longhorn HelmRelease). Concurrency=2 so at most
@@ -18,4 +18,7 @@ spec:
   retain: 7
   concurrency: 2
   groups:
+    # Longhorn automatically assigns volumes without explicit recurring-job
+    # selectors to jobs in the reserved default group.
+    - default
     - offsite

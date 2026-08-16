@@ -4,8 +4,6 @@ kind: Kustomization
 namespace: zot
 resources:
   - namespace.yaml
-  - configmap.yaml
-  - externalsecret.yaml
-  - pv.yaml
-  - deployment.yaml
   - service.yaml
+  - servicemonitor.yaml
+  - prometheusrule.yaml

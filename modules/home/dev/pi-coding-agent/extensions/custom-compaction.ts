@@ -2,7 +2,7 @@
  * Custom Compaction — delegate summarization to a cheap model.
  *
  * Hooks session_before_compact and routes the summary call to
- * deepseek-v4-flash (opencode-go) with fallback to glm-5.2 (zai)
+ * deepseek-v4-flash (opencode-go) with fallback to glm-5.3 (zai)
  * when opencode usage is exhausted. Falls back to default compaction
  * only when both fail.
  */
@@ -23,6 +23,7 @@ async function tryCompactionModel(
 		modelRegistry: { find: (p: string, m: string) => Model<Api> | undefined; getApiKeyAndHeaders: (m: Model<Api>) => Promise<any> };
 		ui: { notify: (msg: string, level?: string) => void };
 	},
+	reasoningEffort?: string,
 ): Promise<SummaryResult> {
 	const model = ctx.modelRegistry.find(provider, modelId);
 	if (!model) return null;
@@ -67,6 +68,7 @@ ${conversationText}
 			env: auth.env,
 			maxTokens: 8192,
 			signal,
+			...(reasoningEffort ? { reasoningEffort } : {}),
 		});
 
 		const text = response.content
@@ -91,7 +93,7 @@ export default function (pi: ExtensionAPI) {
 
 		// Try cheapest first, then fallback, then default compaction
 		const result = await tryCompactionModel("opencode-go", "deepseek-v4-flash", conversationText, previousSummary, signal, ctx)
-			?? await tryCompactionModel("zai", "glm-5.2", conversationText, previousSummary, signal, ctx);
+			?? await tryCompactionModel("zai", "glm-5.3", conversationText, previousSummary, signal, ctx, "low");
 
 		if (!result) return; // both failed → default compaction
 

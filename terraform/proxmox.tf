@@ -270,10 +270,11 @@ resource "proxmox_virtual_environment_vm" "samwise" {
 
   boot_order = ["scsi0", "ide2", "net0"]
 
-  # Root disk
+  # Root disk. Sized for k3s/containerd plus Longhorn's third replica set;
+  # 64 GiB could not satisfy replica scheduling while rivendell was quarantined.
   disk {
     datastore_id = var.proxmox_datastore
-    size         = 64
+    size         = 160
     interface    = "scsi0"
     file_format  = "raw"
     iothread     = true

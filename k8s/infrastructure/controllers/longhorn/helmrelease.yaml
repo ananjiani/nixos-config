@@ -9,7 +9,8 @@ spec:
   chart:
     spec:
       chart: longhorn
-      version: ">=1.6.0"
+      # Pin schema-sensitive chart values; review upgrades explicitly.
+      version: "1.12.1"
       sourceRef:
         kind: HelmRepository
         name: longhorn
@@ -25,13 +26,22 @@ spec:
       defaultReplicaCount: 3
       # Use less aggressive resource settings for homelab
       guaranteedInstanceManagerCPU: 5
+      # Protect the shared control-plane disks from rebuild I/O storms.
+      concurrentReplicaRebuildPerNodeLimit: 1
+      # Automatically remove stale replica data after a one-hour recovery window.
+      orphanResourceAutoDeletion: replica-data
+      orphanResourceAutoDeletionGracePeriod: 3600
       # Faster failover: delete pods when node goes down (instead of waiting for k8s)
       nodeDownPodDeletionPolicy: delete-statefulset-pod
-      # Offsite S3 volume backups (issue #41). Block-level incremental
-      # snapshots → Backblaze B2 S3-compatible API. Same bucket, longhorn/
-      # prefix. Credentials from Secret created by ExternalSecret below.
+    # Longhorn 1.12 manages the BackupTarget CR through defaultBackupStore,
+    # rather than the legacy defaultSettings keys.
+    defaultBackupStore:
       backupTarget: "s3://ammars-homelab-offsite@us-east-005/longhorn/"
       backupTargetCredentialSecret: longhorn-backup
+      pollInterval: 300
+    metrics:
+      serviceMonitor:
+        enabled: true
     persistence:
       # Make Longhorn the default storage class
       defaultClass: true

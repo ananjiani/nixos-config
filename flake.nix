@@ -274,7 +274,7 @@
             {
               nixpkgs.overlays = [
                 inputs.claude-code.overlays.default
-                inputs.llm-agents.overlays.default
+                inputs.llm-agents.overlays.shared-nixpkgs
               ];
             }
           ];
@@ -290,7 +290,7 @@
             {
               nixpkgs.overlays = [
                 inputs.claude-code.overlays.default
-                inputs.llm-agents.overlays.default
+                inputs.llm-agents.overlays.shared-nixpkgs
               ];
             }
           ];
@@ -474,7 +474,7 @@
                     inputs.emacs-overlay.overlay
                     inputs.nix-vscode-extensions.overlays.default
                     inputs.claude-code.overlays.default
-                    inputs.llm-agents.overlays.default
+                    inputs.llm-agents.overlays.shared-nixpkgs
                     # niri-hdr: experimental HDR fork (desktop only; package unused elsewhere)
                     # brave-origin: overlay until nixpkgs PR #511131 merges
                     (final: _prev: {

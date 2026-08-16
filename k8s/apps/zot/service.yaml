@@ -1,16 +1,96 @@
 ---
+# Headless service keeps zot.zot.svc.cluster.local stable while avoiding a
+# same-node kube-proxy hairpin when workloads on theoden reach host-managed Zot.
 apiVersion: v1
 kind: Service
 metadata:
   name: zot
   namespace: zot
-  annotations:
-    metallb.universe.tf/loadBalancerIPs: "192.168.1.56"
-spec:
-  type: LoadBalancer
-  selector:
+  labels:
     app: zot
+spec:
+  clusterIP: None
   ports:
     - port: 5000
       targetPort: 5000
       name: http
+---
+# Preserve the existing MetalLB address independently of the headless cluster
+# DNS service. Clients continue to use 192.168.1.56:5000 and zot.lan:5000.
+apiVersion: v1
+kind: Service
+metadata:
+  name: zot-lb
+  namespace: zot
+  labels:
+    app: zot-lb
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.1.56"
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 5000
+      targetPort: 5000
+      name: http
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: zot-host
+  namespace: zot
+  labels:
+    kubernetes.io/service-name: zot
+    endpointslice.kubernetes.io/managed-by: dimensiondoor.xyz
+addressType: IPv4
+ports:
+  - name: http
+    protocol: TCP
+    port: 5000
+# The theoden cni0 bridge is directly routable from every pod and avoids the
+# asymmetric same-node path caused by using the host's LAN address.
+endpoints:
+  - addresses:
+      - 10.42.3.1
+    nodeName: theoden
+    conditions:
+      ready: true
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: zot-lb-host
+  namespace: zot
+  labels:
+    kubernetes.io/service-name: zot-lb
+    endpointslice.kubernetes.io/managed-by: dimensiondoor.xyz
+addressType: IPv4
+ports:
+  - name: http
+    protocol: TCP
+    port: 5000
+endpoints:
+  - addresses:
+      - 10.42.3.1
+    nodeName: theoden
+    conditions:
+      ready: true
+---
+# Prometheus Operator currently renders ServiceMonitors with Kubernetes
+# `role: endpoints`; keep this bridge alongside the EndpointSlice until that
+# discovery path is migrated to EndpointSlice.
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: zot
+  namespace: zot
+  labels:
+    app: zot
+    endpoints.kubernetes.io/managed-by: dimensiondoor.xyz
+    endpointslice.kubernetes.io/skip-mirror: "true"
+subsets:
+  - addresses:
+      - ip: 10.42.3.1
+    ports:
+      - name: http
+        protocol: TCP
+        port: 5000
