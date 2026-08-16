@@ -76,7 +76,8 @@ _:
     let
       cfg = config.gaming;
 
-      # Community OctoWoW launcher (AppImage). Game/client data stays mutable outside Nix.
+      # Official Windows OctoLauncher under UMU-Proton. Nix pins the bootstrap installer;
+      # the prefix (launcher/client/addons/settings) stays writable for the self-updater.
       # Version/hash managed by nvfetcher (nvfetcher.toml [octowow]).
       octowow =
         let
@@ -88,31 +89,49 @@ _:
               dockerTools
               ;
           };
-          pname = "octo-launcher";
-          inherit (sources.octowow) version src;
-          appimageContents = pkgs.appimageTools.extractType2 { inherit pname version src; };
-          unwrapped = pkgs.appimageTools.wrapType2 {
-            inherit pname version src;
-            extraInstallCommands = ''
-              install -Dm644 ${appimageContents}/usr/share/icons/hicolor/0x0/apps/octo-launcher.png \
-                $out/share/icons/hicolor/280x280/apps/octo-launcher.png
-
-              install -Dm644 ${appimageContents}/octo-launcher.desktop \
-                $out/share/applications/octo-launcher.desktop
-              substituteInPlace $out/share/applications/octo-launcher.desktop \
-                --replace-fail 'Exec=AppRun --no-sandbox %U' 'Exec=octo-launcher %U'
+          prefix = cfg.octowow.prefixPath;
+          launcherExe = "${prefix}/drive_c/users/steamuser/AppData/Local/Programs/OctoLauncher/OctoLauncher.exe";
+          wrapper = pkgs.writeShellApplication {
+            name = "octo-launcher";
+            runtimeInputs = [
+              pkgs.umu-launcher
+              pkgs.util-linux
+            ];
+            text = ''
+              export WINEPREFIX=${lib.escapeShellArg prefix}
+              export GAMEID=umu-octowow
+              export PROTON_VERB=waitforexitandrun
+              launcher=${lib.escapeShellArg launcherExe}
+              if [[ ! -f $launcher ]]; then
+                exec 9>"$XDG_RUNTIME_DIR/octo-launcher-install.lock"
+                flock 9
+                if [[ ! -f $launcher ]]; then
+                  umu-run ${sources.octowow.src} /S
+                fi
+                flock -u 9
+                exec 9>&-
+                if [[ ! -f $launcher ]]; then
+                  echo "octo-launcher: install failed; missing $launcher" >&2
+                  exit 1
+                fi
+              fi
+              exec umu-run "$launcher" "$@"
             '';
           };
+          desktop = pkgs.makeDesktopItem {
+            name = "octo-launcher";
+            desktopName = "OctoLauncher";
+            exec = "${wrapper}/bin/octo-launcher %U";
+            categories = [ "Game" ];
+            extraConfig.StartupWMClass = "OctoLauncher";
+          };
         in
-        # Always pass --no-sandbox so terminal and menu launches both work.
         pkgs.symlinkJoin {
-          name = "${pname}-${version}";
-          paths = [ unwrapped ];
-          buildInputs = [ pkgs.makeWrapper ];
-          postBuild = ''
-            wrapProgram $out/bin/${pname} \
-              --add-flags "--no-sandbox"
-          '';
+          name = "octo-launcher-${sources.octowow.version}";
+          paths = [
+            wrapper
+            desktop
+          ];
         };
 
       # Wrapper that excludes cloud-save games, rescues DRM-free/non-Steam games
@@ -282,7 +301,12 @@ _:
         };
 
         octowow = {
-          enable = lib.mkEnableOption "OctoWoW community Linux launcher";
+          enable = lib.mkEnableOption "OctoWoW official launcher via UMU-Proton";
+          prefixPath = lib.mkOption {
+            type = lib.types.str;
+            default = "${config.xdg.dataHome}/octowow/prefix";
+            description = "Writable Proton prefix for OctoLauncher";
+          };
         };
       };
 

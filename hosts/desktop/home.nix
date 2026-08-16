@@ -44,44 +44,120 @@ let
     install -m 0644 ${dp2Auto} "${hdrFragmentPath}"
     echo "DP-2 HDR: auto"
   '';
-  gamescopeHdr = pkgs.writeShellApplication {
-    name = "gamescope-hdr";
+  gamescopeClipboardBridge = pkgs.writeShellApplication {
+    name = "gamescope-clipboard-bridge";
+    # ShellCheck cannot see cleanup's indirect trap calls.
+    excludeShellChecks = [ "SC2329" ];
     text = ''
-      width=5120
-      height=1440
-      refresh=240
-      hdr_args=(--hdr-enabled)
-      game_env=(${pkgs.coreutils}/bin/env ENABLE_HDR_WSI=1 DXVK_HDR=1)
-
-      if [ -f "${sunshineFragmentPath}" ]; then
-        if ${pkgs.gnugrep}/bin/grep -Fq 'mode custom=true "1280x800@90"' "${sunshineFragmentPath}"; then
-          width=1280
-          height=800
-          refresh=90
-        elif ${pkgs.gnugrep}/bin/grep -Fq 'mode custom=true "1920x1080@120"' "${sunshineFragmentPath}"; then
-          width=1920
-          height=1080
-          refresh=120
-        else
-          echo "unsupported Sunshine niri fragment" >&2
-          exit 1
+      host_wayland=$1
+      shift
+      watcher=
+      cleanup() {
+        if [ -n "''${watcher:-}" ]; then
+          kill "$watcher" 2>/dev/null || true
+          wait "$watcher" 2>/dev/null || true
+          watcher=
         fi
-
-        if ! ${pkgs.gnugrep}/bin/grep -Fq 'hdr mode="on"' "${sunshineFragmentPath}"; then
-          hdr_args=()
-          game_env=(${pkgs.coreutils}/bin/env -u ENABLE_HDR_WSI -u DXVK_HDR)
-        fi
-      else
-        ${hdrOn}/bin/hdr-on
-        trap '${hdrOff}/bin/hdr-off' EXIT
-        sleep 1
+      }
+      trap cleanup EXIT
+      trap "cleanup; exit 129" HUP
+      trap "cleanup; exit 130" INT
+      trap "cleanup; exit 143" TERM
+      if [ -n "$host_wayland" ]; then
+        # DISPLAY is Gamescope nested Xwayland; paste from host Wayland into it.
+        WAYLAND_DISPLAY="$host_wayland" ${pkgs.wl-clipboard}/bin/wl-paste --type text --watch ${pkgs.xclip}/bin/xclip -selection clipboard -in &
+        watcher=$!
       fi
-
-      ${pkgs.gamescope}/bin/gamescope \
-        -W "$width" -H "$height" -w "$width" -h "$height" -r "$refresh" -f \
-        "''${hdr_args[@]}" --virtual-connector-strategy PerWindow \
-        -- "''${game_env[@]}" "$@"
+      status=0
+      "$@" || status=$?
+      exit "$status"
     '';
+  };
+  # Shared Gamescope launcher: resolution/Sunshine defaults + optional HDR + host
+  # Wayland → nested Xwayland clipboard bridge. GameMode stays outside these wrappers.
+  mkGamescopeWrapper =
+    {
+      name,
+      hdr,
+    }:
+    pkgs.writeShellApplication {
+      inherit name;
+      text = ''
+        width=5120
+        height=1440
+        refresh=240
+        ${
+          if hdr then
+            ''
+              hdr_args=(--hdr-enabled)
+              game_env=(${pkgs.coreutils}/bin/env ENABLE_HDR_WSI=1 DXVK_HDR=1)
+            ''
+          else
+            ''
+              hdr_args=()
+              game_env=(${pkgs.coreutils}/bin/env -u ENABLE_HDR_WSI -u DXVK_HDR)
+            ''
+        }
+
+        if [ -f "${sunshineFragmentPath}" ]; then
+          if ${pkgs.gnugrep}/bin/grep -Fq 'mode custom=true "1280x800@90"' "${sunshineFragmentPath}"; then
+            width=1280
+            height=800
+            refresh=90
+          elif ${pkgs.gnugrep}/bin/grep -Fq 'mode custom=true "1920x1080@120"' "${sunshineFragmentPath}"; then
+            width=1920
+            height=1080
+            refresh=120
+          else
+            echo "unsupported Sunshine niri fragment" >&2
+            exit 1
+          fi
+          ${
+            if hdr then
+              ''
+                if ! ${pkgs.gnugrep}/bin/grep -Fq 'hdr mode="on"' "${sunshineFragmentPath}"; then
+                  hdr_args=()
+                  game_env=(${pkgs.coreutils}/bin/env -u ENABLE_HDR_WSI -u DXVK_HDR)
+                fi
+              ''
+            else
+              ""
+          }
+        else
+          ${
+            if hdr then
+              ''
+                ${hdrOn}/bin/hdr-on
+                trap '${hdrOff}/bin/hdr-off' EXIT
+                sleep 1
+              ''
+            else
+              ":"
+          }
+        fi
+
+        # Capture host Wayland before Gamescope replaces the session display.
+        host_wayland="''${WAYLAND_DISPLAY:-}"
+
+        ${pkgs.gamescope}/bin/gamescope \
+          -W "$width" -H "$height" -w "$width" -h "$height" -r "$refresh" -f \
+          "''${hdr_args[@]}" --force-grab-cursor --virtual-connector-strategy PerWindow \
+          -- "''${game_env[@]}" ${gamescopeClipboardBridge}/bin/gamescope-clipboard-bridge "$host_wayland" "$@"
+      '';
+    };
+  gamescopeSdr = mkGamescopeWrapper {
+    name = "gamescope-sdr";
+    hdr = false;
+  };
+  gamescopeHdr = mkGamescopeWrapper {
+    name = "gamescope-hdr";
+    hdr = true;
+  };
+  octowowGamescope = pkgs.makeDesktopItem {
+    name = "octowow-gamescope";
+    desktopName = "OctoWoW (Gamescope)";
+    exec = "${pkgs.gamemode}/bin/gamemoderun ${gamescopeSdr}/bin/gamescope-sdr ${config.home.profileDirectory}/bin/octo-launcher";
+    categories = [ "Game" ];
   };
   # Upstream static pi-web binary — web UI for local Pi coding-agent sessions.
   # HTTPS edge lives in k8s Traefik (see ADR-006); this binds to the desktop's
@@ -181,7 +257,9 @@ in
       # Runtime DP-2 HDR helpers (niri live-reloads hdr.kdl).
       hdrOn
       hdrOff
+      gamescopeSdr
       gamescopeHdr
+      octowowGamescope
       piWeb
     ];
     sessionVariables.SSH_ASKPASS = "${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass";
@@ -231,7 +309,10 @@ in
     enable = true;
     syncthing.enable = true;
     ludusavi.backupPath = "/home/ammar/Games/Saves/ammars-pc";
-    octowow.enable = true;
+    octowow = {
+      enable = true;
+      prefixPath = "/mnt/nvme/Games/octowow/prefix";
+    };
   };
 
   moondeck = {

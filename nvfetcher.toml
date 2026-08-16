@@ -9,9 +9,9 @@ src.prefix = "v"
 fetch.url = "https://github.com/nekename/OpenDeck/releases/download/v$ver/opendeck_$ver_amd64.AppImage"
 
 [octowow]
-src.github = "nikany96/OctoLauncherForLinuxDistros"
-src.prefix = "v"
-fetch.url = "https://github.com/nikany96/OctoLauncherForLinuxDistros/releases/download/v$ver/OctoLauncher.AppImage"
+src.webpage = "https://octowow.st/launcher-updates/latest.yml"
+src.regex = "version: ([0-9.]+)"
+fetch.url = "https://dl.octowow.st/launcher-updates/OctoLauncher_Installer-$ver.exe"
 
 [jacktook]
 src.git = "https://github.com/Sam-Max/plugin.video.jacktook.git"
