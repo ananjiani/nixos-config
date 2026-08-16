@@ -38,6 +38,9 @@ spec:
       backupTarget: "s3://ammars-homelab-offsite@us-east-005/longhorn/"
       backupTargetCredentialSecret: longhorn-backup
       pollInterval: 300
+    metrics:
+      serviceMonitor:
+        enabled: true
     persistence:
       # Make Longhorn the default storage class
       defaultClass: true
