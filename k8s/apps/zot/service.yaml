@@ -33,3 +33,23 @@ endpoints:
       - 192.168.1.27
     conditions:
       ready: true
+---
+# Prometheus Operator currently renders ServiceMonitors with Kubernetes
+# `role: endpoints`; keep this bridge alongside the EndpointSlice until that
+# discovery path is migrated to EndpointSlice.
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: zot
+  namespace: zot
+  labels:
+    app: zot
+    endpoints.kubernetes.io/managed-by: dimensiondoor.xyz
+    endpointslice.kubernetes.io/skip-mirror: "true"
+subsets:
+  - addresses:
+      - ip: 192.168.1.27
+    ports:
+      - name: http
+        protocol: TCP
+        port: 5000
