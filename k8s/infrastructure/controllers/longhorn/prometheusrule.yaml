@@ -1,0 +1,39 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: longhorn-backup-alerts
+  namespace: longhorn-system
+spec:
+  groups:
+    - name: longhorn-backups
+      rules:
+        - alert: LonghornManagerMetricsUnavailable
+          expr: |
+            absent(up{job="longhorn-backend"})
+            or
+            max(up{job="longhorn-backend"}) == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Longhorn manager metrics are unavailable
+            description: Prometheus cannot scrape any Longhorn manager, so storage and backup health are unobservable.
+        - alert: LonghornBackupTargetReconcileRetries
+          expr: |
+            sum(increase(longhorn_workqueue_retries_total{name="longhorn-backup-target"}[15m])) > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Longhorn is repeatedly retrying its backup target
+            description: Backup-target reconciliation has retried continuously; verify the BackupTarget status, B2 endpoint, and credential Secret.
+        - alert: LonghornBackupStale
+          expr: |
+            time() - max by (volume, pvc, pvc_namespace) (longhorn_volume_last_backup_at) > 36 * 60 * 60
+          for: 30m
+          labels:
+            severity: critical
+          annotations:
+            summary: Longhorn volume {{ $labels.volume }} has a stale backup
+            description: The latest successful backup for {{ $labels.pvc_namespace }}/{{ $labels.pvc }} is more than 36 hours old.

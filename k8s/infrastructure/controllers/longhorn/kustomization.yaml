@@ -7,4 +7,5 @@ resources:
   - externalsecret.yaml
   - recurringjobs.yaml
   - networkpolicy-monitoring.yaml
+  - prometheusrule.yaml
   - storageclass-monitoring.yaml
