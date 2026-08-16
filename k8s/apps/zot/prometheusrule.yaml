@@ -16,4 +16,4 @@ spec:
             summary: "Zot registry returned HTTP 5xx errors"
             description: >-
               Zot returned {{ $value }} HTTP 5xx response(s) in the last 5 minutes.
-              Check the zot pod logs and its NFS-backed storage before image pulls fail.
+              Check the zot.service journal and /mnt/disk2/zot before image pulls fail.

@@ -111,6 +111,7 @@ in
     ../../../modules/nixos/networking.nix
     inputs.quadlet-nix.nixosModules.quadlet
     ./romm.nix
+    ./zot.nix
     ./paperless.nix
     ./rclone-webdav.nix
   ];
@@ -132,6 +133,7 @@ in
         22000 # Syncthing sync protocol
         8085 # RomM web UI
         8086 # RetroArch WebDAV (Cloud Sync)
+        5000 # Zot OCI registry
       ];
       allowedUDPPorts = [
         111 # rpcbind/portmapper

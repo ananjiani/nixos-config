@@ -10,9 +10,26 @@ metadata:
     metallb.universe.tf/loadBalancerIPs: "192.168.1.56"
 spec:
   type: LoadBalancer
-  selector:
-    app: zot
   ports:
     - port: 5000
       targetPort: 5000
       name: http
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: zot-host
+  namespace: zot
+  labels:
+    kubernetes.io/service-name: zot
+    endpointslice.kubernetes.io/managed-by: dimensiondoor.xyz
+addressType: IPv4
+ports:
+  - name: http
+    protocol: TCP
+    port: 5000
+endpoints:
+  - addresses:
+      - 192.168.1.27
+    conditions:
+      ready: true
