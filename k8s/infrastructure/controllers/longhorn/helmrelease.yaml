@@ -9,7 +9,8 @@ spec:
   chart:
     spec:
       chart: longhorn
-      version: ">=1.6.0"
+      # Pin schema-sensitive chart values; review upgrades explicitly.
+      version: "1.12.1"
       sourceRef:
         kind: HelmRepository
         name: longhorn

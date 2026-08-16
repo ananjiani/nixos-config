@@ -6,4 +6,5 @@ resources:
   - helmrelease.yaml
   - externalsecret.yaml
   - recurringjobs.yaml
+  - networkpolicy-monitoring.yaml
   - storageclass-monitoring.yaml
