@@ -36,7 +36,7 @@ resource "proxmox_virtual_environment_vm" "boromir" {
   # Root disk
   disk {
     datastore_id = var.proxmox_datastore
-    size         = 200
+    size         = 400
     interface    = "scsi0"
     file_format  = "raw"
     iothread     = true
@@ -341,7 +341,7 @@ resource "proxmox_virtual_environment_vm" "theoden" {
   # Root disk
   disk {
     datastore_id = var.proxmox_datastore
-    size         = 100
+    size         = 300
     interface    = "scsi0"
     file_format  = "raw"
     iothread     = true
