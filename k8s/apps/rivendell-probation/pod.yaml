@@ -1,0 +1,109 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rivendell-probation
+  namespace: rivendell-probation
+  labels:
+    app.kubernetes.io/name: rivendell-probation
+    app.kubernetes.io/component: synthetic-probe
+spec:
+  # The probe finishes before this hard 48-hour deadline. The completed pod is
+  # retained for acceptance review and removed from Git after the decision.
+  activeDeadlineSeconds: 172800
+  # Direct binding allows this one expendable pod to run while the node
+  # remains cordoned; no other workload can schedule there.
+  nodeName: rivendell
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  terminationGracePeriodSeconds: 5
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    fsGroup: 65534
+    fsGroupChangePolicy: OnRootMismatch
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: probe
+      image: busybox:1.37.0
+      imagePullPolicy: IfNotPresent
+      command:
+        - sh
+        - -ec
+        - |
+          mkdir -p /work/www /work/scratch
+          printf 'ok\n' > /work/www/index.html
+          httpd -f -p 8080 -h /work/www &
+          http_pid=$!
+          trap 'kill "$http_pid" 2>/dev/null || true' EXIT
+
+          end=$(( $(date +%s) + 171000 ))
+          while [ "$(date +%s)" -lt "$end" ]; do
+            date -u +%Y-%m-%dT%H:%M:%SZ > /work/scratch/heartbeat
+            dd if=/dev/urandom of=/work/scratch/blob bs=1M count=4 2>/dev/null
+            sha256sum /work/scratch/blob > /work/scratch/blob.sha256
+            sha256sum -c /work/scratch/blob.sha256 >/dev/null
+            nslookup kubernetes.default.svc.cluster.local >/dev/null
+            wget -qO /dev/null http://127.0.0.1:8080/
+            rm -f /work/scratch/blob /work/scratch/blob.sha256
+            date +%s > /work/last-success
+            sleep 60
+          done
+      ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+      readinessProbe:
+        exec:
+          command:
+            - sh
+            - -ec
+            - |
+              now=$(date +%s)
+              last=$(cat /work/last-success)
+              test $((now - last)) -le 180
+        initialDelaySeconds: 5
+        periodSeconds: 30
+        timeoutSeconds: 5
+        failureThreshold: 2
+      livenessProbe:
+        exec:
+          command:
+            - sh
+            - -ec
+            - |
+              now=$(date +%s)
+              last=$(cat /work/last-success)
+              test $((now - last)) -le 180
+        initialDelaySeconds: 180
+        periodSeconds: 60
+        timeoutSeconds: 5
+        failureThreshold: 2
+      resources:
+        requests:
+          cpu: 25m
+          memory: 32Mi
+          ephemeral-storage: 32Mi
+        limits:
+          cpu: 250m
+          memory: 128Mi
+          ephemeral-storage: 64Mi
+      securityContext:
+        runAsNonRoot: true
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        seccompProfile:
+          type: RuntimeDefault
+      volumeMounts:
+        - name: work
+          mountPath: /work
+  volumes:
+    - name: work
+      emptyDir:
+        sizeLimit: 32Mi
