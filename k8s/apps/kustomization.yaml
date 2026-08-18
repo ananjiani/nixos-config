@@ -22,6 +22,7 @@ resources:
   - lobechat
   - monitoring
   - renovate
+  - rivendell-probation
   - zot
   - persona-mcp
   - pyghtcast-mcp

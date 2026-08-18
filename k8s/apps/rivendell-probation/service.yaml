@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rivendell-probation
+  namespace: rivendell-probation
+  labels:
+    app.kubernetes.io/name: rivendell-probation
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: rivendell-probation
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
