@@ -134,6 +134,76 @@ _:
           ];
         };
 
+      # Official SWG Restoration installer under UMU-Proton. Nix pins the bootstrap
+      # installer; the prefix stays writable for the self-updater.
+      # Version/hash managed by nvfetcher (nvfetcher.toml [swgr]).
+      swgr =
+        let
+          sources = import ../../_sources/generated.nix {
+            inherit (pkgs)
+              fetchurl
+              fetchFromGitHub
+              fetchgit
+              dockerTools
+              ;
+          };
+          prefix = cfg.swgr.prefixPath;
+          launcherExe = "${prefix}/drive_c/Program Files/SWG Restoration/SWG Restoration.exe";
+          winetricksMarker = "${prefix}/.swgr-winetricks-v1";
+          wrapper = pkgs.writeShellApplication {
+            name = "swg-restoration";
+            runtimeInputs = [
+              pkgs.umu-launcher
+              pkgs.util-linux
+              pkgs.winetricks
+            ];
+            text = ''
+              export WINEPREFIX=${lib.escapeShellArg prefix}
+              export GAMEID=umu-swgr
+              export PROTON_VERB=waitforexitandrun
+              launcher=${lib.escapeShellArg launcherExe}
+              marker=${lib.escapeShellArg winetricksMarker}
+              if [[ ! -f $launcher ]]; then
+                exec 9>"$XDG_RUNTIME_DIR/swg-restoration-install.lock"
+                flock 9
+                if [[ ! -f $launcher ]]; then
+                  umu-run ${sources.swgr.src} /S
+                fi
+                flock -u 9
+                exec 9>&-
+                if [[ ! -f $launcher ]]; then
+                  echo "swg-restoration: install failed; missing $launcher" >&2
+                  exit 1
+                fi
+              fi
+              if [[ ! -f $marker ]]; then
+                exec 9>"$XDG_RUNTIME_DIR/swg-restoration-winetricks.lock"
+                flock 9
+                if [[ ! -f $marker ]]; then
+                  umu-run winetricks win10 hidewineexports=enable windowmanagerdecorated=n windowmanagermanaged=y d3dcompiler_43 d3dx10 d3dx9 d3dx9_39 dxvk xact xact_x64 vcrun2022
+                  touch "$marker"
+                fi
+                flock -u 9
+                exec 9>&-
+              fi
+              exec umu-run "$launcher" "$@"
+            '';
+          };
+          desktop = pkgs.makeDesktopItem {
+            name = "swg-restoration";
+            desktopName = "SWG Restoration";
+            exec = "${wrapper}/bin/swg-restoration %U";
+            categories = [ "Game" ];
+          };
+        in
+        pkgs.symlinkJoin {
+          name = "swg-restoration-${sources.swgr.version}";
+          paths = [
+            wrapper
+            desktop
+          ];
+        };
+
       # Wrapper that excludes cloud-save games, rescues DRM-free/non-Steam games
       ludusaviBackupWrapper =
         pkgs.writers.writePython3Bin "ludusavi-backup-wrapper"
@@ -308,6 +378,15 @@ _:
             description = "Writable Proton prefix for OctoLauncher";
           };
         };
+
+        swgr = {
+          enable = lib.mkEnableOption "SWG Restoration launcher via UMU-Proton";
+          prefixPath = lib.mkOption {
+            type = lib.types.str;
+            default = "${config.xdg.dataHome}/swgr/prefix";
+            description = "Writable Proton prefix for SWG Restoration";
+          };
+        };
       };
 
       config = lib.mkIf cfg.enable {
@@ -333,6 +412,9 @@ _:
           ]
           ++ lib.optionals cfg.octowow.enable [
             octowow
+          ]
+          ++ lib.optionals cfg.swgr.enable [
+            swgr
           ]
           ++ [
             boilr

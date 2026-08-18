@@ -74,4 +74,13 @@
     };
     date = "2026-07-10";
   };
+  swgr = {
+    pname = "swgr";
+    version = "4.0.3";
+    src = fetchurl {
+      url = "https://patch.swgr.media/patch/launcher/SWG%20Restoration%20Install.exe";
+      name = "swgr-install.exe";
+      sha256 = "sha256-Z+8BPMpTDNLxKZNrFqpXjpDYsV5cx2MmtbGUpsDQVas=";
+    };
+  };
 }

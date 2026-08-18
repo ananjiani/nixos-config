@@ -13,6 +13,12 @@ src.webpage = "https://octowow.st/launcher-updates/latest.yml"
 src.regex = "version: ([0-9.]+)"
 fetch.url = "https://dl.octowow.st/launcher-updates/OctoLauncher_Installer-$ver.exe"
 
+[swgr]
+src.webpage = "https://patch.swgr.media/patch/launcher/latest.yml"
+src.regex = "version: ([0-9.]+)"
+fetch.url = "https://patch.swgr.media/patch/launcher/SWG%20Restoration%20Install.exe"
+url.name = "swgr-install.exe"
+
 [jacktook]
 src.git = "https://github.com/Sam-Max/plugin.video.jacktook.git"
 src.branch = "main"

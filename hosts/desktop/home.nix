@@ -159,6 +159,12 @@ let
     exec = "${pkgs.gamemode}/bin/gamemoderun ${gamescopeSdr}/bin/gamescope-sdr ${config.home.profileDirectory}/bin/octo-launcher";
     categories = [ "Game" ];
   };
+  swgrGamescope = pkgs.makeDesktopItem {
+    name = "swgr-gamescope";
+    desktopName = "SWG Restoration (Gamescope)";
+    exec = "${pkgs.gamemode}/bin/gamemoderun ${gamescopeSdr}/bin/gamescope-sdr ${config.home.profileDirectory}/bin/swg-restoration";
+    categories = [ "Game" ];
+  };
   # Upstream static pi-web binary — web UI for local Pi coding-agent sessions.
   # HTTPS edge lives in k8s Traefik (see ADR-006); this binds to the desktop's
   # LAN IP and is protected by PI_WEB_TOKEN from ~/.config/pi-web/env (never in
@@ -260,6 +266,7 @@ in
       gamescopeSdr
       gamescopeHdr
       octowowGamescope
+      swgrGamescope
       piWeb
     ];
     sessionVariables.SSH_ASKPASS = "${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass";
@@ -312,6 +319,10 @@ in
     octowow = {
       enable = true;
       prefixPath = "/mnt/nvme/Games/octowow/prefix";
+    };
+    swgr = {
+      enable = true;
+      prefixPath = "/mnt/nvme/Games/swgr/prefix";
     };
   };
 
