@@ -106,7 +106,7 @@ _:
                 exec 9>"$XDG_RUNTIME_DIR/octo-launcher-install.lock"
                 flock 9
                 if [[ ! -f $launcher ]]; then
-                  umu-run ${sources.octowow.src} /S
+                  /run/wrappers/bin/mullvad-exclude umu-run ${sources.octowow.src} /S
                 fi
                 flock -u 9
                 exec 9>&-
@@ -115,7 +115,7 @@ _:
                   exit 1
                 fi
               fi
-              exec umu-run "$launcher" "$@"
+              exec /run/wrappers/bin/mullvad-exclude umu-run "$launcher" "$@"
             '';
           };
           desktop = pkgs.makeDesktopItem {
@@ -167,7 +167,7 @@ _:
                 exec 9>"$XDG_RUNTIME_DIR/swg-restoration-install.lock"
                 flock 9
                 if [[ ! -f $launcher ]]; then
-                  umu-run ${sources.swgr.src} /S
+                  /run/wrappers/bin/mullvad-exclude umu-run ${sources.swgr.src} /S
                 fi
                 flock -u 9
                 exec 9>&-
@@ -180,13 +180,13 @@ _:
                 exec 9>"$XDG_RUNTIME_DIR/swg-restoration-winetricks.lock"
                 flock 9
                 if [[ ! -f $marker ]]; then
-                  umu-run winetricks win10 hidewineexports=enable windowmanagerdecorated=n windowmanagermanaged=y d3dcompiler_43 d3dx10 d3dx9 d3dx9_39 dxvk xact xact_x64 vcrun2022
+                  /run/wrappers/bin/mullvad-exclude umu-run winetricks win10 hidewineexports=enable windowmanagerdecorated=n windowmanagermanaged=y d3dcompiler_43 d3dx10 d3dx9 d3dx9_39 dxvk xact xact_x64 vcrun2022
                   touch "$marker"
                 fi
                 flock -u 9
                 exec 9>&-
               fi
-              exec umu-run "$launcher" "$@"
+              exec /run/wrappers/bin/mullvad-exclude umu-run "$launcher" "$@"
             '';
           };
           desktop = pkgs.makeDesktopItem {
