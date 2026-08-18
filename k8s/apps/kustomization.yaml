@@ -27,6 +27,7 @@ resources:
   - persona-mcp
   - pyghtcast-mcp
   - holmesgpt
+  - hermes
   - opnsense-exporter
   - searxng
   - romm

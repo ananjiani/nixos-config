@@ -1,0 +1,13 @@
+---
+# Redirect hermes.lan to the canonical HTTPS host.
+# This kustomization has no vars, so leave $1 for Traefik as-is.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: hermes-lan-redirect
+  namespace: hermes
+spec:
+  redirectRegex:
+    permanent: true
+    regex: "^https?://hermes\\.lan(.*)$"
+    replacement: https://hermes.dimensiondoor.xyz${1}

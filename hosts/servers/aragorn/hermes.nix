@@ -10,9 +10,21 @@
 # and runs every returned string through Presidio before Hermes sees it.
 #
 # Auth bootstrap after deploy: hermes auth add openai-codex
-{ pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
+  lanHosts = import ../../../lib/hosts.nix;
+  k3sNodeIps = [
+    lanHosts.boromir
+    lanHosts.samwise
+    lanHosts.theoden
+    lanHosts.rivendell
+  ];
   # Version is the single source of truth for the pin; Renovate bumps the
   # dependency in actual-cli/package.json + package-lock.json.
   manifest = builtins.fromJSON (builtins.readFile ./actual-cli/package.json);
@@ -638,6 +650,13 @@ in
         code_execution = {
           mode = "strict";
         };
+        dashboard = {
+          public_url = "https://hermes.dimensiondoor.xyz";
+          oauth.self_hosted = {
+            issuer = "https://auth.dimensiondoor.xyz/application/o/hermes/";
+            client_id = "hermes-dashboard";
+          };
+        };
       };
     };
   };
@@ -651,6 +670,58 @@ in
         ];
         requires = [ "vault-agent-default.service" ];
         serviceConfig.EnvironmentFile = [ "/run/secrets/hermes_telegram_env" ];
+      };
+
+      hermes-dashboard = {
+        description = "Hermes Agent web dashboard";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "network-online.target" ];
+        wants = [ "network-online.target" ];
+        path = [
+          config.services.hermes-agent.package
+          pkgs.bash
+          pkgs.coreutils
+          pkgs.git
+        ]
+        ++ config.services.hermes-agent.extraPackages;
+        environment = {
+          HOME = "/var/lib/hermes";
+          HERMES_HOME = "/var/lib/hermes/.hermes";
+          # Traefik on k3s nodes is the TLS terminator. Uvicorn only honours
+          # X-Forwarded-Proto from these peers (default is 127.0.0.1).
+          FORWARDED_ALLOW_IPS = lib.concatStringsSep "," k3sNodeIps;
+        };
+        serviceConfig = {
+          ExecStart = "${config.services.hermes-agent.package}/bin/hermes dashboard --host 0.0.0.0 --port 9119 --no-open";
+          User = "ammar";
+          Group = "hermes";
+          WorkingDirectory = "/var/lib/hermes/workspace";
+          Restart = "on-failure";
+          RestartSec = 5;
+          UMask = "0007";
+          NoNewPrivileges = true;
+          PrivateTmp = true;
+          PrivateDevices = true;
+          ProtectSystem = "strict";
+          ProtectHome = false;
+          ProtectKernelTunables = true;
+          ProtectKernelModules = true;
+          ProtectControlGroups = true;
+          RestrictNamespaces = true;
+          RestrictRealtime = true;
+          RestrictSUIDSGID = true;
+          LockPersonality = true;
+          SystemCallArchitectures = "native";
+          RestrictAddressFamilies = [
+            "AF_UNIX"
+            "AF_INET"
+            "AF_INET6"
+          ];
+          ReadWritePaths = [
+            "/var/lib/hermes"
+            "/var/lib/hermes/workspace"
+          ];
+        };
       };
 
       hermes-broker = {

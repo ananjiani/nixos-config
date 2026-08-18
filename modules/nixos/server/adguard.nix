@@ -324,6 +324,16 @@ in
                 answer = "192.168.1.52";
               }
 
+              # Hermes dashboard (NixOS on aragorn, traefik IngressRoute to :9119)
+              {
+                domain = "hermes.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
+                domain = "hermes.lan";
+                answer = "192.168.1.52";
+              }
+
               # RetroArch Cloud Sync (rclone WebDAV on theoden, traefik to :8086)
               {
                 domain = "retroarch.lan";

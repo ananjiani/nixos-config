@@ -17,6 +17,7 @@ let
   collieLanIp = lanHosts.aragorn;
   collieLanPort = 8788;
   collieLoopbackPort = 8787;
+  hermesLanPort = 9119;
   # k3s node LAN IPs that may reach the collie-lan-proxy socket
   collieSourceIps = [
     lanHosts.boromir
@@ -59,14 +60,31 @@ in
   networking = {
     hostName = "aragorn";
 
-    # Accept collie-lan-proxy only from k3s nodes. Do not open the port broadly.
+    # Accept collie-lan-proxy and hermes-dashboard only from k3s nodes.
+    # Do not open these ports broadly.
     firewall = {
-      extraCommands = lib.concatMapStrings (src: ''
-        iptables -A nixos-fw -p tcp -s ${src} -d ${collieLanIp} --dport ${toString collieLanPort} -j nixos-fw-accept
-      '') collieSourceIps;
-      extraStopCommands = lib.concatMapStrings (src: ''
-        iptables -D nixos-fw -p tcp -s ${src} -d ${collieLanIp} --dport ${toString collieLanPort} -j nixos-fw-accept 2>/dev/null || true
-      '') collieSourceIps;
+      extraCommands = lib.concatMapStrings (
+        src:
+        lib.concatMapStrings
+          (port: ''
+            iptables -A nixos-fw -p tcp -s ${src} -d ${collieLanIp} --dport ${toString port} -j nixos-fw-accept
+          '')
+          [
+            collieLanPort
+            hermesLanPort
+          ]
+      ) collieSourceIps;
+      extraStopCommands = lib.concatMapStrings (
+        src:
+        lib.concatMapStrings
+          (port: ''
+            iptables -D nixos-fw -p tcp -s ${src} -d ${collieLanIp} --dport ${toString port} -j nixos-fw-accept 2>/dev/null || true
+          '')
+          [
+            collieLanPort
+            hermesLanPort
+          ]
+      ) collieSourceIps;
     };
   };
 
