@@ -148,7 +148,7 @@ _:
               ;
           };
           prefix = cfg.swgr.prefixPath;
-          launcherExe = "${prefix}/drive_c/Program Files/SWG Restoration/SWG Restoration.exe";
+          launcherExe = "${prefix}/drive_c/SWG Restoration/SWG Restoration.exe";
           winetricksMarker = "${prefix}/.swgr-winetricks-v1";
           wrapper = pkgs.writeShellApplication {
             name = "swg-restoration";
