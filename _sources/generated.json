@@ -136,5 +136,20 @@
             "url": "https://patch.swgr.media/patch/launcher/SWG%20Restoration%20Install.exe"
         },
         "version": "4.0.3"
+    },
+    "tlopo": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "tlopo",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-8xx2HJi5sbJBpnRLMLVroNQ+ykNprA45xWPw+x6QRVA=",
+            "type": "url",
+            "url": "https://download.tlopo.com/TLOPO_win64_setup_1.4.1.exe"
+        },
+        "version": "1.4.1"
     }
 }

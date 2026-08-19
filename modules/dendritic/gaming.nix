@@ -204,6 +204,63 @@ _:
           ];
         };
 
+      # Official TLOPO Windows installer under UMU-Proton. Nix pins the bootstrap
+      # installer; the prefix stays writable for the launcher self-updater.
+      # Version/hash managed by nvfetcher (nvfetcher.toml [tlopo]).
+      tlopo =
+        let
+          sources = import ../../_sources/generated.nix {
+            inherit (pkgs)
+              fetchurl
+              fetchFromGitHub
+              fetchgit
+              dockerTools
+              ;
+          };
+          prefix = cfg.tlopo.prefixPath;
+          launcherExe = "${prefix}/drive_c/Program Files/TLOPO/launcher.exe";
+          wrapper = pkgs.writeShellApplication {
+            name = "tlopo";
+            runtimeInputs = [
+              pkgs.umu-launcher
+              pkgs.util-linux
+            ];
+            text = ''
+              export WINEPREFIX=${lib.escapeShellArg prefix}
+              export GAMEID=umu-tlopo
+              export PROTON_VERB=waitforexitandrun
+              launcher=${lib.escapeShellArg launcherExe}
+              if [[ ! -f $launcher ]]; then
+                exec 9>"$XDG_RUNTIME_DIR/tlopo-install.lock"
+                flock 9
+                if [[ ! -f $launcher ]]; then
+                  /run/wrappers/bin/mullvad-exclude umu-run ${sources.tlopo.src} /S
+                fi
+                flock -u 9
+                exec 9>&-
+                if [[ ! -f $launcher ]]; then
+                  echo "tlopo: install failed; missing $launcher" >&2
+                  exit 1
+                fi
+              fi
+              exec /run/wrappers/bin/mullvad-exclude umu-run "$launcher" "$@"
+            '';
+          };
+          desktop = pkgs.makeDesktopItem {
+            name = "tlopo";
+            desktopName = "The Legend of Pirates Online";
+            exec = "${wrapper}/bin/tlopo %U";
+            categories = [ "Game" ];
+          };
+        in
+        pkgs.symlinkJoin {
+          name = "tlopo-${sources.tlopo.version}";
+          paths = [
+            wrapper
+            desktop
+          ];
+        };
+
       # Wrapper that excludes cloud-save games, rescues DRM-free/non-Steam games
       ludusaviBackupWrapper =
         pkgs.writers.writePython3Bin "ludusavi-backup-wrapper"
@@ -387,6 +444,15 @@ _:
             description = "Writable Proton prefix for SWG Restoration";
           };
         };
+
+        tlopo = {
+          enable = lib.mkEnableOption "The Legend of Pirates Online launcher via UMU-Proton";
+          prefixPath = lib.mkOption {
+            type = lib.types.str;
+            default = "${config.xdg.dataHome}/tlopo/prefix";
+            description = "Writable Proton prefix for TLOPO";
+          };
+        };
       };
 
       config = lib.mkIf cfg.enable {
@@ -415,6 +481,9 @@ _:
           ]
           ++ lib.optionals cfg.swgr.enable [
             swgr
+          ]
+          ++ lib.optionals cfg.tlopo.enable [
+            tlopo
           ]
           ++ [
             boilr

@@ -19,6 +19,11 @@ src.regex = "version: ([0-9.]+)"
 fetch.url = "https://patch.swgr.media/patch/launcher/SWG%20Restoration%20Install.exe"
 url.name = "swgr-install.exe"
 
+[tlopo]
+src.webpage = "https://tlopo.com/play/?update=1"
+src.regex = "TLOPO_win64_setup_([0-9.]+)\\.exe"
+fetch.url = "https://download.tlopo.com/TLOPO_win64_setup_$ver.exe"
+
 [jacktook]
 src.git = "https://github.com/Sam-Max/plugin.video.jacktook.git"
 src.branch = "main"
