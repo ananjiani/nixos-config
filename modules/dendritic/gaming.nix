@@ -76,190 +76,144 @@ _:
     let
       cfg = config.gaming;
 
-      # Official Windows OctoLauncher under UMU-Proton. Nix pins the bootstrap installer;
-      # the prefix (launcher/client/addons/settings) stays writable for the self-updater.
-      # Version/hash managed by nvfetcher (nvfetcher.toml [octowow]).
-      octowow =
+      sources = import ../../_sources/generated.nix {
+        inherit (pkgs)
+          fetchurl
+          fetchFromGitHub
+          fetchgit
+          dockerTools
+          ;
+      };
+
+      # Shared UMU Proton launcher: pin installer via nvfetcher, writable prefix,
+      # first-install flock + silent NSIS /S, optional one-shot winetricks.
+      mkUmuLauncher =
+        {
+          id,
+          command ? id,
+          desktopName,
+          prefix,
+          source,
+          launcherPath,
+          winetricks ? [ ],
+          # OctoLauncher only; omit elsewhere to keep .desktop identical.
+          startupWMClass ? null,
+        }:
         let
-          sources = import ../../_sources/generated.nix {
-            inherit (pkgs)
-              fetchurl
-              fetchFromGitHub
-              fetchgit
-              dockerTools
-              ;
-          };
-          prefix = cfg.octowow.prefixPath;
-          launcherExe = "${prefix}/drive_c/users/steamuser/AppData/Local/Programs/OctoLauncher/OctoLauncher.exe";
+          launcher = "${prefix}/${launcherPath}";
+          winetricksMarker = "${prefix}/.${id}-winetricks-v1";
           wrapper = pkgs.writeShellApplication {
-            name = "octo-launcher";
+            name = command;
             runtimeInputs = [
               pkgs.umu-launcher
               pkgs.util-linux
-            ];
+            ]
+            ++ lib.optionals (winetricks != [ ]) [ pkgs.winetricks ];
             text = ''
               export WINEPREFIX=${lib.escapeShellArg prefix}
-              export GAMEID=umu-octowow
+              export GAMEID=umu-${id}
               export PROTON_VERB=waitforexitandrun
-              launcher=${lib.escapeShellArg launcherExe}
+              launcher=${lib.escapeShellArg launcher}
+              ${lib.optionalString (winetricks != [ ]) ''
+                marker=${lib.escapeShellArg winetricksMarker}
+              ''}
               if [[ ! -f $launcher ]]; then
-                exec 9>"$XDG_RUNTIME_DIR/octo-launcher-install.lock"
+                exec 9>"$XDG_RUNTIME_DIR/${command}-install.lock"
                 flock 9
                 if [[ ! -f $launcher ]]; then
-                  /run/wrappers/bin/mullvad-exclude umu-run ${sources.octowow.src} /S
+                  /run/wrappers/bin/mullvad-exclude umu-run ${source.src} /S
                 fi
                 flock -u 9
                 exec 9>&-
                 if [[ ! -f $launcher ]]; then
-                  echo "octo-launcher: install failed; missing $launcher" >&2
+                  echo "${command}: install failed; missing $launcher" >&2
                   exit 1
                 fi
               fi
+              ${lib.optionalString (winetricks != [ ]) ''
+                if [[ ! -f $marker ]]; then
+                  exec 9>"$XDG_RUNTIME_DIR/${command}-winetricks.lock"
+                  flock 9
+                  if [[ ! -f $marker ]]; then
+                    /run/wrappers/bin/mullvad-exclude umu-run winetricks ${lib.escapeShellArgs winetricks}
+                    touch "$marker"
+                  fi
+                  flock -u 9
+                  exec 9>&-
+                fi
+              ''}
               exec /run/wrappers/bin/mullvad-exclude umu-run "$launcher" "$@"
             '';
           };
-          desktop = pkgs.makeDesktopItem {
-            name = "octo-launcher";
-            desktopName = "OctoLauncher";
-            exec = "${wrapper}/bin/octo-launcher %U";
-            categories = [ "Game" ];
-            extraConfig.StartupWMClass = "OctoLauncher";
-          };
+          desktop = pkgs.makeDesktopItem (
+            {
+              name = command;
+              inherit desktopName;
+              exec = "${wrapper}/bin/${command} %U";
+              categories = [ "Game" ];
+            }
+            // lib.optionalAttrs (startupWMClass != null) {
+              extraConfig.StartupWMClass = startupWMClass;
+            }
+          );
         in
         pkgs.symlinkJoin {
-          name = "octo-launcher-${sources.octowow.version}";
+          name = "${command}-${source.version}";
           paths = [
             wrapper
             desktop
           ];
         };
+
+      # Official Windows OctoLauncher under UMU-Proton. Nix pins the bootstrap installer;
+      # the prefix (launcher/client/addons/settings) stays writable for the self-updater.
+      # Version/hash managed by nvfetcher (nvfetcher.toml [octowow]).
+      octowow = mkUmuLauncher {
+        id = "octowow";
+        command = "octo-launcher";
+        desktopName = "OctoLauncher";
+        prefix = cfg.octowow.prefixPath;
+        source = sources.octowow;
+        launcherPath = "drive_c/users/steamuser/AppData/Local/Programs/OctoLauncher/OctoLauncher.exe";
+        startupWMClass = "OctoLauncher";
+      };
 
       # Official SWG Restoration installer under UMU-Proton. Nix pins the bootstrap
       # installer; the prefix stays writable for the self-updater.
       # Version/hash managed by nvfetcher (nvfetcher.toml [swgr]).
-      swgr =
-        let
-          sources = import ../../_sources/generated.nix {
-            inherit (pkgs)
-              fetchurl
-              fetchFromGitHub
-              fetchgit
-              dockerTools
-              ;
-          };
-          prefix = cfg.swgr.prefixPath;
-          launcherExe = "${prefix}/drive_c/SWG Restoration/SWG Restoration.exe";
-          winetricksMarker = "${prefix}/.swgr-winetricks-v1";
-          wrapper = pkgs.writeShellApplication {
-            name = "swg-restoration";
-            runtimeInputs = [
-              pkgs.umu-launcher
-              pkgs.util-linux
-              pkgs.winetricks
-            ];
-            text = ''
-              export WINEPREFIX=${lib.escapeShellArg prefix}
-              export GAMEID=umu-swgr
-              export PROTON_VERB=waitforexitandrun
-              launcher=${lib.escapeShellArg launcherExe}
-              marker=${lib.escapeShellArg winetricksMarker}
-              if [[ ! -f $launcher ]]; then
-                exec 9>"$XDG_RUNTIME_DIR/swg-restoration-install.lock"
-                flock 9
-                if [[ ! -f $launcher ]]; then
-                  /run/wrappers/bin/mullvad-exclude umu-run ${sources.swgr.src} /S
-                fi
-                flock -u 9
-                exec 9>&-
-                if [[ ! -f $launcher ]]; then
-                  echo "swg-restoration: install failed; missing $launcher" >&2
-                  exit 1
-                fi
-              fi
-              if [[ ! -f $marker ]]; then
-                exec 9>"$XDG_RUNTIME_DIR/swg-restoration-winetricks.lock"
-                flock 9
-                if [[ ! -f $marker ]]; then
-                  /run/wrappers/bin/mullvad-exclude umu-run winetricks win10 hidewineexports=enable windowmanagerdecorated=n windowmanagermanaged=y d3dcompiler_43 d3dx10 d3dx9 d3dx9_39 dxvk xact xact_x64 vcrun2022
-                  touch "$marker"
-                fi
-                flock -u 9
-                exec 9>&-
-              fi
-              exec /run/wrappers/bin/mullvad-exclude umu-run "$launcher" "$@"
-            '';
-          };
-          desktop = pkgs.makeDesktopItem {
-            name = "swg-restoration";
-            desktopName = "SWG Restoration";
-            exec = "${wrapper}/bin/swg-restoration %U";
-            categories = [ "Game" ];
-          };
-        in
-        pkgs.symlinkJoin {
-          name = "swg-restoration-${sources.swgr.version}";
-          paths = [
-            wrapper
-            desktop
-          ];
-        };
+      swgr = mkUmuLauncher {
+        id = "swgr";
+        command = "swg-restoration";
+        desktopName = "SWG Restoration";
+        prefix = cfg.swgr.prefixPath;
+        source = sources.swgr;
+        launcherPath = "drive_c/SWG Restoration/SWG Restoration.exe";
+        winetricks = [
+          "win10"
+          "hidewineexports=enable"
+          "windowmanagerdecorated=n"
+          "windowmanagermanaged=y"
+          "d3dcompiler_43"
+          "d3dx10"
+          "d3dx9"
+          "d3dx9_39"
+          "dxvk"
+          "xact"
+          "xact_x64"
+          "vcrun2022"
+        ];
+      };
 
       # Official TLOPO Windows installer under UMU-Proton. Nix pins the bootstrap
       # installer; the prefix stays writable for the launcher self-updater.
       # Version/hash managed by nvfetcher (nvfetcher.toml [tlopo]).
-      tlopo =
-        let
-          sources = import ../../_sources/generated.nix {
-            inherit (pkgs)
-              fetchurl
-              fetchFromGitHub
-              fetchgit
-              dockerTools
-              ;
-          };
-          prefix = cfg.tlopo.prefixPath;
-          launcherExe = "${prefix}/drive_c/Program Files/TLOPO/launcher.exe";
-          wrapper = pkgs.writeShellApplication {
-            name = "tlopo";
-            runtimeInputs = [
-              pkgs.umu-launcher
-              pkgs.util-linux
-            ];
-            text = ''
-              export WINEPREFIX=${lib.escapeShellArg prefix}
-              export GAMEID=umu-tlopo
-              export PROTON_VERB=waitforexitandrun
-              launcher=${lib.escapeShellArg launcherExe}
-              if [[ ! -f $launcher ]]; then
-                exec 9>"$XDG_RUNTIME_DIR/tlopo-install.lock"
-                flock 9
-                if [[ ! -f $launcher ]]; then
-                  /run/wrappers/bin/mullvad-exclude umu-run ${sources.tlopo.src} /S
-                fi
-                flock -u 9
-                exec 9>&-
-                if [[ ! -f $launcher ]]; then
-                  echo "tlopo: install failed; missing $launcher" >&2
-                  exit 1
-                fi
-              fi
-              exec /run/wrappers/bin/mullvad-exclude umu-run "$launcher" "$@"
-            '';
-          };
-          desktop = pkgs.makeDesktopItem {
-            name = "tlopo";
-            desktopName = "The Legend of Pirates Online";
-            exec = "${wrapper}/bin/tlopo %U";
-            categories = [ "Game" ];
-          };
-        in
-        pkgs.symlinkJoin {
-          name = "tlopo-${sources.tlopo.version}";
-          paths = [
-            wrapper
-            desktop
-          ];
-        };
+      tlopo = mkUmuLauncher {
+        id = "tlopo";
+        desktopName = "The Legend of Pirates Online";
+        prefix = cfg.tlopo.prefixPath;
+        source = sources.tlopo;
+        launcherPath = "drive_c/Program Files/TLOPO/launcher.exe";
+      };
 
       # Wrapper that excludes cloud-save games, rescues DRM-free/non-Steam games
       ludusaviBackupWrapper =
