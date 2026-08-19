@@ -85,6 +85,25 @@ _:
           ;
       };
 
+      # Manual GE-Proton 8-25 pin: avoids Wine 9+ legacy OpenGL regression (blank TLOPO world).
+      geProton825 = pkgs.stdenvNoCC.mkDerivation {
+        pname = "GE-Proton";
+        version = "8-25";
+        src = pkgs.fetchurl {
+          url = "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton8-25/GE-Proton8-25.tar.gz";
+          hash = "sha512-KHsQutIR5HF3IBfagBCJ2uKoOh2lClhLdePBwlM5do5anyXEzQz32weqbFiHq+Pokoyug1pbIcWMleX9DdP2Xg==";
+        };
+        dontConfigure = true;
+        dontBuild = true;
+        dontFixup = true;
+        installPhase = ''
+          runHook preInstall
+          mkdir -p "$out"
+          cp -a ./. "$out/"
+          runHook postInstall
+        '';
+      };
+
       # Shared UMU Proton launcher: pin installer via nvfetcher, writable prefix,
       # first-install flock + silent NSIS /S, optional one-shot winetricks.
       mkUmuLauncher =
@@ -98,6 +117,7 @@ _:
           winetricks ? [ ],
           # OctoLauncher only; omit elsewhere to keep .desktop identical.
           startupWMClass ? null,
+          protonPath ? null,
         }:
         let
           launcher = "${prefix}/${launcherPath}";
@@ -113,6 +133,9 @@ _:
               export WINEPREFIX=${lib.escapeShellArg prefix}
               export GAMEID=umu-${id}
               export PROTON_VERB=waitforexitandrun
+              ${lib.optionalString (protonPath != null) ''
+                export PROTONPATH=${lib.escapeShellArg "${protonPath}"}
+              ''}
               launcher=${lib.escapeShellArg launcher}
               ${lib.optionalString (winetricks != [ ]) ''
                 marker=${lib.escapeShellArg winetricksMarker}
@@ -214,6 +237,7 @@ _:
         prefix = cfg.tlopo.prefixPath;
         source = sources.tlopo;
         launcherPath = "drive_c/Program Files/TLOPO/launcher.exe";
+        protonPath = geProton825;
       };
 
       # Wrapper that excludes cloud-save games, rescues DRM-free/non-Steam games
