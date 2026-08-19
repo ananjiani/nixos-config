@@ -17,6 +17,11 @@ spec:
             - name: renovate
               image: renovate/renovate:full
               env:
+                # Dynamically install manager-specific tools that are not bundled
+                # in renovate:full, such as the Flux CLI used to regenerate
+                # k8s/flux-system/gotk-components.yaml.
+                - name: RENOVATE_BINARY_SOURCE
+                  value: "install"
                 - name: RENOVATE_PLATFORM
                   value: "forgejo"
                 - name: RENOVATE_ENDPOINT
