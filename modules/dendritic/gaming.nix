@@ -142,6 +142,7 @@ _:
                   exec 9>&-
                 fi
               ''}
+              cd "''${launcher%/*}"
               exec /run/wrappers/bin/mullvad-exclude umu-run "$launcher" "$@"
             '';
           };
