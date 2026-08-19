@@ -88,6 +88,7 @@ in
   networking.firewall.interfaces.tailscale0.allowedTCPPorts = [
     2586
     8081
+    4243 # Comin exporter; not on the public NIC
   ];
 
   systemd.services = {

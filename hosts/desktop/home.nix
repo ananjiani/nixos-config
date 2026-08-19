@@ -1,11 +1,13 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
 }:
 
 let
+  autoDeployRevision = inputs.self.rev or "";
   # DP-2 (HDR ultrawide) output block lives in a writable include so HDR can be
   # toggled at runtime. niri looks up outputs by first-match with no merging, so
   # the block must exist ONLY here (not in programs.niri.settings.outputs), else
@@ -419,6 +421,20 @@ in
   );
 
   home.activation = {
+    # Plan 2026-08-19 Phase 9: re-check the Aragorn auto-deploy marker right
+    # before HM writes, closing the gap between the NixOS and HM profile
+    # activations. Absent marker → guard exits 0; manual `nh home switch` is
+    # unaffected. The -x check tolerates a running system older than the
+    # guard so manual switches never break mid-rollout.
+    ammarsPcAutoDeployGuard = lib.hm.dag.entryBefore [ "writeBoundary" ] ''
+      marker=/run/ammars-pc-auto-deploy
+      guard=/run/current-system/sw/bin/ammars-pc-auto-deploy-guard
+      expected=${lib.escapeShellArg autoDeployRevision}
+      if [ -r "$marker" ] && [ "$(cat "$marker")" = "$expected" ] && [ -x "$guard" ]; then
+        "$guard"
+      fi
+    '';
+
     # Seed the HDR fragment (auto) on every switch; hdr-on/hdr-off swap it live.
     niriHdrFragment = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       run mkdir -p "$HOME/.config/niri"

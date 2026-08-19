@@ -19,11 +19,10 @@ let
     # pixel9 phone
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDkUoUykJOFGBRc1ACtGi9guIMMT8Tq/S/Pos6XANJ6H pixel9"
 
-    # buildbot CI/CD deploy key (theoden)
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELJQcvgQUWAJl2gGXJwodH7TLhIWHJ4mcIaqpFeY5bC buildbot@theoden"
-
-    # homelab command center
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINcynfoH3k7t5uJhrKV0NShf9qRlxObuzatdBcsjgYQQ aragorn"
+    # homelab command center / deploy-rs recovery (aragorn).
+    # Buildbot fleet deploy key removed — CI no longer activates hosts.
+    # from= pins this key to Aragorn's LAN and Tailscale source addresses.
+    ''from="192.168.1.28,100.64.0.22" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINcynfoH3k7t5uJhrKV0NShf9qRlxObuzatdBcsjgYQQ aragorn''
   ];
 in
 {

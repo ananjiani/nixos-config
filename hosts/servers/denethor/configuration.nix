@@ -32,6 +32,7 @@
     ../../_profiles/server/proxmox-disk-config.nix
     ../../_profiles/base.nix
     ../../../modules/nixos/openconnect.nix
+    ../../../modules/nixos/comin.nix
     inputs.home-manager-unstable.nixosModules.home-manager
   ];
 
@@ -55,8 +56,12 @@
 
     # SSH only on the physical Proxmox NIC — not on AnyConnect/tunnel ifaces.
     # base modules.ssh enables openssh + mosh with global firewall opens; close
-    # those and open TCP 22 solely on ens18.
-    firewall.interfaces.ens18.allowedTCPPorts = [ 22 ];
+    # those and open TCP 22 solely on ens18. Comin metrics (4243) are a second
+    # ens18 pinhole; OPNsense still limits sources to the k3s Prometheus nodes.
+    firewall.interfaces.ens18.allowedTCPPorts = [
+      22
+      4243
+    ];
 
     networkmanager = {
       enable = true;
@@ -80,9 +85,17 @@
             # NM keyfile: semicolon-separated DNS; ignore DHCP DNS (dead Unbound).
             dns = "9.9.9.9;149.112.112.112";
             ignore-auto-dns = "true";
+            # Pinned /32s keep replies out of AnyConnect's RFC1918 tunnel
+            # routes: k3s Prometheus scrapes Denethor's Comin exporter, so
+            # reply traffic to the scraper nodes must leave via the Work
+            # VLAN gateway, not tun0.
             route1 = "192.168.1.28/32,10.30.30.1"; # aragorn
             route2 = "192.168.1.50/32,10.30.30.1"; # ammars-pc
             route3 = "192.168.1.52/32,10.30.30.1"; # searxng.lan (k3s ingress VIP)
+            route4 = "192.168.1.21/32,10.30.30.1"; # boromir (prometheus scraper)
+            route5 = "192.168.1.26/32,10.30.30.1"; # samwise (prometheus scraper)
+            route6 = "192.168.1.27/32,10.30.30.1"; # theoden (prometheus scraper)
+            route7 = "192.168.1.29/32,10.30.30.1"; # rivendell (prometheus scraper)
           };
           ipv6.method = "disabled";
         };
@@ -111,12 +124,23 @@
   # wheel + dialout (list concat, does not replace).
   users.users.ammar.extraGroups = [ "networkmanager" ];
 
+  # Pull-deploy from public Codeberg + public Attic. Exporter is bound to the
+  # Work VLAN address; NixOS opens 4243 on ens18 only (see firewall above).
+  # openFirewall stays false: global allow would also open tunnel interfaces.
+  modules.comin = {
+    enable = true;
+    listenAddress = "10.30.30.10";
+    openFirewall = false;
+  };
+
   # Public caches only: theoden.lan (LAN Attic) is unreachable from VLAN 30
-  # and a dead substituter stalls every build.
+  # and a dead substituter stalls every build. Public Attic is HTTPS and does
+  # not require LAN CA, Tailscale, or theoden.lan.
   nix.settings.substituters = lib.mkForce [
     "https://cache.nixos.org"
     "https://nix-community.cachix.org"
     "https://claude-code.cachix.org"
+    "https://attic.dimensiondoor.xyz/middle-earth?priority=10"
   ];
 
   # Do not trust the homelab LAN CA — this host must not accept homelab-issued

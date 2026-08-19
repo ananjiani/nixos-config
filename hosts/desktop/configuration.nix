@@ -1,12 +1,14 @@
 # ammars-pc — Primary desktop workstation
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
 }:
 
 let
+  autoDeployRevision = inputs.self.rev or "";
   # Dedicated Sunshine stream output (DP-3). The EDID advertises 10-bit
   # DisplayPort, BT.2020, and PQ HDR with Steam Deck OLED luminance metadata.
   sunshineEdidName = "sunshine-hdr";
@@ -42,6 +44,97 @@ let
           mode custom=true "${mode}"
       }
     '';
+  # Plan 2026-08-19 Phase 10 — shared activity gate for store maintenance.
+  # Allows maintenance when Niri is absent (session over / powered off) or
+  # swaylock holds the lock; exit 1 from ExecCondition makes systemd SKIP
+  # (not fail) the unit. The niri-hdr fork keeps the `niri` binary name and
+  # swaylock-effects keeps `swaylock`; matches the Aragorn deploy gate.
+  nixMaintenanceGate = pkgs.writeShellScript "nix-maintenance-gate" ''
+    if ${pkgs.procps}/bin/pgrep -u ammar -x niri >/dev/null 2>&1 \
+      && ! ${pkgs.procps}/bin/pgrep -u ammar -x swaylock >/dev/null 2>&1; then
+      echo "nix maintenance skipped: Niri session is active and unlocked" >&2
+      exit 1
+    fi
+  '';
+
+  # Plan 2026-08-19 Phase 9/10 — target-side TOCTOU guard. Aragorn's
+  # controller drops a root-owned /run/ammars-pc-auto-deploy marker holding
+  # the exact SHA immediately before `deploy` and removes it on exit. This
+  # guard is a no-op when the marker is absent, so manual `nh os switch` /
+  # `nh home switch` are never affected. When present, every condition must
+  # hold or activation fails closed (deploy-rs rolls back): valid SHA, session
+  # locked or absent, store maintenance inactive, checkout clean / on main /
+  # HEAD exactly the marker SHA. Runs both from the NixOS activation script
+  # (as root) and the Home Manager activation (as ammar).
+  ammarsPcAutoDeployGuard = pkgs.writeShellApplication {
+    name = "ammars-pc-auto-deploy-guard";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.git
+      pkgs.gnugrep
+      pkgs.procps
+      pkgs.systemd
+      pkgs.util-linux
+    ];
+    text = ''
+      set -euo pipefail
+      marker=/run/ammars-pc-auto-deploy
+      [ -f "$marker" ] || exit 0
+
+      fail() {
+        echo "ammars-pc-auto-deploy-guard: $1" >&2
+        exit 1
+      }
+
+      sha="$(cat "$marker")"
+      printf '%s' "$sha" | grep -qxE '[0-9a-f]{40}' || fail "invalid marker sha: $sha"
+
+      # A rollback activates an older generation while the new generation's
+      # marker still exists. Only guard the exact generation requested by the
+      # controller; old generations must remain free to roll back.
+      expected_sha=${lib.escapeShellArg autoDeployRevision}
+      if [ "$sha" != "$expected_sha" ]; then
+        echo "ammars-pc-auto-deploy-guard: marker targets $sha; this generation is $expected_sha, skipping" >&2
+        exit 0
+      fi
+
+      # NixOS activation runs as root; Home Manager activation runs as ammar.
+      # git must run as the repo owner to avoid dubious-ownership failures.
+      if [ "$(id -u)" -eq 0 ]; then
+        as_ammar=(runuser -u ammar --)
+      else
+        as_ammar=()
+      fi
+
+      # The niri-hdr fork keeps the upstream `niri` binary name.
+      if pgrep -u ammar -x niri >/dev/null 2>&1 \
+        && ! pgrep -u ammar -x swaylock >/dev/null 2>&1; then
+        fail "Niri session is active and unlocked"
+      fi
+
+      for unit in nix-optimise.service nix-gc.service; do
+        if systemctl is-active --quiet "$unit"; then
+          fail "$unit is active"
+        fi
+      done
+
+      repo=/home/ammar/.dotfiles
+      [ -d "$repo/.git" ] || fail "missing $repo/.git"
+
+      status="$("''${as_ammar[@]}" git -C "$repo" status --porcelain --untracked-files=all)" \
+        || fail "git status failed"
+      [ -z "$status" ] || fail "checkout is dirty"
+
+      branch="$("''${as_ammar[@]}" git -C "$repo" rev-parse --abbrev-ref HEAD)" \
+        || fail "git rev-parse failed"
+      [ "$branch" = main ] || fail "branch is $branch, not main"
+
+      head="$("''${as_ammar[@]}" git -C "$repo" rev-parse HEAD)" \
+        || fail "git rev-parse failed"
+      [ "$head" = "$sha" ] || fail "HEAD $head != deployed $sha"
+    '';
+  };
+
   sunshineDeckSdr = mkSunshineOutput {
     name = "deck-sdr";
     mode = "1280x800@90";
@@ -416,6 +509,16 @@ in
           ExecStart = "${pkgs.ethtool}/bin/ethtool -s eno1 wol g";
         };
       };
+
+      # Plan 2026-08-19 Phase 10: no store maintenance while the desktop
+      # session is unlocked. Applies to both nix-optimise and nix-gc;
+      # timer settings (03:45 window, RandomizedDelaySec, WakeSystem) and
+      # the idle scheduling from base.nix are untouched.
+      # A skip simply misses this timer window: optimise retries the next
+      # day (03:45), gc the next week (weekly timer). That is accepted
+      # policy — no retry timers are added.
+      nix-optimise.serviceConfig.ExecCondition = "${nixMaintenanceGate}";
+      nix-gc.serviceConfig.ExecCondition = "${nixMaintenanceGate}";
     };
 
     user.services = {
@@ -428,7 +531,15 @@ in
     signal-desktop
     cifs-utils
     brave # fallback during brave-origin transition
+    ammarsPcAutoDeployGuard # /run/current-system/sw/bin hook for the HM guard
   ];
+
+  # Plan 2026-08-19 Phase 9: re-check the auto-deploy marker before any
+  # activation mutates the system. No deps → runs in the first activation
+  # layer, ahead of etc/users writes. Absent marker exits 0 immediately.
+  system.activationScripts.ammarsPcAutoDeployGuard.text = ''
+    ${ammarsPcAutoDeployGuard}/bin/ammars-pc-auto-deploy-guard || exit $?
+  '';
 
   virtualisation.docker.enable = true;
 

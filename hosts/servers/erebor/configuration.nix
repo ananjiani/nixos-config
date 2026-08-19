@@ -88,6 +88,12 @@
       baseDomain = "tail.dimensiondoor.xyz";
       aclPolicyFile = ../../../modules/nixos/headscale-acl.json;
     };
+
+    # Public VPS: bind exporter to Tailscale only; never the WAN NIC.
+    comin = {
+      openFirewall = false;
+      listenAddress = "100.64.0.21"; # erebor Tailscale (OpenBao peer)
+    };
   };
 
   # Offsite backup of OpenBao Raft snapshots (issue #41). The openbao-backup
@@ -136,7 +142,8 @@
     restic-backups-openbao-offsite.after = [ "vault-agent-default.service" ];
   };
 
-  # Use Attic binary cache via Cloudflare Tunnel (erebor can't reach theoden.lan)
+  # Public Attic over Cloudflare. Erebor has no LAN path to theoden.lan;
+  # Comin substitutes from this endpoint the same way Buildbot-warmed builds do.
   nix.settings.extra-substituters = [ "https://attic.dimensiondoor.xyz/middle-earth?priority=10" ];
 
   # Boot: GRUB for BIOS boot (Hetzner CX-series uses SeaBIOS)

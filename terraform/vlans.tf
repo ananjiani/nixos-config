@@ -82,6 +82,20 @@ resource "opnsense_firewall_alias" "denethor_host" {
   content     = ["10.30.30.10"]
 }
 
+# k3s nodes that scrape Denethor's Comin exporter (TCP 4243 only).
+resource "opnsense_firewall_alias" "prometheus_scrapers" {
+  count       = var.work_vlan_interface_configured ? 1 : 0
+  name        = "prometheus_scrapers"
+  type        = "host"
+  description = "k3s nodes allowed to scrape Denethor Comin metrics"
+  content = [
+    "192.168.1.21", # boromir
+    "192.168.1.26", # samwise
+    "192.168.1.27", # theoden
+    "192.168.1.29", # rivendell
+  ]
+}
+
 # Only these two LAN hosts may reach the work VM (SSH admin access).
 resource "opnsense_firewall_alias" "work_admin_hosts" {
   count       = var.work_vlan_interface_configured ? 1 : 0

@@ -13,66 +13,6 @@
 }:
 
 let
-  inherit (inputs.buildbot-nix.lib) interpolate;
-
-  # Deploy wrapper: runs after each successful nix-build in CI.
-  # Only deploys server configs built on the main branch.
-  sshConfig = pkgs.writeText "buildbot-ssh-config" ''
-    Host *.lan 91.99.82.115
-      StrictHostKeyChecking accept-new
-      UserKnownHostsFile /var/lib/buildbot-worker/deploy-known-hosts
-      IdentityFile /run/secrets/buildbot_deploy_ssh_key
-      User root
-      ConnectTimeout 30
-      BatchMode yes
-  '';
-
-  deployScript = pkgs.writeShellScript "buildbot-deploy" ''
-    set -euo pipefail
-
-    if [ "$BRANCH" != "main" ]; then
-      echo "Skipping deploy: not on main branch (branch=$BRANCH)"
-      exit 0
-    fi
-
-    # Attr format is "x86_64-linux.nixos-<server>" — strip system prefix and "nixos-"
-    STRIPPED=''${ATTR#*.}
-    SERVER=''${STRIPPED#nixos-}
-    case "$SERVER" in
-      boromir|samwise|theoden|rivendell)
-        HOST="$SERVER.lan"
-        ;;
-      erebor)
-        HOST="91.99.82.115" # Hetzner public IP (matches deploy-rs config)
-        ;;
-      *)
-        echo "Skipping deploy: $ATTR is not a server configuration"
-        exit 0
-        ;;
-    esac
-
-    if [ -z "$OUT_PATH" ]; then
-      echo "No OUT_PATH set, cannot deploy"
-      exit 1
-    fi
-
-    SSH_OPTS="-F ${sshConfig}"
-
-    echo "Deploying $SERVER ($HOST) from $OUT_PATH..."
-
-    # Copy the closure to the target host. --substitute-on-destination tells
-    # the remote nix-daemon to fetch from its substituters first (Attic via
-    # Cloudflare for erebor, theoden.lan direct for LAN servers), and only
-    # ask us for what's missing — much cheaper than pushing everything.
-    NIX_SSHOPTS="$SSH_OPTS" nix copy --substitute-on-destination --to "ssh://root@$HOST" "$OUT_PATH"
-
-    # Activate: set system profile and switch
-    ssh $SSH_OPTS "root@$HOST" \
-      "nix-env -p /nix/var/nix/profiles/system --set '$OUT_PATH' && '$OUT_PATH/bin/switch-to-configuration' switch"
-
-    echo "Deploy to $SERVER complete"
-  '';
-
   # buildbot-prometheus: Exposes Buildbot metrics for Prometheus scraping.
   # Uses the same Python interpreter as buildbot-nix to ensure compatibility.
   buildbotPackages = config.services.buildbot-nix.packages;
@@ -167,11 +107,6 @@ in
       buildbot_worker_password_plain = {
         path = "secret/nixos/buildbot";
         field = "worker_password_plain";
-        owner = "buildbot-worker";
-      };
-      buildbot_deploy_ssh_key = {
-        path = "secret/nixos/buildbot";
-        field = "deploy_ssh_key";
         owner = "buildbot-worker";
       };
       codeberg_token = {
@@ -531,26 +466,12 @@ in
       admins = [ "ananjiani" ];
       # Disable GC root registration — buildbot builds are pushed to Attic
       # binary cache, so full closures don't need to be pinned on local disk.
-      # The deploy post-build step runs immediately after nix build, before
-      # any GC could run, so OUT_PATH is always available when needed.
       branches = {
         disable-gcroots = {
           matchGlob = "*";
           registerGCRoots = false;
         };
       };
-      # Auto-deploy servers after successful builds on main
-      postBuildSteps = [
-        {
-          name = "Deploy to server";
-          environment = {
-            BRANCH = interpolate "%(prop:branch)s";
-            ATTR = interpolate "%(prop:attr)s";
-            OUT_PATH = interpolate "%(prop:out_path)s";
-          };
-          command = [ (toString deployScript) ];
-        }
-      ];
     };
 
     buildbot-nix.worker = {

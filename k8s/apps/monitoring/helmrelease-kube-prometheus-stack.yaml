@@ -691,3 +691,85 @@ spec:
                   description: >-
                     UPS metrics are not being collected.
                     Power outage detection is blind.
+
+      comin-alerts:
+        groups:
+          - name: comin
+            rules:
+              - alert: CominExporterDown
+                expr: up{job="comin"} == 0
+                for: 5m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Comin exporter is down on {{ $labels.instance }}"
+                  description: "Prometheus cannot reach Comin; deployment monitoring is blind."
+
+              - alert: CominFetchFailed
+                expr: comin_last_fetch_failed{job="comin"} == 1
+                for: 10m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Comin fetch failed on {{ $labels.instance }}"
+                  description: "Last Git fetch from remote {{ $labels.remote_name }} failed."
+
+              - alert: CominEvalFailed
+                expr: comin_last_eval_failed{job="comin"} == 1
+                for: 5m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Comin evaluation failed on {{ $labels.instance }}"
+                  description: "Last Nix evaluation failed; host is not converging."
+
+              - alert: CominBuildFailed
+                expr: comin_last_build_failed{job="comin"} == 1
+                for: 5m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Comin build failed on {{ $labels.instance }}"
+                  description: "Last Nix build failed; check Attic and local builders."
+
+              - alert: CominDeploymentFailed
+                expr: comin_last_deployment_failed{job="comin"} == 1
+                for: 5m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Comin deployment failed on {{ $labels.instance }}"
+                  description: "Last switch/test deployment failed; recover via retained generation or deploy-rs."
+
+              - alert: CominNeedsReboot
+                expr: comin_need_to_reboot{job="comin"} == 1
+                for: 1h
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "{{ $labels.instance }} needs a reboot after Comin deploy"
+                  description: "Kernel or similar change requires a supervised reboot. Auto-reboot is disabled."
+
+              - alert: CominSuspendedUnexpectedly
+                expr: comin_is_suspended{job="comin"} == 1
+                for: 2h
+                labels:
+                  severity: info
+                annotations:
+                  summary: "Comin remains suspended on {{ $labels.instance }}"
+                  description: "Agent has been suspended for 2h. Resume after recovery, or keep suspended intentionally."
+
+      desktop-deploy-alerts:
+        groups:
+          - name: desktop-deploy
+            rules:
+              - alert: AmmarsPcDeployPendingTooLong
+                expr: ammars_pc_deploy_pending == 1 and (time() - ammars_pc_deploy_pending_since_timestamp_seconds) > 86400
+                for: 15m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "ammars-pc release pending > 24h"
+                  description: >-
+                    A released main commit has been waiting for a safe desktop
+                    deploy for more than a day. Check lock/dirty/maintenance skips.

@@ -26,9 +26,29 @@ spec:
         - "192.168.1.21:9100" # boromir
         - "192.168.1.26:9100" # samwise
         - "192.168.1.27:9100" # theoden
+        - "192.168.1.28:9100" # aragorn (desktop-deploy textfile + systemd)
         - "192.168.1.29:9100" # rivendell
       labels:
         job: nixos-node-exporter
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: comin
+  namespace: monitoring
+spec:
+  scrapeInterval: 60s
+  staticConfigs:
+    - targets:
+        - "192.168.1.21:4243" # boromir
+        - "192.168.1.26:4243" # samwise
+        - "192.168.1.27:4243" # theoden
+        - "192.168.1.28:4243" # aragorn
+        - "192.168.1.29:4243" # rivendell
+        - "10.30.30.10:4243" # denethor (Work VLAN; OPNsense scraper pinhole)
+        - "100.64.0.21:4243" # erebor (Tailscale only; not public)
+      labels:
+        job: comin
 ---
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: ScrapeConfig

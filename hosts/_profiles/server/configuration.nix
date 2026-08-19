@@ -1,5 +1,6 @@
-# Server profile — shared by all server hosts
-# (boromir, samwise, theoden, erebor, rivendell)
+# Server profile — shared by always-on fleet servers
+# (aragorn, boromir, samwise, theoden, erebor, rivendell).
+# Denethor imports comin.nix directly; it does not use this profile.
 {
   config,
   lib,
@@ -19,6 +20,7 @@
     ../../../modules/nixos/server/adguard.nix
     ../../../modules/nixos/server/keepalived.nix
     ../../../modules/nixos/server/k3s.nix
+    ../../../modules/nixos/comin.nix
   ];
 
   config = {
@@ -35,6 +37,14 @@
         enable = lib.mkDefault true;
         exitNode = lib.mkDefault true;
         subnetRoutes = lib.mkDefault [ "192.168.1.0/24" ];
+      };
+
+      # Routine server convergence. deploy-rs remains the recovery path;
+      # suspend Comin before a manual recovery deploy. Erebor overrides
+      # openFirewall: its public NIC must not expose the exporter.
+      comin = {
+        enable = lib.mkDefault true;
+        openFirewall = lib.mkDefault true;
       };
     };
     # Prometheus node exporter for monitoring
