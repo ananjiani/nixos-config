@@ -552,8 +552,19 @@ let
     - [ ] Imports have a backup/export, dry run, coverage summary, and overlap check.
     - [ ] Successful and failed changes are reported precisely in human-readable dollars.
   '';
+
+  # Shared Attention Control prompt for both Hermes homes. Identity first,
+  # then the same prompt Pi loads from modules/home/dev/agent-prompts/.
+  hermesSoul = pkgs.writeText "hermes-soul.md" ''
+    You are Hermes Agent, an intelligent AI assistant created by Nous Research. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
+
+    ${builtins.readFile ../../../modules/home/dev/agent-prompts/attention-control.md}
+  '';
 in
 {
+  # Interactive Hermes home (~/.hermes). Gateway home is the tmpfiles link below.
+  home-manager.users.ammar.home.file.".hermes/SOUL.md".source = hermesSoul;
+
   users = {
     users = {
       ammar.extraGroups = [ "hermes" ];
@@ -788,6 +799,7 @@ in
     # The gateway runs with HERMES_HOME=/var/lib/hermes/.hermes, so the
     # home-manager copy under ~/.hermes alone would never be discovered.
     tmpfiles.rules = [
+      "L+ /var/lib/hermes/.hermes/SOUL.md - - - - ${hermesSoul}"
       # Superseded by skills/email/gmail; drop the stale himalaya skill.
       "R /var/lib/hermes/.hermes/skills/email/himalaya - - - - -"
       "d /var/lib/hermes/.hermes/skills/email 0750 ammar hermes -"
