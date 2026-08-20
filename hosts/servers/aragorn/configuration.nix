@@ -244,21 +244,48 @@ let
 
       notify() {
         local result=$1 sha=$2
-        local short title tags priority
+        local short title body tags priority
         short="''${sha:0:8}"
         case "$result" in
-          success | woke_success)
-            title="ammars-pc deploy $result $short"
+          success)
+            title="ammars-pc deployed $short"
+            body="NixOS + Home Manager switched to $short."
             tags="white_check_mark"
             priority="default"
             ;;
-          active | wake_failed | dirty | maintenance)
-            title="ammars-pc deploy $result $short"
+          woke_success)
+            title="ammars-pc woke and deployed $short"
+            body="Woke the PC, then switched NixOS + Home Manager to $short."
+            tags="white_check_mark"
+            priority="default"
+            ;;
+          active)
+            title="ammars-pc skipped: session unlocked"
+            body="niri was unlocked. Did not deploy $short. Still pending."
+            tags="warning"
+            priority="4"
+            ;;
+          wake_failed)
+            title="ammars-pc skipped: wake failed"
+            body="PC did not wake. Did not deploy $short. Still pending."
+            tags="warning"
+            priority="4"
+            ;;
+          dirty)
+            title="ammars-pc skipped: dirty checkout"
+            body="Local git is dirty or not on main. Did not deploy $short. Still pending."
+            tags="warning"
+            priority="4"
+            ;;
+          maintenance)
+            title="ammars-pc skipped: CI or maintenance"
+            body="Buildbot not green, or nix-gc/optimise is running. Did not deploy $short. Still pending."
             tags="warning"
             priority="4"
             ;;
           failure)
-            title="ammars-pc deploy failure $short"
+            title="ammars-pc deploy failed $short"
+            body="deploy-rs failed or rolled back on $short. Still pending."
             tags="rotating_light"
             priority="5"
             ;;
@@ -270,7 +297,7 @@ let
           -H "Title: $title" \
           -H "Tags: $tags" \
           -H "Priority: $priority" \
-          -d "ammars-pc $result $short" \
+          -d "$body" \
           "$NTFY"; then
           echo "ammars-pc-deploy: ntfy send failed; metrics still written" >&2
         fi
