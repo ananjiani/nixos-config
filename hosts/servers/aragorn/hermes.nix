@@ -643,6 +643,12 @@ in
           provider = "openai-codex";
           default = "gpt-5.6-sol";
         };
+        fallback_providers = [
+          {
+            provider = "xai-oauth";
+            model = "grok-4.6";
+          }
+        ];
         terminal = {
           backend = "local";
           env_passthrough = [ ];
@@ -679,7 +685,9 @@ in
           "vault-agent-default.service"
           "hermes-broker.service"
         ];
-        requires = [ "vault-agent-default.service" ];
+        wants = [ "vault-agent-default.service" ];
+        restartIfChanged = false;
+        stopIfChanged = false;
         serviceConfig.EnvironmentFile = [ "/run/secrets/hermes_telegram_env" ];
       };
 
