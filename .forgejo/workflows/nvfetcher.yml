@@ -9,7 +9,7 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - uses: https://code.forgejo.org/actions/checkout@v6
+      - uses: https://code.forgejo.org/actions/checkout@v7
         with:
           fetch-depth: 1
 
