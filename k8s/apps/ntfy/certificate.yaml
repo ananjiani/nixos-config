@@ -11,3 +11,4 @@ spec:
     kind: ClusterIssuer
   dnsNames:
     - ntfy.dimensiondoor.xyz
+    - ntfy-home.dimensiondoor.xyz
