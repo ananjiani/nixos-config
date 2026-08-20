@@ -5,6 +5,7 @@ theme:
 
 nav:
   - index.md
+  - Deployment: deployment.md
   - Postmortems: postmortems
   - ADRs: adrs
   - tags.md

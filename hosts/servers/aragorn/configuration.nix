@@ -174,7 +174,7 @@ let
       REPO=${repoHttps}
       STATUS_API=${statusApi}
       SAFETY=${ammarsPcSafetyCheck}
-      RESULTS=(success woke_success active wake_failed dirty maintenance failure)
+      RESULTS=(success woke_success active wake_failed dirty maintenance failure ignored)
       # One array element per ssh option, expanded as "''${SSH_OPTS[@]}" so
       # the shell never re-splits or globs an option. deploy-rs takes one
       # space-joined string (it splits on spaces itself), hence "''${SSH_OPTS[*]}".
@@ -289,6 +289,12 @@ let
             tags="rotating_light"
             priority="5"
             ;;
+          ignored)
+            title="ammars-pc skipped: no desktop changes"
+            body="Only docs/ or k8s/ changed. Did not wake or deploy $short."
+            tags="information_source"
+            priority="default"
+            ;;
           *)
             return 0
             ;;
@@ -330,8 +336,9 @@ let
       }
 
       last_success=$(read_file "$STATE/last-success")
-      if [ "$sha" = "$last_success" ]; then
-        echo "ammars-pc-deploy: $sha already deployed" >&2
+      last_ignored=$(read_file "$STATE/last-ignored")
+      if [ "$sha" = "$last_success" ] || [ "$sha" = "$last_ignored" ]; then
+        echo "ammars-pc-deploy: $sha already handled" >&2
         write_metrics 0 "$(read_file "$STATE/last-result")" "$sha"
         exit 0
       fi
@@ -363,6 +370,60 @@ let
         # release stays pending and is retried at the next nightly window.
         echo "ammars-pc-deploy: $sha not green on buildbot/nix-build yet; staying pending, no WOL" >&2
         finish maintenance "$sha" 1 0
+      fi
+
+      # Conservative pre-WOL path filter: skip wake/deploy when every path
+      # changed since last-success is under docs/ or k8s/. Fail open on any
+      # classification error, empty last-success, or empty diff.
+      paths_relevant() {
+        local base=$1 head=$2
+        local repo=$STATE/repository
+        local paths path
+        if [ -z "$base" ]; then
+          echo "ammars-pc-deploy: no last-success; cannot classify, deploying" >&2
+          return 0
+        fi
+        mkdir -p "$repo"
+        if [ ! -d "$repo/.git" ] && [ ! -f "$repo/HEAD" ]; then
+          if ! git -C "$repo" init --bare >/dev/null 2>&1; then
+            echo "ammars-pc-deploy: classification failed (git init); deploying" >&2
+            return 0
+          fi
+        fi
+        if ! git -C "$repo" fetch --prune "$REPO" "+refs/heads/main:refs/heads/main" >/dev/null 2>&1; then
+          echo "ammars-pc-deploy: classification failed (git fetch); deploying" >&2
+          return 0
+        fi
+        if ! git -C "$repo" cat-file -e "$base^{commit}" 2>/dev/null \
+          || ! git -C "$repo" cat-file -e "$head^{commit}" 2>/dev/null; then
+          echo "ammars-pc-deploy: classification failed (missing commit); deploying" >&2
+          return 0
+        fi
+        if ! paths=$(git -C "$repo" diff --name-only "$base" "$head" 2>/dev/null); then
+          echo "ammars-pc-deploy: classification failed (git diff); deploying" >&2
+          return 0
+        fi
+        if [ -z "$paths" ]; then
+          echo "ammars-pc-deploy: empty diff vs last-success; deploying" >&2
+          return 0
+        fi
+        while IFS= read -r path; do
+          [ -n "$path" ] || continue
+          case "$path" in
+            docs/* | k8s/*) ;;
+            *)
+              return 0
+              ;;
+          esac
+        done <<<"$paths"
+        return 1
+      }
+
+      if ! paths_relevant "$last_success" "$sha"; then
+        echo "ammars-pc-deploy: $sha docs/k8s-only; ignoring" >&2
+        printf '%s\n' "$sha" >"$STATE/last-ignored"
+        rm -f "$STATE/pending" "$STATE/pending-since"
+        finish ignored "$sha" 0 0
       fi
 
       woke=0
@@ -422,7 +483,7 @@ let
       if deploy --skip-checks --ssh-opts "''${SSH_OPTS[*]}" "git+$REPO?rev=$sha#ammars-pc"; then
         printf '%s\n' "$sha" >"$STATE/last-success"
         now >"$STATE/last-success-ts"
-        rm -f "$STATE/pending" "$STATE/pending-since"
+        rm -f "$STATE/pending" "$STATE/pending-since" "$STATE/last-ignored"
         if [ "$woke" = 1 ]; then
           finish woke_success "$sha" 0 0
         fi
