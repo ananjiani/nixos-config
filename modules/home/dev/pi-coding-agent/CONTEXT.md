@@ -45,5 +45,5 @@ The relationship in which a Project Supervisor coordinates a Worker it did not c
 _Avoid_: attach, import, takeover
 
 **Ready for Review**:
-A Deliverable whose pull request and required evidence are prepared for Operator review.
+A Deliverable whose pull request is open and whose required CI and independent review have passed.
 _Avoid_: done, complete, merged

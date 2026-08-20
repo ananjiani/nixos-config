@@ -38,9 +38,11 @@ Existing Workers keep their Current Scope. The supervisor may coordinate inside 
 
 The operator owns behavior, scope, architecture, new dependencies, merges, and deploys. The supervisor owns execution details, Worker coordination, checks, retries, and PR preparation. Direct operator prompts to Workers win; the supervisor must resync from the Pi transcript. Workers may start ordinary Pi Child Agents. Those stay private Worker details. The supervisor manages only the top-level Herdr Worker and checks outcomes and evidence.
 
-One Goal can have multiple Deliverables. One Deliverable maps to one branch, worktree, and PR. There is no fixed Worker count. Independent work runs in parallel. Dependent work for a stacked PR may start only after the base PR passes repo checks and independent agent review.
+One Goal can have multiple Deliverables. One Deliverable maps to one branch, worktree, and PR. There is no fixed Worker count. Independent work runs in parallel.
 
-Failure recovery is Worker investigation, then a stronger model, then the operator. The supervisor reports only approval needs, blockers or choices, and PRs that are Ready for Review. On-demand natural-language `status` gives Goals, Workers, blockers, and PRs. The supervisor does not watch merges or Codeberg comments; the operator can ask it to handle comments. It cleans only Workers and worktrees that it created; adopted ones remain.
+Run and pass available relevant local checks in the worktree before push (targeted tests, formatter/linter/typecheck, pre-commit). They are a cheap preflight, not a universal gate, and are not PR CI. Independent agent review also passes before a PR opens. If no documented or runnable local check exists, open the PR to start required CI and state that local checks were unavailable. Opening the PR starts required CI. Pending CI is not Ready for Review. Check CI once after a 120-second wait; if it remains pending, hand control back to the operator until a later `status` rescan. A CI failure uses the existing failure ladder and blocks only that Deliverable and dependents. Ready for Review requires independent review and required PR CI to pass. Dependent work for a stacked PR may start only after the base PR passes required PR CI and independent agent review. The base need not be merged.
+
+Failure recovery is Worker investigation, then a stronger model, then the operator. The supervisor reports only approval needs, blockers or choices, one CI-pending handoff after the bounded check, and PRs that are Ready for Review. On-demand natural-language `status` gives Goals, Workers, blockers, and PRs. The supervisor does not watch merges or act on Codeberg comments; the operator can ask it to handle comments. CI status monitoring is allowed and distinct. Never merge or deploy. It cleans only Workers and worktrees that it created; adopted ones remain.
 
 Telegram uses one dedicated bot through `@llblab/pi-telegram`, direct into live Pi instances. Private-chat Threaded Mode: one thread per connected supervisor, supervisors only. Rename each generated thread to the project name once, by hand. Keep threads for reconnection. Supervisors stay idle between work and are restarted by hand after an Aragorn reboot. The bot token uses the package's `~/.pi/agent/telegram.json` storage at mode 0600.
 
@@ -67,7 +69,7 @@ These checks have not run. Confirm each when the feature exists:
 - A new Goal or a scope/direction change waits on Approve, Change, or Cancel before new work starts.
 - A direct prompt to a Worker takes precedence. The supervisor resyncs from the Pi transcript.
 - Child Agents stay private to the Worker. The supervisor manages only the Herdr Worker and checks outcomes and evidence.
-- Independent Deliverables run in parallel. Dependent work for a stacked PR may start only after the base PR passes repo checks and independent agent review. Cleanup removes only Workers and worktrees the supervisor created.
+- Independent Deliverables run in parallel. Opening a PR starts required CI. Ready for Review waits until that CI passes. Dependent work for a stacked PR may start only after the base PR passes required PR CI and independent agent review. Cleanup removes only Workers and worktrees the supervisor created.
 
 ## Pros and Cons of the Options
 

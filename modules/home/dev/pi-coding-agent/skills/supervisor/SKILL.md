@@ -172,9 +172,9 @@ One Deliverable is one branch, one worktree, and one PR.
 
 Several Workers may help one Deliverable. Only one writing Worker at a time per worktree.
 
-There is no fixed Worker cap. Run independent Deliverables in parallel. Start dependent work for a stacked PR only after the base PR passes this Project's documented checks and independent agent review.
+There is no fixed Worker cap. Run independent Deliverables in parallel. Start dependent work for a stacked PR only after the base PR passes required PR CI and independent agent review. The base need not be merged.
 
-Use this Project's documented checks and conventions. Do not assume every repo is Nix.
+Distinguish available relevant local checks from required PR CI. Before push, run and pass available relevant local checks in the worktree (targeted tests, formatter/linter/typecheck, pre-commit). They are a cheap preflight, not a universal gate, and are not PR CI. If none are documented or runnable, open the PR to start required CI and state that local checks were unavailable. Do not assume every repo is Nix. Do not run `nix flake check` or `nix flake check --all-systems` locally; leave those to PR CI unless the Operator explicitly asks. For this Nix repo, use cheap focused checks and pre-commit locally.
 
 A Worker-provided Child Agent reviewer may satisfy the independent review gate when the report includes findings and evidence.
 
@@ -190,17 +190,26 @@ Never rerun the same failed command as the recovery plan. Never loop without a b
 
 ### PR
 
-Push and open the PR only after checks and review pass, and only when an approved Plan or adopted Current Scope already includes that Deliverable.
+Open a PR when an approved Plan or adopted Current Scope already includes that Deliverable.
+
+Sequence:
+
+1. Run and pass available relevant local checks and independent agent review. If no local check is documented or runnable, state that and continue.
+2. Push and open the PR. That starts required CI.
+3. Monitor required PR CI. Pending CI is not Ready for Review.
+4. If required CI fails, use the failure ladder inside the adopted Current Scope or approved Plan.
+5. Report Ready for Review only after independent review and required PR CI pass.
 
 Never merge. Never deploy.
 
-Do not watch Codeberg comments. Handle comments only after an Operator request.
+Do not watch or act on Codeberg comments. Handle comments only after an Operator request. CI status monitoring is allowed and distinct.
 
 Report `Ready for Review` with all of:
 
 - PR link
 - concise outcome
-- checks
+- available relevant local checks, or that they were unavailable
+- required PR CI result and link
 - review result
 - dependency / stack order
 - known risks
@@ -222,12 +231,15 @@ While any managed Worker is `working`, keep this turn alive with Herdr lifecycle
 
 Do not send heartbeat chatter. Honor new Operator or Telegram input as soon as Pi delivers it.
 
-When no managed Worker is `working` and every other state has been handled, end the turn and stay idle. After the turn ends there is no background watcher. A later Operator prompt such as `status` or another Goal wakes this session and you rescan.
+For required CI on a supervisor-opened PR, wait 120 seconds and check once. If CI is still pending, give one concise pending handoff, end the turn, and wait for later Operator input such as `status`. A pending PR is not Ready for Review. Do not loop or send heartbeat chatter.
+
+When no managed Worker is `working` and every other state has been handled, end the turn and stay idle. After the turn ends there is no background watcher and no promised wakeup when CI finishes. A later Operator prompt such as `status` or another Goal wakes this session and you rescan.
 
 Send unsolicited reports only for:
 
 - approval
 - blockers or choices
+- one CI-pending handoff after the bounded check
 - Ready-for-Review PRs
 
 Natural-language `status` returns compact Goals, Workers, blockers, and PRs. Do not send timed reports.
