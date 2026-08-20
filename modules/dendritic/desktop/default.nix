@@ -913,6 +913,8 @@ in
 
                 # Shared spawn argument lists so hardware media/brightness keys
                 # and their Mod+F-row keyboard aliases stay in lockstep.
+                # Mod+Shift+F1/F2/F3 use focusedAppAudio below (per-PID, no
+                # global fallback) instead of these sink-wide binds.
                 volumeUp = [
                   "wpctl"
                   "set-volume"
@@ -931,6 +933,22 @@ in
                   "@DEFAULT_AUDIO_SINK@"
                   "toggle"
                 ];
+                # Focused-window stream volume via niri PID + wpctl --pid.
+                # Exits non-zero when there is no focused PID or no matching
+                # PipeWire nodes; does not touch @DEFAULT_AUDIO_SINK@.
+                focusedAppAudio = pkgs.writeShellScriptBin "niri-focused-app-audio" ''
+                  set -euo pipefail
+                  pid="$(${lib.getExe config.programs.niri.package} msg -j focused-window | ${lib.getExe pkgs.jq} -r '.pid // empty')"
+                  if [ -z "$pid" ]; then
+                    exit 1
+                  fi
+                  case "$1" in
+                    mute) ${pkgs.wireplumber}/bin/wpctl set-mute --pid "$pid" toggle ;;
+                    down) ${pkgs.wireplumber}/bin/wpctl set-volume --pid "$pid" 5%- ;;
+                    up) ${pkgs.wireplumber}/bin/wpctl set-volume --pid "$pid" 5%+ ;;
+                    *) exit 1 ;;
+                  esac
+                '';
                 micMute = [
                   "wpctl"
                   "set-mute"
@@ -1333,10 +1351,24 @@ in
 
                     # ─── Group: Volume keyboard aliases (desktop F-row) ──────
                     # Desktop keyboard has no hardware volume keys; F1/F2/F3
-                    # mimic the universal laptop multimedia F-row layout.
+                    # mimic the universal laptop multimedia F-row layout
+                    # (global default sink). Mod+Shift+F1/F2/F3 adjust only
+                    # PipeWire nodes for the focused window's PID.
                     "Mod+F1".action.spawn = volumeMute;
                     "Mod+F2".action.spawn = volumeDown;
                     "Mod+F3".action.spawn = volumeUp;
+                    "Mod+Shift+F1".action.spawn = [
+                      (lib.getExe focusedAppAudio)
+                      "mute"
+                    ];
+                    "Mod+Shift+F2".action.spawn = [
+                      (lib.getExe focusedAppAudio)
+                      "down"
+                    ];
+                    "Mod+Shift+F3".action.spawn = [
+                      (lib.getExe focusedAppAudio)
+                      "up"
+                    ];
 
                     # ─── Group: Discoverability & system control ─────────────
                     "Mod+Shift+Slash".action.show-hotkey-overlay = [ ];
