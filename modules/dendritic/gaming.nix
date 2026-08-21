@@ -76,63 +76,169 @@ _:
     let
       cfg = config.gaming;
 
-      # Official Windows OctoLauncher under UMU-Proton. Nix pins the bootstrap installer;
-      # the prefix (launcher/client/addons/settings) stays writable for the self-updater.
-      # Version/hash managed by nvfetcher (nvfetcher.toml [octowow]).
-      octowow =
+      sources = import ../../_sources/generated.nix {
+        inherit (pkgs)
+          fetchurl
+          fetchFromGitHub
+          fetchgit
+          dockerTools
+          ;
+      };
+
+      # Manual GE-Proton 8-25 pin: avoids Wine 9+ legacy OpenGL regression (blank TLOPO world).
+      geProton825 = pkgs.stdenvNoCC.mkDerivation {
+        pname = "GE-Proton";
+        version = "8-25";
+        src = pkgs.fetchurl {
+          url = "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton8-25/GE-Proton8-25.tar.gz";
+          hash = "sha512-KHsQutIR5HF3IBfagBCJ2uKoOh2lClhLdePBwlM5do5anyXEzQz32weqbFiHq+Pokoyug1pbIcWMleX9DdP2Xg==";
+        };
+        dontConfigure = true;
+        dontBuild = true;
+        dontFixup = true;
+        installPhase = ''
+          runHook preInstall
+          mkdir -p "$out"
+          cp -a ./. "$out/"
+          runHook postInstall
+        '';
+      };
+
+      # Shared UMU Proton launcher: pin installer via nvfetcher, writable prefix,
+      # first-install flock + silent NSIS /S, optional one-shot winetricks.
+      mkUmuLauncher =
+        {
+          id,
+          command ? id,
+          desktopName,
+          prefix,
+          source,
+          launcherPath,
+          winetricks ? [ ],
+          # OctoLauncher only; omit elsewhere to keep .desktop identical.
+          startupWMClass ? null,
+          protonPath ? null,
+        }:
         let
-          sources = import ../../_sources/generated.nix {
-            inherit (pkgs)
-              fetchurl
-              fetchFromGitHub
-              fetchgit
-              dockerTools
-              ;
-          };
-          prefix = cfg.octowow.prefixPath;
-          launcherExe = "${prefix}/drive_c/users/steamuser/AppData/Local/Programs/OctoLauncher/OctoLauncher.exe";
+          launcher = "${prefix}/${launcherPath}";
+          winetricksMarker = "${prefix}/.${id}-winetricks-v1";
           wrapper = pkgs.writeShellApplication {
-            name = "octo-launcher";
+            name = command;
             runtimeInputs = [
               pkgs.umu-launcher
               pkgs.util-linux
-            ];
+            ]
+            ++ lib.optionals (winetricks != [ ]) [ pkgs.winetricks ];
             text = ''
               export WINEPREFIX=${lib.escapeShellArg prefix}
-              export GAMEID=umu-octowow
+              export GAMEID=umu-${id}
               export PROTON_VERB=waitforexitandrun
-              launcher=${lib.escapeShellArg launcherExe}
+              ${lib.optionalString (protonPath != null) ''
+                export PROTONPATH=${lib.escapeShellArg "${protonPath}"}
+              ''}
+              launcher=${lib.escapeShellArg launcher}
+              ${lib.optionalString (winetricks != [ ]) ''
+                marker=${lib.escapeShellArg winetricksMarker}
+              ''}
               if [[ ! -f $launcher ]]; then
-                exec 9>"$XDG_RUNTIME_DIR/octo-launcher-install.lock"
+                exec 9>"$XDG_RUNTIME_DIR/${command}-install.lock"
                 flock 9
                 if [[ ! -f $launcher ]]; then
-                  umu-run ${sources.octowow.src} /S
+                  /run/wrappers/bin/mullvad-exclude umu-run ${source.src} /S
                 fi
                 flock -u 9
                 exec 9>&-
                 if [[ ! -f $launcher ]]; then
-                  echo "octo-launcher: install failed; missing $launcher" >&2
+                  echo "${command}: install failed; missing $launcher" >&2
                   exit 1
                 fi
               fi
-              exec umu-run "$launcher" "$@"
+              ${lib.optionalString (winetricks != [ ]) ''
+                if [[ ! -f $marker ]]; then
+                  exec 9>"$XDG_RUNTIME_DIR/${command}-winetricks.lock"
+                  flock 9
+                  if [[ ! -f $marker ]]; then
+                    /run/wrappers/bin/mullvad-exclude umu-run winetricks ${lib.escapeShellArgs winetricks}
+                    touch "$marker"
+                  fi
+                  flock -u 9
+                  exec 9>&-
+                fi
+              ''}
+              cd "''${launcher%/*}"
+              exec /run/wrappers/bin/mullvad-exclude umu-run "$launcher" "$@"
             '';
           };
-          desktop = pkgs.makeDesktopItem {
-            name = "octo-launcher";
-            desktopName = "OctoLauncher";
-            exec = "${wrapper}/bin/octo-launcher %U";
-            categories = [ "Game" ];
-            extraConfig.StartupWMClass = "OctoLauncher";
-          };
+          desktop = pkgs.makeDesktopItem (
+            {
+              name = command;
+              inherit desktopName;
+              exec = "${wrapper}/bin/${command} %U";
+              categories = [ "Game" ];
+            }
+            // lib.optionalAttrs (startupWMClass != null) {
+              extraConfig.StartupWMClass = startupWMClass;
+            }
+          );
         in
         pkgs.symlinkJoin {
-          name = "octo-launcher-${sources.octowow.version}";
+          name = "${command}-${source.version}";
           paths = [
             wrapper
             desktop
           ];
         };
+
+      # Official Windows OctoLauncher under UMU-Proton. Nix pins the bootstrap installer;
+      # the prefix (launcher/client/addons/settings) stays writable for the self-updater.
+      # Version/hash managed by nvfetcher (nvfetcher.toml [octowow]).
+      octowow = mkUmuLauncher {
+        id = "octowow";
+        command = "octo-launcher";
+        desktopName = "OctoLauncher";
+        prefix = cfg.octowow.prefixPath;
+        source = sources.octowow;
+        launcherPath = "drive_c/users/steamuser/AppData/Local/Programs/OctoLauncher/OctoLauncher.exe";
+        startupWMClass = "OctoLauncher";
+      };
+
+      # Official SWG Restoration installer under UMU-Proton. Nix pins the bootstrap
+      # installer; the prefix stays writable for the self-updater.
+      # Version/hash managed by nvfetcher (nvfetcher.toml [swgr]).
+      swgr = mkUmuLauncher {
+        id = "swgr";
+        command = "swg-restoration";
+        desktopName = "SWG Restoration";
+        prefix = cfg.swgr.prefixPath;
+        source = sources.swgr;
+        launcherPath = "drive_c/SWG Restoration/SWG Restoration.exe";
+        winetricks = [
+          "win10"
+          "hidewineexports=enable"
+          "windowmanagerdecorated=n"
+          "windowmanagermanaged=y"
+          "d3dcompiler_43"
+          "d3dx10"
+          "d3dx9"
+          "d3dx9_39"
+          "dxvk"
+          "xact"
+          "xact_x64"
+          "vcrun2022"
+        ];
+      };
+
+      # Official TLOPO Windows installer under UMU-Proton. Nix pins the bootstrap
+      # installer; the prefix stays writable for the launcher self-updater.
+      # Version/hash managed by nvfetcher (nvfetcher.toml [tlopo]).
+      tlopo = mkUmuLauncher {
+        id = "tlopo";
+        desktopName = "The Legend of Pirates Online";
+        prefix = cfg.tlopo.prefixPath;
+        source = sources.tlopo;
+        launcherPath = "drive_c/Program Files/TLOPO/launcher.exe";
+        protonPath = geProton825;
+      };
 
       # Wrapper that excludes cloud-save games, rescues DRM-free/non-Steam games
       ludusaviBackupWrapper =
@@ -308,6 +414,24 @@ _:
             description = "Writable Proton prefix for OctoLauncher";
           };
         };
+
+        swgr = {
+          enable = lib.mkEnableOption "SWG Restoration launcher via UMU-Proton";
+          prefixPath = lib.mkOption {
+            type = lib.types.str;
+            default = "${config.xdg.dataHome}/swgr/prefix";
+            description = "Writable Proton prefix for SWG Restoration";
+          };
+        };
+
+        tlopo = {
+          enable = lib.mkEnableOption "The Legend of Pirates Online launcher via UMU-Proton";
+          prefixPath = lib.mkOption {
+            type = lib.types.str;
+            default = "${config.xdg.dataHome}/tlopo/prefix";
+            description = "Writable Proton prefix for TLOPO";
+          };
+        };
       };
 
       config = lib.mkIf cfg.enable {
@@ -333,6 +457,12 @@ _:
           ]
           ++ lib.optionals cfg.octowow.enable [
             octowow
+          ]
+          ++ lib.optionals cfg.swgr.enable [
+            swgr
+          ]
+          ++ lib.optionals cfg.tlopo.enable [
+            tlopo
           ]
           ++ [
             boilr

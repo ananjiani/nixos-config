@@ -54,7 +54,9 @@ let
   desktopBroadcast = "192.168.1.255";
   desktopIdentity = "/home/ammar/.ssh/id_ed25519";
   desktopHostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINnidnIXwZdzKVv6fZZmoAOStpX5ZQdHjpvH6cR4yKjA";
-  ntfyUrl = "https://ntfy.dimensiondoor.xyz/monitoring";
+  # Keep legacy unauthenticated publishers on the in-cluster rollback service
+  # until they receive dedicated least-privilege identities after the soak.
+  ntfyUrl = "https://ntfy-home.dimensiondoor.xyz/monitoring";
   repoHttps = "https://codeberg.org/ananjiani/infra.git";
   statusApi = "https://codeberg.org/api/v1/repos/ananjiani/infra/commits";
   stateDir = "/var/lib/desktop-deploy";
@@ -611,7 +613,7 @@ in
         '';
 
         "herdr/plugins/config/cobanov.herdr-ntfysh/.env".text = ''
-          HERDR_NTFY_SERVER=https://ntfy.dimensiondoor.xyz
+          HERDR_NTFY_SERVER=https://ntfy-home.dimensiondoor.xyz
           HERDR_NTFY_TOPIC=herdr
           HERDR_NTFY_NOTIFY_ON=done,blocked
           HERDR_NTFY_CLICK=https://collie.dimensiondoor.xyz

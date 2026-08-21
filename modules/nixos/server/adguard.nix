@@ -264,9 +264,12 @@ in
                 answer = "192.168.1.52";
               }
               {
-                domain = "ntfy.dimensiondoor.xyz";
+                # TLS-valid migration endpoint for legacy unauthenticated
+                # publishers that remain on the in-cluster ntfy during soak.
+                domain = "ntfy-home.dimensiondoor.xyz";
                 answer = "192.168.1.52";
               }
+
               {
                 domain = "voicemail.dimensiondoor.xyz";
                 answer = "192.168.1.52";

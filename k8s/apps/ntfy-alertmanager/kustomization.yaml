@@ -4,3 +4,5 @@ kind: Kustomization
 resources:
   - configmap.yaml
   - deployment.yaml
+  - erebor-externalsecret.yaml
+  - erebor-deployment.yaml

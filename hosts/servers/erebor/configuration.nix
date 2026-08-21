@@ -57,6 +57,28 @@
           group = "caddy";
           mode = "0400";
         };
+        # Declarative ntfy users, ACLs and tokens are rendered only at runtime.
+        ntfy-auth-env = {
+          path = "secret/nixos/ntfy-erebor";
+          template = ''
+            NTFY_AUTH_USERS='{{ with secret "secret/data/nixos/ntfy-erebor" }}{{ index .Data.data "auth-users" }}{{ end }}'
+            NTFY_AUTH_ACCESS='{{ with secret "secret/data/nixos/ntfy-erebor" }}{{ index .Data.data "auth-access" }}{{ end }}'
+            NTFY_AUTH_TOKENS='{{ with secret "secret/data/nixos/ntfy-erebor" }}{{ index .Data.data "auth-tokens" }}{{ end }}'
+          '';
+          owner = "root";
+          group = "root";
+          mode = "0400";
+        };
+        # Keep Gatus isolated from password hashes and every other client token.
+        gatus-ntfy-env = {
+          path = "secret/nixos/ntfy-erebor";
+          template = ''
+            GATUS_NTFY_TOKEN='{{ with secret "secret/data/nixos/ntfy-erebor" }}{{ index .Data.data "gatus-token" }}{{ end }}'
+          '';
+          owner = "root";
+          group = "root";
+          mode = "0400";
+        };
         # Offsite backups (issue #41): same S3-style pattern as theoden
         b2_env = {
           path = "secret/nixos/backblaze";
@@ -78,6 +100,10 @@
       cloudflareEnvFile = "/run/secrets/cloudflare_api_token";
       virtualHosts."ts.dimensiondoor.xyz" = {
         upstream = "127.0.0.1:8080";
+        useCloudflareDns = true;
+      };
+      virtualHosts."ntfy.dimensiondoor.xyz" = {
+        upstream = "127.0.0.1:2586";
         useCloudflareDns = true;
       };
     };

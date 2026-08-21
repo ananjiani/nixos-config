@@ -86,27 +86,22 @@ Use tea instead of gh since this repo is on codeberg.
 tea --help
 ```
 
-### Remote Deployment (using deploy-rs)
+### Server Recovery (using deploy-rs)
+
+Routine server releases flow through PRs and Comin. Use deploy-rs only for manual recovery after suspending Comin. Read `docs/content/deployment.md` before recovery.
+
 ```bash
-# Enter devshell to get deploy command
-nix develop
+# Suspend the target so Comin cannot restore the broken main generation
+ssh root@boromir.lan comin suspend
 
-# Deploy to all servers (boromir, samwise, theoden)
-deploy .
+# From a clean checkout at the exact known-good revision
+nix develop --command deploy .#boromir
 
-# Deploy to specific server
-deploy .#boromir
-deploy .#samwise
-deploy .#theoden
-
-# Skip magic rollback (no 240s confirm wait)
-deploy .#boromir --magic-rollback false
-
-# Build on remote instead of locally
-deploy .#boromir --remote-build
+# Resume only after main is fixed and green
+ssh root@boromir.lan comin resume
 ```
 
-**Magic Rollback**: By default, deploy-rs waits 240 seconds for confirmation. If not confirmed (or SSH drops), the system automatically reverts to the previous configuration.
+**Magic Rollback**: By default, deploy-rs waits 240 seconds for confirmation. If not confirmed (or SSH drops), the system automatically reverts to the previous configuration. Keep it enabled except for documented host exceptions.
 
 ## Architecture
 
@@ -115,7 +110,7 @@ deploy .#boromir --remote-build
 - **`hosts/`**: Machine-specific configurations
   - Each host has: `configuration.nix`, `hardware-configuration.nix`, and `home.nix`
   - Local machines: ammars-pc, framework13
-  - Servers (Proxmox VMs): boromir, samwise, theoden (deployed via deploy-rs)
+  - Servers converge from `main` through Comin; deploy-rs remains the manual recovery path
   - Special: iso
 - **`modules/`**: Reusable configuration modules
   - `home/`: User-level modules (editors, shell, desktop environment)
@@ -240,8 +235,15 @@ Load-bearing repo gotchas — each is a hard-won lesson that silently breaks thi
 - **Tailscale `useExitNode` defaults to `"boromir"`** — servers should set `useExitNode = null` unless they actually need an exit node.
 - **Nvidia driver bumps on GPU hosts require a reboot.** NixOS cannot hot-swap the loaded nvidia kernel module; a `nixpkgs` bump that updates `linuxPackages.nvidia_x11` leaves userspace libs (e.g. `libnvidia-ml.so`, `libnvsandboxutils.so`) at the new version while the running kernel module stays old. `nvidia-container-toolkit-cdi-generator.service` then fails on activation with `Driver/library version mismatch` / `failed to initialize nvml`, failing the deploy-rs activation step. Fix: reboot the host, then re-deploy. Symptom: CDI generator exits 1 right after a driver-version bump on boromir (and any GPU host).
 
+### Deployment workflow
+
+- **`main` is production**: work on feature branches. Direct pushes are blocked; merge only after required `buildbot/nix-build` succeeds.
+- **Comin owns routine server deployment**: Buildbot checks/builds and fills Attic; it never activates hosts. Use deploy-rs only for recovery after suspending Comin.
+- **Testing branches are disposable targets**: use `testing-<hostname>` for a host test deployment. Do normal work on `feat/*` or `fix/*`, then promote the tested SHA to `main`.
+- **Full runbook**: read `docs/content/deployment.md` before changing CI, Comin, branch protection, desktop deployment, or recovery behavior.
+
 ### deploy-rs
 
-- **Multi-target fails** (`deploy .#a .#b`). Use `deploy .` (no target) for all hosts in parallel, or a single target. `--skip-checks` bypasses unrelated flake check failures.
+- **Use one recovery target**: `deploy .#a .#b` fails. Bare `deploy .` targets every host and conflicts with Comin ownership; do not use it for routine releases. `--skip-checks` bypasses unrelated flake check failures.
 - **Boromir**: ComfyUI podman container crashes on activation, causing deploy-rs to fail. Force through with `--auto-rollback false --magic-rollback false`.
 - **Cold-boot chicken-and-egg**: if tailscaled-autoconnect times out during activation, magic rollback fires. Workaround: build closure locally, `nix copy --to ssh://root@host`, then `nix-env -p /nix/var/nix/profiles/system --set <path> && <path>/bin/switch-to-configuration switch`.

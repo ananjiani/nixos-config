@@ -175,8 +175,11 @@ Normal path remains the nightly Aragorn controller.
 
 ### Desktop result table (metrics + ntfy)
 
-Metric: `ammars_pc_deploy_result{result="..."}` (one-hot). Topic:
-`https://ntfy.dimensiondoor.xyz/monitoring`.
+Metric: `ammars_pc_deploy_result{result="..."}` (one-hot). During the
+Erebor ntfy migration soak, the unauthenticated desktop publisher remains on
+`https://ntfy-home.dimensiondoor.xyz/monitoring`, the TLS-valid internal alias
+for the in-cluster service. Move it to the permanent public endpoint only after
+provisioning a dedicated least-privilege publisher identity.
 
 | Result | Meaning | ntfy title pattern |
 | --- | --- | --- |

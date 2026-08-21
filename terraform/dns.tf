@@ -253,15 +253,17 @@ resource "cloudflare_dns_record" "buildbot" {
   comment = "Buildbot CI/CD (Cloudflare Tunnel) - managed by Terraform"
 }
 
-# ntfy push notification server
+# ntfy push notification server on Erebor (direct, authenticated HTTPS)
 resource "cloudflare_dns_record" "ntfy" {
   zone_id = local.zone_id
   name    = "ntfy"
-  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  # Keep this literal so a DNS-only targeted apply cannot pull Erebor's
+  # unrelated Hetzner resource dependencies into the plan.
+  content = "91.99.82.115"
   type    = "A"
-  proxied = false # Internal IP, cannot be proxied
+  proxied = false # Keep Cloudflare outside the notification delivery path
   ttl     = 300
-  comment = "ntfy push notifications (internal) - managed by Terraform"
+  comment = "ntfy push notifications on Erebor - managed by Terraform"
 }
 
 # Voicemail receiver (via Cloudflare Tunnel for Telnyx webhooks)

@@ -101,6 +101,10 @@ spec:
             webhook_configs:
               - url: "http://ntfy-alertmanager.monitoring.svc:8080"
                 send_resolved: true
+              # Parallel delivery during the Erebor migration soak. The
+              # in-cluster receiver remains the rollback path until acceptance.
+              - url: "http://ntfy-alertmanager-erebor.monitoring.svc:8080"
+                send_resolved: true
         route:
           receiver: ntfy
           group_by:

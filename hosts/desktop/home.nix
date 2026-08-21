@@ -155,11 +155,32 @@ let
     name = "gamescope-hdr";
     hdr = true;
   };
-  octowowGamescope = pkgs.makeDesktopItem {
-    name = "octowow-gamescope";
-    desktopName = "OctoWoW (Gamescope)";
-    exec = "${pkgs.gamemode}/bin/gamemoderun ${gamescopeSdr}/bin/gamescope-sdr ${config.home.profileDirectory}/bin/octo-launcher";
-    categories = [ "Game" ];
+  mkGamescopeDesktop =
+    {
+      name,
+      desktopName,
+      command,
+    }:
+    pkgs.makeDesktopItem {
+      name = "${name}-gamescope";
+      desktopName = "${desktopName} (Gamescope)";
+      exec = "${pkgs.gamemode}/bin/gamemoderun ${gamescopeSdr}/bin/gamescope-sdr ${config.home.profileDirectory}/bin/${command}";
+      categories = [ "Game" ];
+    };
+  octowowGamescope = mkGamescopeDesktop {
+    name = "octowow";
+    desktopName = "OctoWoW";
+    command = "octo-launcher";
+  };
+  swgrGamescope = mkGamescopeDesktop {
+    name = "swgr";
+    desktopName = "SWG Restoration";
+    command = "swg-restoration";
+  };
+  tlopoGamescope = mkGamescopeDesktop {
+    name = "tlopo";
+    desktopName = "The Legend of Pirates Online";
+    command = "tlopo";
   };
   # Upstream static pi-web binary — web UI for local Pi coding-agent sessions.
   # HTTPS edge lives in k8s Traefik (see ADR-006); this binds to the desktop's
@@ -262,6 +283,8 @@ in
       gamescopeSdr
       gamescopeHdr
       octowowGamescope
+      swgrGamescope
+      tlopoGamescope
       piWeb
     ];
     sessionVariables.SSH_ASKPASS = "${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass";
@@ -314,6 +337,14 @@ in
     octowow = {
       enable = true;
       prefixPath = "/mnt/nvme/Games/octowow/prefix";
+    };
+    swgr = {
+      enable = true;
+      prefixPath = "/mnt/nvme/Games/swgr/prefix";
+    };
+    tlopo = {
+      enable = true;
+      prefixPath = "/mnt/nvme/Games/tlopo/prefix";
     };
   };
 
