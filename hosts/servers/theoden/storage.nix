@@ -51,7 +51,7 @@
           -H "Priority: high" \
           -H "Tags: warning" \
           -d "$m has $n stacked mergerfs mounts (expected 1) after a deploy. Restart containers binding /mnt/storage (romm). Postmortem: 2026-07-07-1238." \
-          "https://ntfy.dimensiondoor.xyz/monitoring" || true
+          "https://ntfy-home.dimensiondoor.xyz/monitoring" || true
       fi
     done
   '';

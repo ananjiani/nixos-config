@@ -15,7 +15,7 @@ spec:
     - web
     - websecure
   routes:
-    - match: Host(`ntfy.dimensiondoor.xyz`) || Host(`ntfy.lan`)
+    - match: Host(`ntfy.dimensiondoor.xyz`) || Host(`ntfy-home.dimensiondoor.xyz`) || Host(`ntfy.lan`)
       kind: Rule
       services:
         - name: ntfy

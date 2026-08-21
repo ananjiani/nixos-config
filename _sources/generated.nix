@@ -74,4 +74,21 @@
     };
     date = "2026-07-10";
   };
+  swgr = {
+    pname = "swgr";
+    version = "4.0.3";
+    src = fetchurl {
+      url = "https://patch.swgr.media/patch/launcher/SWG%20Restoration%20Install.exe";
+      name = "swgr-install.exe";
+      sha256 = "sha256-Z+8BPMpTDNLxKZNrFqpXjpDYsV5cx2MmtbGUpsDQVas=";
+    };
+  };
+  tlopo = {
+    pname = "tlopo";
+    version = "1.4.1";
+    src = fetchurl {
+      url = "https://download.tlopo.com/TLOPO_win64_setup_1.4.1.exe";
+      sha256 = "sha256-8xx2HJi5sbJBpnRLMLVroNQ+ykNprA45xWPw+x6QRVA=";
+    };
+  };
 }

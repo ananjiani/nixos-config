@@ -121,5 +121,35 @@
             "type": "github"
         },
         "version": "57c805c8e6d0b34601b07d89053b376905008d8a"
+    },
+    "swgr": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "swgr",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": "swgr-install.exe",
+            "sha256": "sha256-Z+8BPMpTDNLxKZNrFqpXjpDYsV5cx2MmtbGUpsDQVas=",
+            "type": "url",
+            "url": "https://patch.swgr.media/patch/launcher/SWG%20Restoration%20Install.exe"
+        },
+        "version": "4.0.3"
+    },
+    "tlopo": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "tlopo",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-8xx2HJi5sbJBpnRLMLVroNQ+ykNprA45xWPw+x6QRVA=",
+            "type": "url",
+            "url": "https://download.tlopo.com/TLOPO_win64_setup_1.4.1.exe"
+        },
+        "version": "1.4.1"
     }
 }

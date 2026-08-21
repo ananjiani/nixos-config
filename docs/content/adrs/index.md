@@ -15,4 +15,5 @@ ADRs capture *why* a choice was made, what alternatives were considered, and wha
 | [ADR-007](adr-007-2026-07-27-portable-dev-home-profile.md) | 2026-07-27 | Portable Home Manager dev profile + host homelab overlay | Accepted |
 | [ADR-008](adr-008-2026-08-03-denethor-searxng-lan-pinhole.md) | 2026-08-03 | Denethor web search via LAN pinhole to SearXNG | Accepted |
 | [ADR-009](adr-009-2026-08-19-comin-pull-deployments.md) | 2026-08-19 | Comin pull deployments with Buildbot CI and activity-aware desktop deploy | Accepted |
-| [ADR-010](adr-010-2026-08-20-project-supervisor-agents.md) | 2026-08-20 | Optional Project Supervisor agents in Herdr with Telegram | Accepted |
+| [ADR-010](adr-010-2026-08-19-erebor-primary-ntfy.md) | 2026-08-19 | Make Erebor the primary ntfy notification endpoint | Accepted |
+| [ADR-011](adr-011-2026-08-20-project-supervisor-agents.md) | 2026-08-20 | Optional Project Supervisor agents in Herdr with Telegram | Accepted |

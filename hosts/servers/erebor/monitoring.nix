@@ -1,6 +1,6 @@
 # External monitoring and notification path for homelab outages.
-# Both interfaces are reachable only over Tailscale; no public firewall ports
-# are opened. Gatus publishes alerts to the colocated ntfy service.
+# Gatus remains tailnet-only. ntfy is additionally published as authenticated
+# HTTPS through Caddy; its native listener is never opened on the public NIC.
 { config, lib, ... }:
 
 let
@@ -31,10 +31,14 @@ in
     ntfy-sh = {
       enable = true;
       settings = {
-        base-url = "http://erebor.ts:2586";
+        base-url = "https://ntfy.dimensiondoor.xyz";
         listen-http = "0.0.0.0:2586";
+        behind-proxy = true;
+        auth-default-access = "deny-all";
         cache-duration = "168h";
         attachment-total-size-limit = "0";
+        visitor-request-limit-burst = 60;
+        visitor-request-limit-replenish = "5s";
       };
     };
 
@@ -51,6 +55,7 @@ in
         alerting.ntfy = {
           url = "http://127.0.0.1:2586";
           topic = "monitoring";
+          token = "\${GATUS_NTFY_TOKEN}";
           priority = 4;
           default-alert = {
             failure-threshold = 3;
@@ -92,17 +97,29 @@ in
   ];
 
   systemd.services = {
-    ntfy-sh.serviceConfig = {
-      Restart = "on-failure";
-      RestartSec = "5s";
-      MemoryMax = "128M";
-      CPUQuota = "25%";
+    ntfy-sh = {
+      after = [ "vault-agent-default.service" ];
+      wants = [ "vault-agent-default.service" ];
+      serviceConfig = {
+        EnvironmentFile = "/run/secrets/ntfy-auth-env";
+        Restart = "on-failure";
+        RestartSec = "5s";
+        MemoryMax = "128M";
+        CPUQuota = "25%";
+      };
     };
 
     gatus = {
-      after = [ "ntfy-sh.service" ];
-      wants = [ "ntfy-sh.service" ];
+      after = [
+        "ntfy-sh.service"
+        "vault-agent-default.service"
+      ];
+      wants = [
+        "ntfy-sh.service"
+        "vault-agent-default.service"
+      ];
       serviceConfig = {
+        EnvironmentFile = "/run/secrets/gatus-ntfy-env";
         MemoryMax = "256M";
         CPUQuota = "50%";
       };
