@@ -933,7 +933,8 @@ in
                   "@DEFAULT_AUDIO_SINK@"
                   "toggle"
                 ];
-                # Focused-window stream volume via niri PID + wpctl --pid.
+                # Focused-window stream volume via niri PID (+ children) +
+                # wpctl --pid. Browsers often put audio in a child process.
                 # Exits non-zero when there is no focused PID or no matching
                 # PipeWire nodes; does not touch @DEFAULT_AUDIO_SINK@.
                 focusedAppAudio = pkgs.writeShellScriptBin "niri-focused-app-audio" ''
@@ -942,12 +943,40 @@ in
                   if [ -z "$pid" ]; then
                     exit 1
                   fi
+                  pids="$pid"
+                  frontier="$pid"
+                  while [ -n "$frontier" ]; do
+                    next=""
+                    for p in $frontier; do
+                      children="$(${pkgs.procps}/bin/pgrep -P "$p" || true)"
+                      for c in $children; do
+                        pids="$pids $c"
+                        next="$next $c"
+                      done
+                    done
+                    frontier="$next"
+                  done
                   case "$1" in
-                    mute) ${pkgs.wireplumber}/bin/wpctl set-mute --pid "$pid" toggle ;;
-                    down) ${pkgs.wireplumber}/bin/wpctl set-volume --pid "$pid" 5%- ;;
-                    up) ${pkgs.wireplumber}/bin/wpctl set-volume --pid "$pid" 5%+ ;;
-                    *) exit 1 ;;
+                    mute)
+                      set -- set-mute toggle
+                      ;;
+                    down)
+                      set -- set-volume 5%-
+                      ;;
+                    up)
+                      set -- set-volume 5%+
+                      ;;
+                    *)
+                      exit 1
+                      ;;
                   esac
+                  ok=0
+                  for p in $pids; do
+                    if ${pkgs.wireplumber}/bin/wpctl "$1" --pid "$p" "$2"; then
+                      ok=1
+                    fi
+                  done
+                  [ "$ok" -eq 1 ]
                 '';
                 micMute = [
                   "wpctl"
