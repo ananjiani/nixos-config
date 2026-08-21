@@ -582,7 +582,6 @@ let
       "npm:pi-init"
       "git:github.com/DietrichGebert/ponytail"
       "git:github.com/mattpocock/skills"
-      "git:github.com/aaddrick/attention-control"
       "npm:pi-claude-bridge"
       "npm:pi-mcp-adapter"
       "npm:@tintinweb/pi-subagents"
@@ -1250,6 +1249,8 @@ in
           config.lib.file.mkOutOfStoreSymlink "${piUserDir}/agent-tool-description.md";
         ".pi/agent/prompts".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/prompts";
         ".pi/agent/skills".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/skills";
+        ".agents/skills".source =
+          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/home/dev/agent-skills";
         ".pi/agent/APPEND_SYSTEM.md".source =
           config.lib.file.mkOutOfStoreSymlink "${piUserDir}/APPEND_SYSTEM.md";
         ".pi/agent/subagents.json".source =

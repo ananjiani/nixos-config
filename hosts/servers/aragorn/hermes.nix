@@ -10,9 +10,21 @@
 # and runs every returned string through Presidio before Hermes sees it.
 #
 # Auth bootstrap after deploy: hermes auth add openai-codex
-{ pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
+  lanHosts = import ../../../lib/hosts.nix;
+  k3sNodeIps = [
+    lanHosts.boromir
+    lanHosts.samwise
+    lanHosts.theoden
+    lanHosts.rivendell
+  ];
   # Version is the single source of truth for the pin; Renovate bumps the
   # dependency in actual-cli/package.json + package-lock.json.
   manifest = builtins.fromJSON (builtins.readFile ./actual-cli/package.json);
@@ -540,8 +552,19 @@ let
     - [ ] Imports have a backup/export, dry run, coverage summary, and overlap check.
     - [ ] Successful and failed changes are reported precisely in human-readable dollars.
   '';
+
+  # Shared Attention Control prompt for both Hermes homes. Identity first,
+  # then the same prompt Pi loads from modules/home/dev/agent-prompts/.
+  hermesSoul = pkgs.writeText "hermes-soul.md" ''
+    You are Hermes Agent, an intelligent AI assistant created by Nous Research. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
+
+    ${builtins.readFile ../../../modules/home/dev/agent-prompts/attention-control.md}
+  '';
 in
 {
+  # Interactive Hermes home (~/.hermes). Gateway home is the tmpfiles link below.
+  home-manager.users.ammar.home.file.".hermes/SOUL.md".source = hermesSoul;
+
   users = {
     users = {
       ammar.extraGroups = [ "hermes" ];
@@ -620,6 +643,12 @@ in
           provider = "openai-codex";
           default = "gpt-5.6-sol";
         };
+        fallback_providers = [
+          {
+            provider = "xai-oauth";
+            model = "grok-4.6";
+          }
+        ];
         terminal = {
           backend = "local";
           env_passthrough = [ ];
@@ -638,6 +667,13 @@ in
         code_execution = {
           mode = "strict";
         };
+        dashboard = {
+          public_url = "https://hermes.dimensiondoor.xyz";
+          oauth.self_hosted = {
+            issuer = "https://auth.dimensiondoor.xyz/application/o/hermes/";
+            client_id = "hermes-dashboard";
+          };
+        };
       };
     };
   };
@@ -649,8 +685,62 @@ in
           "vault-agent-default.service"
           "hermes-broker.service"
         ];
-        requires = [ "vault-agent-default.service" ];
+        wants = [ "vault-agent-default.service" ];
+        restartIfChanged = false;
+        stopIfChanged = false;
         serviceConfig.EnvironmentFile = [ "/run/secrets/hermes_telegram_env" ];
+      };
+
+      hermes-dashboard = {
+        description = "Hermes Agent web dashboard";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "network-online.target" ];
+        wants = [ "network-online.target" ];
+        path = [
+          config.services.hermes-agent.package
+          pkgs.bash
+          pkgs.coreutils
+          pkgs.git
+        ]
+        ++ config.services.hermes-agent.extraPackages;
+        environment = {
+          HOME = "/var/lib/hermes";
+          HERMES_HOME = "/var/lib/hermes/.hermes";
+          # Traefik on k3s nodes is the TLS terminator. Uvicorn only honours
+          # X-Forwarded-Proto from these peers (default is 127.0.0.1).
+          FORWARDED_ALLOW_IPS = lib.concatStringsSep "," k3sNodeIps;
+        };
+        serviceConfig = {
+          ExecStart = "${config.services.hermes-agent.package}/bin/hermes dashboard --host 0.0.0.0 --port 9119 --no-open";
+          User = "ammar";
+          Group = "hermes";
+          WorkingDirectory = "/var/lib/hermes/workspace";
+          Restart = "on-failure";
+          RestartSec = 5;
+          UMask = "0007";
+          NoNewPrivileges = true;
+          PrivateTmp = true;
+          PrivateDevices = true;
+          ProtectSystem = "strict";
+          ProtectHome = false;
+          ProtectKernelTunables = true;
+          ProtectKernelModules = true;
+          ProtectControlGroups = true;
+          RestrictNamespaces = true;
+          RestrictRealtime = true;
+          RestrictSUIDSGID = true;
+          LockPersonality = true;
+          SystemCallArchitectures = "native";
+          RestrictAddressFamilies = [
+            "AF_UNIX"
+            "AF_INET"
+            "AF_INET6"
+          ];
+          ReadWritePaths = [
+            "/var/lib/hermes"
+            "/var/lib/hermes/workspace"
+          ];
+        };
       };
 
       hermes-broker = {
@@ -717,6 +807,7 @@ in
     # The gateway runs with HERMES_HOME=/var/lib/hermes/.hermes, so the
     # home-manager copy under ~/.hermes alone would never be discovered.
     tmpfiles.rules = [
+      "L+ /var/lib/hermes/.hermes/SOUL.md - - - - ${hermesSoul}"
       # Superseded by skills/email/gmail; drop the stale himalaya skill.
       "R /var/lib/hermes/.hermes/skills/email/himalaya - - - - -"
       "d /var/lib/hermes/.hermes/skills/email 0750 ammar hermes -"

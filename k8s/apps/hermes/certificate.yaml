@@ -1,0 +1,26 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: hermes-tls
+  namespace: hermes
+spec:
+  secretName: hermes-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - hermes.dimensiondoor.xyz
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: hermes-lan-tls
+  namespace: hermes
+spec:
+  secretName: hermes-lan-tls
+  issuerRef:
+    name: lan-ca
+    kind: ClusterIssuer
+  dnsNames:
+    - hermes.lan

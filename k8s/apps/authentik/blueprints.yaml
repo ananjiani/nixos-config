@@ -207,6 +207,44 @@ data:
           meta_icon: https://actualbudget.org/favicon.ico
           policy_engine_mode: any
 
+  hermes.yaml: |
+    # Hermes Dashboard OAuth2/OIDC Configuration
+    version: 1
+    metadata:
+      name: Hermes Dashboard SSO
+    entries:
+      # Public OAuth2 client for Hermes (authorization code + PKCE, no secret)
+      - model: authentik_providers_oauth2.oauth2provider
+        id: hermes-provider
+        identifiers:
+          name: Hermes Dashboard
+        attrs:
+          name: Hermes Dashboard
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
+          client_type: public
+          client_id: hermes-dashboard
+          redirect_uris:
+            - url: https://hermes.dimensiondoor.xyz/auth/callback
+              matching_mode: strict
+          property_mappings:
+            - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
+            - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-email]]
+            - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
+          sub_mode: user_email
+
+      # Application for Hermes Dashboard
+      - model: authentik_core.application
+        identifiers:
+          slug: hermes
+        attrs:
+          name: Hermes Dashboard
+          slug: hermes
+          provider: !KeyOf hermes-provider
+          meta_launch_url: https://hermes.dimensiondoor.xyz
+          policy_engine_mode: any
+
   collie.yaml: |
     # Forward-auth apps via Authentik embedded outpost
     version: 1

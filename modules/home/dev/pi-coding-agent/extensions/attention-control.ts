@@ -7,7 +7,7 @@ export default async function (pi: ExtensionAPI) {
 	const instructions = await readFile(
 		join(
 			homedir(),
-			".pi/agent/git/github.com/aaddrick/attention-control/skills/attention-control/SKILL.md",
+			".dotfiles/modules/home/dev/agent-prompts/attention-control.md",
 		),
 		"utf8",
 	);

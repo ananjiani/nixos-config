@@ -1,0 +1,44 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: hermes
+  namespace: hermes
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Hermes"
+    gethomepage.dev/group: "AI"
+    gethomepage.dev/description: "Hermes Agent dashboard"
+    gethomepage.dev/href: "https://hermes.dimensiondoor.xyz"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`hermes.dimensiondoor.xyz`)
+      kind: Rule
+      services:
+        - name: hermes-external
+          port: 9119
+  tls:
+    secretName: hermes-tls
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: hermes-lan
+  namespace: hermes
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`hermes.lan`)
+      kind: Rule
+      middlewares:
+        - name: hermes-lan-redirect
+      services:
+        - name: hermes-external
+          port: 9119
+  tls:
+    secretName: hermes-lan-tls

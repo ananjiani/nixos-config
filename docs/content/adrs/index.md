@@ -14,3 +14,4 @@ ADRs capture *why* a choice was made, what alternatives were considered, and wha
 | [ADR-006](adr-006-2026-07-20-kubernetes-https-edge-for-pi-web.md) | 2026-07-20 | Kubernetes HTTPS edge for pi-web on the desktop | Accepted |
 | [ADR-007](adr-007-2026-07-27-portable-dev-home-profile.md) | 2026-07-27 | Portable Home Manager dev profile + host homelab overlay | Accepted |
 | [ADR-008](adr-008-2026-08-03-denethor-searxng-lan-pinhole.md) | 2026-08-03 | Denethor web search via LAN pinhole to SearXNG | Accepted |
+| [ADR-009](adr-009-2026-08-19-comin-pull-deployments.md) | 2026-08-19 | Comin pull deployments with Buildbot CI and activity-aware desktop deploy | Accepted |
