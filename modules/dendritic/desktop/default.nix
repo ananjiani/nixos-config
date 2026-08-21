@@ -933,14 +933,16 @@ in
                   "@DEFAULT_AUDIO_SINK@"
                   "toggle"
                 ];
-                # Focused-window stream volume: pw-dump once for audio stream
-                # PIDs, walk /proc parents to the focused niri PID, then one
-                # wpctl --pid per match. Browsers put audio in a child process.
-                # Exits non-zero when there is no focused PID or no matching
-                # PipeWire nodes; does not touch @DEFAULT_AUDIO_SINK@.
+                # Focused-window stream volume: pw-dump once. Match native apps
+                # by /proc PPid ancestry to the niri window PID. Flatpak/XWayland
+                # often cannot; fall back to normalized app_id vs stream
+                # application.name / icon-name / process.binary. One wpctl --pid
+                # per unique audio PID. No @DEFAULT_AUDIO_SINK@ fallback.
                 focusedAppAudio = pkgs.writeShellScriptBin "niri-focused-app-audio" ''
                   set -euo pipefail
-                  focused="$(${lib.getExe config.programs.niri.package} msg -j focused-window | ${lib.getExe pkgs.jq} -r '.pid // empty')"
+                  win="$(${lib.getExe config.programs.niri.package} msg -j focused-window)"
+                  focused="$(${lib.getExe pkgs.jq} -r '.pid // empty' <<<"$win")"
+                  app_id="$(${lib.getExe pkgs.jq} -r '.app_id // empty' <<<"$win")"
                   if [ -z "$focused" ]; then
                     exit 1
                   fi
@@ -961,17 +963,34 @@ in
                       exit 1
                       ;;
                   esac
-                  audio_pids="$(${pkgs.pipewire}/bin/pw-dump | ${lib.getExe pkgs.jq} -r '
+                  # Lines: "<audio_pid> <id_match:0|1>", unique by pid.
+                  candidates="$(${pkgs.pipewire}/bin/pw-dump | ${lib.getExe pkgs.jq} -r --arg app "$app_id" '
+                    def norm: ascii_downcase | gsub("[^a-z0-9]"; "");
+                    ($app | norm) as $fa |
                     [.[]
                       | select(.info.props["media.class"] == "Stream/Output/Audio")
-                      | .info.props["application.process.id"]
-                      | select(. != null)
-                    ] | unique | .[]
+                      | .info.props as $p
+                      | ($p["application.process.id"] // empty) as $pid
+                      | select($pid != null and $pid != "")
+                      | {
+                          pid: $pid,
+                          id_match: (
+                            $fa != "" and (
+                              [
+                                ($p["application.name"] // ""),
+                                ($p["application.icon-name"] // ""),
+                                ($p["application.process.binary"] // "")
+                              ] | map(norm) | any(. == $fa)
+                            )
+                          )
+                        }
+                    ] | unique_by(.pid)[] | "\(.pid) \(if .id_match then 1 else 0 end)"
                   ')"
                   ok=0
-                  for audio_pid in $audio_pids; do
-                    cur="$audio_pid"
+                  while IFS= read -r audio_pid id_match; do
+                    [ -n "$audio_pid" ] || continue
                     match=0
+                    cur="$audio_pid"
                     while [ -n "$cur" ] && [ "$cur" -gt 1 ]; do
                       if [ "$cur" -eq "$focused" ]; then
                         match=1
@@ -993,12 +1012,15 @@ in
                       fi
                       cur="$ppid"
                     done
+                    if [ "$match" != 1 ] && [ "$id_match" = 1 ]; then
+                      match=1
+                    fi
                     if [ "$match" -eq 1 ]; then
                       if ${pkgs.wireplumber}/bin/wpctl "$op" --pid "$audio_pid" "$arg"; then
                         ok=1
                       fi
                     fi
-                  done
+                  done <<<"$candidates"
                   [ "$ok" -eq 1 ]
                 '';
                 micMute = [
