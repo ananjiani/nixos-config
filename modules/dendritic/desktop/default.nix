@@ -933,47 +933,70 @@ in
                   "@DEFAULT_AUDIO_SINK@"
                   "toggle"
                 ];
-                # Focused-window stream volume via niri PID (+ children) +
-                # wpctl --pid. Browsers often put audio in a child process.
+                # Focused-window stream volume: pw-dump once for audio stream
+                # PIDs, walk /proc parents to the focused niri PID, then one
+                # wpctl --pid per match. Browsers put audio in a child process.
                 # Exits non-zero when there is no focused PID or no matching
                 # PipeWire nodes; does not touch @DEFAULT_AUDIO_SINK@.
                 focusedAppAudio = pkgs.writeShellScriptBin "niri-focused-app-audio" ''
                   set -euo pipefail
-                  pid="$(${lib.getExe config.programs.niri.package} msg -j focused-window | ${lib.getExe pkgs.jq} -r '.pid // empty')"
-                  if [ -z "$pid" ]; then
+                  focused="$(${lib.getExe config.programs.niri.package} msg -j focused-window | ${lib.getExe pkgs.jq} -r '.pid // empty')"
+                  if [ -z "$focused" ]; then
                     exit 1
                   fi
-                  pids="$pid"
-                  frontier="$pid"
-                  while [ -n "$frontier" ]; do
-                    next=""
-                    for p in $frontier; do
-                      children="$(${pkgs.procps}/bin/pgrep -P "$p" || true)"
-                      for c in $children; do
-                        pids="$pids $c"
-                        next="$next $c"
-                      done
-                    done
-                    frontier="$next"
-                  done
                   case "$1" in
                     mute)
-                      set -- set-mute toggle
+                      op=set-mute
+                      arg=toggle
                       ;;
                     down)
-                      set -- set-volume 5%-
+                      op=set-volume
+                      arg=5%-
                       ;;
                     up)
-                      set -- set-volume 5%+
+                      op=set-volume
+                      arg=5%+
                       ;;
                     *)
                       exit 1
                       ;;
                   esac
+                  audio_pids="$(${pkgs.pipewire}/bin/pw-dump | ${lib.getExe pkgs.jq} -r '
+                    [.[]
+                      | select(.info.props["media.class"] == "Stream/Output/Audio")
+                      | .info.props["application.process.id"]
+                      | select(. != null)
+                    ] | unique | .[]
+                  ')"
                   ok=0
-                  for p in $pids; do
-                    if ${pkgs.wireplumber}/bin/wpctl "$1" --pid "$p" "$2"; then
-                      ok=1
+                  for audio_pid in $audio_pids; do
+                    cur="$audio_pid"
+                    match=0
+                    while [ -n "$cur" ] && [ "$cur" -gt 1 ]; do
+                      if [ "$cur" -eq "$focused" ]; then
+                        match=1
+                        break
+                      fi
+                      ppid=""
+                      if [ -r "/proc/$cur/status" ]; then
+                        while IFS= read -r line; do
+                          case "$line" in
+                            PPid:*)
+                              ppid="''${line##*[[:space:]]}"
+                              break
+                              ;;
+                          esac
+                        done < "/proc/$cur/status"
+                      fi
+                      if [ -z "$ppid" ] || [ "$ppid" = "$cur" ]; then
+                        break
+                      fi
+                      cur="$ppid"
+                    done
+                    if [ "$match" -eq 1 ]; then
+                      if ${pkgs.wireplumber}/bin/wpctl "$op" --pid "$audio_pid" "$arg"; then
+                        ok=1
+                      fi
                     fi
                   done
                   [ "$ok" -eq 1 ]
