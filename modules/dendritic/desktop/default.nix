@@ -987,7 +987,7 @@ in
                     ] | unique_by(.pid)[] | "\(.pid) \(if .id_match then 1 else 0 end)"
                   ')"
                   ok=0
-                  while IFS= read -r audio_pid id_match; do
+                  while read -r audio_pid id_match; do
                     [ -n "$audio_pid" ] || continue
                     match=0
                     cur="$audio_pid"
