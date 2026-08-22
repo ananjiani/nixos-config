@@ -41,7 +41,7 @@ ntfy uses default-deny authorization with separate non-admin identities:
 
 - `gatus`: write-only access to `monitoring`.
 - `alertmanager`: write-only access to `monitoring`.
-- `mobile`: read-only access to `monitoring`.
+- `mobile`: read-only access to all current and future topics. The Android app multiplexes one server's subscriptions over one WebSocket, so one denied topic rejects the complete connection. The trusted personal subscriber therefore uses a wildcard read ACL while publication remains denied.
 - Anonymous users: no topic access.
 
 Secrets are stored in OpenBao and rendered at runtime. Tokens and password hashes must not enter Git, Terraform state, generated Nix store configuration, or Kubernetes ConfigMaps. The Alertmanager publisher token is deliberately duplicated under a narrow `k8s/*` path so External Secrets Operator cannot read the Erebor user hashes or other clients' tokens; both copies must rotate atomically.
