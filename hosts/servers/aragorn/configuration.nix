@@ -54,9 +54,7 @@ let
   desktopBroadcast = "192.168.1.255";
   desktopIdentity = "/home/ammar/.ssh/id_ed25519";
   desktopHostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINnidnIXwZdzKVv6fZZmoAOStpX5ZQdHjpvH6cR4yKjA";
-  # Keep legacy unauthenticated publishers on the in-cluster rollback service
-  # until they receive dedicated least-privilege identities after the soak.
-  ntfyUrl = "https://ntfy-home.dimensiondoor.xyz/monitoring";
+  ntfyUrl = "https://ntfy.dimensiondoor.xyz/monitoring";
   repoHttps = "https://codeberg.org/ananjiani/infra.git";
   statusApi = "https://codeberg.org/api/v1/repos/ananjiani/infra/commits";
   stateDir = "/var/lib/desktop-deploy";
@@ -301,7 +299,8 @@ let
             return 0
             ;;
         esac
-        if ! curl -fsS -o /dev/null --max-time 15 \
+        if ! curl --config /run/secrets/desktop-ntfy-curl-config \
+          -fsS -o /dev/null --max-time 15 \
           -H "Title: $title" \
           -H "Tags: $tags" \
           -H "Priority: $priority" \
@@ -570,6 +569,30 @@ in
         field = "opencode-api-key";
         owner = "ammar";
       };
+      herdr-ntfy-env = {
+        path = "secret/nixos/ntfy-publishers";
+        field = "herdr-token"; # ignored because template is set
+        template = ''
+          HERDR_NTFY_SERVER=https://ntfy.dimensiondoor.xyz
+          HERDR_NTFY_TOPIC=herdr
+          HERDR_NTFY_TOKEN={{ with secret "secret/data/nixos/ntfy-publishers" }}{{ index .Data.data "herdr-token" }}{{ end }}
+          HERDR_NTFY_NOTIFY_ON=done,blocked
+          HERDR_NTFY_CLICK=https://collie.dimensiondoor.xyz
+        '';
+        owner = "ammar";
+        group = "users";
+        mode = "0400";
+      };
+      desktop-ntfy-curl-config = {
+        path = "secret/nixos/ntfy-publishers";
+        field = "desktop-deploy-token"; # ignored because template is set
+        template = ''
+          header = "Authorization: Bearer {{ with secret "secret/data/nixos/ntfy-publishers" }}{{ index .Data.data "desktop-deploy-token" }}{{ end }}"
+        '';
+        owner = "ammar";
+        group = "users";
+        mode = "0400";
+      };
     };
   };
 
@@ -580,6 +603,7 @@ in
   # Function form so lib.hm (home-manager) is in scope for activation scripts.
   home-manager.users.ammar =
     {
+      config,
       lib,
       pkgs,
       ...
@@ -612,12 +636,8 @@ in
           COLLIE_DEVICE_ALLOWLIST=22fb6423c4bb0c1f65d8720b50cbfcfd993da9b47bd0375bd007b1051412d07f
         '';
 
-        "herdr/plugins/config/cobanov.herdr-ntfysh/.env".text = ''
-          HERDR_NTFY_SERVER=https://ntfy-home.dimensiondoor.xyz
-          HERDR_NTFY_TOPIC=herdr
-          HERDR_NTFY_NOTIFY_ON=done,blocked
-          HERDR_NTFY_CLICK=https://collie.dimensiondoor.xyz
-        '';
+        "herdr/plugins/config/cobanov.herdr-ntfysh/.env".source =
+          config.lib.file.mkOutOfStoreSymlink "/run/secrets/herdr-ntfy-env";
 
         "herdr-mirror/hosts.toml".text = ''
           autostart = true
@@ -860,8 +880,14 @@ in
 
     services.ammars-pc-deploy = {
       description = "Activity-aware deploy-rs for ammars-pc";
-      after = [ "network-online.target" ];
-      wants = [ "network-online.target" ];
+      after = [
+        "network-online.target"
+        "vault-agent-default.service"
+      ];
+      wants = [
+        "network-online.target"
+        "vault-agent-default.service"
+      ];
       unitConfig.StartLimitIntervalSec = 0;
       serviceConfig = {
         Type = "oneshot";

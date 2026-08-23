@@ -1,4 +1,28 @@
 ---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: ntfy-flux-erebor
+  namespace: flux-system
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: openbao
+    kind: ClusterSecretStore
+  target:
+    name: ntfy-flux-erebor
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      data:
+        headers: |
+          Authorization: Bearer {{ .accessToken }}
+  data:
+    - secretKey: accessToken
+      remoteRef:
+        key: k8s/ntfy-flux
+        property: token
+---
 apiVersion: notification.toolkit.fluxcd.io/v1beta3
 kind: Provider
 metadata:
@@ -16,6 +40,32 @@ metadata:
 spec:
   providerRef:
     name: ntfy
+  eventSeverity: error
+  eventSources:
+    - kind: HelmRelease
+      name: "*"
+    - kind: Kustomization
+      name: "*"
+---
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Provider
+metadata:
+  name: ntfy-erebor
+  namespace: flux-system
+spec:
+  type: generic
+  address: https://ntfy.dimensiondoor.xyz/flux
+  secretRef:
+    name: ntfy-flux-erebor
+---
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Alert
+metadata:
+  name: helm-failures-erebor
+  namespace: flux-system
+spec:
+  providerRef:
+    name: ntfy-erebor
   eventSeverity: error
   eventSources:
     - kind: HelmRelease

@@ -11,6 +11,17 @@
 { pkgs, ... }:
 
 {
+  modules.vault-agent.secrets.theoden-ntfy-curl-config = {
+    path = "secret/nixos/ntfy-publishers";
+    field = "theoden-storage-token"; # ignored because template is set
+    template = ''
+      header = "Authorization: Bearer {{ with secret "secret/data/nixos/ntfy-publishers" }}{{ index .Data.data "theoden-storage-token" }}{{ end }}"
+    '';
+    owner = "root";
+    group = "root";
+    mode = "0400";
+  };
+
   # Shared storage group for NFS access
   users.groups.storage = {
     gid = 1500;
@@ -46,12 +57,13 @@
       n=$(${pkgs.util-linux}/bin/findmnt -R "$m" --output TARGET --noheadings 2>/dev/null | ${pkgs.gnugrep}/bin/grep -cx "$m")
       if [ "$n" -gt 1 ]; then
         echo "storageMountCheck: WARNING $m has $n stacked mounts (expected 1) — deploy restarted mnt-storage.mount while busy; restart containers binding /mnt/storage" >&2
-        ${pkgs.curl}/bin/curl -fsS -o /dev/null \
+        ${pkgs.curl}/bin/curl --config /run/secrets/theoden-ntfy-curl-config \
+          -fsS -o /dev/null \
           -H "Title: theoden: stacked mount on $m" \
           -H "Priority: high" \
           -H "Tags: warning" \
           -d "$m has $n stacked mergerfs mounts (expected 1) after a deploy. Restart containers binding /mnt/storage (romm). Postmortem: 2026-07-07-1238." \
-          "https://ntfy-home.dimensiondoor.xyz/monitoring" || true
+          "https://ntfy.dimensiondoor.xyz/monitoring" || true
       fi
     done
   '';

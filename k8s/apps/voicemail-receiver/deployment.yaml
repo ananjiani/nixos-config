@@ -59,7 +59,52 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 3
+        - name: ntfy-auth-proxy
+          image: caddy:2.11.4-alpine
+          args:
+            - run
+            - --config
+            - /etc/caddy/Caddyfile
+            - --adapter
+            - caddyfile
+            - --watch
+          volumeMounts:
+            - name: ntfy-proxy-config
+              mountPath: /etc/caddy
+              readOnly: true
+          resources:
+            requests:
+              memory: "16Mi"
+              cpu: "10m"
+            limits:
+              memory: "64Mi"
+              cpu: "100m"
+          readinessProbe:
+            exec:
+              command:
+                - wget
+                - -q
+                - -O
+                - /dev/null
+                - http://127.0.0.1:2586/v1/health
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            exec:
+              command:
+                - wget
+                - -q
+                - -O
+                - /dev/null
+                - http://127.0.0.1:2586/v1/health
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
       volumes:
         - name: voicemail-storage
           persistentVolumeClaim:
             claimName: voicemail-data
+        - name: ntfy-proxy-config
+          secret:
+            secretName: voicemail-ntfy-proxy

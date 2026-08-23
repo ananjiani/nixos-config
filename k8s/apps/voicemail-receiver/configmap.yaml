@@ -13,8 +13,8 @@ data:
   WHISPER_HOST: "192.168.1.54"
   WHISPER_PORT: "10300"
 
-  # ntfy endpoint (in-cluster service)
-  NTFY_URL: "http://ntfy.ntfy.svc.cluster.local"
+  # Loopback auth proxy injects the dedicated write-only Erebor token.
+  NTFY_URL: "http://127.0.0.1:2586"
   NTFY_TOPIC: "voicemail"
 
   # Voicemail settings

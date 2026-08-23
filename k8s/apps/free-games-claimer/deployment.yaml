@@ -45,7 +45,12 @@ spec:
             - name: PUBLIC_URL
               value: "https://fgc.lan"
             - name: NOTIFY
-              value: "ntfy://ntfy.ntfy.svc:80/free-games-claimer"
+              # Null clears the old literal during the first client-side apply.
+              value: null
+              valueFrom:
+                secretKeyRef:
+                  name: free-games-claimer-ntfy
+                  key: NOTIFY
             - name: NOTIFY_TITLE
               value: "🎮 Free Games Claimer"
           volumeMounts:
