@@ -47,26 +47,49 @@
   # bind-mounts (/srv/nfs, container binds) hold it busy, the old mergerfs
   # instance lingers as a stacked/dead-FUSE shadow and running containers
   # stay pinned to it -> ENOTCONN -> 502 (2026-07-07 incident). Romm's
-  # PartOf=mnt-storage.mount mitigates by restarting it; this check warns if a
-  # deploy still stacked the mount so a human can act before a stale-bind
-  # surfaces days later. Silent on clean deploys (1 entry per target).
-  # Only entries whose TARGET is exactly $m count: /srv/nfs now has legitimate
-  # child mounts (the direct disk2 binds), which are not stacking.
-  system.activationScripts.storageMountCheck = ''
-    for m in /mnt/storage /srv/nfs; do
-      n=$(${pkgs.util-linux}/bin/findmnt -R "$m" --output TARGET --noheadings 2>/dev/null | ${pkgs.gnugrep}/bin/grep -cx "$m")
-      if [ "$n" -gt 1 ]; then
-        echo "storageMountCheck: WARNING $m has $n stacked mounts (expected 1) — deploy restarted mnt-storage.mount while busy; restart containers binding /mnt/storage" >&2
-        ${pkgs.curl}/bin/curl --config /run/secrets/theoden-ntfy-curl-config \
-          -fsS -o /dev/null \
-          -H "Title: theoden: stacked mount on $m" \
-          -H "Priority: high" \
-          -H "Tags: warning" \
-          -d "$m has $n stacked mergerfs mounts (expected 1) after a deploy. Restart containers binding /mnt/storage (romm). Postmortem: 2026-07-07-1238." \
-          "https://ntfy.dimensiondoor.xyz/monitoring" || true
+  # PartOf=mnt-storage.mount mitigates the failure by restarting Romm.
+  # This post-switch check runs after Vault Agent renders the ntfy config.
+  # A stacked mount means old FUSE clients still need a container restart.
+  # Only entries whose TARGET exactly matches the root count; legitimate child
+  # mounts under /srv/nfs do not count as stacked mounts.
+  systemd.services.storage-mount-check = {
+    description = "Check Theoden for stacked mergerfs mounts";
+    partOf = [ "mnt-storage.mount" ];
+    after = [
+      "mnt-storage.mount"
+      "vault-agent-default.service"
+    ];
+    wants = [ "vault-agent-default.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      for i in $(${pkgs.coreutils}/bin/seq 1 30); do
+        [ -r /run/secrets/theoden-ntfy-curl-config ] && break
+        ${pkgs.coreutils}/bin/sleep 1
+      done
+      if [ ! -r /run/secrets/theoden-ntfy-curl-config ]; then
+        echo "storage-mount-check: ntfy config was not rendered" >&2
+        exit 1
       fi
-    done
-  '';
+
+      for m in /mnt/storage /srv/nfs; do
+        n=$(${pkgs.util-linux}/bin/findmnt -R "$m" --output TARGET --noheadings 2>/dev/null | ${pkgs.gnugrep}/bin/grep -cx "$m")
+        if [ "$n" -gt 1 ]; then
+          echo "storage-mount-check: WARNING $m has $n stacked mounts (expected 1) — restart containers binding /mnt/storage" >&2
+          ${pkgs.curl}/bin/curl --config /run/secrets/theoden-ntfy-curl-config \
+            -fsS -o /dev/null \
+            -H "Title: theoden: stacked mount on $m" \
+            -H "Priority: high" \
+            -H "Tags: warning" \
+            -d "$m has $n stacked mergerfs mounts (expected 1) after a deploy. Restart containers binding /mnt/storage (romm). Postmortem: 2026-07-07-1238." \
+            "https://ntfy.dimensiondoor.xyz/monitoring" || true
+        fi
+      done
+    '';
+  };
 
   # Storage filesystem configuration
   fileSystems = {

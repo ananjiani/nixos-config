@@ -46,6 +46,7 @@ spec:
               value: "https://fgc.lan"
             - name: NOTIFY
               # Null clears the old literal during the first client-side apply.
+              # Restart this Deployment after an ExternalSecret token rotation.
               value: null
               valueFrom:
                 secretKeyRef:
