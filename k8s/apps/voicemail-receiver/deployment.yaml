@@ -61,6 +61,8 @@ spec:
             timeoutSeconds: 3
         - name: ntfy-auth-proxy
           image: caddy:2.11.4-alpine
+          command:
+            - caddy
           args:
             - run
             - --config
