@@ -59,3 +59,9 @@ spec:
                 template:
                   spec:
                     enableServiceLinks: false
+                    containers:
+                      - name: searxng
+                        livenessProbe:
+                          timeoutSeconds: 5
+                        readinessProbe:
+                          timeoutSeconds: 5
