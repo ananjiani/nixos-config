@@ -40,6 +40,11 @@
     whisper-dictation.url = "github:ananjiani/whisper-dictation";
     # No follows — upstream pins its own nixpkgs + rust-overlay.
     herdr.url = "github:ogulcancelik/herdr";
+    # Direct CalDAV CRUD used only behind the Hermes calendar broker.
+    calendula = {
+      url = "github:pimalaya/calendula";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     git-hooks = {
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs-unstable";

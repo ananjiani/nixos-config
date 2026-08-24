@@ -16,5 +16,9 @@ kubeconfig
 portainer-backup*
 backups/
 
+# Python bytecode
+__pycache__/
+*.pyc
+
 # pi-coding-agent: ignore fetched package cache, keep config
 .pi/npm/

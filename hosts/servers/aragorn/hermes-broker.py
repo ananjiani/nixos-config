@@ -35,6 +35,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from hermes_calendar import CalendulaClient, CalendulaError
 from presidio_analyzer import AnalyzerEngine, Pattern, PatternRecognizer
 from presidio_analyzer.nlp_engine import NlpEngineProvider
 
@@ -44,6 +45,18 @@ HIMALAYA_CONFIG = os.environ.get("HERMES_BROKER_HIMALAYA_CONFIG", "")
 PAPERLESS_URL = os.environ.get("HERMES_BROKER_PAPERLESS_URL", "https://paperless.lan")
 PAPERLESS_TOKEN_FILE = os.environ.get(
     "HERMES_BROKER_PAPERLESS_TOKEN_FILE", "/run/secrets/paperless_api_token"
+)
+CALENDULA_BIN = os.environ.get("HERMES_BROKER_CALENDULA", "calendula")
+CALENDULA_CONFIG = os.environ.get("HERMES_BROKER_CALENDULA_CONFIG", "")
+CALENDULA_PASSWORD_FILE = os.environ.get(
+    "HERMES_BROKER_CALENDULA_PASSWORD_FILE", "/run/secrets/etesync_dav_password"
+)
+CALENDULA_CALENDARS_FILE = os.environ.get(
+    "HERMES_BROKER_CALENDULA_CALENDARS_FILE", "/run/secrets/etesync_dav_calendars"
+)
+CALENDULA_DEFAULT_CALENDAR_FILE = os.environ.get(
+    "HERMES_BROKER_CALENDULA_DEFAULT_CALENDAR_FILE",
+    "/run/secrets/etesync_dav_default_calendar",
 )
 
 MAX_REQUEST_BYTES = 64 * 1024
@@ -667,7 +680,156 @@ def op_docs_show(args):
     return {"document": pick_document(data)}
 
 
+def calendar_client():
+    if not CALENDULA_CONFIG:
+        raise BrokerError("calendar configuration is not set in the broker unit")
+    for path in CALENDULA_CONFIG.split(":"):
+        if not os.path.isfile(path):
+            raise BrokerError(
+                "calendar configuration is unavailable; check vault-agent-default"
+            )
+    if not os.path.isfile(CALENDULA_PASSWORD_FILE):
+        raise BrokerError("calendar credential is unavailable; check vault-agent-default")
+    if not os.path.isfile(CALENDULA_CALENDARS_FILE):
+        raise BrokerError("calendar allow-list is unavailable; check vault-agent-default")
+    try:
+        with open(CALENDULA_CALENDARS_FILE, "r", encoding="utf-8") as handle:
+            raw_calendars = handle.read(8193)
+    except OSError as exc:
+        raise BrokerError("calendar allow-list cannot be read") from exc
+    if len(raw_calendars) > 8192:
+        raise BrokerError("calendar allow-list is too large")
+    allowed_calendars = {
+        value.strip()
+        for value in re.split(r"[,\n]", raw_calendars)
+        if value.strip() and value.strip() != "[NOT_CONFIGURED]"
+    }
+    return CalendulaClient(CALENDULA_BIN, CALENDULA_CONFIG, allowed_calendars)
+
+
+def require_calendar(args):
+    calendar = args.get("calendar")
+    if isinstance(calendar, str) and calendar:
+        return calendar
+    if not os.path.isfile(CALENDULA_DEFAULT_CALENDAR_FILE):
+        raise BrokerError("default calendar is unavailable; check vault-agent-default")
+    try:
+        with open(CALENDULA_DEFAULT_CALENDAR_FILE, "r", encoding="utf-8") as handle:
+            calendar = handle.read(4097).strip()
+    except OSError as exc:
+        raise BrokerError("default calendar cannot be read") from exc
+    if len(calendar.encode("utf-8")) > 4096:
+        raise BrokerError("default calendar file is too large")
+    if not calendar or calendar == "[NOT_CONFIGURED]":
+        raise BrokerError("calendar is required until a default calendar is configured")
+    return calendar
+
+
+def require_event_id(args):
+    event_id = args.get("id")
+    if not isinstance(event_id, str) or not event_id:
+        raise BrokerError("event id is required")
+    return event_id
+
+
+def calendar_call(method, *args):
+    try:
+        return method(*args)
+    except (CalendulaError, ValueError) as exc:
+        raise BrokerError(str(exc))
+
+
+def op_calendar_calendars(args):
+    return calendar_call(calendar_client().list_calendars)
+
+
+def op_calendar_list(args):
+    return calendar_call(
+        calendar_client().list_events,
+        require_calendar(args),
+        args.get("date_from"),
+        args.get("date_to"),
+    )
+
+
+def op_calendar_search(args):
+    return calendar_call(
+        calendar_client().search_events,
+        require_calendar(args),
+        args.get("date_from"),
+        args.get("date_to"),
+        args.get("query"),
+    )
+
+
+def op_calendar_conflicts(args):
+    return calendar_call(
+        calendar_client().conflicts,
+        require_calendar(args),
+        args.get("start"),
+        args.get("end"),
+        args.get("timezone"),
+    )
+
+
+def op_calendar_read(args):
+    return calendar_call(
+        calendar_client().read_event,
+        require_calendar(args),
+        require_event_id(args),
+    )
+
+
+def op_calendar_create(args):
+    calendar = require_calendar(args)
+    fields = {key: value for key, value in args.items() if key != "calendar"}
+    result = calendar_call(calendar_client().create_event, calendar, fields)
+    return {"calendar": calendar, "event": fields, "result": result}
+
+
+def op_calendar_update(args):
+    calendar = require_calendar(args)
+    event_id = require_event_id(args)
+    changes = {
+        key: value for key, value in args.items() if key not in ("calendar", "id")
+    }
+    if not changes:
+        raise BrokerError("at least one event field must change")
+    client = calendar_client()
+    result = calendar_call(client.update_event, calendar, event_id, changes)
+    current = calendar_call(client.read_event, calendar, event_id)
+    return {
+        "calendar": calendar,
+        "id": event_id,
+        "changes": changes,
+        "current": current,
+        "result": result,
+    }
+
+
+def op_calendar_delete(args):
+    calendar = require_calendar(args)
+    event_id = require_event_id(args)
+    client = calendar_client()
+    previous = calendar_call(client.read_event, calendar, event_id)
+    result = calendar_call(client.delete_event, calendar, event_id)
+    return {
+        "calendar": calendar,
+        "id": event_id,
+        "deleted": previous,
+        "result": result,
+    }
+
+
 OPERATIONS = {
+    "calendar.calendars": op_calendar_calendars,
+    "calendar.conflicts": op_calendar_conflicts,
+    "calendar.create": op_calendar_create,
+    "calendar.delete": op_calendar_delete,
+    "calendar.list": op_calendar_list,
+    "calendar.read": op_calendar_read,
+    "calendar.search": op_calendar_search,
+    "calendar.update": op_calendar_update,
     "mail.folders": op_mail_folders,
     "mail.list": op_mail_list,
     "mail.read": op_mail_read,
