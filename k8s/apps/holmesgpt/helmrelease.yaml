@@ -36,6 +36,8 @@ spec:
           secretKeyRef:
             name: holmesgpt-ai-secret
             key: opencode-api-key
+      - name: MODEL
+        value: zai-glm
 
     modelList:
       opencode-kimi:
@@ -46,7 +48,7 @@ spec:
       zai-glm:
         api_key: "{{ env.ZAI_API_KEY }}"
         api_base: "https://api.z.ai/api/coding/paas/v4"
-        model: openai/glm-4.5
+        model: openai/glm-5.3
         temperature: 0.7
 
     customClusterRoleRules:
