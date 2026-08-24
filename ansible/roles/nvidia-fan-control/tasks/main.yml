@@ -92,8 +92,8 @@
       Running kernel is {{ current_kernel.stdout }}, but the nvidia
       {{ nvidia_driver_version }} DKMS module only builds against 6.14
       ({{ kernel_6_14_version }}). The bootloader is now pinned to 6.14 --
-      reboot rohan and re-run this playbook. Until then wyoming-whisper is not
-      deployed here and the whisper VIP stays on boromir.
+      reboot rohan and re-run this playbook. Until then Whisper stays
+      unavailable unless an operator starts Boromir's manual fallback.
   when: "'6.14' not in current_kernel.stdout"
 
 - name: Add Debian non-free repository

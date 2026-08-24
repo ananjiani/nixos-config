@@ -343,7 +343,7 @@ in
                 answer = "192.168.1.52";
               }
 
-              # Wyoming Whisper (Keepalived VIP - rohan primary, boromir backup)
+              # Wyoming Whisper (Keepalived VIP - rohan primary, manual boromir fallback)
               {
                 domain = "whisper.lan";
                 answer = "192.168.1.54";

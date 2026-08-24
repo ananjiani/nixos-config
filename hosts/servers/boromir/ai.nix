@@ -68,10 +68,10 @@ in
       };
 
       # Wyoming Faster Whisper for voicemail transcription
-      # Always on: the whisper VIP (192.168.1.54) follows service health via a
-      # keepalived track_script, so the service must never depend on VRRP state.
+      # Medium model holds ~3.7 GiB; manual-start to free RAM for Denethor.
       # Logs: journalctl -u wyoming-whisper.service
       wyoming-whisper = {
+        autoStart = false;
         containerConfig = {
           image = "docker.io/rhasspy/wyoming-whisper:latest";
           publishPorts = [ "10300:10300" ];

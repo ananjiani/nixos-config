@@ -1,7 +1,7 @@
-# Keepalived configuration for Wyoming Whisper HA
+# Keepalived configuration for Wyoming Whisper with manual Boromir fallback
 #
 # MASTER: Rohan (this host) - priority 100
-# BACKUP: Boromir (192.168.1.21) - priority 50
+# MANUAL BACKUP: Boromir (192.168.1.21) - priority 50
 # VIP: 192.168.1.54 (whisper.lan)
 
 global_defs {
