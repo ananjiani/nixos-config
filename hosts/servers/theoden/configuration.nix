@@ -23,7 +23,10 @@ let
   patchedBuildbotNix = buildbotPackages.buildbot-nix.overrideAttrs (old: {
     src = pkgs.applyPatches {
       inherit (old) src;
-      patches = [ ./patches/buildbot-nix-failed-status-upsert-race.patch ];
+      patches = [
+        ./patches/buildbot-nix-eval-timeout.patch
+        ./patches/buildbot-nix-failed-status-upsert-race.patch
+      ];
     };
   });
 
@@ -451,8 +454,9 @@ in
       authBackend = "gitea";
       workersFile = "/run/secrets/buildbot_worker_password";
       buildSystems = [ "x86_64-linux" ];
-      evalMaxMemorySize = 4096;
-      evalWorkerCount = 1;
+      evalMaxMemorySize = 2048;
+      evalWorkerCount = 2;
+      buildMaxSilentTime = 3600;
       gitea = {
         enable = true;
         instanceUrl = "https://codeberg.org";
@@ -677,7 +681,7 @@ in
         after = [ "vault-agent-default.service" ];
         wants = [ "vault-agent-default.service" ];
         serviceConfig = {
-          CPUQuota = "100%";
+          CPUQuota = "200%";
           IOWeight = 50;
           MemoryHigh = "4G";
           MemoryMax = "5G";

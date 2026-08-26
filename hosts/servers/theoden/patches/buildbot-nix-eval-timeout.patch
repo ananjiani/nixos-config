@@ -1,0 +1,12 @@
+diff --git a/buildbot_nix/nix_eval.py b/buildbot_nix/nix_eval.py
+index 9e9d5c8..09872f1 100644
+--- a/buildbot_nix/nix_eval.py
++++ b/buildbot_nix/nix_eval.py
+@@ -853,6 +853,7 @@ def nix_eval_config(
+             env={"CLICOLOR_FORCE": "1"},
+             name="Evaluate flake",
+             nix_eval_config=nix_eval_config,
++            timeout=build_config.max_silent_time,
+             haltOnFailure=True,
+             locks=[nix_eval_config.eval_lock.access("exclusive")],
+             drv_gcroots_dir=drv_gcroots_dir,
