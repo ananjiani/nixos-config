@@ -278,6 +278,7 @@ resource "proxmox_virtual_environment_vm" "samwise" {
     interface    = "scsi0"
     file_format  = "raw"
     iothread     = true
+    discard      = "on"
   }
 
   network_device {
