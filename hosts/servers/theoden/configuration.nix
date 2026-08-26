@@ -690,9 +690,15 @@ in
       };
       nix-daemon = {
         serviceConfig = {
+          CPUQuota = "300%";
           IOWeight = 50;
+          IOReadBandwidthMax = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0 100M";
+          IOWriteBandwidthMax = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0 50M";
+          IOReadIOPSMax = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0 1000";
+          IOWriteIOPSMax = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0 500";
         };
       };
+      k3s.serviceConfig.CPUWeight = 1000;
       atticd = {
         after = [ "vault-agent-default.service" ];
         wants = [ "vault-agent-default.service" ];
