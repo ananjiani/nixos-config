@@ -1,0 +1,17 @@
+diff --git a/client/src/command/watch_store.rs b/client/src/command/watch_store.rs
+--- a/client/src/command/watch_store.rs
++++ b/client/src/command/watch_store.rs
+@@ -35 +35 @@
+-    #[clap(short = 'j', long, default_value = "5")]
++    #[clap(short = 'j', long, default_value = "1")]
+@@ -52,0 +53,3 @@
++    let watch_dir = std::env::var_os("ATTIC_WATCH_STORE_PATH")
++        .map(PathBuf::from)
++        .unwrap_or_else(|| store_dir.clone());
+@@ -92 +95 @@
+-    watcher.watch(&store_dir, RecursiveMode::NonRecursive)?;
++    watcher.watch(&watch_dir, RecursiveMode::NonRecursive)?;
+@@ -111 +114,2 @@
+-                            store.parse_store_path(base).ok()
++                            let logical = store_dir.join(base.file_name()?);
++                            store.parse_store_path(logical).ok()

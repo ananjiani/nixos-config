@@ -7,6 +7,7 @@
 {
   inputs,
   pkgs,
+  pkgs-stable,
   config,
   lib,
   ...
@@ -23,9 +24,21 @@ let
   patchedBuildbotNix = buildbotPackages.buildbot-nix.overrideAttrs (old: {
     src = pkgs.applyPatches {
       inherit (old) src;
-      patches = [ ./patches/buildbot-nix-failed-status-upsert-race.patch ];
+      patches = [
+        ./patches/buildbot-nix-failed-status-upsert-race.patch
+        ./patches/buildbot-nix-eval-timeout.patch
+      ];
     };
   });
+
+  patchedAtticClient = pkgs-stable.attic-client.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ./patches/attic-watch-store-path.patch ];
+  });
+
+  # Dedicated chroot store for Buildbot. Host Nix/Comin stay on /nix/store.
+  buildbotStoreRoot = "/mnt/disk1/buildbot-nix";
+  buildbotStoreSocket = "${buildbotStoreRoot}/nix/var/nix/daemon-socket/socket";
+  buildbotStoreUrl = "unix://${buildbotStoreSocket}";
 
   buildbot-prometheus = buildbotPackages.python.pkgs.buildPythonPackage rec {
     pname = "buildbot-prometheus";
@@ -187,10 +200,17 @@ in
         isSystemUser = true;
         group = "cloudflared";
       };
+      # One Buildbot build user. max-jobs=1, so no shared nixbld uid lock.
+      nixbld-ci = {
+        isSystemUser = true;
+        group = "nixbld-ci";
+        extraGroups = [ "nixbld-ci" ];
+      };
     };
     groups = {
       atticd = { };
       cloudflared = { };
+      nixbld-ci = { };
     };
   };
 
@@ -451,8 +471,9 @@ in
       authBackend = "gitea";
       workersFile = "/run/secrets/buildbot_worker_password";
       buildSystems = [ "x86_64-linux" ];
-      evalMaxMemorySize = 4096;
-      evalWorkerCount = 1;
+      evalMaxMemorySize = 2048;
+      evalWorkerCount = 2;
+      buildMaxSilentTime = 3600;
       gitea = {
         enable = true;
         instanceUrl = "https://codeberg.org";
@@ -565,6 +586,16 @@ in
       "d /var/lib/attic-monitor 0755 atticd atticd -"
     ];
 
+    slices.buildbot-ci = {
+      description = "Shared cap for Buildbot worker, dedicated Nix daemon, and Attic watch-store";
+      sliceConfig = {
+        CPUQuota = "300%";
+        MemoryHigh = "8G";
+        MemoryMax = "10G";
+        MemorySwapMax = "2G";
+      };
+    };
+
     # Services that consume vault-agent secrets must wait for rendering
     services = {
       # Refresh collation versions before ensureDatabases runs CREATE DATABASE.
@@ -665,6 +696,36 @@ in
         };
       };
 
+      buildbot-nix-daemon = {
+        description = "Nix daemon for Buildbot chroot store";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "mnt-disk1.mount" ];
+        requires = [ "mnt-disk1.mount" ];
+        environment = {
+          NIX_DAEMON_SOCKET_PATH = buildbotStoreSocket;
+        };
+        unitConfig = {
+          RequiresMountsFor = [ buildbotStoreRoot ];
+          ConditionPathIsMountPoint = "/mnt/disk1";
+        };
+        serviceConfig = {
+          ExecStartPre = [
+            "${pkgs.coreutils}/bin/install -d -m 0755 ${buildbotStoreRoot}"
+            "${pkgs.coreutils}/bin/install -d -m 0755 ${buildbotStoreRoot}/build"
+          ];
+          ExecStart = "${config.nix.package}/bin/nix daemon --store ${buildbotStoreRoot} --option build-users-group nixbld-ci --option max-jobs 1 --option cores 2 --option build-dir ${buildbotStoreRoot}/build";
+          KillMode = "process";
+          LimitNOFILE = 1048576;
+          TasksMax = 1048576;
+          Restart = "on-failure";
+          RestartSec = 5;
+          CPUQuota = "300%";
+          MemoryHigh = "6G";
+          MemoryMax = "8G";
+          MemorySwapMax = "2G";
+          Slice = "buildbot-ci.slice";
+        };
+      };
       buildbot-master = {
         after = [ "vault-agent-default.service" ];
         wants = [ "vault-agent-default.service" ];
@@ -674,19 +735,40 @@ in
         };
       };
       buildbot-worker = {
-        after = [ "vault-agent-default.service" ];
+        after = [
+          "vault-agent-default.service"
+          "buildbot-nix-daemon.service"
+        ];
         wants = [ "vault-agent-default.service" ];
+        requires = [ "buildbot-nix-daemon.service" ];
+        environment = {
+          NIX_REMOTE = buildbotStoreUrl;
+        };
+        unitConfig = {
+          RequiresMountsFor = [ buildbotStoreRoot ];
+          ConditionPathExists = "/run/allow-buildbot-worker";
+        };
         serviceConfig = {
-          CPUQuota = "100%";
-          IOWeight = 50;
-          MemoryHigh = "4G";
-          MemoryMax = "5G";
+          CPUQuota = "200%";
+          MemoryHigh = "5G";
+          MemoryMax = "6G";
           MemorySwapMax = "2G";
+          Slice = "buildbot-ci.slice";
         };
       };
-      nix-daemon = {
+      attic-watch-store = {
+        after = [ "buildbot-nix-daemon.service" ];
+        requires = [ "buildbot-nix-daemon.service" ];
+        path = lib.mkForce [
+          pkgs.coreutils
+          patchedAtticClient
+        ];
+        environment = {
+          NIX_REMOTE = buildbotStoreUrl;
+          ATTIC_WATCH_STORE_PATH = "${buildbotStoreRoot}/nix/store";
+        };
         serviceConfig = {
-          IOWeight = 50;
+          Slice = "buildbot-ci.slice";
         };
       };
       atticd = {
@@ -754,31 +836,43 @@ in
           "${checkScript}";
       };
 
-      # buildbot-nix hardcodes GC root registration for the default branch
-      # regardless of the registerGCRoots option (check_lookup short-circuits
-      # on branch == default_branch). Periodically remove stale roots and GC
-      # to prevent disk pressure from closure accumulation.
+      # Buildbot creates direct root links on the client filesystem even when
+      # NIX_REMOTE points at the dedicated daemon. GC must run only while the
+      # worker is stopped: nix-eval-jobs cannot root queued derivations through
+      # a daemon store, so concurrent GC could remove them before child builds.
       buildbot-gcroots-cleanup = {
-        description = "Remove buildbot GC roots and reclaim disk space";
+        description = "Remove Buildbot GC roots while its worker is stopped";
+        after = [ "buildbot-nix-daemon.service" ];
+        requires = [ "buildbot-nix-daemon.service" ];
         path = [
           pkgs.coreutils
           pkgs.findutils
           config.nix.package
         ];
+        environment = {
+          NIX_REMOTE = buildbotStoreUrl;
+        };
+        unitConfig.RequiresMountsFor = [ buildbotStoreRoot ];
         serviceConfig = {
           Type = "oneshot";
+          ExecCondition = pkgs.writeShellScript "buildbot-gc-worker-stopped" ''
+            if ${pkgs.systemd}/bin/systemctl is-active --quiet buildbot-worker.service; then
+              echo "Buildbot worker is active; stop it before garbage collection" >&2
+              exit 1
+            fi
+          '';
         };
         script = ''
           set -euo pipefail
           GCROOTS_DIR=/nix/var/nix/gcroots/per-user/buildbot-worker
           if [ -d "$GCROOTS_DIR" ]; then
-            echo "Removing buildbot GC roots under $GCROOTS_DIR"
+            echo "Removing Buildbot GC roots under $GCROOTS_DIR"
             find "$GCROOTS_DIR" -type l -delete
-            echo "GC roots removed, running nix-store --gc"
-            nix-store --gc
           else
-            echo "No buildbot GC roots directory found, skipping"
+            echo "No Buildbot GC roots directory found at $GCROOTS_DIR"
           fi
+          echo "Running nix-store --gc"
+          nix-store --gc
         '';
       };
     };
@@ -815,16 +909,6 @@ in
         };
       };
 
-      buildbot-gcroots-cleanup = {
-        description = "Clean buildbot GC roots and reclaim disk daily";
-        wantedBy = [ "timers.target" ];
-        timerConfig = {
-          OnCalendar = "daily";
-          OnBootSec = "30min";
-          RandomizedDelaySec = "1h";
-          Persistent = true;
-        };
-      };
     };
   };
 }
