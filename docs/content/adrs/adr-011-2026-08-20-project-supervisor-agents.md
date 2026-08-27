@@ -3,7 +3,7 @@ date: 2026-08-20
 title: Optional Project Supervisor agents in Herdr with Telegram
 status: accepted
 supersedes:
-superseded_by:
+superseded_by: ADR-012
 systems: [pi, herdr, aragorn, telegram, codeberg]
 tags: [pi, herdr, agents, telegram]
 ---

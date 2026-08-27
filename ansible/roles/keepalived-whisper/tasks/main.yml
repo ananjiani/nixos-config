@@ -1,8 +1,8 @@
 ---
-# Keepalived VRRP for Wyoming Whisper HA
+# Keepalived VRRP for Wyoming Whisper with manual Boromir fallback
 #
 # Sets up Rohan as the MASTER for the Whisper VIP (192.168.1.54).
-# Boromir runs as BACKUP and will take over if Rohan's whisper service fails.
+# Boromir can take over after an operator starts its manual Whisper service.
 #
 # VIP: 192.168.1.54
 # VRRP ID: 54

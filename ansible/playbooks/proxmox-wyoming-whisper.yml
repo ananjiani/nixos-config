@@ -23,4 +23,4 @@
   roles:
     - nvidia-fan-control  # Ensure GPU drivers and container toolkit are set up
     - wyoming-whisper
-    - keepalived-whisper  # HA failover with Boromir as backup
+    - keepalived-whisper  # VIP with manual Boromir fallback

@@ -28,7 +28,7 @@ resource "proxmox_virtual_environment_vm" "boromir" {
   }
 
   memory {
-    dedicated = 16384 # Shrunk from 20480 to make room for denethor (4GiB)
+    dedicated = 12288 # 4 GiB moved to denethor (was 16384)
   }
 
   boot_order = ["scsi0", "ide2", "net0"]
@@ -170,7 +170,7 @@ resource "proxmox_virtual_environment_vm" "denethor" {
   }
 
   memory {
-    dedicated = 4096 # Fixed (no ballooning) — freed by shrinking boromir
+    dedicated = 8192 # Fixed (no ballooning) — 4 GiB moved from boromir
   }
 
   boot_order = ["scsi0", "ide2", "net0"]

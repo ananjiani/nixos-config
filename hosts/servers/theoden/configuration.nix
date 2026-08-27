@@ -200,6 +200,12 @@ in
     extraFlags = [ "--collector.textfile.directory=/var/lib/attic-monitor" ];
   };
 
+  zramSwap = {
+    enable = true;
+    memoryPercent = 50;
+    algorithm = "zstd";
+  };
+
   services = {
     # Prometheus postgres exporter for database metrics
     prometheus.exporters.postgres = {
@@ -446,7 +452,7 @@ in
       workersFile = "/run/secrets/buildbot_worker_password";
       buildSystems = [ "x86_64-linux" ];
       evalMaxMemorySize = 4096;
-      evalWorkerCount = 2;
+      evalWorkerCount = 1;
       gitea = {
         enable = true;
         instanceUrl = "https://codeberg.org";
@@ -477,6 +483,7 @@ in
     buildbot-nix.worker = {
       enable = true;
       workerPasswordFile = "/run/secrets/buildbot_worker_password_plain";
+      workers = 1;
     };
 
     # Buildbot Prometheus metrics exporter (port 9101, node_exporter uses 9100)
@@ -669,6 +676,18 @@ in
       buildbot-worker = {
         after = [ "vault-agent-default.service" ];
         wants = [ "vault-agent-default.service" ];
+        serviceConfig = {
+          CPUQuota = "100%";
+          IOWeight = 50;
+          MemoryHigh = "4G";
+          MemoryMax = "5G";
+          MemorySwapMax = "2G";
+        };
+      };
+      nix-daemon = {
+        serviceConfig = {
+          IOWeight = 50;
+        };
       };
       atticd = {
         after = [ "vault-agent-default.service" ];

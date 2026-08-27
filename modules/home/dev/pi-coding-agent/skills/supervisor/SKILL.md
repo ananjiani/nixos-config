@@ -17,7 +17,7 @@ Native command: `/skill:supervisor`. That command authorizes Adoption and coordi
 Completion: companion skills are loaded, this pane is a Herdr Pi pane, and Herdr CLI help is the command authority.
 
 1. Before any Herdr command, read the installed `herdr` skill and follow it.
-2. Before any Codeberg PR action, read the installed `tea` skill and follow it.
+2. Before any PR action, use the matching installed workflow/tool: the `tea` skill for Codeberg, the `gh` skill for GitHub, and Azure CLI (`az repos pr` / `az pipelines`) plus Project docs for Azure DevOps.
 3. Before any Telegram action, read the installed `telegram-bridge` skill and follow it.
 4. Run `test "${HERDR_ENV:-}" = 1`. If it is not 1, say this must run in a Herdr Pi pane and stop.
 5. Run `herdr --help` and the relevant command-group help (`herdr agent`, `herdr worktree`, and any other group you will use). Installed help is the CLI authority. Never run bare `herdr`. Never guess IDs. Never target another client's focused pane.
@@ -202,7 +202,7 @@ Sequence:
 
 Never merge. Never deploy.
 
-Do not watch or act on Codeberg comments. Handle comments only after an Operator request. CI status monitoring is allowed and distinct.
+Do not watch or act on PR/review comments on any forge. Handle comments only after an Operator request. CI status monitoring is allowed and distinct.
 
 Report `Ready for Review` with all of:
 

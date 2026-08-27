@@ -53,6 +53,12 @@
     ];
   };
 
+  zramSwap = {
+    enable = true;
+    memoryPercent = 50;
+    algorithm = "zstd";
+  };
+
   networking = {
     hostName = "boromir";
     firewall.allowedTCPPorts = [
@@ -76,11 +82,10 @@
       group = "keepalived_script";
     };
 
-    # Second VRRP instance for Wyoming Whisper HA (alongside adguard_vip from module)
-    # Rohan (192.168.1.24) is MASTER with priority 100
-    # Boromir (this host) is BACKUP with priority 50
-    # wyoming-whisper runs unconditionally here (see ai.nix); the VIP follows the
-    # service, not the other way round.
+    # Manual Wyoming Whisper fallback VIP (alongside adguard_vip from module).
+    # Rohan (192.168.1.24) is MASTER with priority 100.
+    # Boromir (this host) is BACKUP only after an operator starts
+    # wyoming-whisper; the VIP follows service health.
     keepalived.vrrpInstances.whisper_vip = {
       interface = "ens18";
       state = "BACKUP";
