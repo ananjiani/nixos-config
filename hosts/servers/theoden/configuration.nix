@@ -704,7 +704,7 @@ in
       };
       k3s.serviceConfig = {
         CPUWeight = 1000;
-        IODeviceLatencyTargetSec = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0 10ms";
+        IODeviceLatencyTargetSec = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0 100ms";
       };
       atticd = {
         after = [ "vault-agent-default.service" ];
