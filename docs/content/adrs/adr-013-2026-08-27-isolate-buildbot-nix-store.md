@@ -31,7 +31,7 @@ Theoden runs k3s/etcd and Buildbot on the same root disk. During the 2026-08-24 
 
 Chosen option: **dedicated Nix daemon and chroot store on `/mnt/disk1`**, because Nix 2.34.7 already supports a second root daemon (`nix daemon --store /mnt/disk1/buildbot-nix` plus a separate `NIX_DAEMON_SOCKET_PATH`) and Buildbot worker children inherit `NIX_REMOTE`. Host Nix and Comin keep the default socket and `/nix/store`.
 
-Theoden runs `buildbot-nix-daemon` as root against `/mnt/disk1/buildbot-nix`, with `max-jobs=1`, `cores=2`, and one `nixbld-ci` build user so CI does not share the host `nixbld` uid lock. The Buildbot worker and `attic-watch-store` set `NIX_REMOTE=unix:///mnt/disk1/buildbot-nix/nix/var/nix/daemon-socket/socket`. Attic still parses Nix paths from the logical `/nix/store`, but upstream `watch-store` inotify-watches that logical dir, not the chroot on disk1. Theoden patches Attic so `ATTIC_WATCH_STORE_PATH` points at `/mnt/disk1/buildbot-nix/nix/store` and remaps each lock-file basename onto the logical store dir before `parse_store_path`. The patched client defaults to one upload job. Worker, daemon, and Attic share `buildbot-ci.slice` at 3 CPUs and 10G so CI cannot take all 4 host cores; k3s keeps the remaining CPU. Individual unit quotas stay in place. The master stays off that slice. Buildbot keeps its direct GC-root links under the host `/nix/var/nix/gcroots`, while garbage collection talks to the dedicated daemon. GC runs by hand only while the worker is stopped because `nix-eval-jobs` cannot root queued derivations through a daemon store. The worker stays gated on `/run/allow-buildbot-worker` during the canary.
+Theoden runs `buildbot-nix-daemon` as root against `/mnt/disk1/buildbot-nix`, with scratch outside that chroot at `/mnt/disk1/buildbot-nix-build`. The scratch directory is `0700 root:root`; putting it inside the chroot makes sandbox build directories root-owned and breaks builders. The daemon uses `max-jobs=1`, `cores=2`, and one `nixbld-ci` build user so CI does not share the host `nixbld` uid lock. The Buildbot worker and `attic-watch-store` set `NIX_REMOTE=unix:///mnt/disk1/buildbot-nix/nix/var/nix/daemon-socket/socket`. Attic still parses Nix paths from the logical `/nix/store`, but upstream `watch-store` inotify-watches that logical dir, not the chroot on disk1. Theoden patches Attic so `ATTIC_WATCH_STORE_PATH` points at `/mnt/disk1/buildbot-nix/nix/store` and remaps each lock-file basename onto the logical store dir before `parse_store_path`. The patched client defaults to one upload job. `nix-eval-jobs` 2.34.1 `queryOutputs` always opens the logical drv path on the host filesystem, so a UDS remote/chroot store fails after instantiate. Theoden patches it to query output names without local drv files on remote stores and to report `cacheStatus=notBuilt` so the dedicated daemon performs substitution/build. Worker, daemon, and Attic share `buildbot-ci.slice` at 3 CPUs and 10G so CI cannot take all 4 host cores; k3s keeps the remaining CPU. Individual unit quotas stay in place. The master stays off that slice. Buildbot keeps its direct GC-root links under the host `/nix/var/nix/gcroots`, while garbage collection talks to the dedicated daemon. GC runs by hand only while the worker is stopped because `nix-eval-jobs` cannot root queued derivations through a daemon store. The worker stays gated on `/run/allow-buildbot-worker` during the canary.
 
 ### Consequences
 
@@ -45,17 +45,19 @@ Theoden runs `buildbot-nix-daemon` as root against `/mnt/disk1/buildbot-nix`, wi
 - Bad: First CI builds miss the host store and refill the dedicated store from Attic or source.
 - Bad: Store GC is a manual maintenance step that requires a stopped worker.
 - Bad: Theoden runs a patched `attic-client` until upstream accepts a watch-path override.
+- Bad: Theoden runs a patched `nix-eval-jobs` 2.34.1 because `queryOutputs` assumes the drv is on the host filesystem. Remote attrs report `notBuilt` so the dedicated daemon performs actual cache substitution/build.
 - Neutral: `max-jobs=1` is a capacity cap, not a store property. Raise jobs only with more `nixbld-ci` users.
 
 ### Confirmation
 
 - After deploy, `buildbot-nix-daemon.service` is active and `buildbot-worker.service` is inactive while `/run/allow-buildbot-worker` is absent.
 - Start the canary with `touch /run/allow-buildbot-worker && systemctl start buildbot-worker`.
-- One unblocked eval/build writes store paths under `/mnt/disk1/buildbot-nix/nix/store`, not the host `/nix/store`.
+- One unblocked eval/build writes store paths under `/mnt/disk1/buildbot-nix/nix/store` and scratch under `/mnt/disk1/buildbot-nix-build`, not the host `/nix/store`.
 - Host Comin/`nix-daemon` keep using `/nix/store`. Root disk usage does not jump during that build.
 - `attic-watch-store` has `NIX_REMOTE`, `ATTIC_WATCH_STORE_PATH=/mnt/disk1/buildbot-nix/nix/store`, the patched client, one default upload job, and `Slice=buildbot-ci.slice`. Do not treat eval as live proof until a canary store path is pushed.
 - Worker and daemon are also in `buildbot-ci.slice`. Slice quota is CPUQuota=300% / MemoryMax=10G. Master is not in that slice.
 - The canary completes with no k3s restart, node `NotReady`, readyz failure, etcd operation above 5 seconds, or OOM.
+- `nix-eval-jobs --check-cache-status` against the dedicated store returns success records for all 16 flake attrs and no error records.
 
 ## Pros and Cons of the Options
 
@@ -69,6 +71,7 @@ Theoden runs `buildbot-nix-daemon` as root against `/mnt/disk1/buildbot-nix`, wi
 - Bad: Two daemons, a canary worker gate, and manual store GC add operating steps.
 - Bad: Attic watch on Theoden no longer covers the host store.
 - Bad: Theoden carries an Attic client patch until upstream grows a watch-path override.
+- Bad: Theoden carries a `nix-eval-jobs` patch until upstream stops opening local drv files on remote stores.
 
 ### Move host `/nix` onto `/mnt/disk1`
 

@@ -35,8 +35,17 @@ let
     patches = (old.patches or [ ]) ++ [ ./patches/attic-watch-store-path.patch ];
   });
 
+  # nix-eval-jobs 2.34.1 queryOutputs always opens the logical drv path on the
+  # host filesystem. Remote/chroot stores keep those files only under the
+  # dedicated store, so eval fails. Pass queryOutputPaths=false for remote
+  # stores and report cacheStatus=notBuilt so child Nix builds substitute.
+  patchedNixEvalJobs = pkgs.nix-eval-jobs.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ./patches/nix-eval-jobs-remote-store.patch ];
+  });
+
   # Dedicated chroot store for Buildbot. Host Nix/Comin stay on /nix/store.
   buildbotStoreRoot = "/mnt/disk1/buildbot-nix";
+  buildbotBuildDir = "/mnt/disk1/buildbot-nix-build";
   buildbotStoreSocket = "${buildbotStoreRoot}/nix/var/nix/daemon-socket/socket";
   buildbotStoreUrl = "unix://${buildbotStoreSocket}";
 
@@ -505,6 +514,9 @@ in
       enable = true;
       workerPasswordFile = "/run/secrets/buildbot_worker_password_plain";
       workers = 1;
+      nixEvalJobs = {
+        package = patchedNixEvalJobs;
+      };
     };
 
     # Buildbot Prometheus metrics exporter (port 9101, node_exporter uses 9100)
@@ -712,9 +724,9 @@ in
           ExecStartPre = [
             "${pkgs.coreutils}/bin/install -d -m 0755 ${buildbotStoreRoot}"
             "${pkgs.coreutils}/bin/install -d -m 1775 -o root -g nixbld-ci ${buildbotStoreRoot}/nix/store"
-            "${pkgs.coreutils}/bin/install -d -m 0755 ${buildbotStoreRoot}/build"
+            "${pkgs.coreutils}/bin/install -d -m 0700 -o root -g root ${buildbotBuildDir}"
           ];
-          ExecStart = "${config.nix.package}/bin/nix daemon --store ${buildbotStoreRoot} --option build-users-group nixbld-ci --option max-jobs 1 --option cores 2 --option build-dir ${buildbotStoreRoot}/build";
+          ExecStart = "${config.nix.package}/bin/nix daemon --store ${buildbotStoreRoot} --option build-users-group nixbld-ci --option max-jobs 1 --option cores 2 --option build-dir ${buildbotBuildDir}";
           KillMode = "process";
           LimitNOFILE = 1048576;
           TasksMax = 1048576;
