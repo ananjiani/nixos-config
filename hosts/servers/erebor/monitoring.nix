@@ -56,11 +56,14 @@ let
             and all(.[].results;
               length > 0
               and (
-                now
-                - (.[-1].timestamp
-                  | sub("\\.[0-9]+Z$"; "Z")
-                  | fromdateiso8601)
-              ) < 180
+                (
+                  now
+                  - (.[-1].timestamp
+                    | sub("\\.[0-9]+Z$"; "Z")
+                    | fromdateiso8601)
+                ) as $age
+                | $age >= 0 and $age < 180
+              )
             )
           ' >/dev/null
 
@@ -74,7 +77,7 @@ let
   heartbeatServiceHardening = {
     Type = "oneshot";
     User = "root";
-    TimeoutStartSec = "30s";
+    TimeoutStartSec = "60s";
     NoNewPrivileges = true;
     PrivateTmp = true;
     ProtectHome = true;
