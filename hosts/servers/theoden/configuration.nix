@@ -702,7 +702,10 @@ in
           IOWriteIOPSMax = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0 500";
         };
       };
-      k3s.serviceConfig.CPUWeight = 1000;
+      k3s.serviceConfig = {
+        CPUWeight = 1000;
+        IODeviceLatencyTargetSec = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0 10ms";
+      };
       atticd = {
         after = [ "vault-agent-default.service" ];
         wants = [ "vault-agent-default.service" ];
