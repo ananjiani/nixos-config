@@ -51,6 +51,10 @@
   };
 
   services = {
+    # Longhorn cleanup frees large amounts of guest space at once. Trim daily
+    # so the Proxmox thin pool reclaims it before reaching 100% again.
+    fstrim.interval = "daily";
+
     # Prometheus MQTT exporter for Mosquitto metrics
     # TODO: Re-enable when Zigbee devices are added to the network
     prometheus.exporters.mqtt = {
