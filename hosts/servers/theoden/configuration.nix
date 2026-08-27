@@ -210,6 +210,11 @@ in
     algorithm = "zstd";
   };
 
+  nix.settings = {
+    cores = lib.mkForce 2;
+    max-jobs = lib.mkForce 1;
+  };
+
   services = {
     # Prometheus postgres exporter for database metrics
     prometheus.exporters.postgres = {
@@ -693,9 +698,7 @@ in
         serviceConfig = {
           CPUQuota = "300%";
           IOWeight = 50;
-          IOReadBandwidthMax = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0 100M";
           IOWriteBandwidthMax = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0 50M";
-          IOReadIOPSMax = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0 1000";
           IOWriteIOPSMax = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0 500";
         };
       };
