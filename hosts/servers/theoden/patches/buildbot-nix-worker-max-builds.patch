@@ -2,12 +2,14 @@ diff --git a/buildbot_nix/__init__.py b/buildbot_nix/__init__.py
 index 5478f95..fe73f8e 100644
 --- a/buildbot_nix/__init__.py
 +++ b/buildbot_nix/__init__.py
-@@ -113,5 +113,7 @@ class NixConfigurator(ConfiguratorBase):
+@@ -113,5 +113,9 @@ class NixConfigurator(ConfiguratorBase):
          for w in self.config.nix_worker_secrets().workers:
              for i in range(w.cores):
                  worker_name = f"{w.name}-{i:03}"
 -                config["workers"].append(worker.Worker(worker_name, w.password))
 +                config["workers"].append(
-+                    worker.Worker(worker_name, w.password, max_builds=1)
++                    # The eval parent waits for child builds, so it needs one
++                    # coordinator slot plus one active child-build slot.
++                    worker.Worker(worker_name, w.password, max_builds=2)
 +                )
                  worker_names.append(worker_name)
