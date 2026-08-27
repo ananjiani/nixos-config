@@ -711,6 +711,7 @@ in
         serviceConfig = {
           ExecStartPre = [
             "${pkgs.coreutils}/bin/install -d -m 0755 ${buildbotStoreRoot}"
+            "${pkgs.coreutils}/bin/install -d -m 1775 -o root -g nixbld-ci ${buildbotStoreRoot}/nix/store"
             "${pkgs.coreutils}/bin/install -d -m 0755 ${buildbotStoreRoot}/build"
           ];
           ExecStart = "${config.nix.package}/bin/nix daemon --store ${buildbotStoreRoot} --option build-users-group nixbld-ci --option max-jobs 1 --option cores 2 --option build-dir ${buildbotStoreRoot}/build";
