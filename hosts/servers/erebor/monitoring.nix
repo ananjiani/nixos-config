@@ -1,7 +1,12 @@
 # External monitoring and notification path for homelab outages.
 # Gatus remains tailnet-only. ntfy is additionally published as authenticated
 # HTTPS through Caddy; its native listener is never opened on the public NIC.
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   ntfyAlert = {
@@ -25,6 +30,62 @@ let
       interval = "1m";
       alerts = [ ntfyAlert ];
     };
+
+  monitoringStackHeartbeat = pkgs.writeShellApplication {
+    name = "monitoring-stack-heartbeat";
+    runtimeInputs = [
+      pkgs.curl
+      pkgs.jq
+      pkgs.systemd
+      pkgs.tailscale
+    ];
+    text = ''
+      for unit in gatus.service ntfy-sh.service tailscaled.service; do
+        systemctl is-active --quiet "$unit"
+      done
+
+      curl --fail --silent --show-error --max-time 5 \
+        http://127.0.0.1:2586/v1/health \
+        | jq --exit-status '.healthy == true' >/dev/null
+
+      curl --fail --silent --show-error --max-time 5 \
+        http://127.0.0.1:8081/api/v1/endpoints/statuses \
+        | jq --exit-status '
+            type == "array"
+            and length > 0
+            and all(.[].results;
+              length > 0
+              and (
+                now
+                - (.[-1].timestamp
+                  | sub("\\.[0-9]+Z$"; "Z")
+                  | fromdateiso8601)
+              ) < 180
+            )
+          ' >/dev/null
+
+      tailscale status --json \
+        | jq --exit-status '.BackendState == "Running"' >/dev/null
+
+      curl --config /run/secrets/healthchecks-stack-curl-config --output /dev/null
+    '';
+  };
+
+  heartbeatServiceHardening = {
+    Type = "oneshot";
+    User = "root";
+    TimeoutStartSec = "30s";
+    NoNewPrivileges = true;
+    PrivateTmp = true;
+    ProtectHome = true;
+    ProtectSystem = "strict";
+    CapabilityBoundingSet = "";
+    LockPersonality = true;
+    MemoryDenyWriteExecute = true;
+    RestrictNamespaces = true;
+    RestrictRealtime = true;
+    SystemCallArchitectures = "native";
+  };
 in
 {
   services = {
@@ -97,6 +158,41 @@ in
   ];
 
   systemd.services = {
+    healthchecks-host-heartbeat = {
+      description = "Report Erebor host liveness to Healthchecks.io";
+      after = [
+        "network-online.target"
+        "vault-agent-default.service"
+      ];
+      wants = [
+        "network-online.target"
+        "vault-agent-default.service"
+      ];
+      unitConfig.ConditionPathExists = "/run/secrets/healthchecks-host-curl-config";
+      serviceConfig = heartbeatServiceHardening // {
+        ExecStart = "${pkgs.curl}/bin/curl --config /run/secrets/healthchecks-host-curl-config --output /dev/null";
+      };
+    };
+
+    healthchecks-stack-heartbeat = {
+      description = "Report Erebor monitoring-stack liveness to Healthchecks.io";
+      after = [
+        "gatus.service"
+        "network-online.target"
+        "ntfy-sh.service"
+        "tailscaled.service"
+        "vault-agent-default.service"
+      ];
+      wants = [
+        "network-online.target"
+        "vault-agent-default.service"
+      ];
+      unitConfig.ConditionPathExists = "/run/secrets/healthchecks-stack-curl-config";
+      serviceConfig = heartbeatServiceHardening // {
+        ExecStart = "${monitoringStackHeartbeat}/bin/monitoring-stack-heartbeat";
+      };
+    };
+
     ntfy-sh = {
       after = [ "vault-agent-default.service" ];
       wants = [ "vault-agent-default.service" ];
@@ -122,6 +218,30 @@ in
         EnvironmentFile = "/run/secrets/gatus-ntfy-env";
         MemoryMax = "256M";
         CPUQuota = "50%";
+      };
+    };
+  };
+
+  systemd.timers = {
+    healthchecks-host-heartbeat = {
+      description = "Run the Erebor host heartbeat every five minutes";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnBootSec = "2m";
+        OnUnitActiveSec = "5m";
+        RandomizedDelaySec = "15s";
+        AccuracySec = "10s";
+      };
+    };
+
+    healthchecks-stack-heartbeat = {
+      description = "Run the monitoring-stack heartbeat every five minutes";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnBootSec = "3m";
+        OnUnitActiveSec = "5m";
+        RandomizedDelaySec = "15s";
+        AccuracySec = "10s";
       };
     };
   };

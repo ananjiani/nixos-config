@@ -79,6 +79,38 @@
           group = "root";
           mode = "0400";
         };
+        # Healthchecks.io ping URLs are credentials. Render curl configuration
+        # files so the URLs never appear in process arguments or the Nix store.
+        healthchecks-host-curl-config = {
+          path = "secret/nixos/healthchecks-erebor";
+          template = ''
+            url = "{{ with secret "secret/data/nixos/healthchecks-erebor" }}{{ index .Data.data "host-ping-url" }}{{ end }}"
+            fail
+            silent
+            show-error
+            max-time = 10
+            retry = 2
+            retry-delay = 1
+          '';
+          owner = "root";
+          group = "root";
+          mode = "0400";
+        };
+        healthchecks-stack-curl-config = {
+          path = "secret/nixos/healthchecks-erebor";
+          template = ''
+            url = "{{ with secret "secret/data/nixos/healthchecks-erebor" }}{{ index .Data.data "stack-ping-url" }}{{ end }}"
+            fail
+            silent
+            show-error
+            max-time = 10
+            retry = 2
+            retry-delay = 1
+          '';
+          owner = "root";
+          group = "root";
+          mode = "0400";
+        };
         # Offsite backups (issue #41): same S3-style pattern as theoden
         b2_env = {
           path = "secret/nixos/backblaze";
