@@ -23,6 +23,6 @@
   };
 
   home.activation.setupEtc = config.lib.dag.entryAfter [ "writeBoundary" ] ''
-    /run/current-system/sw/bin/systemctl start --user sops-nix
+    XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus /run/current-system/sw/bin/systemctl start --user sops-nix
   '';
 }
