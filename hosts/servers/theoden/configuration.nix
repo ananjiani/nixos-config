@@ -757,10 +757,7 @@ in
         environment = {
           NIX_REMOTE = buildbotStoreUrl;
         };
-        unitConfig = {
-          RequiresMountsFor = [ buildbotStoreRoot ];
-          ConditionPathExists = "/run/allow-buildbot-worker";
-        };
+        unitConfig.RequiresMountsFor = [ buildbotStoreRoot ];
         serviceConfig = {
           CPUQuota = "200%";
           MemoryHigh = "5G";
