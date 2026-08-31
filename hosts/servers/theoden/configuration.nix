@@ -48,7 +48,7 @@ let
   buildbotStoreRoot = "/mnt/disk1/buildbot-nix";
   buildbotBuildDir = "/mnt/disk1/buildbot-nix-build";
   buildbotStoreSocket = "${buildbotStoreRoot}/nix/var/nix/daemon-socket/socket";
-  buildbotStoreUrl = "unix://${buildbotStoreSocket}";
+  buildbotStoreUrl = "unix://${buildbotStoreSocket}?root=${buildbotStoreRoot}";
 
   buildbot-prometheus = buildbotPackages.python.pkgs.buildPythonPackage rec {
     pname = "buildbot-prometheus";
