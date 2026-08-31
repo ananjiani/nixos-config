@@ -1,0 +1,382 @@
+diff --git a/buildbot_nix/nix_eval.py b/buildbot_nix/nix_eval.py
+index b6a8a54..02c2c20 100644
+--- a/buildbot_nix/nix_eval.py
++++ b/buildbot_nix/nix_eval.py
+@@ -19,6 +19,7 @@ from buildbot.process.properties import Properties
+ from buildbot.steps.trigger import Trigger
+ from pydantic import ValidationError
+ from twisted.internet import reactor, threads
++from twisted.internet.defer import CancelledError
+ from twisted.logger import Logger
+
+ from .build_trigger import BuildTrigger, JobsConfig, TriggerConfig
+@@ -32,6 +33,12 @@ from .models import (
+ )
+ from .nix_build import ProcessSkippedBuilds
+ from .nix_status_generator import CombinedBuildEvent
++from .path_filter import (
++    SKIP_STATUS_TEXT,
++    decode_changed_paths,
++    is_valid_sha,
++    should_skip_nix_ci,
++)
+ from .repo_config import BranchConfig
+
+ if TYPE_CHECKING:
+@@ -188,9 +195,83 @@ class NixEvalCommand(buildstep.ShellMixin, steps.BuildStep):
+         event_key = ("builds", str(self.build.buildid), event)
+         self.master.mq.produce(event_key, copy.deepcopy(build))
+
++    async def _changed_paths_for_pr(
++        self, base_sha: str, head_sha: str
++    ) -> list[str] | None:
++        """Return changed paths via local git, or None to fail open."""
++        # makeRemoteShellCommand overwrites self.command; keep eval command intact.
++        # Base64 avoids Buildbot LineBoundaryFinder mangling raw NULs / long lines.
++        saved_command = getattr(self, "command", None)
++        cmd = await self.makeRemoteShellCommand(
++            collectStdout=True,
++            collectStderr=False,
++            stdioLogName=None,  # type: ignore[arg-type]
++            command=[
++                "bash",
++                "-o",
++                "pipefail",
++                "-c",
++                'git diff --no-renames --name-only -z "$1" -- | base64',
++                "buildbot-path-filter",
++                f"{base_sha}...{head_sha}",
++            ],
++        )
++        self.command = saved_command
++        await self.runCommand(cmd)
++        if cmd.results() != util.SUCCESS:
++            return None
++        return decode_changed_paths(cmd.stdout)
++
++    async def _should_skip_non_nix_pr(self) -> bool:
++        """Skip Nix eval/build for Gitea PRs that only touch docs/ or only k8s/.
++
++        Fail open on push events, missing/invalid SHAs, unsupported backends,
++        git failures, or malformed path lists.
++        """
++        try:
++            if (
++                self.getProperty("event", "push") != "pull_request"
++                or getattr(self.project, "type", None) != "gitea"
++            ):
++                return False
++
++            base_sha = self.getProperty("base_sha")
++            head_sha = self.getProperty("head_sha")
++            if not is_valid_sha(base_sha) or not is_valid_sha(head_sha):
++                return False
++
++            paths = await self._changed_paths_for_pr(base_sha, head_sha)
++            return paths is not None and should_skip_nix_ci(paths)
++        except CancelledError:
++            raise
++        except Exception:  # noqa: BLE001 - fail-open: classification errors must not block CI
++            log.info("path filter failed open; running Nix CI")
++            return False
++
+     async def run(self) -> int:
+         await self.produce_event(CombinedBuildEvent.STARTED_NIX_EVAL.value, None)
+
++        if await self._should_skip_non_nix_pr():
++            self.setProperty("skip_nix_ci", True, "nix-path-filter")  # noqa: FBT003
++            result = util.SUCCESS
++            self.descriptionDone = [SKIP_STATUS_TEXT]
++            if self.build:
++                await CombinedBuildEvent.produce_event_for_build(
++                    self.master,
++                    CombinedBuildEvent.FINISHED_NIX_EVAL,
++                    self.build,
++                    result,
++                    status_text=SKIP_STATUS_TEXT,
++                )
++                await CombinedBuildEvent.produce_event_for_build(
++                    self.master,
++                    CombinedBuildEvent.FINISHED_NIX_BUILD,
++                    self.build,
++                    result,
++                    status_text=SKIP_STATUS_TEXT,
++                )
++            return result
++
+         branch_config: BranchConfig = await BranchConfig.extract_during_step(self)
+
+         # Check if this is a rebuild and try to reuse evaluation from original build
+@@ -906,7 +987,10 @@ def nix_eval_config(  # noqa: PLR0913
+                 util.Property("project"),
+             ],
+             flunkOnFailure=True,
+-            doStepIf=lambda c: c.build.results in (util.SUCCESS, util.WARNINGS),
++            doStepIf=lambda c: (
++                c.build.results in (util.SUCCESS, util.WARNINGS)
++                and not c.getProperty("skip_nix_ci")
++            ),
+             logEnviron=False,
+         )
+     )
+@@ -932,7 +1016,10 @@ def nix_eval_config(  # noqa: PLR0913
+             flunkOnFailure=False,  # Don't fail the build if schedule eval fails
+             warnOnFailure=True,
+             alwaysRun=True,
+-            doStepIf=lambda c: c.getProperty("branch", "") == project.default_branch,
++            doStepIf=lambda c: (
++                c.getProperty("branch", "") == project.default_branch
++                and not c.getProperty("skip_nix_ci")
++            ),
+             hideStepIf=lambda results, _s: results == util.SKIPPED,
+             logEnviron=False,
+         )
+diff --git a/buildbot_nix/nix_status_generator.py b/buildbot_nix/nix_status_generator.py
+index 7785030..9fc011d 100644
+--- a/buildbot_nix/nix_status_generator.py
++++ b/buildbot_nix/nix_status_generator.py
+@@ -44,6 +44,12 @@ class NixEvalWarningsFormatter(MessageFormatterRenderable):
+         # Get the event type if available (set by the generator)
+         event_type = build.get("_event_type", "unknown")
+
++        # Path-filter skip overrides the status description for both checks.
++        status_text = build.get("_status_text")
++        if status_text:
++            msgdict["body"] = status_text
++            return msgdict
++
+         # Only add warnings count if this is actually the nix-eval phase
+         # Check for warnings_count in the event data (prefixed with _)
+         is_nix_eval_event = event_type in ["started-nix-eval", "finished-nix-eval"]
+diff --git a/buildbot_nix/path_filter.py b/buildbot_nix/path_filter.py
+new file mode 100644
+index 0000000..6f74c74
+--- /dev/null
++++ b/buildbot_nix/path_filter.py
+@@ -0,0 +1,69 @@
++"""Skip Nix CI when a PR changes only docs/ or only k8s/."""
++
++from __future__ import annotations
++
++import base64
++import binascii
++import re
++
++SKIP_STATUS_TEXT = "Skipped: no Nix-impacting files"
++
++_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
++
++
++def is_valid_sha(value: object) -> bool:
++    """Accept only lowercase 40-char hex SHA strings. Anything else fails open."""
++    return isinstance(value, str) and _SHA_RE.fullmatch(value) is not None
++
++
++def should_skip_nix_ci(paths: list[str]) -> bool:
++    """Return True only when every path is under docs/ or every path is under k8s/.
++
++    Empty lists fail open (return False). Mixed docs+k8s fails open. Any other
++    path fails open.
++    """
++    if not paths:
++        return False
++    if all(path.startswith("docs/") for path in paths):
++        return True
++    return all(path.startswith("k8s/") for path in paths)
++
++
++def parse_nul_paths(raw: str) -> list[str] | None:
++    """Parse `git diff -z --name-only` stdout.
++
++    Empty output is valid (no changed paths). Non-empty output must end with a
++    trailing NUL. Empty path segments or Unicode replacement characters are
++    treated as malformed so callers can fail open.
++    """
++    if raw == "":
++        return []
++    if not raw.endswith("\0"):
++        return None
++    parts = raw.split("\0")[:-1]
++    paths: list[str] = []
++    for part in parts:
++        if part == "" or "\ufffd" in part:
++            return None
++        paths.append(part)
++    return paths
++
++
++def decode_changed_paths(raw: str) -> list[str] | None:
++    """Decode worker base64 (`git diff -z | base64`) stdout into paths.
++
++    Joins line breaks from GNU base64 wrapping / Buildbot transport. Rejects
++    non-base64, invalid UTF-8, or malformed NUL path lists (returns None).
++    """
++    compact = "".join(raw.splitlines())
++    if compact == "":
++        return []
++    try:
++        data = base64.b64decode(compact, validate=True)
++    except binascii.Error:
++        return None
++    try:
++        text = data.decode("utf-8")
++    except UnicodeDecodeError:
++        return None
++    return parse_nul_paths(text)
+diff --git a/buildbot_nix/tests/test_path_filter.py b/buildbot_nix/tests/test_path_filter.py
+new file mode 100644
+index 0000000..70a466c
+--- /dev/null
++++ b/buildbot_nix/tests/test_path_filter.py
+@@ -0,0 +1,151 @@
++"""Unit tests for docs-only / k8s-only Nix CI path filter."""
++
++from __future__ import annotations
++
++import base64
++
++import pytest
++
++from buildbot_nix.path_filter import (
++    SKIP_STATUS_TEXT,
++    decode_changed_paths,
++    is_valid_sha,
++    parse_nul_paths,
++    should_skip_nix_ci,
++)
++
++
++def _b64(data: bytes) -> str:
++    """GNU/coreutils-style wrapped base64 (76 cols + trailing newline)."""
++    return base64.encodebytes(data).decode()
++
++
++def test_docs_only_skips() -> None:
++    assert should_skip_nix_ci(["docs/a.md", "docs/guide/b.md"]) is True
++
++
++def test_k8s_only_skips() -> None:
++    assert should_skip_nix_ci(["k8s/apps/foo.yaml"]) is True
++
++
++def test_docs_and_k8s_runs() -> None:
++    assert should_skip_nix_ci(["docs/a.md", "k8s/foo.yaml"]) is False
++
++
++def test_nix_path_runs() -> None:
++    assert should_skip_nix_ci(["flake.nix"]) is False
++    assert should_skip_nix_ci(["docs/a.md", "hosts/theoden/configuration.nix"]) is False
++
++
++def test_empty_runs() -> None:
++    assert should_skip_nix_ci([]) is False
++
++
++def test_skip_status_text() -> None:
++    assert SKIP_STATUS_TEXT == "Skipped: no Nix-impacting files"
++
++
++@pytest.mark.parametrize(
++    ("value", "expected"),
++    [
++        ("0" * 40, True),
++        ("g" * 40, False),
++        ("0123456789abcdef0123456789abcdef01234567", True),
++        ("0123456789ABCDEF0123456789ABCDEF01234567", False),
++        ("0123456789abcdef0123456789abcdef0123456", False),
++        ("0123456789abcdef0123456789abcdef012345678", False),
++        ("0123456789abcdef0123456789abcdef0123456g", False),
++        ("", False),
++        (None, False),
++        (0, False),
++        (True, False),
++        (b"0" * 40, False),
++    ],
++)
++def test_is_valid_sha(value: object, expected: bool) -> None:
++    assert is_valid_sha(value) is expected
++
++
++def test_parse_nul_paths_trailing_nul() -> None:
++    assert parse_nul_paths("docs/a.md\0") == ["docs/a.md"]
++    assert parse_nul_paths("docs/a.md\0k8s/b.yaml\0") == ["docs/a.md", "k8s/b.yaml"]
++
++
++def test_parse_nul_paths_missing_trailing_nul() -> None:
++    assert parse_nul_paths("docs/a.md") is None
++    assert parse_nul_paths("docs/a.md\0k8s/b.yaml") is None
++
++
++def test_parse_nul_paths_spaces_newlines_unicode() -> None:
++    assert parse_nul_paths("docs/a b.md\0") == ["docs/a b.md"]
++    assert parse_nul_paths("docs/a\nb.md\0") == ["docs/a\nb.md"]
++    assert parse_nul_paths("docs/ü.md\0") == ["docs/ü.md"]
++
++
++def test_parse_nul_paths_empty_and_malformed() -> None:
++    assert parse_nul_paths("") == []
++    assert parse_nul_paths("\0") is None
++    assert parse_nul_paths("docs/a.md\0\0") is None
++    assert parse_nul_paths("docs/\ufffd.md\0") is None
++
++
++def test_decode_wrapped_base64_with_buildbot_newline() -> None:
++    payload = _b64(b"docs/a.md\0") + "\n"
++    assert "\n" in payload
++    assert decode_changed_paths(payload) == ["docs/a.md"]
++
++
++def test_decode_empty_output() -> None:
++    assert decode_changed_paths("") == []
++    assert decode_changed_paths("\n") == []
++
++
++def test_decode_malformed_and_truncated_base64() -> None:
++    assert decode_changed_paths("!!!!") is None
++    assert decode_changed_paths("ZG9jc") is None
++    assert decode_changed_paths("ZG9jcy") is None
++
++
++def test_decode_invalid_utf8() -> None:
++    assert decode_changed_paths(_b64(b"\xff\0")) is None
++
++
++def test_decode_missing_trailing_nul() -> None:
++    assert decode_changed_paths(_b64(b"docs/a.md")) is None
++
++
++def test_decode_spaces_newlines_unicode() -> None:
++    assert decode_changed_paths(_b64(b"docs/a b.md\0")) == ["docs/a b.md"]
++    assert decode_changed_paths(_b64(b"docs/a\nb.md\0")) == ["docs/a\nb.md"]
++    assert decode_changed_paths(_b64(b"docs/\xc3\xbc.md\0")) == ["docs/ü.md"]
++
++
++def test_decode_rename_emits_both_paths_and_runs() -> None:
++    # --no-renames: flake.nix -> docs/flake.nix yields both old and new paths.
++    paths = decode_changed_paths(_b64(b"flake.nix\0docs/flake.nix\0"))
++    assert paths == ["flake.nix", "docs/flake.nix"]
++    assert should_skip_nix_ci(paths) is False
++
++
++def test_decode_large_payload_with_flake_runs() -> None:
++    n_docs = 1200
++    parts = [f"docs/file{i:04d}.md\0".encode() for i in range(n_docs)]
++    parts.insert(n_docs // 2, b"flake.nix\0")
++    blob = b"".join(parts)
++    payload = _b64(blob)
++    assert len(payload) > 16 * 1024
++    paths = decode_changed_paths(payload)
++    assert paths is not None
++    assert "flake.nix" in paths
++    assert should_skip_nix_ci(paths) is False
++
++
++def test_decode_large_docs_only_skips() -> None:
++    n_docs = 1200
++    blob = b"".join(f"docs/file{i:04d}.md\0".encode() for i in range(n_docs))
++    payload = _b64(blob)
++    assert len(payload) > 16 * 1024
++    paths = decode_changed_paths(payload)
++    assert paths is not None
++    assert len(paths) == n_docs
++    assert should_skip_nix_ci(paths) is True

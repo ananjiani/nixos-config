@@ -27,6 +27,7 @@ let
       patches = [
         ./patches/buildbot-nix-failed-status-upsert-race.patch
         ./patches/buildbot-nix-eval-timeout.patch
+        ./patches/buildbot-nix-path-filter.patch
       ];
     };
   });

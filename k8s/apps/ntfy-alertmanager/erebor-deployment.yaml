@@ -29,7 +29,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: ntfy-alertmanager
-          image: xenrox/ntfy-alertmanager:1.0.0
+          image: xenrox/ntfy-alertmanager:1.0.1
           args:
             - --config
             - /etc/ntfy-alertmanager/config
