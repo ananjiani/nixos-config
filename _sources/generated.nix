@@ -16,15 +16,15 @@
   };
   jacktook = {
     pname = "jacktook";
-    version = "c22f23fc7df9705cb7e42c1b54f631358869d182";
+    version = "fe1a83a7f2afc24e403fcdce8ae6f22489b8676a";
     src = fetchFromGitHub {
       owner = "Sam-Max";
       repo = "plugin.video.jacktook";
-      rev = "c22f23fc7df9705cb7e42c1b54f631358869d182";
+      rev = "fe1a83a7f2afc24e403fcdce8ae6f22489b8676a";
       fetchSubmodules = false;
-      sha256 = "sha256-JI+yfI2axUrVm/TyhGFuMaMgEEo05+XzoEfklW6yXlw=";
+      sha256 = "sha256-WTX7+JDCewc6kove2PL2jkXMFyZ4xhfXEKlDYRNWkT8=";
     };
-    date = "2026-07-10";
+    date = "2026-08-28";
   };
   moondeck-buddy = {
     pname = "moondeck-buddy";
@@ -48,18 +48,18 @@
   };
   octowow = {
     pname = "octowow";
-    version = "1.3.6";
+    version = "1.3.8";
     src = fetchurl {
-      url = "https://dl.octowow.st/launcher-updates/OctoLauncher_Installer-1.3.6.exe";
-      sha256 = "sha256-XDRvnXMJy35BL0CUv67SmtIyNtCiiHOM/Il4p7XF1I0=";
+      url = "https://dl.octowow.st/launcher-updates/OctoLauncher_Installer-1.3.8.exe";
+      sha256 = "sha256-ZIlkG2LEGiH3hT65s0H/cB2Bmq4hIbfzisrJFWGmmHA=";
     };
   };
   opendeck = {
     pname = "opendeck";
-    version = "2.13.1";
+    version = "2.14.0";
     src = fetchurl {
-      url = "https://github.com/nekename/OpenDeck/releases/download/v2.13.1/opendeck_2.13.1_amd64.AppImage";
-      sha256 = "sha256-SXKZrF8fMYjoCc5cVpiOiSoJHf61+Q+r9E03xiHI4uw=";
+      url = "https://github.com/nekename/OpenDeck/releases/download/v2.14.0/opendeck_2.14.0_amd64.AppImage";
+      sha256 = "sha256-cNmCdHKMxT0tlTFlhimkyIWiNjEscMnAQy7NXOb8QsI=";
     };
   };
   smithay-hdr = {
