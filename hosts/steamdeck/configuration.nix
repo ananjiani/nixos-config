@@ -204,7 +204,6 @@
       "video"
       "audio"
     ];
-    initialPassword = "temp";
   };
 
   # ── Managed Home Manager — one nixos-rebuild deploys everything ────
