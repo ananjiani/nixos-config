@@ -107,7 +107,6 @@
       url = "github:nix-community/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
-    jovian.follows = "chaotic/jovian";
     # Hermes Agent (Tier 2 Nix support) — keep upstream pins, no follows.
     hermes-agent.url = "github:NousResearch/hermes-agent";
   };

@@ -1053,6 +1053,7 @@ in
                 ];
               in
               {
+                programs.niri.package = lib.mkDefault pkgs.niri;
                 programs.niri.settings = {
                   input = {
                     keyboard.xkb.layout = "us";

@@ -188,7 +188,13 @@ let
 
     # nixpkgs is one patch behind the declared floor; phonenumbers only
     # backs the PHONE_NUMBER recognizer, which this broker does not use.
-    pythonRelaxDeps = [ "phonenumbers" ];
+    # nixpkgs-unstable now ships numpy 2.5.1 and spacy 3.8.14, which exceed
+    # presidio-analyzer 2.2.364's pinned ranges.
+    pythonRelaxDeps = [
+      "phonenumbers"
+      "numpy"
+      "spacy"
+    ];
 
     pythonImportsCheck = [ "presidio_analyzer" ];
 

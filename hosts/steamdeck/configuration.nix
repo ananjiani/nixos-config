@@ -15,7 +15,7 @@
   imports = [
     ./hardware-configuration.nix
     ./disk-config.nix
-    inputs.jovian.nixosModules.jovian
+    inputs.chaotic.vendored.jovian.nixosModules.default
     inputs.chaotic.nixosModules.default
     inputs.home-manager-unstable.nixosModules.home-manager
     ../_profiles/base.nix
@@ -64,7 +64,7 @@
         # workspace in both the deps fetcher and the frontend build.
         pnpmDeps = old.pnpmDeps.override {
           inherit src version;
-          hash = "sha256-WgKycKbaZv9lovoo0IaCuV41qS4zUqm4vZxsMQBUdNk=";
+          hash = "sha256-OHimg85kcjk+Tq1Yv8TA9CfPDVzxdgPpzTi2mxyPs4s=";
           postPatch = ''
             printf 'packages:\n  - "."\n' > pnpm-workspace.yaml
           '';
