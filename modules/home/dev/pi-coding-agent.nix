@@ -60,78 +60,218 @@ let
   # and claude-glm. Pi's "!cmd" apiKey form runs the cat at invocation
   # time, stripping trailing whitespace — key stays out of the env table
   # and rotates with vault-agent's lease.
-  # Web access via two small bash scripts on PATH. Mario's pitch is
+  # Web access via small bash scripts on PATH. Mario's pitch is
   # "CLI tools with READMEs" instead of MCP servers — pi's bash tool
   # discovers these when asked to search/fetch, no tokens spent
   # registering them up-front. Tool choices follow the pi ecosystem
   # (pi-amplike, pi-skills/brave-search, pi-super-curl):
   #
-  # - `web-search <query>`: self-hosted SearXNG at searxng.lan
-  # - `web-fetch <url>`:    Jina Reader (r.jina.ai) — free, Readability-
-  #                         based extraction, handles JS-rendered pages,
-  #                         de-facto web-fetch standard in the pi
-  #                         community. Strictly better than pandoc for
-  #                         agent use (article extraction vs blind
-  #                         HTML→markdown).
-  #
-  # - `web-research <query>`: Tavily — returns extracted, reranked page
-  #                         content (not just links), so one call replaces
-  #                         a search plus several fetches. Metered: shares
-  #                         the 1k/mo free-tier pool with claude-code's
-  #                         tavily-mcp, so it's a distinct tool rather than
-  #                         a web-search fallback — the model should choose
-  #                         it deliberately for research-shaped tasks.
+  # - `web-search [--provider auto|tavily|searxng] <query>`:
+  #                         auto (default) tries Tavily Basic first, then
+  #                         SearXNG on failure/timeout/zero results.
+  #                         Tavily sees the query in auto/default mode.
+  #                         Basic search is metered (1 credit/call, same
+  #                         1k/mo pool as web-research). Top 10 title/URL/
+  #                         snippet. Explicit --provider skips fallback.
+  # - `web-fetch <url>`:    local Readability extraction (see below).
+  # - `web-fetch-jina <url>`: Jina Reader — JS-rendered pages; Jina sees
+  #                         every URL.
+  # - `web-research <query>`: Tavily Advanced — extracted, reranked page
+  #                         content (not just links). Metered (2 credits/
+  #                         call). Distinct from web-search; pick it for
+  #                         research-shaped tasks.
   #
   # pandoc was considered and dropped — it converts HTML-as-markup
   # instead of extracting article bodies. SearXNG's baseline quality
   # comes from the braveapi engine (Brave Search API) server-side, so a
   # separate `web-search-brave` client tool is unnecessary.
 
-  # Endpoint is an option so portable/isolated hosts (e.g. Denethor) can
-  # set null and keep searxng.lan out of the store path entirely.
-  webSearch =
-    if cfg.searxngUrl == null then
-      pkgs.writeShellApplication {
-        name = "web-search";
-        text = ''
-          # Usage: web-search <query...>
-          #
-          # SearXNG endpoint not configured on this host (piCodingAgent.searxngUrl = null).
-          echo "web-search: not configured (piCodingAgent.searxngUrl is null)" >&2
-          exit 1
-        '';
+  # searxngUrl / tavilyKeyFile are options so portable/isolated hosts can
+  # set null and keep those endpoints out of the store path. Auto uses
+  # whichever provider is configured; an explicit unavailable provider
+  # fails clearly. Neither configured: fail clearly.
+  webSearch = pkgs.writeShellApplication {
+    name = "web-search";
+    runtimeInputs = with pkgs; [
+      curl
+      jq
+    ];
+    text = ''
+      # Usage: web-search [--provider auto|tavily|searxng] <query...>
+      #
+      # Default (auto): Tavily Basic first, SearXNG on failure.
+      # Tavily sees the query in auto/default mode. Basic search is
+      # metered (1 credit/call, same 1k/mo pool as web-research).
+      # --provider tavily|searxng uses only that provider (no fallback).
+      # Prints up to 10 results as markdown-ish plain text (title, URL,
+      # snippet). For extracted page content use `web-research`. For a
+      # known URL use `web-fetch`.
+      usage() {
+        echo "usage: web-search [--provider auto|tavily|searxng] <query...>" >&2
+        echo "  auto (default): Tavily Basic, then SearXNG on failure or zero results." >&2
+        echo "  Tavily sees the query. Basic search is metered." >&2
+        exit 1
       }
-    else
-      pkgs.writeShellApplication {
-        name = "web-search";
-        runtimeInputs = with pkgs; [
-          curl
-          jq
-        ];
-        text = ''
-          # Usage: web-search <query...>
-          #
-          # Queries the self-hosted SearXNG at searxng.lan and prints the
-          # top 10 results as markdown-ish plain text (title, URL, snippet).
-          # For reading a specific URL use `web-fetch`.
-          if [ $# -eq 0 ]; then
-            echo "usage: web-search <query...>" >&2
+
+      provider=auto
+      if [ "''${1:-}" = "--provider" ]; then
+        if [ $# -lt 2 ]; then
+          usage
+        fi
+        provider=$2
+        shift 2
+      fi
+
+      case "$provider" in
+        auto | tavily | searxng) ;;
+        *)
+          echo "web-search: invalid provider '$provider' (want auto, tavily, or searxng)" >&2
+          exit 1
+          ;;
+      esac
+
+      if [ $# -eq 0 ]; then
+        usage
+      fi
+      ${lib.optionalString (cfg.tavilyKeyFile != null || cfg.searxngUrl != null) ''
+        query="$*"
+      ''}
+
+      tmp_dir=$(mktemp -d)
+      trap 'rm -rf "$tmp_dir"' EXIT
+
+      tavily_configured=${if cfg.tavilyKeyFile != null then "1" else "0"}
+      searxng_configured=${if cfg.searxngUrl != null then "1" else "0"}
+
+      search_tavily() {
+        ${
+          if cfg.tavilyKeyFile != null then
+            ''
+              key_file=${cfg.tavilyKeyFile}
+              if [ ! -r "$key_file" ]; then
+                echo "web-search: tavily key file not readable ($key_file)" >&2
+                return 1
+              fi
+
+              header_file="$tmp_dir/tavily.header"
+              body_file="$tmp_dir/tavily.body"
+              resp_file="$tmp_dir/tavily.json"
+              {
+                printf 'Authorization: Bearer '
+                tr -d '[:space:]' <"$key_file"
+                printf '\n'
+              } >"$header_file"
+              chmod 600 "$header_file"
+
+              jq -n --arg q "$query" '{query: $q, search_depth: "basic", max_results: 10}' >"$body_file"
+
+              http_code=$(
+                curl -sS -o "$resp_file" -w '%{http_code}' --max-time 15 \
+                  -H @"$header_file" \
+                  -H "Content-Type: application/json" \
+                  -d @"$body_file" \
+                  https://api.tavily.com/search
+              ) || {
+                echo "web-search: tavily request failed" >&2
+                return 1
+              }
+
+              if [ "$http_code" != "200" ]; then
+                echo "web-search: tavily HTTP $http_code" >&2
+                return 1
+              fi
+
+              if ! jq -e '.results | type == "array"' "$resp_file" >/dev/null 2>&1; then
+                echo "web-search: tavily returned invalid response" >&2
+                return 1
+              fi
+              if ! jq -e '.results | length > 0' "$resp_file" >/dev/null; then
+                echo "web-search: tavily returned no results" >&2
+                return 1
+              fi
+              if ! jq -e '.results[:10] | all(.[]; type == "object" and (.title | type == "string") and (.url | type == "string") and (.content == null or (.content | type == "string")))' "$resp_file" >/dev/null 2>&1; then
+                echo "web-search: tavily returned invalid response" >&2
+                return 1
+              fi
+
+              jq -r '.results[:10] | .[] | "## \(.title)\n\(.url)\n\(.content // "")\n"' "$resp_file"
+            ''
+          else
+            ''
+              echo "web-search: tavily not configured (piCodingAgent.tavilyKeyFile is null)" >&2
+              return 1
+            ''
+        }
+      }
+
+      search_searxng() {
+        ${
+          if cfg.searxngUrl != null then
+            ''
+              encoded=$(printf '%s' "$query" | jq -sRr @uri)
+              resp_file="$tmp_dir/searxng.json"
+              # -k: searxng.lan has a self-signed cert (same reason mcp-searxng
+              # sets NODE_TLS_REJECT_UNAUTHORIZED=0 in claude-code.nix).
+              curl -fsSLk --max-time 15 \
+                "${cfg.searxngUrl}/search?q=''${encoded}&format=json&safesearch=0" \
+                -o "$resp_file" || {
+                echo "web-search: searxng request failed" >&2
+                return 1
+              }
+
+              if ! jq -e '.results | type == "array"' "$resp_file" >/dev/null 2>&1; then
+                echo "web-search: searxng returned invalid response" >&2
+                return 1
+              fi
+              if ! jq -e '.results[:10] | all(.[]; type == "object" and (.title | type == "string") and (.url | type == "string") and (.content == null or (.content | type == "string")))' "$resp_file" >/dev/null 2>&1; then
+                echo "web-search: searxng returned invalid response" >&2
+                return 1
+              fi
+
+              jq -r '.results[:10] | .[] | "## \(.title)\n\(.url)\n\(.content // "")\n"' "$resp_file"
+            ''
+          else
+            ''
+              echo "web-search: searxng not configured (piCodingAgent.searxngUrl is null)" >&2
+              return 1
+            ''
+        }
+      }
+
+      case "$provider" in
+        tavily)
+          search_tavily
+          ;;
+        searxng)
+          search_searxng
+          ;;
+        auto)
+          if [ "$tavily_configured" = 1 ]; then
+            if search_tavily; then
+              exit 0
+            fi
+            if [ "$searxng_configured" != 1 ]; then
+              exit 1
+            fi
+            echo "web-search: tavily unavailable, using searxng" >&2
+          fi
+          if [ "$searxng_configured" = 1 ]; then
+            search_searxng
+          else
+            echo "web-search: not configured (piCodingAgent.tavilyKeyFile and piCodingAgent.searxngUrl are null)" >&2
             exit 1
           fi
-          query=$(printf '%s' "$*" | jq -sRr @uri)
-          # -k: searxng.lan has a self-signed cert (same reason mcp-searxng
-          # sets NODE_TLS_REJECT_UNAUTHORIZED=0 in claude-code.nix).
-          curl -fsSLk --max-time 15 \
-            "${cfg.searxngUrl}/search?q=''${query}&format=json&safesearch=0" \
-            | jq -r '.results[:10] | .[] | "## \(.title)\n\(.url)\n\(.content // "")\n"'
-        '';
-      };
+          ;;
+      esac
+    '';
+  };
 
   # Tavily research search: the pipeline (live-fetch, extract, chunk,
-  # rerank) runs on Tavily's side, so unlike web-search the query AND the
-  # result pages' selection happen off-box. Key comes from vault-agent's
-  # rendered secret at runtime (claude-code's tavily-mcp shim pattern) —
-  # never embedded in the store.
+  # rerank) runs on Tavily's side, so the query AND the result pages'
+  # selection happen off-box. Distinct from web-search (Basic snippets +
+  # SearXNG fallback). Key comes from vault-agent's rendered secret at
+  # runtime (claude-code's tavily-mcp shim pattern) — never embedded in
+  # the store.
   webResearch =
     if cfg.tavilyKeyFile == null then
       pkgs.writeShellApplication {
@@ -935,9 +1075,10 @@ in
       type = lib.types.nullOr lib.types.str;
       default = "https://searxng.lan";
       description = ''
-        Base URL for the web-search CLI's SearXNG endpoint (no trailing path).
+        Base URL for the web-search CLI's SearXNG fallback (no trailing path).
         Set to null on hosts that must not contact or embed searxng.lan;
-        web-search then fails fast with a not-configured message.
+        auto then uses Tavily only (if configured), and --provider searxng
+        fails with a not-configured message.
       '';
     };
 
@@ -946,8 +1087,10 @@ in
       default = "/run/secrets/tavily_api_key";
       description = ''
         Path to the Tavily API key rendered by vault-agent, read at
-        invocation time by the web-research CLI. Set to null on isolated
-        hosts; web-research then fails fast with a not-configured message.
+        invocation time by web-search (Basic) and web-research (Advanced).
+        Tavily sees web-search queries in auto/default mode. Set to null on
+        isolated hosts; auto then uses SearXNG only (if configured), and
+        --provider tavily / web-research fail with a not-configured message.
       '';
     };
 
