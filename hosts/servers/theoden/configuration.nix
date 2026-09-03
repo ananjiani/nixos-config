@@ -482,7 +482,8 @@ in
       workersFile = "/run/secrets/buildbot_worker_password";
       buildSystems = [ "x86_64-linux" ];
       evalMaxMemorySize = 2048;
-      evalWorkerCount = 2;
+      # One worker: two concurrent heavy eval attrs crossed MemoryHigh and reclaim stalled them to timeout.
+      evalWorkerCount = 1;
       buildMaxSilentTime = 3600;
       gitea = {
         enable = true;
@@ -761,8 +762,8 @@ in
         unitConfig.RequiresMountsFor = [ buildbotStoreRoot ];
         serviceConfig = {
           CPUQuota = "200%";
-          MemoryHigh = "5G";
-          MemoryMax = "6G";
+          MemoryHigh = "7G";
+          MemoryMax = "8G";
           MemorySwapMax = "2G";
           Slice = "buildbot-ci.slice";
         };
