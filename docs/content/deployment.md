@@ -111,8 +111,13 @@ Exact module: `modules/nixos/comin.nix`.
 - Retention: **3** boot entries, **3** successful deployments, **5** total deployments.
 - **No** automatic health rollback. A bad `main` switch stays until you reboot
   to a retained generation or recover with deploy-rs after suspending Comin.
-- Auto-reboot is **off**. Metric `comin_need_to_reboot == 1` means schedule a
-  supervised reboot; Comin will not reboot for you.
+- Auto-reboot is **on** for aragorn/boromir/samwise/theoden/erebor/denethor via
+  `comin-auto-reboot.timer` (`modules.comin.autoReboot`). It reboots only when
+  `comin_need_to_reboot == 1`, uptime > 1h, no logged-in users, and any host
+  `preRebootCheck` passes. `Persistent=false` (missed window → try tomorrow).
+  rivendell is excluded. Stagger: aragorn 04:00, boromir 04:15, samwise 04:30,
+  theoden 04:45, erebor 05:00, denethor 05:15. See
+  [ADR-014](adrs/adr-014-2026-09-04-comin-auto-reboot.md).
 
 Useful commands on a Comin host:
 
@@ -214,7 +219,7 @@ last real deploy.
 | `CominEvalFailed` | Last Nix evaluation failed |
 | `CominBuildFailed` | Last Nix build failed (check Attic / builders) |
 | `CominDeploymentFailed` | Last switch/test failed |
-| `CominNeedsReboot` | Kernel/similar change needs a supervised reboot |
+| `CominNeedsReboot` | Need-reboot metric stuck (auto-reboot skipped or failing) |
 | `CominSuspendedUnexpectedly` | Comin suspended ≥ 2h |
 | `AmmarsPcDeployPendingTooLong` | Pending desktop release older than 24h |
 | Generic failed-unit alert | Also covers hard failures of `ammars-pc-deploy.service` |
@@ -286,7 +291,7 @@ journalctl -u ammars-pc-deploy.service
   merges and Aragorn's Comin switch picks it up.
 - First successful **sleeping-desktop / WOL** deploy is still **unconfirmed** —
   exercise that path on purpose.
-- Automatic reboots remain off; treat `comin_need_to_reboot` as a schedule item.
+- Auto-reboot timers cover need-reboot on the six enabled servers; rivendell still needs a manual reboot when the metric is set.
 
 ## Source map
 
@@ -301,4 +306,5 @@ journalctl -u ammars-pc-deploy.service
 | `k8s/apps/monitoring/scrapeconfig-infrastructure.yaml` | Comin / node scrapes |
 | `k8s/apps/monitoring/helmrelease-kube-prometheus-stack.yaml` | Alert rules |
 | `docs/content/adrs/adr-009-2026-08-19-comin-pull-deployments.md` | Decision record |
+| `docs/content/adrs/adr-014-2026-09-04-comin-auto-reboot.md` | Auto-reboot decision record |
 | `.agents/plans/2026-08-19-comin-buildbot-deployment-flow.md` | Implementation plan history |
