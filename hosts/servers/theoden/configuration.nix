@@ -454,7 +454,9 @@ in
       environmentFile = "/run/secrets/attic_server_token_key";
       settings = {
         listen = "[::]:8080";
-        database.url = "postgresql:///atticd?host=/run/postgresql";
+        # user= is pinned: newer attic (sqlx/whoami) can't resolve its username
+        # under DynamicUser+PrivateUsers and falls back to "anonymous" -> peer auth fails
+        database.url = "postgresql:///atticd?host=/run/postgresql&user=atticd";
         storage = {
           type = "local";
           path = "/srv/nfs/attic";
