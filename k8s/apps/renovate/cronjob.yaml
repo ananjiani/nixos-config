@@ -15,7 +15,7 @@ spec:
         spec:
           containers:
             - name: renovate
-              image: renovate/renovate:full
+              image: renovate/renovate:full@sha256:695fa98aa26454e26407b8eb481084f8a305dc894cfbcfde3b51775e474c5d78
               env:
                 # Dynamically install manager-specific tools that are not bundled
                 # in renovate:full, such as the Flux CLI used to regenerate
