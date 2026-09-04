@@ -460,13 +460,21 @@ spec:
                   summary: "PVE exporter is down"
                   description: "Proxmox VE API exporter has been unreachable for 5 minutes. Cluster-level metrics are missing."
               - alert: ProxmoxStorageSpaceLow
-                expr: pve_storage_usage_bytes / pve_storage_size_bytes > 0.85
+                expr: pve_storage_usage_bytes / pve_storage_size_bytes > 0.80
                 for: 10m
                 labels:
                   severity: warning
                 annotations:
-                  summary: "Proxmox storage {{ $labels.id }} above 85%"
-                  description: "Storage {{ $labels.id }} on {{ $labels.instance }} is {{ $value | humanizePercentage }} full."
+                  summary: "Proxmox storage {{ $labels.id }} above 80%"
+                  description: "Storage {{ $labels.id }} on {{ $labels.instance }} is {{ $value | humanizePercentage }} full. Thin-pool exhaustion pauses guests with io-error."
+              - alert: ProxmoxStorageSpaceCritical
+                expr: pve_storage_usage_bytes / pve_storage_size_bytes > 0.90
+                for: 5m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Proxmox storage {{ $labels.id }} above 90%"
+                  description: "Storage {{ $labels.id }} on {{ $labels.instance }} is {{ $value | humanizePercentage }} full. Extend or reclaim space before QEMU pauses guests."
               - alert: ProxmoxGuestStopped
                 expr: pve_guest_info{template="false",status!="running"} == 1
                 for: 10m
