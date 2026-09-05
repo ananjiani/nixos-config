@@ -3,104 +3,139 @@
  *
  * Hooks session_before_compact and routes the summary call to
  * deepseek-v4-flash (opencode-go) with fallback to glm-5.3 (zai)
- * when opencode usage is exhausted. Falls back to default compaction
- * only when both fail.
+ * when the first model fails. Falls back to default compaction
+ * only when both fail. Abort does not start the next model.
  */
 
-import { complete } from "@earendil-works/pi-ai/compat";
-import type { Api, ExtensionAPI, Model } from "@earendil-works/pi-coding-agent";
+import { uuidv7, type Usage } from "@earendil-works/pi-ai";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { convertToLlm, serializeConversation } from "@earendil-works/pi-coding-agent";
 
-type SummaryResult = { text: string; modelName: string } | null;
+type SummaryOk = { text: string; usage: Usage; modelName: string };
+type SummaryAttempt = SummaryOk | "aborted" | null;
+
+function maxOutputTokens(model: { maxTokens?: number }): number {
+	const cap = model.maxTokens;
+	if (typeof cap === "number" && cap > 0) return Math.min(8192, cap);
+	return 8192;
+}
+
+function summaryText(content: Array<{ type: string; text?: string }>): string {
+	return content
+		.filter((c): c is { type: "text"; text: string } => c.type === "text")
+		.map((c) => c.text)
+		.join("\n");
+}
+
+function buildPrompt(
+	conversationText: string,
+	previousSummary: string | undefined,
+	customInstructions: string | undefined,
+): string {
+	const prev = previousSummary ? `\n\nPrevious session summary:\n${previousSummary}` : "";
+	const extra = customInstructions ? `\n\nAdditional focus:\n${customInstructions}` : "";
+	return `Summarize the older conversation below so work can continue. Recent turns stay in context after this summary; do not treat this as a replacement for the full history.
+
+Capture:
+- Goals and objectives
+- User constraints and preferences
+- Key decisions and rationale
+- Code/file changes with exact paths, function names, and error messages
+- Progress: distinguish completed work from planned or in-progress work
+- Blockers and open questions
+- Next steps
+
+Thorough but concise.${prev}${extra}
+
+<conversation>
+${conversationText}
+</conversation>`;
+}
 
 async function tryCompactionModel(
 	provider: string,
 	modelId: string,
-	conversationText: string,
-	previousSummary: string | undefined,
-	signal: AbortSignal | undefined,
-	ctx: {
-		modelRegistry: { find: (p: string, m: string) => Model<Api> | undefined; getApiKeyAndHeaders: (m: Model<Api>) => Promise<any> };
-		ui: { notify: (msg: string, level?: string) => void };
-	},
-	reasoningEffort?: string,
-): Promise<SummaryResult> {
+	prompt: string,
+	signal: AbortSignal,
+	ctx: ExtensionContext,
+	reasoningEffort?: "low",
+): Promise<SummaryAttempt> {
+	if (signal.aborted) return "aborted";
+
 	const model = ctx.modelRegistry.find(provider, modelId);
 	if (!model) return null;
-
-	const auth = await ctx.modelRegistry.getApiKeyAndHeaders(model);
-	if (!auth.ok || !auth.apiKey) {
-		ctx.ui.notify(`Compaction: ${modelId} not available, trying fallback`, "info");
-		return null;
-	}
-
-	const prevCtx = previousSummary ? `\n\nPrevious session summary:\n${previousSummary}` : "";
 
 	const summaryMessages = [
 		{
 			role: "user" as const,
-			content: [
-				{
-					type: "text" as const,
-					text: `Summarize this conversation for continuation. Capture:
-- Goals and objectives
-- Key decisions and rationale
-- Code/file changes and technical details
-- Current state of ongoing work
-- Blockers and open questions
-- Next steps
-
-Thorough but concise — this replaces the full history.${prevCtx}
-
-<conversation>
-${conversationText}
-</conversation>`,
-				},
-			],
+			content: [{ type: "text" as const, text: prompt }],
 			timestamp: Date.now(),
 		},
 	];
 
 	try {
-		const response = await complete(model, { messages: summaryMessages }, {
-			apiKey: auth.apiKey,
-			headers: auth.headers,
-			env: auth.env,
-			maxTokens: 8192,
-			signal,
-			...(reasoningEffort ? { reasoningEffort } : {}),
-		});
+		const response = await ctx.modelRegistry.complete(
+			model,
+			{ messages: summaryMessages },
+			{
+				maxTokens: maxOutputTokens(model),
+				signal,
+				cacheRetention: "none",
+				sessionId: uuidv7(),
+				...(reasoningEffort ? { reasoningEffort } : {}),
+			},
+		);
 
-		const text = response.content
-			.filter((c): c is { type: "text"; text: string } => c.type === "text")
-			.map((c) => c.text)
-			.join("\n");
+		if (signal.aborted || response.stopReason === "aborted") return "aborted";
+		if (response.stopReason !== "stop") return null;
+		if (response.content.some((block: { type: string }) => block.type === "toolCall")) return null;
 
+		const text = summaryText(response.content);
 		if (!text.trim()) return null;
-		return { text, modelName: modelId };
-	} catch {
+		return { text, usage: response.usage, modelName: modelId };
+	} catch (error) {
+		if (signal.aborted || (error instanceof Error && error.name === "AbortError")) return "aborted";
 		return null;
 	}
 }
 
 export default function (pi: ExtensionAPI) {
 	pi.on("session_before_compact", async (event, ctx) => {
-		const { preparation, signal } = event;
-		const { messagesToSummarize, turnPrefixMessages, tokensBefore, firstKeptEntryId, previousSummary } = preparation;
+		const { preparation, customInstructions, signal } = event;
+		const { messagesToSummarize, turnPrefixMessages, tokensBefore, firstKeptEntryId, previousSummary } =
+			preparation;
 
-		const allMessages = [...messagesToSummarize, ...turnPrefixMessages];
-		const conversationText = serializeConversation(convertToLlm(allMessages));
+		const conversationText = serializeConversation(
+			convertToLlm([...messagesToSummarize, ...turnPrefixMessages]),
+		);
+		const prompt = buildPrompt(conversationText, previousSummary, customInstructions);
 
-		// Try cheapest first, then fallback, then default compaction
-		const result = await tryCompactionModel("opencode-go", "deepseek-v4-flash", conversationText, previousSummary, signal, ctx)
-			?? await tryCompactionModel("zai", "glm-5.3", conversationText, previousSummary, signal, ctx, "low");
+		const attempts: Array<{ provider: string; modelId: string; reasoningEffort?: "low" }> = [
+			{ provider: "opencode-go", modelId: "deepseek-v4-flash" },
+			{ provider: "zai", modelId: "glm-5.3", reasoningEffort: "low" },
+		];
 
-		if (!result) return; // both failed → default compaction
+		for (const attempt of attempts) {
+			const result = await tryCompactionModel(
+				attempt.provider,
+				attempt.modelId,
+				prompt,
+				signal,
+				ctx,
+				attempt.reasoningEffort,
+			);
+			if (result === "aborted") return { cancel: true };
+			if (!result) continue;
 
-		ctx.ui.notify(`Compacted ${tokensBefore.toLocaleString()} tokens via ${result.modelName}`, "info");
-
-		return {
-			compaction: { summary: result.text, firstKeptEntryId, tokensBefore },
-		};
+			ctx.ui.notify(`Compacted ${tokensBefore.toLocaleString()} tokens via ${result.modelName}`, "info");
+			return {
+				compaction: {
+					summary: result.text,
+					firstKeptEntryId,
+					tokensBefore,
+					usage: result.usage,
+				},
+			};
+		}
 	});
 }
