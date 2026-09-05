@@ -114,10 +114,17 @@ Exact module: `modules/nixos/comin.nix`.
 - Auto-reboot is **on** for aragorn/boromir/samwise/theoden/erebor/denethor via
   `comin-auto-reboot.timer` (`modules.comin.autoReboot`). It reboots only when
   `comin_need_to_reboot == 1`, uptime > 1h, no logged-in users, and any host
-  `preRebootCheck` passes. `Persistent=false` (missed window → try tomorrow).
+  `preRebootCheck` passes. k3s servers then run a PDB-aware cordon and drain
+  before the reboot request. A failed drain uncordons the node and skips the
+  reboot. Single-replica protected workloads therefore block unattended
+  reboot of their current node.
+  `Persistent=false` (missed window → try tomorrow).
   rivendell is excluded. Stagger: aragorn 04:00, boromir 04:15, samwise 04:30,
   theoden 04:45, erebor 05:00, denethor 05:15. See
   [ADR-014](adrs/adr-014-2026-09-04-comin-auto-reboot.md).
+- Before a manual k3s-node reboot, relocate or stop any protected
+  single-replica workload on that node. A shutdown already accepted by
+  systemd cannot use a failed drain to cancel itself.
 
 Useful commands on a Comin host:
 

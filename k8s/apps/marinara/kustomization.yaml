@@ -8,6 +8,7 @@ resources:
   - externalsecret.yaml
   - admin-proxy.yaml
   - deployment.yaml
+  - pdb.yaml
   - service.yaml
   - certificate.yaml
   - networkpolicy.yaml
