@@ -28,6 +28,7 @@ spec:
         - "192.168.1.27:9100" # theoden
         - "192.168.1.28:9100" # aragorn (desktop-deploy textfile + systemd)
         - "192.168.1.29:9100" # rivendell
+        - "100.64.0.21:9100" # erebor (Tailscale; Comin NixCI gate textfile)
       labels:
         job: nixos-node-exporter
 ---

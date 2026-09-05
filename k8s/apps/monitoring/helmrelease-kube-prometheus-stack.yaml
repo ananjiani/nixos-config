@@ -763,6 +763,18 @@ spec:
                   summary: "Comin remains suspended on {{ $labels.instance }}"
                   description: "Agent has been suspended for 2h. Resume after recovery, or keep suspended intentionally."
 
+              - alert: CominNixCiCacheError
+                expr: max(comin_nixci_cache_error) == 1
+                for: 10m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Comin NixCI cache gate error"
+                  description: >-
+                    One or more gated Comin hosts cannot authenticate to or reach
+                    cache.nix-ci.com. The gate falls back to local/remote builds.
+                    Cache 404 while a generation is pending does not fire this alert.
+
       desktop-deploy-alerts:
         groups:
           - name: desktop-deploy

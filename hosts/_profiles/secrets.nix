@@ -29,9 +29,9 @@
     };
   };
 
-  # NixCI authenticated cache. Priority 50: after Attic (10) and cache.nixos.org (40).
+  # NixCI authenticated cache. Priority 5: before Attic (10) and cache.nixos.org (40).
   nix.settings = {
-    extra-substituters = [ "https://cache.nix-ci.com?priority=50" ];
+    extra-substituters = [ "https://cache.nix-ci.com?priority=5" ];
     extra-trusted-public-keys = [ "nix-ci:g3xV5BDTLtIBZr/A00IU1x0EtKKlb7YLgBN2SgYgM6A=" ];
     netrc-file = config.sops.secrets.nix_ci_netrc.path;
   };

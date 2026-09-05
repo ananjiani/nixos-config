@@ -45,6 +45,8 @@
       comin = {
         enable = lib.mkDefault true;
         openFirewall = lib.mkDefault true;
+        # NixCI + cache.nix-ci.com gate. Denethor does not use this profile.
+        ciGate.enable = true;
       };
     };
     # Prometheus node exporter for monitoring

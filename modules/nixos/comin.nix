@@ -123,6 +123,10 @@ in
         '';
       };
     };
+
+    ciGate = {
+      enable = lib.mkEnableOption "NixCI + cache.nix-ci.com build confirmer gate";
+    };
   };
 
   config = lib.mkMerge [
@@ -204,6 +208,68 @@ in
           OnCalendar = rebootCfg.calendar;
           Persistent = false;
           Unit = "comin-auto-reboot.service";
+        };
+      };
+    })
+
+    (lib.mkIf (cfg.enable && cfg.ciGate.enable) {
+      services = {
+        comin = {
+          buildConfirmer = {
+            mode = "manual";
+          };
+        };
+        prometheus.exporters.node = {
+          enabledCollectors = [ "textfile" ];
+          extraFlags = [ "--collector.textfile.directory=/var/lib/comin-gate/textfile" ];
+        };
+      };
+
+      systemd = {
+        tmpfiles.rules = [
+          "d /var/lib/comin-gate 0755 root root -"
+          "d /var/lib/comin-gate/textfile 0755 root root -"
+        ];
+
+        services.comin-ci-gate = {
+          description = "Approve Comin builds from NixCI + cache.nix-ci.com";
+          after = [
+            "network-online.target"
+            "comin.service"
+          ];
+          wants = [
+            "network-online.target"
+            "comin.service"
+          ];
+          serviceConfig = {
+            Type = "oneshot";
+            TimeoutStartSec = "180";
+            PrivateTmp = true;
+            ExecStart = "${pkgs.python3}/bin/python3 ${./comin-ci-gate.py}";
+            Environment = [
+              "GRPCURL=${pkgs.grpcurl}/bin/grpcurl"
+              "COMIN_PROTO=${inputs.comin}/pkg/protobuf/services.proto"
+              "COMIN_PROTO_IMPORT=${inputs.comin}/pkg/protobuf"
+              "COMIN_GRPC_SOCK=/var/lib/comin/grpc.sock"
+              "NIXCI_URL_BASE=https://nix-ci.com/cb:ananjiani:infra"
+              "CACHE_URL=https://cache.nix-ci.com"
+              "NETRC=/run/secrets/nix_ci_netrc"
+              "STATE_DIR=/var/lib/comin-gate/textfile"
+              "GATE_HOSTNAME=${config.networking.hostName}"
+              "CHECK_ATTR=checks.x86_64-linux.nixos-${config.networking.hostName}"
+            ];
+          };
+        };
+
+        timers.comin-ci-gate = {
+          description = "Poll Comin NixCI build gate";
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnBootSec = "30s";
+            OnUnitInactiveSec = "60s";
+            Persistent = false;
+            Unit = "comin-ci-gate.service";
+          };
         };
       };
     })
