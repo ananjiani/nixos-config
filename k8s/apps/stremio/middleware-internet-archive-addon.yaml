@@ -1,0 +1,11 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: internet-archive-addon-rate-limit
+  namespace: stremio
+spec:
+  rateLimit:
+    average: 30
+    burst: 10
+    period: 1m

@@ -244,6 +244,10 @@ in
                 answer = "192.168.1.52";
               }
               {
+                domain = "archive-stremio.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
                 domain = "prowlarr.dimensiondoor.xyz";
                 answer = "192.168.1.52";
               }
