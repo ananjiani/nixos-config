@@ -261,6 +261,16 @@ let
     mv "$tmp" "$env_file"
     chmod 0600 "$env_file"
   '';
+  # Shadow Vesktop for CLI, app menu, and niri startup; preserve HM's Vencord override.
+  vesktopWrapper = lib.hiPrio (
+    pkgs.writeShellScriptBin "vesktop" ''
+      exec /run/wrappers/bin/mullvad-exclude ${
+        (config.programs.vesktop.package.override {
+          withSystemVencord = config.programs.vesktop.vencord.useSystem;
+        })
+      }/bin/vesktop "$@"
+    ''
+  );
   # systemd user units get a minimal PATH; pi sessions spawned by pi-web need
   # the usual user toolchains (npm globals, HM profile, setuid wrappers, ...).
   # piShim must come first so pi-web's updater can't bypass it.
@@ -286,6 +296,7 @@ in
       swgrGamescope
       tlopoGamescope
       piWeb
+      vesktopWrapper
     ];
     sessionVariables.SSH_ASKPASS = "${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass";
     shellAliases = {
@@ -433,6 +444,16 @@ in
 
   # Experimental HDR fork (must match NixOS programs.niri.package)
   programs.niri.package = pkgs.niri-hdr;
+
+  # niri owns startup. Disable Vesktop's direct-Electron autostart, which bypasses the wrapper.
+  # Back up any existing unmanaged file before the first Home Manager switch.
+  xdg.configFile."autostart/vesktop.desktop".text = ''
+    [Desktop Entry]
+    Type=Application
+    Name=Vesktop
+    Exec=vesktop --start-minimized
+    Hidden=true
+  '';
 
   # niri-flake's schema has no `hdr` key. Sunshine's optional include comes
   # first so its active DP-3 profile shadows the generated DP-3 `off` block;
