@@ -142,10 +142,8 @@ Use the full plan body as the description, formatted as markdown with \`[ ]\` ch
 	// Neutralize stale plan mode context when not in plan mode.
 	//
 	// IMPORTANT: replace content in place, do NOT filter messages out.
-	// pi-claude-bridge tracks a message-count cursor into its Claude Code
-	// session; a context shorter than the cursor hits its "clean start for
-	// shorter context" path (no --resume, priors dropped), so Claude loses
-	// all history from before plan mode was toggled off.
+	// Removing messages shifts later positions and can break session history
+	// / resume continuity. Keep the message slots; blank the stale text.
 	const STALE_STUB = "[stale plan-mode instructions removed — plan mode is off]";
 	pi.on("context", async (event) => {
 		if (planModeEnabled) return;
