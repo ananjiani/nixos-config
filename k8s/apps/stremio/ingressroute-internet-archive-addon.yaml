@@ -1,0 +1,29 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: internet-archive-addon
+  namespace: stremio
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Internet Archive Add-on"
+    gethomepage.dev/group: "Media"
+    gethomepage.dev/icon: "stremio.png"
+    gethomepage.dev/description: "Internet Archive streams for Stremio"
+    gethomepage.dev/href: "https://archive-stremio.dimensiondoor.xyz/manifest.json"
+    gethomepage.dev/pod-selector: "app=internet-archive-addon"
+    gethomepage.dev/siteMonitor: "http://internet-archive-addon.stremio.svc:7000/health"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`archive-stremio.dimensiondoor.xyz`)
+      kind: Rule
+      middlewares:
+        - name: internet-archive-addon-rate-limit
+      services:
+        - name: internet-archive-addon
+          port: 7000
+  tls:
+    secretName: stremio-tls

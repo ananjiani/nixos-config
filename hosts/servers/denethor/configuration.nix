@@ -131,6 +131,10 @@
     enable = true;
     listenAddress = "10.30.30.10";
     openFirewall = false;
+    autoReboot = {
+      enable = true;
+      calendar = "*-*-* 05:15:00";
+    };
   };
 
   # Public caches only: theoden.lan (LAN Attic) is unreachable from VLAN 30

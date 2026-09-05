@@ -12,4 +12,5 @@ spec:
   dnsNames:
     - stremio.dimensiondoor.xyz
     - comet.dimensiondoor.xyz
+    - archive-stremio.dimensiondoor.xyz
     - prowlarr.dimensiondoor.xyz

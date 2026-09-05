@@ -196,6 +196,32 @@ in
       enable = true;
       priority = 100;
     };
+
+    # Skip reboot while Buildbot has a running builder. Metrics unreachable
+    # counts as busy (conservative). Gauge lives on buildbot-prometheus :9101.
+    comin.autoReboot = {
+      enable = true;
+      calendar = "*-*-* 04:45:00";
+      preRebootCheck = ''
+        set -eu
+        metrics=$(curl -fsS --max-time 5 http://127.0.0.1:9101/metrics) || {
+          echo "comin-auto-reboot: buildbot metrics unreachable; treating as busy"
+          exit 1
+        }
+        running=$(printf '%s\n' "$metrics" | awk '/^buildbot_builders_running_total / { print $2; exit }')
+        if [ -z "$running" ]; then
+          echo "comin-auto-reboot: buildbot_builders_running_total missing; treating as busy"
+          exit 1
+        fi
+        case "$running" in
+          0|0.0) exit 0 ;;
+          *)
+            echo "comin-auto-reboot: buildbot builders running ($running); skipping"
+            exit 1
+            ;;
+        esac
+      '';
+    };
   };
 
   # Pre-create service users so SOPS can set secret ownership during activation

@@ -130,15 +130,20 @@ in
         "L+ /usr/local/bin/iscsiadm - - - - /run/current-system/sw/bin/iscsiadm"
         "d /usr/sbin 0755 root root -"
         "L+ /usr/sbin/iscsiadm - - - - /run/current-system/sw/bin/iscsiadm"
-        # Kubelet drop-in to enable image GC by age.
-        # k3s hardcodes imageMaximumGCAge=0s in 00-k3s-defaults.conf but the
-        # kubelet merges all *.conf files in --config-dir (sorted alphanum),
-        # so 99- overrides 00-. NOTE: the kubelet silently ignores non-.conf
-        # files — the suffix is mandatory.
+        # Kubelet drop-in for image GC.
+        # k3s hardcodes imageMaximumGCAge=0s and high disk-threshold defaults
+        # in 00-k3s-defaults.conf. The kubelet merges all *.conf files in
+        # --config-dir (sorted alphanum), so 99- overrides 00-. NOTE: the
+        # kubelet silently ignores non-.conf files — the suffix is mandatory.
+        # Age GC deletes unused images after 7 days. Disk-threshold GC starts
+        # at 70% guest filesystem use and stops at 60%. This is the guest
+        # filesystem, not the Proxmox thin pool.
         "L+ /var/lib/rancher/k3s/agent/etc/kubelet.conf.d/99-image-gc.conf - - - - ${pkgs.writeText "99-image-gc.conf" ''
           apiVersion: kubelet.config.k8s.io/v1beta1
           kind: KubeletConfiguration
           imageMaximumGCAge: 168h
+          imageGCHighThresholdPercent: 70
+          imageGCLowThresholdPercent: 60
         ''}"
       ];
 

@@ -161,6 +161,17 @@ resource "cloudflare_dns_record" "comet" {
   comment = "Comet Stremio addon (internal) - managed by Terraform"
 }
 
+# Internet Archive addon for Stremio
+resource "cloudflare_dns_record" "archive_stremio" {
+  zone_id = local.zone_id
+  name    = "archive-stremio"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
+  type    = "A"
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
+  comment = "Internet Archive Stremio addon (internal) - managed by Terraform"
+}
+
 # Prowlarr indexer manager
 resource "cloudflare_dns_record" "prowlarr" {
   zone_id = local.zone_id

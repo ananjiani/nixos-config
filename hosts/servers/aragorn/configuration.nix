@@ -542,6 +542,12 @@ in
 
   # Plain tailnet client — not routing infrastructure
   modules = {
+    # Finish before ammars-pc-deploy.timer at 04:30.
+    comin.autoReboot = {
+      enable = true;
+      calendar = "*-*-* 04:00:00";
+    };
+
     tailscale = {
       exitNode = false;
       subnetRoutes = [ ];
