@@ -731,6 +731,7 @@ let
       "npm:pi-xai-oauth"
       "npm:pi-sense"
       "npm:@llblab/pi-telegram@0.39.3"
+      "npm:@aliou/pi-processes@0.12.0"
     ]
     ++ lib.optionals cfg.computerUse.enable [ piComputerUseRoot ];
     extensions = [
