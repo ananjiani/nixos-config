@@ -59,5 +59,11 @@
     enable = lib.mkDefault true;
     useSops = lib.mkDefault false;
     tokenFile = lib.mkDefault "/run/secrets/attic_push_token";
+    upstreamCacheKeyNames = [
+      "cache.nixos.org-1"
+      "nix-community.cachix.org-1"
+      "hyprland.cachix.org-1"
+      "pre-commit-hooks.cachix.org-1"
+    ];
   };
 }

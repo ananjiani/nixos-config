@@ -796,6 +796,55 @@ in
           Slice = "buildbot-ci.slice";
         };
       };
+      attic-cache-config =
+        let
+          atticdCfg = config.services.atticd;
+          payload = pkgs.writeText "attic-middle-earth-upstream-cache-keys.json" (
+            builtins.toJSON {
+              upstream_cache_key_names = config.services.attic-watch-store.upstreamCacheKeyNames;
+            }
+          );
+        in
+        {
+          description = "Apply Attic middle-earth upstream cache key names";
+          wantedBy = [ "multi-user.target" ];
+          after = [
+            "atticd.service"
+            "vault-agent-default.service"
+          ];
+          requires = [ "atticd.service" ];
+          wants = [ "vault-agent-default.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            EnvironmentFile = atticdCfg.environmentFile;
+            DynamicUser = true;
+            User = atticdCfg.user;
+            Group = atticdCfg.group;
+            UMask = "0077";
+          };
+          script = ''
+            set -euo pipefail
+            set +x
+            token="$(${atticdCfg.package}/bin/atticadm -f "${atticdCfg.configFile}" make-token --sub attic-cache-config --validity 10m --configure-cache middle-earth)"
+            ${pkgs.curl}/bin/curl \
+              --fail --show-error \
+              --connect-timeout 5 \
+              --max-time 15 \
+              --retry 5 \
+              --retry-max-time 60 \
+              --retry-connrefused \
+              -X PATCH \
+              --header 'Content-Type: application/json' \
+              --data-binary "@${payload}" \
+              --config - \
+              http://localhost:8080/_api/v1/cache-config/middle-earth \
+            <<EOF
+            header = "Authorization: Bearer $token"
+            EOF
+          '';
+        };
+
       attic-watch-store = {
         after = [ "buildbot-nix-daemon.service" ];
         requires = [ "buildbot-nix-daemon.service" ];
