@@ -1,6 +1,7 @@
-# Secrets infrastructure — SOPS bootstrap, vault-agent, and Attic push token
+# Secrets infrastructure — SOPS bootstrap, vault-agent, Attic, and NixCI cache
 #
-# Imported by server and workstation profiles. Not used by the ISO.
+# Imported by server and workstation profiles and steamdeck.
+# Not used by the ISO, WSL, or denethor (no SOPS; do not leak cache.nix-ci.com).
 {
   config,
   lib,
@@ -13,14 +14,26 @@
     ../../modules/nixos/server/attic-watch-store.nix
   ];
 
-  # SOPS — bootstrap vault-agent credentials
+  # SOPS — vault-agent bootstrap and NixCI netrc (root-only)
   sops = {
     defaultSopsFile = ../../secrets/secrets.yaml;
     age.keyFile = lib.mkDefault "/var/lib/sops-nix/key.txt";
     secrets = {
       vault_role_id = { };
       vault_secret_id = { };
+      nix_ci_netrc = {
+        owner = "root";
+        group = "root";
+        mode = "0400";
+      };
     };
+  };
+
+  # NixCI authenticated cache. Priority 50: after Attic (10) and cache.nixos.org (40).
+  nix.settings = {
+    extra-substituters = [ "https://cache.nix-ci.com?priority=50" ];
+    extra-trusted-public-keys = [ "nix-ci:g3xV5BDTLtIBZr/A00IU1x0EtKKlb7YLgBN2SgYgM6A=" ];
+    netrc-file = config.sops.secrets.nix_ci_netrc.path;
   };
 
   # Vault agent — fetches secrets from OpenBao on erebor
