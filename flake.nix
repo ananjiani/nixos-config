@@ -1,4 +1,28 @@
 {
+  # Public binary caches for CI workers and hosts (LAN/private caches stay out).
+  nixConfig = {
+    extra-substituters = [
+      "https://nix-community.cachix.org"
+      "https://doom-emacs-unstraightened.cachix.org"
+      "https://hyprland.cachix.org"
+      "https://claude-code.cachix.org"
+      "https://comfyui.cachix.org"
+      "https://cache.flox.dev"
+      "https://pre-commit-hooks.cachix.org"
+      "https://hermes-agent.cachix.org"
+    ];
+    extra-trusted-public-keys = [
+      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      "doom-emacs-unstraightened.cachix.org-1:O5oOlRPnmQEvVaFyuMTmthCEooHbrg54WgSLR07tmg4="
+      "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+      "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
+      "comfyui.cachix.org-1:33mf9VzoIjzVbp0zwj+fT51HG0y31ZTK3nzYZAX0rec="
+      "flox-cache-public-1:7F4OyH7ZCnFhcze3fJdfyXYLQw/aV7GEed86nQ7IsOs="
+      "pre-commit-hooks.cachix.org-1:Fh9gmh3LNW5ql37bCKCQ3UPE7AXrBVOeHLiuTJfV7Jo="
+      "hermes-agent.cachix.org-1:jN3pjR50Mxi4SESKC/FIMNM6/LCosvPk2VUwzVvebzU="
+    ];
+  };
+
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-25.11";
     nixpkgs-unstable.url = "nixpkgs/nixpkgs-unstable";
@@ -611,6 +635,19 @@
 
         # DevShell (cached in Attic for faster `nix develop` across machines)
         devshell = self.devShells.${system}.default;
+
+        comin-ci-gate-tests =
+          pkgs.runCommand "comin-ci-gate-tests"
+            {
+              nativeBuildInputs = [ pkgs.python3 ];
+            }
+            ''
+              mkdir tests
+              cp ${./modules/nixos/comin-ci-gate.py} comin-ci-gate.py
+              cp ${./modules/nixos/tests/test-comin-ci-gate.py} tests/test-comin-ci-gate.py
+              python3 tests/test-comin-ci-gate.py
+              touch "$out"
+            '';
 
         pre-commit-check = inputs.git-hooks.lib.${system}.run {
           src = ./.;

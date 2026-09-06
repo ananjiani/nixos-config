@@ -8,6 +8,9 @@
   ...
 }:
 
+let
+  publicCaches = (import ../../flake.nix).nixConfig;
+in
 {
   imports = [
     ../../modules/nixos/ssh.nix
@@ -61,27 +64,11 @@
         "root"
         "ammar"
       ];
-      substituters = [
-        "https://nix-community.cachix.org"
-        "https://doom-emacs-unstraightened.cachix.org"
-        "https://hyprland.cachix.org"
-        "https://claude-code.cachix.org"
-        "https://comfyui.cachix.org"
-        "https://cache.flox.dev"
-        "https://pre-commit-hooks.cachix.org"
-        "https://hermes-agent.cachix.org"
+      substituters = publicCaches.extra-substituters ++ [
         # "https://attic.dimensiondoor.xyz/middle-earth" # Attic via Traefik (disabled until K8s routing ready)
         "http://theoden.lan:8080/middle-earth?priority=10" # Attic direct (override server priority 41 so LAN cache beats cache.nixos.org=40)
       ];
-      trusted-public-keys = [
-        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-        "doom-emacs-unstraightened.cachix.org-1:O5oOlRPnmQEvVaFyuMTmthCEooHbrg54WgSLR07tmg4="
-        "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
-        "claude-code.cachix.org-1:YeXf2aNu7UTX8Vwrze0za1WEDS+4DuI2kVeWEE4fsRk="
-        "comfyui.cachix.org-1:33mf9VzoIjzVbp0zwj+fT51HG0y31ZTK3nzYZAX0rec="
-        "flox-cache-public-1:7F4OyH7ZCnFhcze3fJdfyXYLQw/aV7GEed86nQ7IsOs="
-        "pre-commit-hooks.cachix.org-1:Fh9gmh3LNW5ql37bCKCQ3UPE7AXrBVOeHLiuTJfV7Jo="
-        "hermes-agent.cachix.org-1:jN3pjR50Mxi4SESKC/FIMNM6/LCosvPk2VUwzVvebzU="
+      trusted-public-keys = publicCaches.extra-trusted-public-keys ++ [
         "middle-earth:QJM6g097RUDyZA0OG00fXc7JxFMOXN3J5ZBX8j+QfFI="
       ];
       # Substitution tuning
