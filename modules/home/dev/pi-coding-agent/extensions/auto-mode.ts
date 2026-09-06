@@ -17,7 +17,7 @@ import { Key } from "@earendil-works/pi-tui";
 type Mode = "off" | "auto" | "danger";
 
 (globalThis as any).__autoModeRef ??= { mode: "off" as Mode };
-const ref = (globalThis as any).__autoModeRef as { mode: Mode };
+const ref = (globalThis as any).__autoModeRef as { mode: Mode; bound?: boolean };
 
 const ORDER: Mode[] = ["off", "auto", "danger"];
 const ARGS = ["safe", "danger", "off"] as const;
@@ -100,7 +100,14 @@ export default function (pi: ExtensionAPI) {
 
 	// Restore state on session start. --auto flag forces safe; otherwise
 	// replay the last mode from session history (covers /compact, reload).
-	pi.on("session_start", async (_event, ctx) => {
+	// In-process subagents bind with reason "startup" and empty entries;
+	// keep the parent process policy instead of resetting to off.
+	pi.on("session_start", async (event, ctx) => {
+		if (event.reason === "startup" && ref.bound) {
+			render(ctx);
+			return;
+		}
+		ref.bound = true;
 		if (pi.getFlag("auto") === true) {
 			ref.mode = "auto";
 		} else {
