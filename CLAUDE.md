@@ -237,7 +237,7 @@ Load-bearing repo gotchas — each is a hard-won lesson that silently breaks thi
 
 ### Deployment workflow
 
-- **`main` is production**: work on feature branches. Direct pushes are blocked; merge only after required `buildbot/nix-build` succeeds.
+- **`main` is production**: work on feature branches. Direct pushes are blocked; merge only after all required NixCI contexts (`configure`, `show x86_64-linux`, `build <flake attribute>`) succeed. Buildbot remains advisory only.
 - **Comin owns routine server deployment**: Buildbot checks/builds and fills Attic; it never activates hosts. Use deploy-rs only for recovery after suspending Comin.
 - **Testing branches are disposable targets**: use `testing-<hostname>` for a host test deployment. Do normal work on `feat/*` or `fix/*`, then promote the tested SHA to `main`.
 - **Full runbook**: read `docs/content/deployment.md` before changing CI, Comin, branch protection, desktop deployment, or recovery behavior.
