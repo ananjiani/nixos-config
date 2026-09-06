@@ -56,7 +56,7 @@ let
   desktopHostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINnidnIXwZdzKVv6fZZmoAOStpX5ZQdHjpvH6cR4yKjA";
   ntfyUrl = "https://ntfy.dimensiondoor.xyz/monitoring";
   repoHttps = "https://codeberg.org/ananjiani/infra.git";
-  statusApi = "https://codeberg.org/api/v1/repos/ananjiani/infra/commits";
+  nixciApi = "https://nix-ci.com/cb:ananjiani:infra";
   stateDir = "/var/lib/desktop-deploy";
   metricsDir = "/var/lib/desktop-deploy/metrics";
 
@@ -172,7 +172,7 @@ let
       BCAST=${desktopBroadcast}
       NTFY=${ntfyUrl}
       REPO=${repoHttps}
-      STATUS_API=${statusApi}
+      NIXCI_API=${nixciApi}
       SAFETY=${ammarsPcSafetyCheck}
       RESULTS=(success woke_success active wake_failed dirty maintenance failure ignored)
       # One array element per ssh option, expanded as "''${SSH_OPTS[@]}" so
@@ -279,7 +279,7 @@ let
             ;;
           maintenance)
             title="ammars-pc skipped: CI or maintenance"
-            body="Buildbot not green, or nix-gc/optimise is running. Did not deploy $short. Still pending."
+            body="NixCI not green, or nix-gc/optimise is running. Did not deploy $short. Still pending."
             tags="warning"
             priority="4"
             ;;
@@ -352,24 +352,24 @@ let
       fi
       now >"$STATE/last-attempt"
 
-      # Latest buildbot/nix-build status for this SHA must be a success; a
-      # stale older success must not satisfy a newer pending/failed run.
+      # NixCI suite must be green for this exact main SHA before WOL/deploy:
+      # commit/ref match, suite success, and every run success or cached.
       # Both paths route through finish() so metrics/ntfy are final, unlike
       # a bare exit.
-      if ! status_json=$(curl -fsS --max-time 30 "$STATUS_API/$sha/status"); then
-        echo "ammars-pc-deploy: codeberg status query failed" >&2
+      if ! suite_json=$(curl -fsS --max-time 30 -H 'Accept: application/json' "$NIXCI_API/main/$sha"); then
+        echo "ammars-pc-deploy: nix-ci suite query failed" >&2
         finish failure "$sha" 1 1
       fi
-      if ! printf '%s' "$status_json" | jq -e --arg ctx buildbot/nix-build '
-          .statuses
-          | map(select(.context == $ctx))
-          | sort_by(.id)
-          | last
-          | .status == "success"
+      if ! printf '%s' "$suite_json" | jq -e --arg sha "$sha" '
+          .commit == $sha
+          and .ref == "main"
+          and .status == "success"
+          and (.runs | length > 0)
+          and all(.runs[]; .status == "success" or .status == "cached")
         ' >/dev/null; then
         # CI still pending/failed for this SHA: a maintenance skip — the
         # release stays pending and is retried at the next nightly window.
-        echo "ammars-pc-deploy: $sha not green on buildbot/nix-build yet; staying pending, no WOL" >&2
+        echo "ammars-pc-deploy: $sha not green on NixCI yet; staying pending, no WOL" >&2
         finish maintenance "$sha" 1 0
       fi
 

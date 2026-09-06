@@ -32,9 +32,12 @@ Operator guide for how code reaches hosts. Rationale lives in
           v
    Codeberg (main protected, squash merge)
           |
-          +--> Buildbot: eval + build + status
+          +--> NixCI: build every flake output, fill cache.nix-ci.com,
+          |    publish the required commit statuses
+          |
+          +--> Buildbot: advisory eval + build + status (A/B comparison)
           |    Attic watcher: upload outputs asynchronously
-          |    (neither activates a host)
+          |    (none of these activate a host)
           |
           +--> Comin on 7 servers: poll ~1/min, pull main/testing-*
           |    Six SOPS servers wait for NixCI + cache.nix-ci.com, then
@@ -47,13 +50,30 @@ Operator guide for how code reaches hosts. Rationale lives in
 | Role | What it does | What it never does |
 | --- | --- | --- |
 | Codeberg `main` / PRs | Source of truth. Direct push to `main` is blocked. PRs to `main` use squash merges. | Host activation |
-| Buildbot | Checks, builds host closures, and reports status | Deploy / SSH activate |
+| Buildbot | Advisory checks and builds for A/B comparison and private projects | Required merge status; deploy / SSH activate |
 | Attic (`middle-earth`) | Store watcher uploads outputs asynchronously; hosts use this warm binary cache | Decide what is live |
 | Comin (7 servers) | Polls Codeberg, builds/substitutes, `switch` on `main`, `test` on `testing-<host>` | Auto health rollback |
 | Comin NixCI gate (6 SOPS servers) | After eval, confirm `build` only if the output is not already local; confirm `deploy` for every actual activation, including local-ready outputs. NixCI green + root narinfo (or cache down). Not a full-closure guarantee. | Blanket `comin confirmation accept`; Codeberg/Buildbot status |
 | deploy-rs via Aragorn | Nightly activity-aware desktop deploy; manual recovery path for servers | Routine server convergence |
 
-Required PR check: **`buildbot/nix-build`**.
+Required PR checks: every NixCI context for the flake — `configure`, `show x86_64-linux`, and one `build <flake attribute>` per built output (22 at the time of writing). The exact live list is the set of Codeberg commit-status contexts that do not start with `buildbot/` or `operator/` and contain no `/`. Never use a wildcard pattern: Forgejo glob protection passes once already-published statuses are green and does not wait for missing jobs, so a partially published suite merges prematurely.
+
+Buildbot stays enabled on this repo (`buildbot-nix` topic) but is advisory — for A/B comparison and private projects.
+
+When you add a flake check/package/devShell output, NixCI publishes a new `build <attribute>` context on the next run. Add it to the required list or it merges ungated; if you remove an output, remove its context or every merge stays pending. Update the protection with the pipeline below after the merge that adds or removes outputs:
+
+```bash
+sha=$(git ls-remote origin refs/heads/main | cut -f1)
+tea api "repos/ananjiani/infra/commits/$sha/status" \
+  | jq '.statuses[].context
+      | select(startswith("buildbot/") | not)
+      | select(startswith("operator/") | not)
+      | select(contains("/") | not)' \
+  | jq -s '{enable_status_check: true, status_check_contexts: .}' \
+  | tea api -X PATCH repos/ananjiani/infra/branch_protections/main --data @-
+```
+
+Run it on a fully green `main` SHA so the published context set is complete.
 
 `buildbot/nix-eval` is **not** required. A warning there can mean eval
 succeeded with warnings. Do not block a merge on eval alone.
@@ -62,11 +82,11 @@ succeeded with warnings. Do not block a merge on eval alone.
 
 1. Push a feature branch.
 2. Open a PR to `main`.
-3. Wait for **`buildbot/nix-build`** success on the PR head. The separate Attic upload may still be finishing.
+3. Wait for all NixCI `build <attribute>` contexts (plus `configure` and `show x86_64-linux`) to succeed on the PR head. The separate Attic upload may still be finishing.
 4. Squash-merge. An outdated PR can still merge without conflicts after that required head check passes.
 5. Buildbot checks the new squash commit on `main`. That SHA is what hosts consume — not the old PR head.
 6. Servers: Comin polls (~1 minute) and evaluates. The six SOPS servers wait for the NixCI gate before build (if the output is not already local) and before deploy; Denethor builds immediately. Then switch (or test).
-7. Desktop (`ammars-pc`): waits for Aragorn's **04:30** local timer and a green `buildbot/nix-build` on that exact `main` SHA. No midday catch-up.
+7. Desktop (`ammars-pc`): waits for Aragorn's **04:30** local timer and a green NixCI suite (exact commit/ref match, every run `success`/`cached`) on that exact `main` SHA. No midday catch-up.
 
 ## Risky single-host workflow (`testing-<hostname>`)
 
@@ -78,7 +98,7 @@ abandonment, then recreate it from current `main` before reuse.
 1. Make sure you have console or remote-reboot access outside SSH. A bad test can break the network.
 2. Create a feature branch from current `main`.
 3. Open a PR from the feature branch to `testing-<hostname>`.
-4. Wait for `buildbot/nix-build`, then fast-forward merge into the testing branch. Choose FF-only for `testing-*` even though the repo default is squash.
+4. Wait for all required NixCI contexts, then fast-forward merge into the testing branch. Choose FF-only for `testing-*` even though the repo default is squash.
 5. That host's Comin uses operation **`test`** (temporary activation). Other hosts ignore the branch.
 6. Verify behavior on that host.
 7. If bad, reboot to the previous persistent `main` generation. Fix or abandon the testing branch.
@@ -185,7 +205,7 @@ Controller: Aragorn systemd timer `ammars-pc-deploy.timer` at **04:30** local.
 Each run:
 
 1. Reads exact `main` SHA from Codeberg.
-2. Requires the latest `buildbot/nix-build` status for that SHA to be success.
+2. Requires the NixCI suite for that SHA to be green: exact `commit`/`ref` match, suite `status=success`, and every run `success` or `cached` (queried from `https://nix-ci.com/cb:ananjiani:infra/main/<sha>`).
 3. Path filter (after CI, before WOL): compare that SHA to the actual last
    deployed SHA (`last-success`). If every changed path is under `docs/` or
    `k8s/`, finish as `ignored` — no SSH, no WOL, no deploy. Empty
@@ -314,7 +334,7 @@ nix develop --command deploy .#boromir --auto-rollback false --magic-rollback fa
 
 Do **not** disable rollback on other hosts as a habit.
 
-3. Fix `main` (revert / forward fix, green `buildbot/nix-build`, merge).
+3. Fix `main` (revert / forward fix, green NixCI suite, merge).
 4. Only then:
 
 ```bash
@@ -335,7 +355,7 @@ journalctl -u ammars-pc-deploy.service
 - All **7** Comin servers track `main`; exporters are healthy (including
   Erebor via Tailscale and Denethor via the Work VLAN metrics pinhole).
 - Buildbot deploy hook / fleet key removed — CI builds and caches only.
-- Codeberg requires `buildbot/nix-build` for `main`, allows mergeable outdated PRs, and defaults to squash merge.
+- Codeberg requires all NixCI contexts for `main` (no wildcards), allows mergeable outdated PRs, and defaults to squash merge. Buildbot is advisory.
 - Desktop active/unlocked skip path and new ntfy wording are confirmed.
 - Docs/k8s-only pre-WOL filter is implemented in
   `hosts/servers/aragorn/configuration.nix` but **not live** until that change
