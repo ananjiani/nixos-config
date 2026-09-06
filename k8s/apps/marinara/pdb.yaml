@@ -1,0 +1,12 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: marinara
+  namespace: marinara
+spec:
+  # Auto-reboot drains honor PDBs, so the node that hosts the only writer stays online.
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: marinara

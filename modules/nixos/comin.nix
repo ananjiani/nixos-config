@@ -72,6 +72,17 @@ let
       log "preRebootCheck ok"
     ''}
 
+    ${lib.optionalString (rebootCfg.preRebootAction != null) ''
+      log "running preRebootAction"
+      if ! (
+      ${rebootCfg.preRebootAction}
+      ); then
+        log "preRebootAction failed; skipping reboot"
+        exit 0
+      fi
+      log "preRebootAction ok"
+    ''}
+
     log "rebooting"
     ${pkgs.systemd}/bin/systemctl reboot
   '';
@@ -119,6 +130,15 @@ in
         default = null;
         description = ''
           Optional extra shell check that must exit 0 to allow reboot.
+          Non-zero skips the reboot (main unit still exits 0).
+        '';
+      };
+
+      preRebootAction = lib.mkOption {
+        type = lib.types.nullOr lib.types.lines;
+        default = null;
+        description = ''
+          Optional preparation that must complete before the reboot request.
           Non-zero skips the reboot (main unit still exits 0).
         '';
       };
@@ -198,6 +218,7 @@ in
         serviceConfig = {
           Type = "oneshot";
           ExecStart = autoRebootScript;
+          TimeoutStartSec = "240s";
         };
       };
 
