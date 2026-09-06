@@ -293,7 +293,7 @@ in
         };
 
         timers.comin-ci-gate = {
-          description = "Poll Comin NixCI build and deploy gate";
+          description = "Poll NixCI and cache readiness for Comin";
           wantedBy = [ "timers.target" ];
           timerConfig = {
             OnBootSec = "30s";
