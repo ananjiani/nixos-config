@@ -234,6 +234,13 @@ in
     })
 
     (lib.mkIf (cfg.enable && cfg.ciGate.enable) {
+      assertions = [
+        {
+          assertion = lib.lists.allUnique config.services.prometheus.exporters.node.enabledCollectors;
+          message = "services.prometheus.exporters.node.enabledCollectors must not repeat collectors; node_exporter rejects repeated --collector.* flags.";
+        }
+      ];
+
       services = {
         comin = {
           buildConfirmer = {
@@ -244,7 +251,7 @@ in
           };
         };
         prometheus.exporters.node = {
-          enabledCollectors = [ "textfile" ];
+          # textfile is enabled by default; only set the directory.
           extraFlags = [ "--collector.textfile.directory=/var/lib/comin-gate/textfile" ];
         };
       };
