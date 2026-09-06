@@ -48,16 +48,20 @@ def sp(n: int, name: str = "pkg") -> str:
 
 
 SHA = "d79cff448a5e45d51bc0c204b303be4d38dced7a"
+SHA2 = "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1"
 UUID = "11111111-2222-3333-4444-555555555555"
 UUID2 = "99999999-2222-3333-4444-555555555555"
 HOST = "boromir"
 ATTR = f"checks.x86_64-linux.nixos-{HOST}"
 OUT, DEP, DEP2 = sp(0, "nixos-system"), sp(1, "hello"), sp(2, "glibc")
+OUT2 = sp(3, "nixos-system")
 CACHE = "https://cache.nix-ci.com"
 NIXCI = "https://nix-ci.com/cb:ananjiani:infra"
 CI_URL = f"{NIXCI}/main/{SHA}"
+CI_URL2 = f"{NIXCI}/main/{SHA2}"
 HEALTH_URL = f"{CACHE}/nix-cache-info"
 BASIC = "Basic " + base64.b64encode(b"ci:pw").decode()
+_MISSING = object()
 
 
 def narinfo_url(n: int) -> str:
@@ -102,42 +106,73 @@ def ci_payload(
     return {"commit": commit, "ref": ref, "status": status, "runs": runs}
 
 
+def generation(
+    uuid: str = UUID,
+    *,
+    out_path: str | None = None,
+    commit: str | None = None,
+    branch: str = "main",
+) -> dict:
+    if out_path is None:
+        out_path = OUT if uuid == UUID else OUT2
+    if commit is None:
+        commit = SHA if uuid == UUID else SHA2
+    return {
+        "uuid": uuid,
+        "outPath": out_path,
+        "source": {
+            "git": {
+                "selectedCommitId": commit,
+                "selectedBranchName": branch,
+                "selectedBranchIsTesting": False,
+            }
+        },
+    }
+
+
 def comin_state(
     *,
     submitted: str | None = UUID,
     confirmed: str = "",
+    deploy_submitted: str | None = None,
+    deploy_confirmed: str = "",
     suspended: object = False,
     uuid: str = UUID,
     gen: dict | None = None,
     with_generation: bool = True,
+    generations: list | None = None,
+    builder_uuid: object = _MISSING,
 ) -> dict:
     """Actual grpcurl -emit-defaults shape: camelCase, plain bool wrapper."""
-    return {
+    if generations is not None:
+        gens = generations
+    elif not with_generation:
+        gens = []
+    else:
+        gens = [gen or generation(uuid)]
+    state = {
         "isSuspended": suspended,
         "buildConfirmer": {
             "mode": 2,
             "submitted": submitted or "",
             "confirmed": confirmed,
         },
-        "store": {
-            "generations": []
-            if not with_generation
-            else [
-                gen
-                or {
-                    "uuid": uuid,
-                    "outPath": OUT,
-                    "source": {
-                        "git": {
-                            "selectedCommitId": SHA,
-                            "selectedBranchName": "main",
-                            "selectedBranchIsTesting": False,
-                        }
-                    },
-                }
-            ]
+        "deployConfirmer": {
+            "mode": 2,
+            "submitted": deploy_submitted or "",
+            "confirmed": deploy_confirmed,
         },
+        "store": {"generations": gens},
     }
+    if builder_uuid is _MISSING:
+        state["builder"] = {"generationUuid": uuid}
+    elif builder_uuid is None:
+        pass  # omit builder key
+    elif isinstance(builder_uuid, dict):
+        state["builder"] = builder_uuid
+    else:
+        state["builder"] = {"generationUuid": builder_uuid}
+    return state
 
 
 class FakeHttp:
@@ -212,8 +247,10 @@ def run_main(tmp: str, runner: Runner, http: FakeHttp, auth: str | None = BASIC)
 def ok_http(extra: dict | None = None, host_refs: list[str] | None = None) -> FakeHttp:
     mapping = {
         CI_URL: gate.HttpResult(status=200, body=json.dumps(ci_payload())),
+        CI_URL2: gate.HttpResult(status=200, body=json.dumps(ci_payload(commit=SHA2))),
         HEALTH_URL: gate.HttpResult(status=200, body=CACHE_INFO),
         narinfo_url(0): gate.HttpResult(status=200, body=narinfo(OUT, host_refs or [])),
+        narinfo_url(3): gate.HttpResult(status=200, body=narinfo(OUT2, [])),
     }
     mapping.update(extra or {})
     return FakeHttp(mapping)
@@ -353,16 +390,52 @@ class CominStateTests(unittest.TestCase):
         # Stale Confirm can leave confirmed=oldUUID while submitted=newUUID.
         # The gate must process the new submission, not stall on confirmed.
         state = comin_state(submitted=UUID2, confirmed=UUID, uuid=UUID2)
-        uuid, gen = gate.pending_build(state)
+        uuid, gen = gate.pending(state, "build")
+        self.assertEqual(uuid, UUID2)
+        self.assertEqual(gen["uuid"], UUID2)
+        deploy = comin_state(
+            submitted="",
+            deploy_submitted=UUID2,
+            deploy_confirmed=UUID,
+            uuid=UUID2,
+        )
+        uuid, gen = gate.pending(deploy, "deploy")
         self.assertEqual(uuid, UUID2)
         self.assertEqual(gen["uuid"], UUID2)
 
     def test_pending_missing(self):
-        self.assertEqual(gate.pending_build({"buildConfirmer": {"submitted": ""}}), ("", None))
-        uuid, gen = gate.pending_build(comin_state(with_generation=False))
+        self.assertEqual(gate.pending({"buildConfirmer": {"submitted": ""}}, "build"), ("", None))
+        self.assertEqual(gate.pending({"deployConfirmer": {"submitted": ""}}, "deploy"), ("", None))
+        uuid, gen = gate.pending(comin_state(with_generation=False), "build")
         self.assertEqual((uuid, gen), (UUID, None))
-        uuid, gen = gate.pending_build(comin_state(submitted=None))
+        uuid, gen = gate.pending(comin_state(submitted=None), "build")
         self.assertEqual((uuid, gen), ("", None))
+        uuid, gen = gate.pending(comin_state(submitted="", deploy_submitted=None), "deploy")
+        self.assertEqual((uuid, gen), ("", None))
+
+    def test_pending_requires_current_builder_generation(self):
+        # Stale confirmer.submitted for an older generation is not pending.
+        state = comin_state(
+            submitted=UUID2,
+            deploy_submitted=UUID,
+            uuid=UUID2,
+            generations=[generation(UUID), generation(UUID2)],
+            builder_uuid=UUID2,
+        )
+        self.assertEqual(gate.pending(state, "deploy"), ("", None))
+        uuid, gen = gate.pending(state, "build")
+        self.assertEqual(uuid, UUID2)
+        self.assertEqual(gen["uuid"], UUID2)
+        stage, uuid, gen = gate.select_pending(state)
+        self.assertEqual((stage, uuid), ("build", UUID2))
+
+    def test_select_pending_prefers_deploy_when_same_current_generation(self):
+        # Both stages submitted for the current builder UUID: deploy first.
+        state = comin_state(submitted=UUID, deploy_submitted=UUID, builder_uuid=UUID)
+        stage, uuid, gen = gate.select_pending(state)
+        self.assertEqual(stage, "deploy")
+        self.assertEqual(uuid, UUID)
+        self.assertEqual(gen["uuid"], UUID)
 
     def test_grpcurl_command_shape(self):
         rec = Runner([comin_state()])
@@ -790,6 +863,165 @@ class MainTests(unittest.TestCase):
         self.assertEqual(run_main(self.dir, runner, ok_http()), 0)
         self.assertNotIn(secret, read_state(self.dir).__str__() + read_metrics(self.dir))
         self.assertNotIn("ci:pw", json.dumps(read_state(self.dir)))
+
+    def test_cached_output_ci_bad_does_not_confirm_deploy(self):
+        # Local outPath skips BuildConfirmer (native BuildDone). Deploy still gates.
+        deploy = comin_state(submitted="", deploy_submitted=UUID)
+        runner = Runner([deploy])
+        http = FakeHttp({
+            CI_URL: gate.HttpResult(status=200, body=json.dumps(ci_payload(status="failure")))
+        })
+        self.assertEqual(run_main(self.dir, runner, http), 0)
+        self.assertEqual(runner.confirmed, [])
+        self.assertEqual(http.urls, [CI_URL])
+
+    def test_cached_output_ci_good_confirms_only_deploy(self):
+        deploy = comin_state(submitted="", deploy_submitted=UUID)
+        runner = Runner([deploy, deploy])
+        self.assertEqual(run_main(self.dir, runner, ok_http()), 0)
+        self.assertEqual(runner.confirmed, [{"generationUuid": UUID, "for": "deploy"}])
+
+    def test_build_then_deploy_sequential_ticks_same_generation(self):
+        runner = Runner([comin_state(), comin_state()])
+        self.assertEqual(run_main(self.dir, runner, ok_http()), 0)
+        self.assertEqual(runner.confirmed, [{"generationUuid": UUID, "for": "build"}])
+        deploy = comin_state(submitted="", deploy_submitted=UUID)
+        runner2 = Runner([deploy, deploy])
+        self.assertEqual(run_main(self.dir, runner2, ok_http()), 0)
+        self.assertEqual(runner2.confirmed, [{"generationUuid": UUID, "for": "deploy"}])
+
+    def test_stage_change_before_confirm_aborts(self):
+        first = comin_state(submitted="", deploy_submitted=UUID)
+        second = comin_state(submitted=UUID, deploy_submitted="")
+        runner = Runner([first, second])
+        self.assertEqual(run_main(self.dir, runner, ok_http()), 0)
+        self.assertEqual(runner.confirmed, [])
+
+    def test_deploy_uuid_race_before_confirm_aborts(self):
+        first = comin_state(submitted="", deploy_submitted=UUID)
+        second = comin_state(submitted="", deploy_submitted=UUID2, uuid=UUID2)
+        runner = Runner([first, second])
+        self.assertEqual(run_main(self.dir, runner, ok_http()), 0)
+        self.assertEqual(runner.confirmed, [])
+
+    def test_deploy_suspend_before_confirm_aborts(self):
+        first = comin_state(submitted="", deploy_submitted=UUID)
+        second = comin_state(submitted="", deploy_submitted=UUID, suspended=True)
+        runner = Runner([first, second])
+        self.assertEqual(run_main(self.dir, runner, ok_http()), 0)
+        self.assertEqual(runner.confirmed, [])
+
+    def test_deploy_root_404_waits(self):
+        deploy = comin_state(submitted="", deploy_submitted=UUID)
+        runner = Runner([deploy, deploy])
+        http = ok_http({narinfo_url(0): gate.HttpResult(status=404)})
+        self.assertEqual(run_main(self.dir, runner, http), 0)
+        self.assertEqual(runner.confirmed, [])
+        self.assertIn('reason="unavailable"} 0', read_metrics(self.dir))
+
+    def test_deploy_root_auth_or_outage_fallback(self):
+        for res, reason in (
+            (gate.HttpResult(status=401), "auth"),
+            (gate.HttpResult(status=503), "unavailable"),
+            (gate.HttpResult(error="timeout"), "unavailable"),
+        ):
+            with tempfile.TemporaryDirectory() as t, self.subTest(reason + str(res.status)):
+                deploy = comin_state(submitted="", deploy_submitted=UUID)
+                runner = Runner([deploy, deploy])
+                http = ok_http({narinfo_url(0): res})
+                self.assertEqual(run_main(t, runner, http), 0)
+                self.assertEqual(
+                    runner.confirmed, [{"generationUuid": UUID, "for": "deploy"}]
+                )
+                self.assertIn(f'reason="{reason}"}} 1', read_metrics(t))
+
+    def test_stale_deploy_g1_does_not_block_current_build_g2(self):
+        # Old DEP g1 stays submitted (CI bad / cache 404) while BUILD g2 is current.
+        both = comin_state(
+            submitted=UUID2,
+            deploy_submitted=UUID,
+            uuid=UUID2,
+            generations=[generation(UUID), generation(UUID2)],
+            builder_uuid=UUID2,
+        )
+        runner = Runner([both, both])
+        http = ok_http(
+            {
+                CI_URL: gate.HttpResult(
+                    status=200, body=json.dumps(ci_payload(status="failure"))
+                ),
+                narinfo_url(0): gate.HttpResult(status=404),
+            }
+        )
+        self.assertEqual(run_main(self.dir, runner, http), 0)
+        self.assertEqual(runner.confirmed, [{"generationUuid": UUID2, "for": "build"}])
+        self.assertIn(CI_URL2, http.urls)
+        self.assertNotIn(CI_URL, http.urls)
+
+    def test_stale_build_g1_does_not_block_current_deploy_g2(self):
+        # Reverse: old BUILD g1 stays submitted while current g2 is already-local deploy.
+        both = comin_state(
+            submitted=UUID,
+            deploy_submitted=UUID2,
+            uuid=UUID2,
+            generations=[generation(UUID), generation(UUID2)],
+            builder_uuid=UUID2,
+        )
+        runner = Runner([both, both])
+        http = ok_http(
+            {
+                CI_URL: gate.HttpResult(
+                    status=200, body=json.dumps(ci_payload(status="failure"))
+                ),
+                narinfo_url(0): gate.HttpResult(status=404),
+            }
+        )
+        self.assertEqual(run_main(self.dir, runner, http), 0)
+        self.assertEqual(runner.confirmed, [{"generationUuid": UUID2, "for": "deploy"}])
+        self.assertIn(CI_URL2, http.urls)
+        self.assertNotIn(CI_URL, http.urls)
+
+    def test_builder_uuid_changes_before_confirm_aborts(self):
+        # Second GetState: builder moved to g2, but deploy.submitted still g1.
+        first = comin_state(submitted="", deploy_submitted=UUID, uuid=UUID, builder_uuid=UUID)
+        second = comin_state(
+            submitted="",
+            deploy_submitted=UUID,
+            uuid=UUID2,
+            generations=[generation(UUID), generation(UUID2)],
+            builder_uuid=UUID2,
+        )
+        runner = Runner([first, second])
+        self.assertEqual(run_main(self.dir, runner, ok_http()), 0)
+        self.assertEqual(runner.confirmed, [])
+
+    def test_missing_or_malformed_builder_generation_uuid_no_confirm(self):
+        for builder in (
+            None,  # missing builder key via fixture
+            {},  # missing generationUuid
+            {"generationUuid": ""},
+            {"generationUuid": None},
+            {"generationUuid": 123},
+            "not-a-dict",
+        ):
+            with tempfile.TemporaryDirectory() as t, self.subTest(repr(builder)):
+                state = comin_state(builder_uuid=builder)
+                if builder == "not-a-dict":
+                    state["builder"] = "not-a-dict"
+                runner = Runner([state, state])
+                self.assertEqual(run_main(t, runner, ok_http()), 0)
+                self.assertEqual(runner.confirmed, [])
+
+    def test_stale_deploy_confirmed_field_does_not_block_new_pending(self):
+        state = comin_state(
+            submitted="",
+            deploy_submitted=UUID2,
+            deploy_confirmed=UUID,
+            uuid=UUID2,
+        )
+        runner = Runner([state, state])
+        self.assertEqual(run_main(self.dir, runner, ok_http()), 0)
+        self.assertEqual(runner.confirmed, [{"generationUuid": UUID2, "for": "deploy"}])
 
 
 class RecoveryTests(unittest.TestCase):

@@ -50,7 +50,7 @@ Operator guide for how code reaches hosts. Rationale lives in
 | Buildbot | Checks, builds host closures, and reports status | Deploy / SSH activate |
 | Attic (`middle-earth`) | Store watcher uploads outputs asynchronously; hosts use this warm binary cache | Decide what is live |
 | Comin (7 servers) | Polls Codeberg, builds/substitutes, `switch` on `main`, `test` on `testing-<host>` | Auto health rollback |
-| Comin NixCI gate (6 SOPS servers) | After eval, confirm `build` only when NixCI is green for that SHA and the host output-path narinfo is in cache.nix-ci.com (or cache is down). Not a full-closure guarantee. | Blanket `comin confirmation accept`; Codeberg/Buildbot status |
+| Comin NixCI gate (6 SOPS servers) | After eval, confirm `build` only if the output is not already local; confirm `deploy` for every actual activation, including local-ready outputs. NixCI green + root narinfo (or cache down). Not a full-closure guarantee. | Blanket `comin confirmation accept`; Codeberg/Buildbot status |
 | deploy-rs via Aragorn | Nightly activity-aware desktop deploy; manual recovery path for servers | Routine server convergence |
 
 Required PR check: **`buildbot/nix-build`**.
@@ -65,7 +65,7 @@ succeeded with warnings. Do not block a merge on eval alone.
 3. Wait for **`buildbot/nix-build`** success on the PR head. The separate Attic upload may still be finishing.
 4. Squash-merge. An outdated PR can still merge without conflicts after that required head check passes.
 5. Buildbot checks the new squash commit on `main`. That SHA is what hosts consume — not the old PR head.
-6. Servers: Comin polls (~1 minute) and evaluates. The six SOPS servers wait for the NixCI gate before build; Denethor builds immediately. Then switch (or test).
+6. Servers: Comin polls (~1 minute) and evaluates. The six SOPS servers wait for the NixCI gate before build (if the output is not already local) and before deploy; Denethor builds immediately. Then switch (or test).
 7. Desktop (`ammars-pc`): waits for Aragorn's **04:30** local timer and a green `buildbot/nix-build` on that exact `main` SHA. No midday catch-up.
 
 ## Risky single-host workflow (`testing-<hostname>`)
@@ -114,14 +114,25 @@ Exact module: `modules/nixos/comin.nix`.
   SOPS servers in `hosts/_profiles/server/configuration.nix`
   (aragorn, boromir, samwise, theoden, erebor, rivendell). Denethor,
   workstations, WSL, and the ISO are unchanged.
-- When the gate is on, Comin `buildConfirmer` is **manual**. `comin-ci-gate.timer`
-  runs `comin-ci-gate.service` about every 60s after the last run ends.
-  The first generation that enables the gate still uses the previous (ungated)
-  config; Comin picks up `manual` mode on the restart that generation causes.
-- Per pending generation, after eval: NixCI `GET https://nix-ci.com/cb:ananjiani:infra/<branch>/<sha>`
+- When the gate is on, Comin `buildConfirmer` and `deployConfirmer` are **manual**.
+  `comin-ci-gate.timer` runs `comin-ci-gate.service` about every 60s after the last
+  run ends. The first generation that enables the gate still uses the previous
+  (ungated) config; Comin picks up `manual` mode on the restart that generation
+  causes. A second generation is required to exercise actual deploy confirmation.
+- Native Comin skips `buildConfirmer` when the evaluated `outPath` already exists
+  locally (`BuildDone` without `EvaluationDone`). The gate still requires `deploy`
+  confirmation for that generation. Same `outPath` + operation as the previous
+  deployment is a native no-op (no activation, no deploy confirmation).
+  `comin confirmation accept` still bypasses the gate (native `for=all` if a
+  build is pending, else `for=deploy`). The gate only considers confirmer
+  submissions that match the current builder generation; stale queued requests
+  for older generations are not approved.
+- Per pending generation: NixCI `GET https://nix-ci.com/cb:ananjiani:infra/<branch>/<sha>`
   must be HTTP 200 with `commit`/`ref` exact match and suite `status=success`,
   plus `checks.x86_64-linux.nixos-<hostname>` success/cached (configure + eval
   present and green, nonempty `runs`). Codeberg/Buildbot status is ignored.
+  The build check runs only when `buildConfirmer` is submitted; the deploy check
+  covers local-ready outputs. Not a full-closure walk.
 - Cache tri-state, using `/run/secrets/nix_ci_netrc` as root: **approve** if
   `nix-cache-info` and the pending generation's exact output-path narinfo are
   200 (References are parsed for validity, not walked); **wait** (retry the
@@ -338,7 +349,7 @@ journalctl -u ammars-pc-deploy.service
 | Path | Role |
 | --- | --- |
 | `modules/nixos/comin.nix` | Shared Comin module (optional `ciGate`) |
-| `modules/nixos/comin-ci-gate.py` | NixCI + cache confirmer helper |
+| `modules/nixos/comin-ci-gate.py` | NixCI + cache build/deploy confirmer helper |
 | `hosts/_profiles/server/configuration.nix` | Enables Comin on fleet profile |
 | `hosts/servers/denethor/configuration.nix` | Denethor Comin + 4243 firewall |
 | `hosts/servers/aragorn/configuration.nix` | Nightly desktop controller |

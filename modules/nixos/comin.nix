@@ -145,7 +145,7 @@ in
     };
 
     ciGate = {
-      enable = lib.mkEnableOption "NixCI + cache.nix-ci.com build confirmer gate";
+      enable = lib.mkEnableOption "NixCI + cache.nix-ci.com build and deploy confirmer gate";
     };
   };
 
@@ -239,6 +239,9 @@ in
           buildConfirmer = {
             mode = "manual";
           };
+          deployConfirmer = {
+            mode = "manual";
+          };
         };
         prometheus.exporters.node = {
           enabledCollectors = [ "textfile" ];
@@ -253,7 +256,7 @@ in
         ];
 
         services.comin-ci-gate = {
-          description = "Approve Comin builds from NixCI + cache.nix-ci.com";
+          description = "Approve Comin builds and deploys from NixCI + cache.nix-ci.com";
           after = [
             "network-online.target"
             "comin.service"
@@ -283,7 +286,7 @@ in
         };
 
         timers.comin-ci-gate = {
-          description = "Poll Comin NixCI build gate";
+          description = "Poll Comin NixCI build and deploy gate";
           wantedBy = [ "timers.target" ];
           timerConfig = {
             OnBootSec = "30s";

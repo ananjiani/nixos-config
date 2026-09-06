@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
-"""Comin build-confirmer gate for NixCI + cache.nix-ci.com.
+"""Comin build/deploy-confirmer gate for NixCI + cache.nix-ci.com.
 
-Approves a pending Comin *build* confirmation only when NixCI is green for
-the exact (branch, commit) of the pending generation AND the authenticated
-cache holds (or credibly held) that generation's output-path narinfo.
+Approves a pending Comin *build* or *deploy* confirmation only when NixCI
+is green for the exact (branch, commit) of the pending generation AND the
+authenticated cache holds (or credibly held) that generation's output-path
+narinfo. Native Comin skips BuildConfirmer when outPath already exists
+locally (Eval -> BuildDone); DeployConfirmer still gates that activation.
 Not a full-closure guarantee: References are parsed for validity, never
 walked. Native Nix may still build missing dependencies locally while the
 cache is healthy. Outcomes per timer run:
 
-  approve   Confirm(generationUuid, for="build") after a second GetState
-            re-check (same UUID, explicit isSuspended=false).
-  wait      Exit 0; the same UUID is retried next timer tick. CI errors,
-            missing root narinfo (404), invalid metadata, unexpected 4xx,
-            and an unclear isSuspended all wait. Each tick fetches that
-            same root narinfo again; there is no walk progress to persist.
+  approve   Confirm(generationUuid, for="build"|"deploy") after a second
+            GetState re-check (same stage, same UUID, explicit
+            isSuspended=false). Never for="all".
+  wait      Exit 0; the same stage+UUID is retried next timer tick. CI
+            errors, missing root narinfo (404), invalid metadata,
+            unexpected 4xx, and an unclear isSuspended all wait. Each tick
+            fetches that same root narinfo again; there is no walk progress
+            to persist.
   fallback  approve + comin_nixci_cache_error metric when the cache is
             unreachable (transport/timeout/5xx) or credentials fail
             (401/403, missing netrc). Local/remote builds then cover it.
@@ -189,11 +193,28 @@ def suspension(state: Any) -> bool | None:
     return value if isinstance(value, bool) else None
 
 
-def pending_build(state: Any) -> tuple[str, dict[str, Any] | None]:
-    """Return (submitted uuid, matched generation or None); '' means none."""
-    confirmer = state.get("buildConfirmer")
+CONFIRMER_FIELD = {
+    "build": "buildConfirmer",
+    "deploy": "deployConfirmer",
+}
+
+
+def pending(state: Any, stage: str) -> tuple[str, dict[str, Any] | None]:
+    """Return (submitted uuid, matched generation or None); '' means none.
+
+    Eligible only when confirmer.submitted equals builder.generationUuid
+    (both nonempty strings). confirmed may be a stale leftover and does not
+    define identity. stage is the native Confirm.for value: "build" or "deploy".
+    """
+    if not isinstance(state, dict):
+        return "", None
+    builder = state.get("builder")
+    current = builder.get("generationUuid") if isinstance(builder, dict) else None
+    if not isinstance(current, str) or not current:
+        return "", None
+    confirmer = state.get(CONFIRMER_FIELD[stage])
     uuid = confirmer.get("submitted") if isinstance(confirmer, dict) else None
-    if not isinstance(uuid, str) or not uuid:
+    if not isinstance(uuid, str) or not uuid or uuid != current:
         return "", None
     store = state.get("store")
     generations = store.get("generations") if isinstance(store, dict) else None
@@ -203,6 +224,19 @@ def pending_build(state: Any) -> tuple[str, dict[str, Any] | None]:
         if isinstance(gen, dict) and gen.get("uuid") == uuid:
             return uuid, gen
     return uuid, None
+
+
+def select_pending(state: Any) -> tuple[str, str, dict[str, Any] | None]:
+    """Pick one pending stage for the current builder generation.
+
+    Prefer deploy so a skipped local build still gates. Only current-generation
+    confirmer submissions are eligible (see pending).
+    """
+    for stage in ("deploy", "build"):
+        uuid, gen = pending(state, stage)
+        if uuid:
+            return stage, uuid, gen
+    return "", "", None
 
 
 def grpc_call(
@@ -242,9 +276,9 @@ def comin_get_state(cfg: dict[str, str], runner: Any) -> Any | None:
         return None
 
 
-def confirm_build(cfg: dict[str, str], runner: Any, uuid: str) -> bool:
+def confirm(cfg: dict[str, str], runner: Any, uuid: str, stage: str) -> bool:
     code, _out, err = grpc_call(
-        cfg, "protobuf.Comin/Confirm", {"generationUuid": uuid, "for": "build"}, runner
+        cfg, "protobuf.Comin/Confirm", {"generationUuid": uuid, "for": stage}, runner
     )
     if code != 0:
         log(f"Confirm failed: {err.strip()[:200]}")
@@ -450,26 +484,26 @@ def main(env: dict[str, str] | None = None, *, deps: dict[str, Any] | None = Non
         log("comin is suspended; wait")
         return finish(st, state_dir, fresh=True, code=0)
 
+    stage, uuid, gen = select_pending(comin)
+    if not uuid:
+        return no_pending(st, state_dir, http, cache_url)
+
     def approve() -> int:
-        # Confirm only after a second GetState: same UUID, explicit not-suspended.
+        # Confirm only after a second GetState: same stage+UUID, explicit not-suspended.
         second = comin_get_state(cfg, runner)
         if second is None:
             return finish(st, state_dir, fresh=False, code=1)
         if suspension(second) is not False:
             log("suspension unclear before confirm; wait")
             return finish(st, state_dir, fresh=True, code=0)
-        uuid2, _gen = pending_build(second)
+        uuid2, _gen = pending(second, stage)
         if uuid2 != uuid:
             log("pending UUID changed before confirm; wait")
             return finish(st, state_dir, fresh=True, code=0)
-        if not confirm_build(cfg, runner, uuid):
+        if not confirm(cfg, runner, uuid, stage):
             return finish(st, state_dir, fresh=False, code=1)
-        log(f"confirmed build for {uuid}")
+        log(f"confirmed {stage} for {uuid}")
         return finish(st, state_dir, fresh=True, code=0)
-
-    uuid, gen = pending_build(comin)
-    if not uuid:
-        return no_pending(st, state_dir, http, cache_url)
 
     commit = ref = out_path = ""
     if gen is not None:
