@@ -16,7 +16,7 @@
     },
     "jacktook": {
         "cargoLock": null,
-        "date": "2026-07-10",
+        "date": "2026-09-05",
         "extract": null,
         "name": "jacktook",
         "passthru": null,
@@ -28,12 +28,12 @@
             "name": null,
             "owner": "Sam-Max",
             "repo": "plugin.video.jacktook",
-            "rev": "c22f23fc7df9705cb7e42c1b54f631358869d182",
-            "sha256": "sha256-JI+yfI2axUrVm/TyhGFuMaMgEEo05+XzoEfklW6yXlw=",
+            "rev": "7cbb9c33ab96b6012c65af9cade93fe7ecf7950e",
+            "sha256": "sha256-Y7KwvqGP5whXPSrVGU02RPUwG7NHV3RvZ4AU1bwZnvw=",
             "sparseCheckout": [],
             "type": "github"
         },
-        "version": "c22f23fc7df9705cb7e42c1b54f631358869d182"
+        "version": "7cbb9c33ab96b6012c65af9cade93fe7ecf7950e"
     },
     "moondeck-buddy": {
         "cargoLock": null,
@@ -95,11 +95,11 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-SXKZrF8fMYjoCc5cVpiOiSoJHf61+Q+r9E03xiHI4uw=",
+            "sha256": "sha256-cNmCdHKMxT0tlTFlhimkyIWiNjEscMnAQy7NXOb8QsI=",
             "type": "url",
-            "url": "https://github.com/nekename/OpenDeck/releases/download/v2.13.1/opendeck_2.13.1_amd64.AppImage"
+            "url": "https://github.com/nekename/OpenDeck/releases/download/v2.14.0/opendeck_2.14.0_amd64.AppImage"
         },
-        "version": "2.13.1"
+        "version": "2.14.0"
     },
     "smithay-hdr": {
         "cargoLock": null,
