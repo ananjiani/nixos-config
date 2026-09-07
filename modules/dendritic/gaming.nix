@@ -510,6 +510,12 @@ _:
         };
 
         programs = {
+          # Lutris with nix-managed GE-Proton runner (no Lutris runner downloads).
+          lutris = {
+            enable = true;
+            protonPackages = [ pkgs.proton-ge-bin ];
+          };
+
           mangohud = {
             enable = true;
             settings = {
