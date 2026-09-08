@@ -128,6 +128,8 @@ in
         script = ''
           BACKUP_DIR="/var/backup/openbao"
           mkdir -p "$BACKUP_DIR"
+          # Periodic token in backup-env dies if it is not renewed within 768h.
+          bao token renew >/dev/null
           bao operator raft snapshot save "$BACKUP_DIR/openbao-$(date +%Y%m%d-%H%M%S).snap"
           # Retain last 30 days
           find "$BACKUP_DIR" -name "*.snap" -mtime +30 -delete
@@ -137,7 +139,7 @@ in
         };
         serviceConfig = {
           Type = "oneshot";
-          # Backup token is stored on disk after initial setup
+          # Imperative periodic token: bao token create -policy=backup -period=768h
           EnvironmentFile = "-/var/lib/openbao/backup-env";
         };
       };
