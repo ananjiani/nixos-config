@@ -133,7 +133,7 @@
     };
     # Hermes Agent (Tier 2 Nix support) — keep upstream pins, no follows.
     # eaf10c7e78 is the first rev that ships hermes_state_holders in py-modules.
-    hermes-agent.url = "github:NousResearch/hermes-agent/eaf10c7e7890c069392d50b797c09026d0a28bca";
+    hermes-agent.url = "github:NousResearch/hermes-agent/866332bfb52c46e543143b2620a9aeee8bce9c77";
   };
 
   outputs =
