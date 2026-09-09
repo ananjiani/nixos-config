@@ -188,6 +188,10 @@ in
                 answer = "192.168.1.52";
               }
               {
+                domain = "jellyfin.dimensiondoor.xyz";
+                answer = "192.168.1.52";
+              }
+              {
                 domain = "ai.dimensiondoor.xyz";
                 answer = "192.168.1.52";
               }

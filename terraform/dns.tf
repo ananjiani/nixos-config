@@ -31,8 +31,8 @@ resource "cloudflare_dns_record" "jellyfin" {
   name    = "jellyfin"
   content = "192.168.1.52" # Traefik LoadBalancer (internal)
   type    = "A"
-  proxied = var.cloudflare_proxied
-  ttl     = 1 # Auto when proxied
+  proxied = false # Internal IP, cannot be proxied
+  ttl     = 300
   comment = "Jellyfin media server (theoden via traefik) - managed by Terraform"
 }
 
