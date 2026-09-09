@@ -77,6 +77,7 @@ in
     ./romm.nix
     ./zot.nix
     ./paperless.nix
+    ./jellyfin.nix
     ./rclone-webdav.nix
   ];
 

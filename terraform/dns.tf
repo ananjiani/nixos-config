@@ -25,15 +25,15 @@ resource "cloudflare_dns_record" "git" {
   comment = "Forgejo git server (internal) - managed by Terraform"
 }
 
-# Media subdomain A record
-resource "cloudflare_dns_record" "media" {
+# Jellyfin media server subdomain A record (theoden via traefik)
+resource "cloudflare_dns_record" "jellyfin" {
   zone_id = local.zone_id
-  name    = "media"
-  content = var.homeserver_ip
+  name    = "jellyfin"
+  content = "192.168.1.52" # Traefik LoadBalancer (internal)
   type    = "A"
   proxied = var.cloudflare_proxied
   ttl     = 1 # Auto when proxied
-  comment = "Jellyfin media server - managed by Terraform"
+  comment = "Jellyfin media server (theoden via traefik) - managed by Terraform"
 }
 
 # Spatial Jobs Index API subdomain A record (VPS)

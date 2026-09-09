@@ -325,6 +325,12 @@ in
                 answer = "192.168.1.52";
               }
 
+              # Jellyfin (NixOS module on theoden, traefik IngressRoute to :8096)
+              {
+                domain = "jellyfin.lan";
+                answer = "192.168.1.52";
+              }
+
               # Paperless-ngx (NixOS module on theoden, traefik IngressRoute to :28981)
               {
                 domain = "paperless.lan";

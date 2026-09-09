@@ -79,6 +79,7 @@ let
     kp.inputstream-adaptive # ABR streaming (HLS, DASH, Smooth Streaming)
     kp.inputstream-ffmpegdirect # Direct stream playback via FFmpeg
     jacktook # Debrid streaming + built-in Trakt sync (Comet, TorBox)
+    kp.jellyfin # Jellyfin for Kodi (library server on theoden, :8096)
   ]);
 in
 {
