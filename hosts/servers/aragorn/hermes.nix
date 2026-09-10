@@ -695,11 +695,26 @@ in
         after = [
           "vault-agent-default.service"
           "hermes-broker.service"
+          "user@${toString config.users.users.ammar.uid}.service"
         ];
-        wants = [ "vault-agent-default.service" ];
+        wants = [
+          "vault-agent-default.service"
+          "user@${toString config.users.users.ammar.uid}.service"
+        ];
         restartIfChanged = false;
         stopIfChanged = false;
-        serviceConfig.EnvironmentFile = [ "/run/secrets/hermes_telegram_env" ];
+        environment = {
+          # Cron workers need systemd-run --user --scope. This system unit
+          # has no PAM session, so the user bus is missing unless we set it.
+          XDG_RUNTIME_DIR = "/run/user/${toString config.users.users.ammar.uid}";
+          DBUS_SESSION_BUS_ADDRESS = "unix:path=/run/user/${toString config.users.users.ammar.uid}/bus";
+        };
+        serviceConfig = {
+          EnvironmentFile = [ "/run/secrets/hermes_telegram_env" ];
+          # Hermes probes systemd-run with hardcoded /bin/true. NixOS has
+          # only /bin/sh; a failed probe makes every cron tick raise.
+          BindReadOnlyPaths = [ "${pkgs.coreutils}/bin/true:/bin/true" ];
+        };
       };
 
       hermes-dashboard = {
