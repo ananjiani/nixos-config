@@ -188,7 +188,13 @@ let
 
     # nixpkgs is one patch behind the declared floor; phonenumbers only
     # backs the PHONE_NUMBER recognizer, which this broker does not use.
-    pythonRelaxDeps = [ "phonenumbers" ];
+    # nixpkgs-unstable now ships numpy 2.5.1 and spacy 3.8.14, which exceed
+    # presidio-analyzer 2.2.364's pinned ranges.
+    pythonRelaxDeps = [
+      "phonenumbers"
+      "numpy"
+      "spacy"
+    ];
 
     pythonImportsCheck = [ "presidio_analyzer" ];
 
@@ -605,6 +611,7 @@ in
         TELEGRAM_BOT_TOKEN={{ with secret "secret/data/nixos/hermes" }}{{ index .Data.data "bot_token" }}{{ end }}
         TELEGRAM_ALLOWED_USERS={{ with secret "secret/data/nixos/hermes" }}{{ index .Data.data "allowed_users" }}{{ end }}
         TELEGRAM_HOME_CHANNEL={{ with secret "secret/data/nixos/hermes" }}{{ index .Data.data "home_channel" }}{{ end }}
+        GLM_API_KEY={{ with secret "secret/data/llm/keys" }}{{ index .Data.data "zai-api-key" }}{{ end }}
       '';
       owner = "ammar";
       group = "hermes";
@@ -621,6 +628,11 @@ in
       owner = "ammar";
     };
   };
+
+  # Needed so systemd.services.hermes-agent can interpolate a real
+  # /run/user/<uid>. Without an explicit uid, NixOS leaves
+  # users.users.ammar.uid as null and toString yields "".
+  users.users.ammar.uid = 1000;
 
   services = {
     hermes-agent = {
@@ -640,13 +652,17 @@ in
       };
       settings = {
         model = {
-          provider = "openai-codex";
-          default = "gpt-5.6-sol";
+          provider = "xai-oauth";
+          default = "grok-4.6";
         };
         fallback_providers = [
           {
-            provider = "xai-oauth";
-            model = "grok-4.6";
+            provider = "zai";
+            model = "glm-5.3";
+          }
+          {
+            provider = "openai-codex";
+            model = "gpt-5.6-sol";
           }
         ];
         terminal = {
@@ -684,11 +700,26 @@ in
         after = [
           "vault-agent-default.service"
           "hermes-broker.service"
+          "user@${toString config.users.users.ammar.uid}.service"
         ];
-        wants = [ "vault-agent-default.service" ];
+        wants = [
+          "vault-agent-default.service"
+          "user@${toString config.users.users.ammar.uid}.service"
+        ];
         restartIfChanged = false;
         stopIfChanged = false;
-        serviceConfig.EnvironmentFile = [ "/run/secrets/hermes_telegram_env" ];
+        environment = {
+          # Cron workers need systemd-run --user --scope. This system unit
+          # has no PAM session, so the user bus is missing unless we set it.
+          XDG_RUNTIME_DIR = "/run/user/${toString config.users.users.ammar.uid}";
+          DBUS_SESSION_BUS_ADDRESS = "unix:path=/run/user/${toString config.users.users.ammar.uid}/bus";
+        };
+        serviceConfig = {
+          EnvironmentFile = [ "/run/secrets/hermes_telegram_env" ];
+          # Hermes probes systemd-run with hardcoded /bin/true. NixOS has
+          # only /bin/sh; a failed probe makes every cron tick raise.
+          BindReadOnlyPaths = [ "${pkgs.coreutils}/bin/true:/bin/true" ];
+        };
       };
 
       hermes-dashboard = {

@@ -30,14 +30,18 @@ Operator guide for how code reaches hosts. Rationale lives in
   feature branch / PR
           |
           v
-   Codeberg (main protected, FF-only)
+   Codeberg (main protected, squash merge)
           |
-          +--> Buildbot: eval + build + status
+          +--> NixCI: build every flake output, fill cache.nix-ci.com,
+          |    publish the required commit statuses
+          |
+          +--> Buildbot: advisory eval + build + status (A/B comparison)
           |    Attic watcher: upload outputs asynchronously
-          |    (neither activates a host)
+          |    (none of these activate a host)
           |
-          +--> Comin on 7 servers: poll ~1/min, pull main/testing-*,
-          |    substitute from Attic, switch or test locally
+          +--> Comin on 7 servers: poll ~1/min, pull main/testing-*
+          |    Six SOPS servers wait for NixCI + cache.nix-ci.com, then
+          |    substitute/build and switch (or test). Denethor is ungated.
           |
           +--> Aragorn 04:30 timer: deploy-rs -> ammars-pc
                (WOL + lock/dirty/CI gates; system then home)
@@ -45,13 +49,31 @@ Operator guide for how code reaches hosts. Rationale lives in
 
 | Role | What it does | What it never does |
 | --- | --- | --- |
-| Codeberg `main` / PRs | Source of truth. Direct push to `main` is blocked. Merges are fast-forward only. | Host activation |
-| Buildbot | Checks, builds host closures, and reports status | Deploy / SSH activate |
+| Codeberg `main` / PRs | Source of truth. Direct push to `main` is blocked. PRs to `main` use squash merges. | Host activation |
+| Buildbot | Advisory checks and builds for A/B comparison and private projects | Required merge status; deploy / SSH activate |
 | Attic (`middle-earth`) | Store watcher uploads outputs asynchronously; hosts use this warm binary cache | Decide what is live |
 | Comin (7 servers) | Polls Codeberg, builds/substitutes, `switch` on `main`, `test` on `testing-<host>` | Auto health rollback |
+| Comin NixCI gate (6 SOPS servers) | After eval, confirm `build` only if the output is not already local; confirm `deploy` for every actual activation, including local-ready outputs. NixCI green + root narinfo (or cache down). Not a full-closure guarantee. | Blanket `comin confirmation accept`; Codeberg/Buildbot status |
 | deploy-rs via Aragorn | Nightly activity-aware desktop deploy; manual recovery path for servers | Routine server convergence |
 
-Required PR check: **`buildbot/nix-build`**.
+Required PR checks: every NixCI context for the flake — `configure`, `show x86_64-linux`, and one `build <flake attribute>` per built output (22 at the time of writing). The exact live list is the set of Codeberg commit-status contexts that do not start with `buildbot/` or `operator/` and contain no `/`. Never use a wildcard pattern: Forgejo glob protection passes once already-published statuses are green and does not wait for missing jobs, so a partially published suite merges prematurely.
+
+Buildbot stays enabled on this repo (`buildbot-nix` topic) but is advisory — for A/B comparison and private projects.
+
+When you add a flake check/package/devShell output, NixCI publishes a new `build <attribute>` context on the next run. Add it to the required list or it merges ungated; if you remove an output, remove its context or every merge stays pending. Update the protection with the pipeline below after the merge that adds or removes outputs:
+
+```bash
+sha=$(git ls-remote origin refs/heads/main | cut -f1)
+tea api "repos/ananjiani/infra/commits/$sha/status" \
+  | jq '.statuses[].context
+      | select(startswith("buildbot/") | not)
+      | select(startswith("operator/") | not)
+      | select(contains("/") | not)' \
+  | jq -s '{enable_status_check: true, status_check_contexts: .}' \
+  | tea api -X PATCH repos/ananjiani/infra/branch_protections/main --data @-
+```
+
+Run it on a fully green `main` SHA so the published context set is complete.
 
 `buildbot/nix-eval` is **not** required. A warning there can mean eval
 succeeded with warnings. Do not block a merge on eval alone.
@@ -60,10 +82,11 @@ succeeded with warnings. Do not block a merge on eval alone.
 
 1. Push a feature branch.
 2. Open a PR to `main`.
-3. Wait for **`buildbot/nix-build`** success. The separate Attic upload may still be finishing.
-4. Merge (fast-forward only).
-5. Servers: Comin starts processing `main` after its next poll (~1 minute). Eval, build, and activation take longer.
-6. Desktop (`ammars-pc`): waits for Aragorn's **04:30** local timer. No midday catch-up.
+3. Wait for all NixCI `build <attribute>` contexts (plus `configure` and `show x86_64-linux`) to succeed on the PR head. The separate Attic upload may still be finishing.
+4. Squash-merge. An outdated PR can still merge without conflicts after that required head check passes.
+5. Buildbot checks the new squash commit on `main`. That SHA is what hosts consume — not the old PR head.
+6. Servers: Comin polls (~1 minute) and evaluates. The six SOPS servers wait for the NixCI gate before build (if the output is not already local) and before deploy; Denethor builds immediately. Then switch (or test).
+7. Desktop (`ammars-pc`): waits for Aragorn's **04:30** local timer and a green NixCI suite (exact commit/ref match, every run `success`/`cached`) on that exact `main` SHA. No midday catch-up.
 
 ## Risky single-host workflow (`testing-<hostname>`)
 
@@ -75,7 +98,7 @@ abandonment, then recreate it from current `main` before reuse.
 1. Make sure you have console or remote-reboot access outside SSH. A bad test can break the network.
 2. Create a feature branch from current `main`.
 3. Open a PR from the feature branch to `testing-<hostname>`.
-4. Wait for `buildbot/nix-build`, then fast-forward merge into the testing branch.
+4. Wait for all required NixCI contexts, then fast-forward merge into the testing branch. Choose FF-only for `testing-*` even though the repo default is squash.
 5. That host's Comin uses operation **`test`** (temporary activation). Other hosts ignore the branch.
 6. Verify behavior on that host.
 7. If bad, reboot to the previous persistent `main` generation. Fix or abandon the testing branch.
@@ -96,7 +119,7 @@ rebuilding from scratch.
 | `theoden` | Comin | Attic cache host |
 | `rivendell` | Comin | No Tailscale |
 | `erebor` | Comin | Exporter scraped via Tailscale (`100.64.0.21:4243`), not public |
-| `denethor` | Comin | Work VLAN; metrics-only OPNsense pinhole to TCP 4243 |
+| `denethor` | Comin (no NixCI gate) | Work VLAN; metrics-only OPNsense pinhole to TCP 4243. Ungated: no SOPS NixCI netrc. |
 | `ammars-pc` | Aragorn deploy-rs @ 04:30 | Standalone Home Manager; local `nh home switch` stays the fast loop |
 
 ## Server behavior (Comin)
@@ -106,12 +129,59 @@ Exact module: `modules/nixos/comin.nix`.
 - Polls the public Codeberg remote about once per minute.
 - Branch `main` → operation **`switch`** (persistent).
 - Branch `testing-<hostname>` → operation **`test`** (nonpersistent after reboot).
-- Evaluates and builds through the local Nix daemon; prefers Attic substitutes.
+- Evaluates and builds through the local Nix daemon; prefers substitutes.
+- **NixCI gate** (`modules.comin.ciGate`, default off) is on for the six
+  SOPS servers in `hosts/_profiles/server/configuration.nix`
+  (aragorn, boromir, samwise, theoden, erebor, rivendell). Denethor,
+  workstations, WSL, and the ISO are unchanged.
+- When the gate is on, Comin `buildConfirmer` and `deployConfirmer` are **manual**.
+  `comin-ci-gate.timer` runs `comin-ci-gate.service` about every 60s after the last
+  run ends. The first generation that enables the gate still uses the previous
+  (ungated) config; Comin picks up `manual` mode on the restart that generation
+  causes. A second generation is required to exercise actual deploy confirmation.
+- Native Comin skips `buildConfirmer` when the evaluated `outPath` already exists
+  locally (`BuildDone` without `EvaluationDone`). The gate still requires `deploy`
+  confirmation for that generation. Same `outPath` + operation as the previous
+  deployment is a native no-op (no activation, no deploy confirmation).
+  `comin confirmation accept` still bypasses the gate (native `for=all` if a
+  build is pending, else `for=deploy`). The gate only considers confirmer
+  submissions that match the current builder generation; stale queued requests
+  for older generations are not approved.
+- Per pending generation: NixCI `GET https://nix-ci.com/cb:ananjiani:infra/<branch>/<sha>`
+  must be HTTP 200 with `commit`/`ref` exact match and suite `status=success`,
+  plus `checks.x86_64-linux.nixos-<hostname>` success/cached (configure + eval
+  present and green, nonempty `runs`). Codeberg/Buildbot status is ignored.
+  The build check runs only when `buildConfirmer` is submitted; the deploy check
+  covers local-ready outputs. Not a full-closure walk.
+- Cache tri-state, using `/run/secrets/nix_ci_netrc` as root: **approve** if
+  `nix-cache-info` and the pending generation's exact output-path narinfo are
+  200 (References are parsed for validity, not walked); **wait** (retry the
+  same UUID, do not fail the build) if the cache is healthy but that root
+  narinfo is 404, unexpected 3xx/4xx, or metadata is invalid; **fallback
+  approve** + metric on 401/403, missing netrc, timeouts, or 5xx. CI errors
+  never fall back. Native Nix may rebuild missing dependencies and their
+  cached parents even when NixCI and the cache look healthy. A native Nix
+  test with a cached parent and missing child completed by rebuilding both.
+  This works around missing cache entries; it does not guarantee build-once
+  behavior or prove that local-build flags caused the gap. Local/remote
+  builds stay enabled.
 - Retention: **3** boot entries, **3** successful deployments, **5** total deployments.
 - **No** automatic health rollback. A bad `main` switch stays until you reboot
   to a retained generation or recover with deploy-rs after suspending Comin.
-- Auto-reboot is **off**. Metric `comin_need_to_reboot == 1` means schedule a
-  supervised reboot; Comin will not reboot for you.
+- Auto-reboot is **on** for aragorn/boromir/samwise/theoden/erebor/denethor via
+  `comin-auto-reboot.timer` (`modules.comin.autoReboot`). It reboots only when
+  `comin_need_to_reboot == 1`, uptime > 1h, no logged-in users, and any host
+  `preRebootCheck` passes. k3s servers then run a PDB-aware cordon and drain
+  before the reboot request. A failed drain uncordons the node and skips the
+  reboot. Single-replica protected workloads therefore block unattended
+  reboot of their current node.
+  `Persistent=false` (missed window → try tomorrow).
+  rivendell is excluded. Stagger: aragorn 04:00, boromir 04:15, samwise 04:30,
+  theoden 04:45, erebor 05:00, denethor 05:15. See
+  [ADR-014](adrs/adr-014-2026-09-04-comin-auto-reboot.md).
+- Before a manual k3s-node reboot, relocate or stop any protected
+  single-replica workload on that node. A shutdown already accepted by
+  systemd cannot use a failed drain to cancel itself.
 
 Useful commands on a Comin host:
 
@@ -122,6 +192,9 @@ sudo comin deployment list
 journalctl -u comin
 sudo comin suspend
 sudo comin resume
+sudo comin confirmation show
+journalctl -u comin-ci-gate.service
+systemctl list-timers comin-ci-gate.timer
 ```
 
 ## Desktop flow (`ammars-pc`)
@@ -132,7 +205,7 @@ Controller: Aragorn systemd timer `ammars-pc-deploy.timer` at **04:30** local.
 Each run:
 
 1. Reads exact `main` SHA from Codeberg.
-2. Requires the latest `buildbot/nix-build` status for that SHA to be success.
+2. Requires the NixCI suite for that SHA to be green: exact `commit`/`ref` match, suite `status=success`, and every run `success` or `cached` (queried from `https://nix-ci.com/cb:ananjiani:infra/main/<sha>`).
 3. Path filter (after CI, before WOL): compare that SHA to the actual last
    deployed SHA (`last-success`). If every changed path is under `docs/` or
    `k8s/`, finish as `ignored` — no SSH, no WOL, no deploy. Empty
@@ -202,6 +275,9 @@ last real deploy.
 - Comin Prometheus exporter: port **4243** on each Comin host.
 - Desktop deploy metrics: Aragorn node exporter **textfile** collector
   (`ammars_pc_deploy_*`).
+- Comin NixCI gate textfile: `/var/lib/comin-gate/textfile/comin-ci-gate.prom`
+  (`comin_nixci_cache_error`, `comin_nixci_gate_last_success_timestamp_seconds`).
+  Scraped via `job=nixos-node-exporter` (includes Erebor at `100.64.0.21:9100`).
 - Scrape config: `k8s/apps/monitoring/scrapeconfig-infrastructure.yaml`.
 - Alert rules: `k8s/apps/monitoring/helmrelease-kube-prometheus-stack.yaml`
   (`comin-alerts`, `desktop-deploy-alerts`).
@@ -213,8 +289,9 @@ last real deploy.
 | `CominEvalFailed` | Last Nix evaluation failed |
 | `CominBuildFailed` | Last Nix build failed (check Attic / builders) |
 | `CominDeploymentFailed` | Last switch/test failed |
-| `CominNeedsReboot` | Kernel/similar change needs a supervised reboot |
+| `CominNeedsReboot` | Need-reboot metric stuck (auto-reboot skipped or failing) |
 | `CominSuspendedUnexpectedly` | Comin suspended ≥ 2h |
+| `CominNixCiCacheError` | Aggregated: gated hosts cannot auth/reach cache.nix-ci.com (not 404-wait) |
 | `AmmarsPcDeployPendingTooLong` | Pending desktop release older than 24h |
 | Generic failed-unit alert | Also covers hard failures of `ammars-pc-deploy.service` |
 
@@ -257,7 +334,7 @@ nix develop --command deploy .#boromir --auto-rollback false --magic-rollback fa
 
 Do **not** disable rollback on other hosts as a habit.
 
-3. Fix `main` (revert / forward fix, green `buildbot/nix-build`, merge).
+3. Fix `main` (revert / forward fix, green NixCI suite, merge).
 4. Only then:
 
 ```bash
@@ -273,25 +350,26 @@ systemctl list-timers ammars-pc-deploy.timer
 journalctl -u ammars-pc-deploy.service
 ```
 
-## Current live state (2026-08-20)
+## Current live state (2026-09-02)
 
 - All **7** Comin servers track `main`; exporters are healthy (including
   Erebor via Tailscale and Denethor via the Work VLAN metrics pinhole).
 - Buildbot deploy hook / fleet key removed — CI builds and caches only.
-- Branch protection on `main` is live (`buildbot/nix-build` required, FF-only).
+- Codeberg requires all NixCI contexts for `main` (no wildcards), allows mergeable outdated PRs, and defaults to squash merge. Buildbot is advisory.
 - Desktop active/unlocked skip path and new ntfy wording are confirmed.
 - Docs/k8s-only pre-WOL filter is implemented in
   `hosts/servers/aragorn/configuration.nix` but **not live** until that change
   merges and Aragorn's Comin switch picks it up.
 - First successful **sleeping-desktop / WOL** deploy is still **unconfirmed** —
   exercise that path on purpose.
-- Automatic reboots remain off; treat `comin_need_to_reboot` as a schedule item.
+- Auto-reboot timers cover need-reboot on the six enabled servers; rivendell still needs a manual reboot when the metric is set.
 
 ## Source map
 
 | Path | Role |
 | --- | --- |
-| `modules/nixos/comin.nix` | Shared Comin module |
+| `modules/nixos/comin.nix` | Shared Comin module (optional `ciGate`) |
+| `modules/nixos/comin-ci-gate.py` | NixCI + cache build/deploy confirmer helper |
 | `hosts/_profiles/server/configuration.nix` | Enables Comin on fleet profile |
 | `hosts/servers/denethor/configuration.nix` | Denethor Comin + 4243 firewall |
 | `hosts/servers/aragorn/configuration.nix` | Nightly desktop controller |
@@ -300,4 +378,5 @@ journalctl -u ammars-pc-deploy.service
 | `k8s/apps/monitoring/scrapeconfig-infrastructure.yaml` | Comin / node scrapes |
 | `k8s/apps/monitoring/helmrelease-kube-prometheus-stack.yaml` | Alert rules |
 | `docs/content/adrs/adr-009-2026-08-19-comin-pull-deployments.md` | Decision record |
+| `docs/content/adrs/adr-014-2026-09-04-comin-auto-reboot.md` | Auto-reboot decision record |
 | `.agents/plans/2026-08-19-comin-buildbot-deployment-flow.md` | Implementation plan history |

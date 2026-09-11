@@ -19,11 +19,22 @@ resources:
   # Comet (Stremio addon)
   - comet-deployment.yaml
   - comet-service.yaml
+  # Internet Archive (Stremio addon)
+  - internet-archive-addon-deployment.yaml
+  - internet-archive-addon-service.yaml
   # Stremio Server (streaming server for web app)
   - server-deployment.yaml
   - server-service.yaml
   # Ingress
   - certificate.yaml
   - ingressroute-comet.yaml
+  - ingressroute-internet-archive-addon.yaml
+  - middleware-internet-archive-addon.yaml
   - ingressroute-prowlarr.yaml
   - ingressroute-server.yaml
+
+configMapGenerator:
+  - name: internet-archive-addon
+    namespace: stremio
+    files:
+      - app.js=internet-archive-addon/app.js

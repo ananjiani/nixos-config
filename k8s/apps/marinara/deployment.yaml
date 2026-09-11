@@ -19,6 +19,7 @@ spec:
       labels:
         app: marinara
     spec:
+      terminationGracePeriodSeconds: 120
       containers:
         - name: marinara
           image: ghcr.io/pasta-devs/marinara-engine:2.4.4-lite
@@ -97,6 +98,24 @@ spec:
             timeoutSeconds: 10
             failureThreshold: 3
           lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -ec
+                  - |
+                    lease="${FILE_STORAGE_DIR:-/app/data/storage}/.writer-lease"
+                    kill -TERM 1
+
+                    while [ -e "$lease" ]; do
+                      sleep 1
+                    done
+
+                    # Do not return while PID 1 can forward kubelet's normal
+                    # post-hook SIGTERM to an already-shutting-down server.
+                    while kill -0 1 2>/dev/null; do
+                      sleep 1
+                    done
             postStart:
               exec:
                 command:

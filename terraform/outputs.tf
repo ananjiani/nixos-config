@@ -13,11 +13,11 @@ output "dns_records" {
       proxied = cloudflare_dns_record.git.proxied
       id      = cloudflare_dns_record.git.id
     }
-    media = {
-      name    = cloudflare_dns_record.media.name
-      content = cloudflare_dns_record.media.content
-      proxied = cloudflare_dns_record.media.proxied
-      id      = cloudflare_dns_record.media.id
+    jellyfin = {
+      name    = cloudflare_dns_record.jellyfin.name
+      content = cloudflare_dns_record.jellyfin.content
+      proxied = cloudflare_dns_record.jellyfin.proxied
+      id      = cloudflare_dns_record.jellyfin.id
     }
     sji_api = {
       name    = cloudflare_dns_record.sji_api.name

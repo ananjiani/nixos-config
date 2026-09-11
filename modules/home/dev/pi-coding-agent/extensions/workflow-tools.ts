@@ -60,11 +60,23 @@ export default function workflowTools(pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "web_search",
 		label: "Web Search",
-		description: "Search web with self-hosted SearXNG. Use for current, unfamiliar, or time-sensitive information.",
+		description:
+			"Search web. Default auto uses Tavily Basic first (Tavily sees the query; metered), then SearXNG on failure, timeout, or zero results. provider=tavily or searxng pins one source. Returns up to 10 title/URL/snippet results.",
 		promptSnippet: "Search web for current or unfamiliar information",
 		promptGuidelines: ["Use web_search when current or version-specific information may matter."],
-		parameters: Type.Object({ query: Type.String({ description: "Search query. Include current year for recent info." }) }),
-		execute: (_id, params, signal) => run(pi, "web-search", [params.query], signal, "web-search"),
+		parameters: Type.Object({
+			query: Type.String({ description: "Search query. Include current year for recent info." }),
+			provider: Type.Optional(
+				Type.Union([Type.Literal("auto"), Type.Literal("tavily"), Type.Literal("searxng")], {
+					description:
+						"auto (default): Tavily Basic then SearXNG fallback. tavily or searxng: that provider only. Tavily sees the query.",
+				}),
+			),
+		}),
+		execute: (_id, params, signal) => {
+			const args = params.provider ? ["--provider", params.provider, params.query] : [params.query];
+			return run(pi, "web-search", args, signal, "web-search");
+		},
 	});
 
 	pi.registerTool({

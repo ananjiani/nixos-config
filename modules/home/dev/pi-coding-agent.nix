@@ -60,78 +60,218 @@ let
   # and claude-glm. Pi's "!cmd" apiKey form runs the cat at invocation
   # time, stripping trailing whitespace — key stays out of the env table
   # and rotates with vault-agent's lease.
-  # Web access via two small bash scripts on PATH. Mario's pitch is
+  # Web access via small bash scripts on PATH. Mario's pitch is
   # "CLI tools with READMEs" instead of MCP servers — pi's bash tool
   # discovers these when asked to search/fetch, no tokens spent
   # registering them up-front. Tool choices follow the pi ecosystem
   # (pi-amplike, pi-skills/brave-search, pi-super-curl):
   #
-  # - `web-search <query>`: self-hosted SearXNG at searxng.lan
-  # - `web-fetch <url>`:    Jina Reader (r.jina.ai) — free, Readability-
-  #                         based extraction, handles JS-rendered pages,
-  #                         de-facto web-fetch standard in the pi
-  #                         community. Strictly better than pandoc for
-  #                         agent use (article extraction vs blind
-  #                         HTML→markdown).
-  #
-  # - `web-research <query>`: Tavily — returns extracted, reranked page
-  #                         content (not just links), so one call replaces
-  #                         a search plus several fetches. Metered: shares
-  #                         the 1k/mo free-tier pool with claude-code's
-  #                         tavily-mcp, so it's a distinct tool rather than
-  #                         a web-search fallback — the model should choose
-  #                         it deliberately for research-shaped tasks.
+  # - `web-search [--provider auto|tavily|searxng] <query>`:
+  #                         auto (default) tries Tavily Basic first, then
+  #                         SearXNG on failure/timeout/zero results.
+  #                         Tavily sees the query in auto/default mode.
+  #                         Basic search is metered (1 credit/call, same
+  #                         1k/mo pool as web-research). Top 10 title/URL/
+  #                         snippet. Explicit --provider skips fallback.
+  # - `web-fetch <url>`:    local Readability extraction (see below).
+  # - `web-fetch-jina <url>`: Jina Reader — JS-rendered pages; Jina sees
+  #                         every URL.
+  # - `web-research <query>`: Tavily Advanced — extracted, reranked page
+  #                         content (not just links). Metered (2 credits/
+  #                         call). Distinct from web-search; pick it for
+  #                         research-shaped tasks.
   #
   # pandoc was considered and dropped — it converts HTML-as-markup
   # instead of extracting article bodies. SearXNG's baseline quality
   # comes from the braveapi engine (Brave Search API) server-side, so a
   # separate `web-search-brave` client tool is unnecessary.
 
-  # Endpoint is an option so portable/isolated hosts (e.g. Denethor) can
-  # set null and keep searxng.lan out of the store path entirely.
-  webSearch =
-    if cfg.searxngUrl == null then
-      pkgs.writeShellApplication {
-        name = "web-search";
-        text = ''
-          # Usage: web-search <query...>
-          #
-          # SearXNG endpoint not configured on this host (piCodingAgent.searxngUrl = null).
-          echo "web-search: not configured (piCodingAgent.searxngUrl is null)" >&2
-          exit 1
-        '';
+  # searxngUrl / tavilyKeyFile are options so portable/isolated hosts can
+  # set null and keep those endpoints out of the store path. Auto uses
+  # whichever provider is configured; an explicit unavailable provider
+  # fails clearly. Neither configured: fail clearly.
+  webSearch = pkgs.writeShellApplication {
+    name = "web-search";
+    runtimeInputs = with pkgs; [
+      curl
+      jq
+    ];
+    text = ''
+      # Usage: web-search [--provider auto|tavily|searxng] <query...>
+      #
+      # Default (auto): Tavily Basic first, SearXNG on failure.
+      # Tavily sees the query in auto/default mode. Basic search is
+      # metered (1 credit/call, same 1k/mo pool as web-research).
+      # --provider tavily|searxng uses only that provider (no fallback).
+      # Prints up to 10 results as markdown-ish plain text (title, URL,
+      # snippet). For extracted page content use `web-research`. For a
+      # known URL use `web-fetch`.
+      usage() {
+        echo "usage: web-search [--provider auto|tavily|searxng] <query...>" >&2
+        echo "  auto (default): Tavily Basic, then SearXNG on failure or zero results." >&2
+        echo "  Tavily sees the query. Basic search is metered." >&2
+        exit 1
       }
-    else
-      pkgs.writeShellApplication {
-        name = "web-search";
-        runtimeInputs = with pkgs; [
-          curl
-          jq
-        ];
-        text = ''
-          # Usage: web-search <query...>
-          #
-          # Queries the self-hosted SearXNG at searxng.lan and prints the
-          # top 10 results as markdown-ish plain text (title, URL, snippet).
-          # For reading a specific URL use `web-fetch`.
-          if [ $# -eq 0 ]; then
-            echo "usage: web-search <query...>" >&2
+
+      provider=auto
+      if [ "''${1:-}" = "--provider" ]; then
+        if [ $# -lt 2 ]; then
+          usage
+        fi
+        provider=$2
+        shift 2
+      fi
+
+      case "$provider" in
+        auto | tavily | searxng) ;;
+        *)
+          echo "web-search: invalid provider '$provider' (want auto, tavily, or searxng)" >&2
+          exit 1
+          ;;
+      esac
+
+      if [ $# -eq 0 ]; then
+        usage
+      fi
+      ${lib.optionalString (cfg.tavilyKeyFile != null || cfg.searxngUrl != null) ''
+        query="$*"
+      ''}
+
+      tmp_dir=$(mktemp -d)
+      trap 'rm -rf "$tmp_dir"' EXIT
+
+      tavily_configured=${if cfg.tavilyKeyFile != null then "1" else "0"}
+      searxng_configured=${if cfg.searxngUrl != null then "1" else "0"}
+
+      search_tavily() {
+        ${
+          if cfg.tavilyKeyFile != null then
+            ''
+              key_file=${cfg.tavilyKeyFile}
+              if [ ! -r "$key_file" ]; then
+                echo "web-search: tavily key file not readable ($key_file)" >&2
+                return 1
+              fi
+
+              header_file="$tmp_dir/tavily.header"
+              body_file="$tmp_dir/tavily.body"
+              resp_file="$tmp_dir/tavily.json"
+              {
+                printf 'Authorization: Bearer '
+                tr -d '[:space:]' <"$key_file"
+                printf '\n'
+              } >"$header_file"
+              chmod 600 "$header_file"
+
+              jq -n --arg q "$query" '{query: $q, search_depth: "basic", max_results: 10}' >"$body_file"
+
+              http_code=$(
+                curl -sS -o "$resp_file" -w '%{http_code}' --max-time 15 \
+                  -H @"$header_file" \
+                  -H "Content-Type: application/json" \
+                  -d @"$body_file" \
+                  https://api.tavily.com/search
+              ) || {
+                echo "web-search: tavily request failed" >&2
+                return 1
+              }
+
+              if [ "$http_code" != "200" ]; then
+                echo "web-search: tavily HTTP $http_code" >&2
+                return 1
+              fi
+
+              if ! jq -e '.results | type == "array"' "$resp_file" >/dev/null 2>&1; then
+                echo "web-search: tavily returned invalid response" >&2
+                return 1
+              fi
+              if ! jq -e '.results | length > 0' "$resp_file" >/dev/null; then
+                echo "web-search: tavily returned no results" >&2
+                return 1
+              fi
+              if ! jq -e '.results[:10] | all(.[]; type == "object" and (.title | type == "string") and (.url | type == "string") and (.content == null or (.content | type == "string")))' "$resp_file" >/dev/null 2>&1; then
+                echo "web-search: tavily returned invalid response" >&2
+                return 1
+              fi
+
+              jq -r '.results[:10] | .[] | "## \(.title)\n\(.url)\n\(.content // "")\n"' "$resp_file"
+            ''
+          else
+            ''
+              echo "web-search: tavily not configured (piCodingAgent.tavilyKeyFile is null)" >&2
+              return 1
+            ''
+        }
+      }
+
+      search_searxng() {
+        ${
+          if cfg.searxngUrl != null then
+            ''
+              encoded=$(printf '%s' "$query" | jq -sRr @uri)
+              resp_file="$tmp_dir/searxng.json"
+              # -k: searxng.lan has a self-signed cert (same reason mcp-searxng
+              # sets NODE_TLS_REJECT_UNAUTHORIZED=0 in claude-code.nix).
+              curl -fsSLk --max-time 15 \
+                "${cfg.searxngUrl}/search?q=''${encoded}&format=json&safesearch=0" \
+                -o "$resp_file" || {
+                echo "web-search: searxng request failed" >&2
+                return 1
+              }
+
+              if ! jq -e '.results | type == "array"' "$resp_file" >/dev/null 2>&1; then
+                echo "web-search: searxng returned invalid response" >&2
+                return 1
+              fi
+              if ! jq -e '.results[:10] | all(.[]; type == "object" and (.title | type == "string") and (.url | type == "string") and (.content == null or (.content | type == "string")))' "$resp_file" >/dev/null 2>&1; then
+                echo "web-search: searxng returned invalid response" >&2
+                return 1
+              fi
+
+              jq -r '.results[:10] | .[] | "## \(.title)\n\(.url)\n\(.content // "")\n"' "$resp_file"
+            ''
+          else
+            ''
+              echo "web-search: searxng not configured (piCodingAgent.searxngUrl is null)" >&2
+              return 1
+            ''
+        }
+      }
+
+      case "$provider" in
+        tavily)
+          search_tavily
+          ;;
+        searxng)
+          search_searxng
+          ;;
+        auto)
+          if [ "$tavily_configured" = 1 ]; then
+            if search_tavily; then
+              exit 0
+            fi
+            if [ "$searxng_configured" != 1 ]; then
+              exit 1
+            fi
+            echo "web-search: tavily unavailable, using searxng" >&2
+          fi
+          if [ "$searxng_configured" = 1 ]; then
+            search_searxng
+          else
+            echo "web-search: not configured (piCodingAgent.tavilyKeyFile and piCodingAgent.searxngUrl are null)" >&2
             exit 1
           fi
-          query=$(printf '%s' "$*" | jq -sRr @uri)
-          # -k: searxng.lan has a self-signed cert (same reason mcp-searxng
-          # sets NODE_TLS_REJECT_UNAUTHORIZED=0 in claude-code.nix).
-          curl -fsSLk --max-time 15 \
-            "${cfg.searxngUrl}/search?q=''${query}&format=json&safesearch=0" \
-            | jq -r '.results[:10] | .[] | "## \(.title)\n\(.url)\n\(.content // "")\n"'
-        '';
-      };
+          ;;
+      esac
+    '';
+  };
 
   # Tavily research search: the pipeline (live-fetch, extract, chunk,
-  # rerank) runs on Tavily's side, so unlike web-search the query AND the
-  # result pages' selection happen off-box. Key comes from vault-agent's
-  # rendered secret at runtime (claude-code's tavily-mcp shim pattern) —
-  # never embedded in the store.
+  # rerank) runs on Tavily's side, so the query AND the result pages'
+  # selection happen off-box. Distinct from web-search (Basic snippets +
+  # SearXNG fallback). Key comes from vault-agent's rendered secret at
+  # runtime (claude-code's tavily-mcp shim pattern) — never embedded in
+  # the store.
   webResearch =
     if cfg.tavilyKeyFile == null then
       pkgs.writeShellApplication {
@@ -550,11 +690,10 @@ let
   # Screen reads, clicks, typing, and browser driving stay unprompted.
   piSettings = {
     defaultProvider = "openai-codex";
-    defaultModel = "gpt-5.6-sol";
+    defaultModel = "gpt-6-astra";
     enabledModels =
       let
         all = [
-          "claude-bridge/claude-fable-5"
           "xai-auth/grok-4.5"
           "xai-auth/grok-4.6"
           "zai/glm-5.3"
@@ -562,6 +701,7 @@ let
           "opencode-go/deepseek-v4-pro"
           "opencode-go/deepseek-v4-flash"
           "openai-codex/gpt-5.6-sol"
+          "openai-codex/gpt-6-astra"
         ];
         blockedPrefixes = [
           "kimi-coding/"
@@ -582,7 +722,6 @@ let
       "npm:pi-init"
       "git:github.com/DietrichGebert/ponytail"
       "git:github.com/mattpocock/skills"
-      "npm:pi-claude-bridge"
       "npm:pi-mcp-adapter"
       "npm:@tintinweb/pi-subagents"
       {
@@ -592,6 +731,7 @@ let
       "npm:pi-xai-oauth"
       "npm:pi-sense"
       "npm:@llblab/pi-telegram@0.39.3"
+      "npm:@aliou/pi-processes@0.12.0"
     ]
     ++ lib.optionals cfg.computerUse.enable [ piComputerUseRoot ];
     extensions = [
@@ -611,7 +751,7 @@ let
 
   # Homelab providers read vault-agent secrets at runtime. Gated so
   # portable hosts ship a valid empty providers map with no /run/secrets
-  # strings. OAuth/default Pi + Claude bridge stay always-on.
+  # strings. OAuth/default Pi providers stay always-on.
   # Passed to programs.pi-coding-agent.models (official HM writes models.json).
   piModelSettings = {
     providers =
@@ -729,42 +869,6 @@ let
     ''}
     exec ${pkgs.llm-agents.pi}/bin/pi "$@"
   '';
-  # Claude Agent SDK normally loads Claude Code's user, project, and local
-  # settings when settingSources is omitted. pi-claude-bridge 0.6.2 ignores
-  # its settingSources config, so inject the equivalent CLI flag through a
-  # dedicated executable wrapper. The post-update activation preserves the
-  # stock Claude Code system-prompt preset: replacing it with Pi's full prompt
-  # makes subscription requests require extra usage. The bridge still appends
-  # AGENTS.md and skills through systemPromptAppend. Wrapper still excludes ~/.claude
-  # settings/hooks, Claude filesystem instructions, project CLAUDE.md
-  # duplication, and Claude auto-memory. Managed policy and ~/.claude.json
-  # runtime/auth state still load by Agent SDK design.
-  #
-  # The second wrapper hop is also required on NixOS: the SDK's bundled
-  # musl/glibc binary cannot run here, while ~/.local/bin/claude points to
-  # the Nix-managed Claude Code wrapper from claude-code.nix.
-  claudeBridgeExecutable = pkgs.writeShellScript "claude-bridge-isolated" ''
-    export CLAUDE_CODE_DISABLE_AUTO_MEMORY=1
-    exec ${config.home.homeDirectory}/.local/bin/claude --setting-sources "" "$@"
-  '';
-
-  # Read-only bridge config; unlike Pi's mutable settings.json, a store-path
-  # source is the honest shape. Keep settingSources declared as well so a
-  # future bridge release that honors it makes the wrapper flag redundant.
-  piClaudeBridgeConfig = pkgs.writeText "pi-claude-bridge.json" (
-    builtins.toJSON {
-      provider = {
-        pathToClaudeCodeExecutable = "${claudeBridgeExecutable}";
-        settingSources = [ ];
-      };
-      # AskClaude tool disabled — it spawns a separate Claude Code session
-      # that competes with the main Fable session for Claude quota. The
-      # model-router skill + scout/worker/reviewer agents cover delegation
-      # without burning Claude tokens on a second concurrent session.
-      askClaude.enabled = false;
-    }
-  );
-
   # ─── Browser automation (chrome-devtools-mcp via pi-mcp-adapter) ─────────
   #
   # pi-mcp-adapter (nicopreme, `pi install npm:pi-mcp-adapter`) exposes MCP
@@ -787,11 +891,10 @@ let
   # firefox/webkit test matrices become load-bearing.
   #
   # `${pkgs.nodejs}` and `${pkgs.chromium}` interpolate at BUILD time (JSON
-  # can't interpolate at runtime) — same store-path pattern as
-  # piClaudeBridgeConfig. npx -y ...@latest mirrors the tavily-mcp pattern in
-  # claude-code.nix. lifecycle=lazy is the adapter default but stated for
-  # clarity. --headless = no visible window; drop it when you want eyes on
-  # the page while the agent drives it.
+  # can't interpolate at runtime). npx -y ...@latest mirrors the tavily-mcp
+  # pattern in claude-code.nix. lifecycle=lazy is the adapter default but
+  # stated for clarity. --headless = no visible window; drop it when you want
+  # eyes on the page while the agent drives it.
   piMcp = pkgs.writeText "mcp.json" (
     builtins.toJSON {
       mcpServers = {
@@ -935,9 +1038,10 @@ in
       type = lib.types.nullOr lib.types.str;
       default = "https://searxng.lan";
       description = ''
-        Base URL for the web-search CLI's SearXNG endpoint (no trailing path).
+        Base URL for the web-search CLI's SearXNG fallback (no trailing path).
         Set to null on hosts that must not contact or embed searxng.lan;
-        web-search then fails fast with a not-configured message.
+        auto then uses Tavily only (if configured), and --provider searxng
+        fails with a not-configured message.
       '';
     };
 
@@ -946,8 +1050,10 @@ in
       default = "/run/secrets/tavily_api_key";
       description = ''
         Path to the Tavily API key rendered by vault-agent, read at
-        invocation time by the web-research CLI. Set to null on isolated
-        hosts; web-research then fails fast with a not-configured message.
+        invocation time by web-search (Basic) and web-research (Advanced).
+        Tavily sees web-search queries in auto/default mode. Set to null on
+        isolated hosts; auto then uses SearXNG only (if configured), and
+        --provider tavily / web-research fail with a not-configured message.
       '';
     };
 
@@ -959,8 +1065,7 @@ in
         at /run/secrets/{kimi_code,zai,opencode}_api_key. Set false on
         isolated hosts (e.g. Denethor); models.json then has an empty
         providers map and no /run/secrets strings. Settings also omit models
-        backed by those unavailable providers. OAuth models and the Claude
-        bridge stay on.
+        backed by those unavailable providers. OAuth models stay on.
       '';
     };
 
@@ -1020,7 +1125,7 @@ in
   #
   # Official programs.pi-coding-agent owns package + settings.json +
   # models.json (read-only store paths). Companion module keeps options,
-  # helpers, extensions/resources, theme, MCP, bridge, CUA, activations.
+  # helpers, extensions/resources, theme, MCP, CUA, activations.
   #
   # extensions/, prompts/, skills/, and other resources stay OUT-OF-STORE
   # symlinks into the dotfiles working tree so pi's `/reload` and similar
@@ -1039,176 +1144,9 @@ in
     home = {
       # Keep pi extensions current on every home switch. Network call —
       # best-effort so offline/dry-run switches still succeed.
-      #
-      # piPatchClaudeBridge runs after that: pi installs pi-claude-bridge
-      # mutably under ~/.pi/agent/npm/node_modules, so each update can
-      # restore stock models.ts. Patch it to expose claude-opus-5 until
-      # pi-ai/bridge ship it: order it before older Opus, synthesize metadata
-      # from the prior Opus entry, and map the runtime id to claude-opus-5[1m].
-      # Bare Opus 5 only serves a 200K window, so pi would register 1M and
-      # compact at the real limit instead. [1m] serves the full window and stays
-      # on included Max usage (verified while extra usage is disabled).
-      #
-      # Keep bridge's stock Claude Code system-prompt preset. Replacing it with
-      # Pi's full third-party harness prompt makes subscription-backed requests
-      # require extra usage. The stock bridge still appends AGENTS.md and skills.
       activation = {
         piUpdateExtensions = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
           run ${pkgs.llm-agents.pi}/bin/pi update --extensions || echo "pi: extension update failed (offline?), skipping" >&2
-        '';
-
-        piPatchClaudeBridge = lib.hm.dag.entryAfter [ "piUpdateExtensions" ] ''
-                  bridge_src="$HOME/.pi/agent/npm/node_modules/pi-claude-bridge/src"
-                  index_ts="$bridge_src/index.ts"
-                  models_ts="$bridge_src/models.ts"
-
-                  # Undo the old full-Pi-system-prompt patch. Claude subscription
-                  # usage requires the stock Claude Code preset; bridge still
-                  # appends AGENTS.md and skills through systemPromptAppend.
-                  if [ -f "$index_ts" ]; then
-                    run ${pkgs.python3}/bin/python3 - "$index_ts" <<'PY'
-          import sys
-          from pathlib import Path
-
-          path = Path(sys.argv[1])
-          text = path.read_text()
-          old = "\t\tsystemPrompt: context.systemPrompt,\n\t\textraArgs,"
-          stock = (
-              "\t\tsystemPrompt: {\n"
-              "\t\t\ttype: \"preset\", preset: \"claude_code\",\n"
-              "\t\t\tappend: systemPromptAppend ? systemPromptAppend : undefined,\n"
-              "\t\t},\n"
-              "\t\textraArgs,"
-          )
-          old_count = text.count(old)
-          stock_count = text.count(stock)
-          if old_count == 1 and stock_count == 0:
-              path.write_text(text.replace(old, stock, 1))
-              print(f"pi: restored {path} stock Claude Code system-prompt preset")
-          elif old_count == 0 and stock_count == 1:
-              print(f"pi: {path} already uses stock Claude Code system-prompt preset")
-          else:
-              raise SystemExit(
-                  f"pi: {path}: unexpected system-prompt shape; "
-                  f"old_count={old_count} stock_count={stock_count}"
-              )
-          PY
-                  fi
-
-                  if [ ! -f "$models_ts" ]; then
-                    echo "pi: pi-claude-bridge not installed, skipping Opus 5 patch" >&2
-                  else
-                    # models.ts: Opus 5 order + metadata synthesize + bare runtime.
-                    # Migrates old patched bare runtime; accepts already-desired ids/buildModels.
-                    run ${pkgs.python3}/bin/python3 - "$models_ts" <<'PY'
-          import sys
-          from pathlib import Path
-
-          path = Path(sys.argv[1])
-          text = path.read_text()
-
-          stock_ids = (
-              'export const MODEL_IDS_IN_ORDER = ["claude-fable-5", "claude-opus-4-8", '
-              '"claude-opus-4-7", "claude-opus-4-6", "claude-sonnet-5", '
-              '"claude-sonnet-4-6", "claude-haiku-4-5"];'
-          )
-          desired_ids = (
-              'export const MODEL_IDS_IN_ORDER = ["claude-fable-5", "claude-opus-5", '
-              '"claude-opus-4-8", "claude-opus-4-7", "claude-opus-4-6", '
-              '"claude-sonnet-5", "claude-sonnet-4-6", "claude-haiku-4-5"];'
-          )
-
-          stock_build = (
-              "export function buildModels<T extends { id: string; [key: string]: any }>(piAiModels: T[]) {\n"
-              "\treturn MODEL_IDS_IN_ORDER\n"
-              "\t\t.map((id) => piAiModels.find((m) => m.id === id))\n"
-              "\t\t.filter((m) => m != null)\n"
-          )
-          desired_build = (
-              "export function buildModels<T extends { id: string; [key: string]: any }>(piAiModels: T[]) {\n"
-              "\treturn MODEL_IDS_IN_ORDER\n"
-              "\t\t.map((id) => {\n"
-              "\t\t\tconst found = piAiModels.find((m) => m.id === id);\n"
-              "\t\t\tif (found) return found;\n"
-              "\t\t\t// pi-ai lacks Opus 5 metadata: reuse Opus 4.8 fields, override id/name.\n"
-              "\t\t\tif (id === \"claude-opus-5\") {\n"
-              "\t\t\t\tconst base = piAiModels.find((m) => m.id === \"claude-opus-4-8\");\n"
-              "\t\t\t\tif (!base) return undefined;\n"
-              "\t\t\t\treturn { ...base, id: \"claude-opus-5\", name: \"Claude Opus 5\" };\n"
-              "\t\t\t}\n"
-              "\t\t\treturn undefined;\n"
-              "\t\t})\n"
-              "\t\t.filter((m) => m != null)\n"
-          )
-
-          stock_runtime = (
-              '\t\tcase "claude-opus-4-8":\n'
-              '\t\t\treturn { cliModelId: "claude-opus-4-8[1m]", contextWindow: ONE_M_CONTEXT };'
-          )
-          old_patched_runtime = (
-              '\t\tcase "claude-opus-5":\n'
-              '\t\t\treturn { cliModelId: "claude-opus-5", contextWindow: ONE_M_CONTEXT };\n'
-              '\t\tcase "claude-opus-4-8":\n'
-              '\t\t\treturn { cliModelId: "claude-opus-4-8[1m]", contextWindow: ONE_M_CONTEXT };'
-          )
-          desired_runtime = (
-              '\t\tcase "claude-opus-5":\n'
-              '\t\t\treturn { cliModelId: "claude-opus-5[1m]", contextWindow: ONE_M_CONTEXT };\n'
-              '\t\tcase "claude-opus-4-8":\n'
-              '\t\t\treturn { cliModelId: "claude-opus-4-8[1m]", contextWindow: ONE_M_CONTEXT };'
-          )
-
-          def once(label, *variants):
-              # Longer first: stock_runtime is a suffix of old-patched/desired
-              # runtime blocks. Accept substring hits of an already-matched
-              # longer variant; reject two independent shapes.
-              matched = None
-              for v in sorted(variants, key=len, reverse=True):
-                  n = text.count(v)
-                  if n == 0:
-                      continue
-                  if n != 1:
-                      raise SystemExit(
-                          f"pi: {path}: {label}: variant duplicated (count={n}); "
-                          f"bridge shape changed?"
-                      )
-                  if matched is not None:
-                      if v in matched:
-                          continue
-                      raise SystemExit(
-                          f"pi: {path}: {label}: multiple independent shapes present; "
-                          f"bridge shape changed?"
-                      )
-                  matched = v
-              if matched is None:
-                  raise SystemExit(
-                      f"pi: {path}: {label}: none of stock/old-patched/desired found; "
-                      f"bridge shape changed?"
-                  )
-              return matched
-
-          ids = once("model ids", stock_ids, desired_ids)
-          build = once("buildModels", stock_build, desired_build)
-          runtime = once("runtime map", stock_runtime, old_patched_runtime, desired_runtime)
-
-          # Partial desired (e.g. old bare runtime + desired ids) still needs migrate.
-          changed = []
-          if ids != desired_ids:
-              text = text.replace(ids, desired_ids, 1)
-              changed.append("ids")
-          if build != desired_build:
-              text = text.replace(build, desired_build, 1)
-              changed.append("buildModels")
-          if runtime != desired_runtime:
-              text = text.replace(runtime, desired_runtime, 1)
-              changed.append("runtime")
-          path.write_text(text)
-          print(
-              f"pi: patched {path} for claude-opus-5[1m] "
-              f"({'+'.join(changed) or 'noop'}; bare Opus 5 only serves 200K)"
-          )
-          PY
-                  fi
         '';
       };
 
@@ -1257,7 +1195,6 @@ in
         ".pi/agent/subagents.json".source =
           config.lib.file.mkOutOfStoreSymlink "${piUserDir}/subagents.json";
         ".pi/agent/pi-sense.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/pi-sense.json";
-        ".pi/agent/claude-bridge.json".source = piClaudeBridgeConfig;
         ".pi/agent/mcp.json".source = piMcp;
         ".pi/agent/themes/gruvbox-material.json".source = piTheme;
       };

@@ -4,7 +4,7 @@
  * Injects a delegation-bias block into the system prompt on every main-session
  * user prompt. Makes the main session aggressively prefer scout/worker/reviewer
  * subagents for non-trivial work, keeping the main context clean and reserving
- * Fable for coordinator judgement.
+ * Astra for coordinator judgement.
  *
  * Fires once per user prompt via before_agent_start. Does NOT fire for
  * subagents (they run their own sessions) — that's intended: the bias belongs
@@ -37,10 +37,11 @@ Work directly ONLY when:
 
 Every Agent call to scout/worker/reviewer MUST include a model. Pick from the
 matrix in the Agent tool description. Prefer high-quota models (Z.ai/GLM,
-OpenCode Go) within ~1 capability point of the best fit. NEVER use Fable 5
-for any subagent role; it is reserved for the main session. Use Grok 4.5 for
-fully specified workers and Grok 4.6 high for workers needing investigation
-or judgment. GPT-5.6 Sol reviews and MUST NOT be used as a worker.
+OpenCode Go) within ~1 capability point of the best fit. Astra is the default
+main coordinator; avoid it for routine subagents and use it only for hard
+tool-heavy escalation. Use Grok 4.5 for fully specified workers and Grok 4.6
+high for workers needing investigation or judgment. GPT-5.6 Sol reviews and
+MUST NOT be used as a worker. Astra-produced work needs a Grok 4.6 reviewer.
 `;
 
 export default function (pi: ExtensionAPI) {

@@ -28,6 +28,7 @@ let
         ./patches/buildbot-nix-failed-status-upsert-race.patch
         ./patches/buildbot-nix-eval-timeout.patch
         ./patches/buildbot-nix-path-filter.patch
+        ./patches/buildbot-nix-pin-eval-revision.patch
       ];
     };
   });
@@ -48,7 +49,7 @@ let
   buildbotStoreRoot = "/mnt/disk1/buildbot-nix";
   buildbotBuildDir = "/mnt/disk1/buildbot-nix-build";
   buildbotStoreSocket = "${buildbotStoreRoot}/nix/var/nix/daemon-socket/socket";
-  buildbotStoreUrl = "unix://${buildbotStoreSocket}";
+  buildbotStoreUrl = "unix://${buildbotStoreSocket}?root=${buildbotStoreRoot}";
 
   buildbot-prometheus = buildbotPackages.python.pkgs.buildPythonPackage rec {
     pname = "buildbot-prometheus";
@@ -76,6 +77,7 @@ in
     ./romm.nix
     ./zot.nix
     ./paperless.nix
+    ./jellyfin.nix
     ./rclone-webdav.nix
   ];
 
@@ -195,6 +197,32 @@ in
     keepalived = {
       enable = true;
       priority = 100;
+    };
+
+    # Skip reboot while Buildbot has a running builder. Metrics unreachable
+    # counts as busy (conservative). Gauge lives on buildbot-prometheus :9101.
+    comin.autoReboot = {
+      enable = true;
+      calendar = "*-*-* 04:45:00";
+      preRebootCheck = ''
+        set -eu
+        metrics=$(curl -fsS --max-time 5 http://127.0.0.1:9101/metrics) || {
+          echo "comin-auto-reboot: buildbot metrics unreachable; treating as busy"
+          exit 1
+        }
+        running=$(printf '%s\n' "$metrics" | awk '/^buildbot_builders_running_total / { print $2; exit }')
+        if [ -z "$running" ]; then
+          echo "comin-auto-reboot: buildbot_builders_running_total missing; treating as busy"
+          exit 1
+        fi
+        case "$running" in
+          0|0.0) exit 0 ;;
+          *)
+            echo "comin-auto-reboot: buildbot builders running ($running); skipping"
+            exit 1
+            ;;
+        esac
+      '';
     };
   };
 
@@ -454,7 +482,9 @@ in
       environmentFile = "/run/secrets/attic_server_token_key";
       settings = {
         listen = "[::]:8080";
-        database.url = "postgresql:///atticd?host=/run/postgresql";
+        # user= is pinned: newer attic (sqlx/whoami) can't resolve its username
+        # under DynamicUser+PrivateUsers and falls back to "anonymous" -> peer auth fails
+        database.url = "postgresql:///atticd?host=/run/postgresql&user=atticd";
         storage = {
           type = "local";
           path = "/srv/nfs/attic";
@@ -482,7 +512,8 @@ in
       workersFile = "/run/secrets/buildbot_worker_password";
       buildSystems = [ "x86_64-linux" ];
       evalMaxMemorySize = 2048;
-      evalWorkerCount = 2;
+      # One worker: two concurrent heavy eval attrs crossed MemoryHigh and reclaim stalled them to timeout.
+      evalWorkerCount = 1;
       buildMaxSilentTime = 3600;
       gitea = {
         enable = true;
@@ -761,12 +792,61 @@ in
         unitConfig.RequiresMountsFor = [ buildbotStoreRoot ];
         serviceConfig = {
           CPUQuota = "200%";
-          MemoryHigh = "5G";
-          MemoryMax = "6G";
+          MemoryHigh = "7G";
+          MemoryMax = "8G";
           MemorySwapMax = "2G";
           Slice = "buildbot-ci.slice";
         };
       };
+      attic-cache-config =
+        let
+          atticdCfg = config.services.atticd;
+          payload = pkgs.writeText "attic-middle-earth-upstream-cache-keys.json" (
+            builtins.toJSON {
+              upstream_cache_key_names = config.services.attic-watch-store.upstreamCacheKeyNames;
+            }
+          );
+        in
+        {
+          description = "Apply Attic middle-earth upstream cache key names";
+          wantedBy = [ "multi-user.target" ];
+          after = [
+            "atticd.service"
+            "vault-agent-default.service"
+          ];
+          requires = [ "atticd.service" ];
+          wants = [ "vault-agent-default.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            EnvironmentFile = atticdCfg.environmentFile;
+            DynamicUser = true;
+            User = atticdCfg.user;
+            Group = atticdCfg.group;
+            UMask = "0077";
+          };
+          script = ''
+            set -euo pipefail
+            set +x
+            token="$(${atticdCfg.package}/bin/atticadm -f "${atticdCfg.configFile}" make-token --sub attic-cache-config --validity 10m --configure-cache middle-earth)"
+            ${pkgs.curl}/bin/curl \
+              --fail --show-error \
+              --connect-timeout 5 \
+              --max-time 15 \
+              --retry 5 \
+              --retry-max-time 60 \
+              --retry-connrefused \
+              -X PATCH \
+              --header 'Content-Type: application/json' \
+              --data-binary "@${payload}" \
+              --config - \
+              http://localhost:8080/_api/v1/cache-config/middle-earth \
+            <<EOF
+            header = "Authorization: Bearer $token"
+            EOF
+          '';
+        };
+
       attic-watch-store = {
         after = [ "buildbot-nix-daemon.service" ];
         requires = [ "buildbot-nix-daemon.service" ];

@@ -1,0 +1,42 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: jellyfin
+  namespace: jellyfin
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Jellyfin"
+    gethomepage.dev/group: "Media"
+    gethomepage.dev/icon: "jellyfin.png"
+    gethomepage.dev/description: "Media server for owned archives"
+    gethomepage.dev/href: "https://jellyfin.lan"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`jellyfin.dimensiondoor.xyz`)
+      kind: Rule
+      services:
+        - name: jellyfin-external
+          port: 8096
+  tls:
+    secretName: jellyfin-tls
+---
+# Internal route (LAN only) - uses homelab lan-ca for trusted TLS from NixOS hosts
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: jellyfin-lan
+  namespace: jellyfin
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`jellyfin.lan`)
+      kind: Rule
+      services:
+        - name: jellyfin-external
+          port: 8096
+  tls:
+    secretName: jellyfin-lan-tls

@@ -48,6 +48,11 @@
       enable = true;
       priority = 80;
     };
+
+    comin.autoReboot = {
+      enable = true;
+      calendar = "*-*-* 04:30:00";
+    };
   };
 
   services = {

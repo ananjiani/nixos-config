@@ -48,10 +48,10 @@
   };
   octowow = {
     pname = "octowow";
-    version = "1.3.6";
+    version = "1.3.8";
     src = fetchurl {
-      url = "https://dl.octowow.st/launcher-updates/OctoLauncher_Installer-1.3.6.exe";
-      sha256 = "sha256-XDRvnXMJy35BL0CUv67SmtIyNtCiiHOM/Il4p7XF1I0=";
+      url = "https://dl.octowow.st/launcher-updates/OctoLauncher_Installer-1.3.8.exe";
+      sha256 = "sha256-ZIlkG2LEGiH3hT65s0H/cB2Bmq4hIbfzisrJFWGmmHA=";
     };
   };
   opendeck = {

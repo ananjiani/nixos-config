@@ -33,6 +33,7 @@ resources:
   - romm
   - retroarch-sync
   - paperless
+  - jellyfin
   - pi-web
   - collie
   - sillytavern

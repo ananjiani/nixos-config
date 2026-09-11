@@ -119,6 +119,10 @@
     comin = {
       openFirewall = false;
       listenAddress = "100.64.0.21"; # erebor Tailscale (OpenBao peer)
+      autoReboot = {
+        enable = true;
+        calendar = "*-*-* 05:00:00";
+      };
     };
   };
 

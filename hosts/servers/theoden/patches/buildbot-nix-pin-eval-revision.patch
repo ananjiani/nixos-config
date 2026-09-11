@@ -1,0 +1,257 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ammar <ammar@example.com>
+Date: Sat, 5 Sep 2026 00:00:00 -0500
+Subject: [PATCH] nix_eval: pin flake eval to worker git HEAD
+
+nix-eval-jobs --flake '.#checks' locks the workdir with an accessor that
+omits empty gitlink directories. Workers refetch the explicit git revision
+and include those dirs, so root narHash mismatches (cold eval fails, warm
+retry passes). Pin --flake to `{flake_dir}?rev=<worker HEAD>#<attribute>`.
+got_revision is the PR head, not the GitLocalPrMerge commit; read HEAD on
+the worker after checkout. Fail the step if HEAD is missing or malformed.
+
+diff --git a/buildbot_nix/eval_flake.py b/buildbot_nix/eval_flake.py
+new file mode 100644
+index 0000000..55e4dcd
+--- /dev/null
++++ b/buildbot_nix/eval_flake.py
+@@ -0,0 +1,26 @@
++"""Pin nix-eval-jobs flake refs to a worker git revision."""
++
++from __future__ import annotations
++
++from .path_filter import is_valid_sha
++
++
++def pinned_eval_flake_arg(
++    flake_dir: str,
++    attribute: str,
++    stdout: str | None,
++    *,
++    success: bool,
++) -> str | None:
++    """Return a revision-pinned flake installable, or None to fail the step.
++
++    None means fail the eval. Never fall back to an unpinned flake, and never
++    use got_revision (PR head, not merge HEAD). `{flake_dir}?rev=...#attr`
++    works for `.` and subdirs. Do not use `path:` or `dir=`.
++    """
++    if not success or not stdout:
++        return None
++    revision = stdout.strip()
++    if not is_valid_sha(revision):
++        return None
++    return f"{flake_dir}?rev={revision}#{attribute}"
+diff --git a/buildbot_nix/nix_eval.py b/buildbot_nix/nix_eval.py
+index 02c2c20..63bf99e 100644
+--- a/buildbot_nix/nix_eval.py
++++ b/buildbot_nix/nix_eval.py
+@@ -24,6 +24,7 @@ from twisted.logger import Logger
+
+ from .build_trigger import BuildTrigger, JobsConfig, TriggerConfig
+ from .errors import BuildbotNixError
++from .eval_flake import pinned_eval_flake_arg
+ from .models import (
+     CacheStatus,
+     NixEvalJob,
+@@ -222,6 +223,29 @@ class NixEvalCommand(buildstep.ShellMixin, steps.BuildStep):
+             return None
+         return decode_changed_paths(cmd.stdout)
+
++    async def _worker_head_flake_arg(
++        self, branch_config: BranchConfig
++    ) -> str | None:
++        """Pin eval to the worker checkout HEAD after GitLocalPrMerge.
++
++        got_revision is the PR head, not the synthetic merge commit.
++        """
++        saved_command = getattr(self, "command", None)
++        cmd = await self.makeRemoteShellCommand(
++            collectStdout=True,
++            collectStderr=True,
++            stdioLogName=None,  # type: ignore[arg-type]
++            command=["git", "rev-parse", "HEAD"],
++        )
++        self.command = saved_command
++        await self.runCommand(cmd)
++        return pinned_eval_flake_arg(
++            branch_config.flake_dir,
++            branch_config.attribute,
++            cmd.stdout,
++            success=cmd.results() == util.SUCCESS,
++        )
++
+     async def _should_skip_non_nix_pr(self) -> bool:
+         """Skip Nix eval/build for Gitea PRs that only touch docs/ or only k8s/.
+
+@@ -317,7 +341,13 @@ class NixEvalCommand(buildstep.ShellMixin, steps.BuildStep):
+
+     async def _run_nix_eval_jobs(self, branch_config: BranchConfig) -> int:
+         """Run nix-eval-jobs and process the results."""
+-        # run nix-eval-jobs --flake .#checks to generate the dict of stages
++        flake_arg = await self._worker_head_flake_arg(branch_config)
++        if flake_arg is None:
++            self.descriptionDone = ["failed to pin flake revision"]
++            log.error("failed to pin flake eval to worker git HEAD")
++            return util.FAILURE
++
++        # run nix-eval-jobs --flake .?rev=<HEAD>#checks to generate the dict of stages
+         # !! Careful, the command attribute has to be specified here as the call
+         # !! to `makeRemoteShellCommand` inside `BranchConfig.extract_during_step`
+         # !! overrides `command`...
+@@ -343,7 +373,7 @@ class NixEvalCommand(buildstep.ShellMixin, steps.BuildStep):
+                 "--check-cache-status",
+                 *(["--show-trace"] if self.nix_eval_config.show_trace else []),
+                 "--flake",
+-                f"{branch_config.flake_dir}#{branch_config.attribute}",
++                flake_arg,
+                 *(
+                     ["--reference-lock-file", branch_config.lock_file]
+                     if branch_config.lock_file != "flake.lock"
+diff --git a/buildbot_nix/tests/test_eval_flake.py b/buildbot_nix/tests/test_eval_flake.py
+new file mode 100644
+index 0000000..38c461c
+--- /dev/null
++++ b/buildbot_nix/tests/test_eval_flake.py
+@@ -0,0 +1,141 @@
++"""Pin nix-eval-jobs flake URL to worker git HEAD, never got_revision."""
++
++from __future__ import annotations
++
++import asyncio
++from types import SimpleNamespace
++from typing import Any
++
++import pytest
++from buildbot.plugins import util
++
++from buildbot_nix.eval_flake import pinned_eval_flake_arg
++from buildbot_nix.nix_eval import NixEvalCommand
++from buildbot_nix.repo_config import BranchConfig
++
++MAIN_HEAD = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
++PR_HEAD = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
++MERGE_HEAD = "cccccccccccccccccccccccccccccccccccccccc"
++UNPINNED = ".#checks"
++
++
++class FakeCmd:
++    def __init__(self, stdout: str | None = "", *, result: int) -> None:
++        self.stdout = stdout
++        self._result = result
++
++    def results(self) -> int:
++        return self._result
++
++
++class FakeEvalStep:
++    _worker_head_flake_arg = NixEvalCommand._worker_head_flake_arg
++
++    def __init__(self, head_cmd: FakeCmd) -> None:
++        self.command: Any = ["sentinel-eval-command"]
++        self.descriptionDone: Any = None
++        self.drv_gcroots_dir = "/tmp/gcroots"
++        self.nix_eval_config = SimpleNamespace(
++            worker_count=1,
++            max_memory_size=1024,
++            show_trace=False,
++        )
++        self.got_revision = PR_HEAD
++        self.remote_commands: list[list[str]] = []
++        self._head_cmd = head_cmd
++        self._eval_cmds: list[FakeCmd] = []
++
++        async def make_remote_shell_command(**kwargs: Any) -> FakeCmd:
++            command = list(kwargs["command"])
++            self.command = command
++            self.remote_commands.append(command)
++            if command[:3] == ["git", "rev-parse", "HEAD"]:
++                return self._head_cmd
++            cmd = FakeCmd(result=util.FAILURE)
++            self._eval_cmds.append(cmd)
++            return cmd
++
++        async def run_command(_cmd: FakeCmd) -> None:
++            return None
++
++        async def process_warnings(
++            result: int, **_kwargs: Any
++        ) -> int:
++            return result
++
++        self.makeRemoteShellCommand = make_remote_shell_command
++        self.runCommand = run_command
++        self._process_warnings = process_warnings
++
++    def getProperty(self, name: str, default: Any = None) -> Any:  # noqa: N802
++        if name == "got_revision":
++            return self.got_revision
++        return default
++
++
++@pytest.mark.parametrize(
++    ("stdout", "success"),
++    [
++        ("", True),
++        ("\n", True),
++        ("HEAD", True),
++        ("not-a-sha", True),
++        (MAIN_HEAD.upper(), True),
++        (MAIN_HEAD[:39], True),
++        (MAIN_HEAD + "0", True),
++        (f"{MAIN_HEAD}\n{PR_HEAD}", True),
++        (None, True),
++        (MAIN_HEAD, False),
++        (None, False),
++    ],
++)
++def test_pinned_eval_flake_arg_malformed(
++    stdout: str | None, success: bool
++) -> None:
++    assert pinned_eval_flake_arg(".", "checks", stdout, success=success) is None
++
++
++def _run_eval(head_cmd: FakeCmd) -> tuple[int, FakeEvalStep]:
++    step = FakeEvalStep(head_cmd)
++    result = asyncio.run(
++        NixEvalCommand._run_nix_eval_jobs(step, BranchConfig())
++    )
++    return result, step
++
++
++def test_run_nix_eval_jobs_pins_worker_head_not_got_revision() -> None:
++    result, step = _run_eval(FakeCmd(f"{MERGE_HEAD}\n", result=util.SUCCESS))
++    assert result == util.FAILURE  # nix-eval-jobs stub fails after pin
++    assert step.remote_commands[0] == ["git", "rev-parse", "HEAD"]
++    assert len(step.remote_commands) == 2
++    eval_cmd = step.remote_commands[1]
++    assert eval_cmd[0] == "nix-eval-jobs"
++    flake_arg = eval_cmd[eval_cmd.index("--flake") + 1]
++    assert flake_arg == f".?rev={MERGE_HEAD}#checks"
++    assert UNPINNED not in eval_cmd
++    assert PR_HEAD not in flake_arg
++    assert MAIN_HEAD not in flake_arg
++    assert "path:" not in flake_arg
++    assert "dir=" not in flake_arg
++    assert step.getProperty("got_revision") == PR_HEAD
++    assert step.got_revision == PR_HEAD
++
++
++@pytest.mark.parametrize(
++    "head_cmd",
++    [
++        FakeCmd(f"{MERGE_HEAD}\n", result=util.FAILURE),
++        FakeCmd("not-a-sha", result=util.SUCCESS),
++        FakeCmd("", result=util.SUCCESS),
++        FakeCmd(None, result=util.SUCCESS),
++    ],
++)
++def test_run_nix_eval_jobs_bad_head_exits_before_eval(
++    head_cmd: FakeCmd,
++) -> None:
++    result, step = _run_eval(head_cmd)
++    assert result == util.FAILURE
++    assert step.remote_commands == [["git", "rev-parse", "HEAD"]]
++    assert step._eval_cmds == []
++    assert step.command == ["sentinel-eval-command"]
++    assert step.getProperty("got_revision") == PR_HEAD

@@ -34,6 +34,12 @@ in
       default = true;
       description = "Whether to declare the SOPS secret for the push token. Set to false if using vault-agent.";
     };
+
+    upstreamCacheKeyNames = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ "cache.nixos.org-1" ];
+      description = "Signing key names of upstream caches that Attic clients should skip pushing";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -44,9 +50,21 @@ in
 
     systemd.services.attic-watch-store = {
       description = "Attic Watch Store - Push builds to binary cache";
-      after = [ "network.target" ] ++ lib.optional (hostname == "theoden") "atticd.service";
+      after = [
+        "network.target"
+      ]
+      ++ lib.optionals (hostname == "theoden") [
+        "atticd.service"
+        "attic-cache-config.service"
+      ];
+      requires = lib.optionals (hostname == "theoden") [ "attic-cache-config.service" ];
       wantedBy = [ "multi-user.target" ];
       path = [ pkgs-stable.attic-client ];
+      restartTriggers = [
+        (pkgs-stable.writeText "attic-upstream-cache-key-names.json" (
+          builtins.toJSON cfg.upstreamCacheKeyNames
+        ))
+      ];
       serviceConfig = {
         Type = "simple";
         Restart = "always";

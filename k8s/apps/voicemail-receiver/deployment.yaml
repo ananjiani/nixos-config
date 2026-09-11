@@ -16,6 +16,17 @@ spec:
       labels:
         app: voicemail-receiver
     spec:
+      # NFS for voicemails lives on theoden. Pin here so a samwise runtime
+      # stall cannot leave a Terminating NFS writer blocking replacements.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - theoden
       containers:
         - name: voicemail-receiver
           # Webhook-based voicemail receiver

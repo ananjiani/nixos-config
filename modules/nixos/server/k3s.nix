@@ -12,6 +12,44 @@
 let
   cfg = config.modules.k3s;
   lanHosts = import ../../../lib/hosts.nix;
+  drainScript = pkgs.writeShellScript "k3s-drain" ''
+    set -eu
+
+    NODE=$(${pkgs.hostname}/bin/hostname)
+    kubectl() {
+      ${pkgs.kubectl}/bin/kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml "$@"
+    }
+
+    was_unschedulable=$(kubectl get node "$NODE" -o jsonpath='{.spec.unschedulable}')
+    if [ "$was_unschedulable" = true ] && [ "''${K3S_DRAIN_REQUIRE_SCHEDULABLE:-0}" = 1 ]; then
+      echo "$NODE was already cordoned; refusing unattended reboot" >&2
+      exit 1
+    fi
+
+    cordoned_by_script=0
+    if [ "$was_unschedulable" != true ]; then
+      echo "Cordoning $NODE..."
+      kubectl cordon "$NODE"
+      cordoned_by_script=1
+    fi
+
+    echo "Draining $NODE..."
+    if ! kubectl drain "$NODE" \
+      --ignore-daemonsets \
+      --delete-emptydir-data \
+      --timeout=180s; then
+      echo "Drain failed for $NODE" >&2
+      if [ "''${K3S_DRAIN_UNCORDON_ON_FAILURE:-0}" = 1 ] && [ "$cordoned_by_script" = 1 ]; then
+        echo "Uncordoning $NODE after failed pre-reboot drain..."
+        if ! kubectl uncordon "$NODE"; then
+          echo "Failed to uncordon $NODE after failed pre-reboot drain" >&2
+          exit 2
+        fi
+      fi
+      exit 1
+    fi
+    echo "Drain complete for $NODE"
+  '';
 in
 {
   options.modules.k3s = {
@@ -85,6 +123,12 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    # Comin must finish the drain before it asks systemd to reboot. The
+    # shutdown-time drain remains as a fallback for manual reboots.
+    modules.comin.autoReboot.preRebootAction = lib.mkIf (cfg.role == "server") ''
+      K3S_DRAIN_REQUIRE_SCHEDULABLE=1 K3S_DRAIN_UNCORDON_ON_FAILURE=1 ${drainScript}
+    '';
+
     boot = {
       # NFS client support — ensures mount.nfs is available so kubelet can
       # mount NFS-backed PersistentVolumes on any k3s node.
@@ -130,15 +174,20 @@ in
         "L+ /usr/local/bin/iscsiadm - - - - /run/current-system/sw/bin/iscsiadm"
         "d /usr/sbin 0755 root root -"
         "L+ /usr/sbin/iscsiadm - - - - /run/current-system/sw/bin/iscsiadm"
-        # Kubelet drop-in to enable image GC by age.
-        # k3s hardcodes imageMaximumGCAge=0s in 00-k3s-defaults.conf but the
-        # kubelet merges all *.conf files in --config-dir (sorted alphanum),
-        # so 99- overrides 00-. NOTE: the kubelet silently ignores non-.conf
-        # files — the suffix is mandatory.
+        # Kubelet drop-in for image GC.
+        # k3s hardcodes imageMaximumGCAge=0s and high disk-threshold defaults
+        # in 00-k3s-defaults.conf. The kubelet merges all *.conf files in
+        # --config-dir (sorted alphanum), so 99- overrides 00-. NOTE: the
+        # kubelet silently ignores non-.conf files — the suffix is mandatory.
+        # Age GC deletes unused images after 7 days. Disk-threshold GC starts
+        # at 70% guest filesystem use and stops at 60%. This is the guest
+        # filesystem, not the Proxmox thin pool.
         "L+ /var/lib/rancher/k3s/agent/etc/kubelet.conf.d/99-image-gc.conf - - - - ${pkgs.writeText "99-image-gc.conf" ''
           apiVersion: kubelet.config.k8s.io/v1beta1
           kind: KubeletConfiguration
           imageMaximumGCAge: 168h
+          imageGCHighThresholdPercent: 70
+          imageGCLowThresholdPercent: 60
         ''}"
       ];
 
@@ -154,24 +203,8 @@ in
             Type = "oneshot";
             RemainAfterExit = true;
             ExecStart = "${pkgs.coreutils}/bin/true";
-            ExecStop =
-              let
-                drainScript = pkgs.writeShellScript "k3s-drain" ''
-                  NODE=$(${pkgs.hostname}/bin/hostname)
-                  echo "Cordoning $NODE..."
-                  ${pkgs.kubectl}/bin/kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml \
-                    cordon "$NODE" || true
-                  echo "Draining $NODE..."
-                  ${pkgs.kubectl}/bin/kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml \
-                    drain "$NODE" \
-                    --ignore-daemonsets \
-                    --delete-emptydir-data \
-                    --disable-eviction \
-                    --timeout=60s || true
-                  echo "Drain complete for $NODE"
-                '';
-              in
-              "${drainScript}";
+            ExecStop = drainScript;
+            TimeoutStopSec = "240s";
           };
         };
 

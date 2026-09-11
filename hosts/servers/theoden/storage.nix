@@ -133,7 +133,8 @@
         "cache.files=partial"
         "dropcacheonclose=true"
         "category.create=mfs" # Most free space for new files
-        "kernel-permissions-check=false" # Required for NFS: git creates 0444 objects with O_RDWR
+        # mergerfs 2.42 on Linux 6.18 accepts kernel-permissions-check=false,
+        # but every access to the mounted pool fails with ECONNREFUSED.
         "inodecalc=path-hash" # Stable inodes for NFS export
         "func.getattr=newest"
         "func.access=ff"

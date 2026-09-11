@@ -93,7 +93,7 @@ let
     dontFixup = true;
     outputHashMode = "recursive";
     outputHashAlgo = "sha256";
-    outputHash = "sha256-QmpUkzRZ9ooVj/2cI4uWEXQ0vYhM77Lgw9ao7SdjWmw=";
+    outputHash = "sha256-5Ne3JXjLsW0k7+8XJXQEX/Y49y0GcexaT1nG2hPRrtI=";
   };
 in
 niri.overrideAttrs (old: {

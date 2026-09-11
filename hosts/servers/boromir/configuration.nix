@@ -36,6 +36,11 @@
       clusterInit = true;
       podCidr = "10.42.1.0/24";
     };
+
+    comin.autoReboot = {
+      enable = true;
+      calendar = "*-*-* 04:15:00";
+    };
   };
 
   # Docker for model conversion (bypasses NixOS library isolation)

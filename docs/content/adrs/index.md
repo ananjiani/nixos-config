@@ -19,3 +19,4 @@ ADRs capture *why* a choice was made, what alternatives were considered, and wha
 | [ADR-011](adr-011-2026-08-20-project-supervisor-agents.md) | 2026-08-20 | Optional Project Supervisor agents in Herdr with Telegram | Superseded by [ADR-012](adr-012-2026-08-24-multi-host-project-supervisors.md) |
 | [ADR-012](adr-012-2026-08-24-multi-host-project-supervisors.md) | 2026-08-24 | One Telegram bot per Project Supervisor host | Accepted |
 | [ADR-013](adr-013-2026-08-27-isolate-buildbot-nix-store.md) | 2026-08-27 | Isolate Buildbot onto a dedicated Nix store daemon | Accepted |
+| [ADR-014](adr-014-2026-09-04-comin-auto-reboot.md) | 2026-09-04 | Unattended Comin auto-reboot with staggered per-host windows | Accepted |

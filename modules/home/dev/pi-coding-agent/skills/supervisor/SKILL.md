@@ -143,7 +143,7 @@ The Operator owns behavior, scope, architecture, new dependencies, merge, and de
 2. Prompt only an idle or done Worker.
 3. Inspect a blocked or unknown Worker before sending input.
 4. Prefix the prompt with `[project-supervisor:<plan-or-scope-id>]`.
-5. Before prompting each independent idle Worker, rescan it. Submit all independent prompts without `--wait`, then enter lifecycle waits. For a single Worker or dependency-ordered starts, `--wait` is allowed. Do not serially block independent starts. Bound waits with `--timeout 120000`. Use `herdr agent wait` as current Herdr help documents it.
+5. Before prompting each independent idle Worker, rescan it. Submit every prompt without `--wait`, including dependency-ordered starts. After prompts, start background Herdr lifecycle waits with the `process` tool (section 8). If the `process` tool is not available, report that and stop. Do not hold this turn on `herdr agent wait` or `herdr agent prompt --wait`.
 6. Target a unique name or pane ID from live JSON.
 
 Do not steer an adopted Worker outside Current Scope. Start a new Worker or worktree only after an approved Plan.
@@ -220,20 +220,40 @@ Report `Ready for Review` with all of:
 
 For a `blocked` Worker, inspect it once. Resolve the block only when the answer is inside authorized scope. When Operator input is needed, report the blocker and end the turn.
 
-Treat `unknown` and wait timeouts as unresolved. Diagnose once with a rescan plus `herdr agent get` and `herdr agent read`. If the Worker remains `unknown`, report that state and end the turn instead of looping.
+Treat `unknown` as unresolved. Diagnose once with a rescan plus `herdr agent get` and `herdr agent read`. If the Worker remains `unknown`, report that state and end the turn instead of looping.
 
-While any managed Worker is `working`, keep this turn alive with Herdr lifecycle waits. Do not poll output.
+Short Supervisor checks (`herdr agent list`, `get`, `read`) stay in the foreground. Herdr lifecycle waits do not.
 
-1. Run bounded `herdr agent wait <target> --timeout 120000`.
-2. Rescan all managed Workers.
-3. Handle `blocked`, `unknown`, and timeouts with the rules above.
-4. Repeat only while a managed Worker is still `working`.
+If the `process` tool is not available, report that `@aliou/pi-processes` is missing and stop. Do not fall back to long foreground waits.
+
+While any managed Worker is `working`, start one background wait per working Worker with the `process` tool, then end the turn. Do not poll output. Do not hold this turn on `herdr agent wait`.
+
+For each working Worker:
+
+1. Resolve identity from live JSON. Pane ID is required. Agent name and session path are extra keys when present. Deduplicate on pane ID, and on session path when present, not on display title.
+2. `process list` with `statuses: ["running"]`. Skip a new wait if a running process already waits that same pane ID (match `herdr agent wait` target or the process name below).
+3. `process start` a wait. Name it `wait-<pane-id>` with `:` replaced by `-` (example: `wait-w15-p2`). Command target is the pane ID: `herdr agent wait <pane-id> --until idle --until done --until blocked --until unknown`. Installed `herdr agent wait` help is the CLI authority; unknown needs explicit `--until`. Omit `--timeout`. A wait timeout is a failure wake, not Worker completion. Default `notify.onSuccess` and `notify.onFailure` (`turn`) stand. Do not add `logMatches`.
+4. The `process` tool returns while the wait still runs. Do not follow it with `process output` loops or sleeps.
+
+Then end the turn. A later wake or Operator prompt is the next action.
+
+On a process wake:
+
+1. Treat the wake as evidence only. It is not approval, not a Plan gate, and not proof of PR success.
+2. Rescan live state (section 3).
+3. A wait that exits 0 means the Worker reached idle, done, blocked, or unknown. It does not prove the work is correct.
+4. A wait that exits non-zero is a wait failure, not Worker completion. Diagnose once. Do not restart the identical failed wait as the recovery plan. After you correct the diagnosed issue, rescan and rearm a wait is allowed.
+5. Handle `blocked` and `unknown` with the rules above.
+6. If any managed Worker is still `working`, start missing background waits and end the turn.
+7. `process stop` and `process clear` use the opaque process id from `process list` (example: `proc_23bc`). Do not use the wait name as `id`.
+
+`session_shutdown` (including `/reload`, `/new`, `/resume`, `/fork`) kills managed processes. After resume, rescan first. Rearm background waits for any managed Worker that is still `working`. Do not assume old process IDs still exist.
 
 Do not send heartbeat chatter. Honor new Operator or Telegram input as soon as Pi delivers it.
 
-For required CI on a supervisor-opened PR, wait 120 seconds and check once. If CI is still pending, give one concise pending handoff, end the turn, and wait for later Operator input such as `status`. A pending PR is not Ready for Review. Do not loop or send heartbeat chatter.
+For required CI on a supervisor-opened PR, start one background `process` with `command: sleep 120` and default success wake, then end the turn. That exit wake permits exactly one CI check. If CI is still pending, give one concise pending handoff and end the turn. Do not start another `sleep 120`. A later Operator prompt such as `status` may check again. A pending PR is not Ready for Review.
 
-When no managed Worker is `working` and every other state has been handled, end the turn and stay idle. After the turn ends there is no background watcher and no promised wakeup when CI finishes. A later Operator prompt such as `status` or another Goal wakes this session and you rescan.
+When no managed Worker is `working` and every other state has been handled, end the turn and stay idle. Background Herdr waits are the wakeup for Worker settlement. One CI `sleep 120` wake is the only automatic CI check. After a pending handoff there is no further CI wakeup. A later Operator prompt such as `status` or another Goal also wakes this session and you rescan.
 
 Send unsolicited reports only for:
 

@@ -80,11 +80,11 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-XDRvnXMJy35BL0CUv67SmtIyNtCiiHOM/Il4p7XF1I0=",
+            "sha256": "sha256-ZIlkG2LEGiH3hT65s0H/cB2Bmq4hIbfzisrJFWGmmHA=",
             "type": "url",
-            "url": "https://dl.octowow.st/launcher-updates/OctoLauncher_Installer-1.3.6.exe"
+            "url": "https://dl.octowow.st/launcher-updates/OctoLauncher_Installer-1.3.8.exe"
         },
-        "version": "1.3.6"
+        "version": "1.3.8"
     },
     "opendeck": {
         "cargoLock": null,
