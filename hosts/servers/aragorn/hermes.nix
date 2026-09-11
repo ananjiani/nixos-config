@@ -629,6 +629,11 @@ in
     };
   };
 
+  # Needed so systemd.services.hermes-agent can interpolate a real
+  # /run/user/<uid>. Without an explicit uid, NixOS leaves
+  # users.users.ammar.uid as null and toString yields "".
+  users.users.ammar.uid = 1000;
+
   services = {
     hermes-agent = {
       enable = true;
