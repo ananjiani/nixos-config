@@ -16,22 +16,22 @@
   };
   jacktook = {
     pname = "jacktook";
-    version = "c22f23fc7df9705cb7e42c1b54f631358869d182";
+    version = "64bb4f7b000654fe622c9353395c3e0cb292e2b2";
     src = fetchFromGitHub {
       owner = "Sam-Max";
       repo = "plugin.video.jacktook";
-      rev = "c22f23fc7df9705cb7e42c1b54f631358869d182";
+      rev = "64bb4f7b000654fe622c9353395c3e0cb292e2b2";
       fetchSubmodules = false;
-      sha256 = "sha256-JI+yfI2axUrVm/TyhGFuMaMgEEo05+XzoEfklW6yXlw=";
+      sha256 = "sha256-uxZ7Bhv+mt+1XKOaT6y8GuIma0y+5ydDjI+Kwv/PoSQ=";
     };
-    date = "2026-07-10";
+    date = "2026-09-13";
   };
   moondeck-buddy = {
     pname = "moondeck-buddy";
-    version = "1.9.2";
+    version = "1.10.0";
     src = fetchurl {
-      url = "https://github.com/FrogTheFrog/moondeck-buddy/releases/download/v1.9.2/MoonDeckBuddy-1.9.2-x86_64.AppImage";
-      sha256 = "sha256-SfaqrBJJZlJwhSPLPUlwfvZ8RxIWrbwY6uys8ziRvek=";
+      url = "https://github.com/FrogTheFrog/moondeck-buddy/releases/download/v1.10.0/MoonDeckBuddy-1.10.0-x86_64.AppImage";
+      sha256 = "sha256-UZYOwn+JeBjhD24Go8iZTuv9BcWMnFHticrVtTyqWkY=";
     };
   };
   niri-hdr = {
@@ -56,10 +56,10 @@
   };
   opendeck = {
     pname = "opendeck";
-    version = "2.13.1";
+    version = "2.14.0";
     src = fetchurl {
-      url = "https://github.com/nekename/OpenDeck/releases/download/v2.13.1/opendeck_2.13.1_amd64.AppImage";
-      sha256 = "sha256-SXKZrF8fMYjoCc5cVpiOiSoJHf61+Q+r9E03xiHI4uw=";
+      url = "https://github.com/nekename/OpenDeck/releases/download/v2.14.0/opendeck_2.14.0_amd64.AppImage";
+      sha256 = "sha256-cNmCdHKMxT0tlTFlhimkyIWiNjEscMnAQy7NXOb8QsI=";
     };
   };
   smithay-hdr = {
