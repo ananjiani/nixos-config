@@ -27,10 +27,12 @@ import argparse
 import json
 import os
 import re
+import shutil
 import socket
 import socketserver
 import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -358,8 +360,9 @@ def queue_paperless_self_check():
         expected_extra = [
             "message",
             "copy",
-            "--folder",
+            "--from",
             "inbox",
+            "--to",
             PAPERLESS_QUEUE_LABEL,
             "42",
         ]
@@ -381,6 +384,14 @@ def queue_paperless_self_check():
             "label": PAPERLESS_QUEUE_LABEL,
         }:
             failures.append("queue_paperless: unexpected result %r" % (result,))
+
+        captured.clear()
+        read = op_mail_read({"id": "42", "folder": "inbox"})
+        if captured != [{
+            "extra": ["message", "read", "--mailbox", "inbox", "42"],
+            "parse_json": True,
+        }] or read != {"folder": "inbox", "id": "42", "message": {}}:
+            failures.append("mail_read: unexpected argv or result")
 
         # Nonzero exit → generic BrokerError, no content.
         def boom(*extra, parse_json=True):
@@ -406,13 +417,26 @@ def queue_paperless_self_check():
             self.stdout = stdout
             self.stderr = stderr
 
+    seen_cmd = []
+
+    def fake_run(*args, **kwargs):
+        cmd = args[0] if args else kwargs.get("args")
+        seen_cmd.append(list(cmd))
+        return _Proc(0, b"")
+
     real_run = subprocess.run
     real_config = globals().get("HIMALAYA_CONFIG")
     globals()["HIMALAYA_CONFIG"] = "/tmp/fake-himalaya.toml"
     try:
-        subprocess.run = lambda *a, **k: _Proc(0, b"")
+        subprocess.run = fake_run
         if himalaya("message", "copy", parse_json=False) is not None:
             failures.append("himalaya: empty stdout should return None")
+        if seen_cmd:
+            cmd = seen_cmd[0]
+            if "--json" not in cmd:
+                failures.append("himalaya: missing --json")
+            if "--config" not in cmd:
+                failures.append("himalaya: missing --config")
 
         subprocess.run = lambda *a, **k: _Proc(3, b"secret body", b"err body")
         try:
@@ -428,6 +452,155 @@ def queue_paperless_self_check():
         subprocess.run = real_run
         globals()["HIMALAYA_CONFIG"] = real_config
 
+    return failures
+
+
+def _himalaya_setup(config, args, json_out=False):
+    cmd = [HIMALAYA_BIN, "--config", config]
+    if json_out:
+        cmd.append("--json")
+    cmd.extend(args)
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        timeout=20,
+        env={
+            "HOME": os.path.dirname(config),
+            "PATH": os.environ.get("PATH", "/run/current-system/sw/bin"),
+        },
+    )
+    if proc.returncode != 0:
+        raise BrokerError("himalaya setup failed (exit %d)" % proc.returncode)
+    if not json_out:
+        return None
+    try:
+        return json.loads(proc.stdout.decode("utf-8"))
+    except ValueError:
+        raise BrokerError("himalaya setup returned a non-JSON response")
+
+
+def himalaya_cli_self_check():
+    """Offline m2dir fixture: folders/list/search via ops; read/copy via
+    himalaya() (m2dir ids are not IMAP UIDs). Flags must not change after
+    read. Does not print config values.
+    """
+    failures = []
+    binary = HIMALAYA_BIN
+    if not (os.path.isfile(binary) and os.access(binary, os.X_OK)):
+        binary = shutil.which(binary) or ""
+    if not binary:
+        return ["himalaya binary not found"]
+
+    generated = HIMALAYA_CONFIG
+    if not generated or not os.path.isfile(generated):
+        failures.append("generated himalaya config missing")
+    else:
+        proc = subprocess.run(
+            [binary, "--config", generated, "--json", "account", "list"],
+            capture_output=True,
+            timeout=20,
+            env={
+                "HOME": os.environ.get("HOME", "/tmp"),
+                "PATH": os.environ.get("PATH", "/run/current-system/sw/bin"),
+            },
+        )
+        if proc.returncode != 0:
+            failures.append("generated config failed account list (exit %d)" % proc.returncode)
+        else:
+            try:
+                rows = json.loads(proc.stdout.decode("utf-8")).get("accounts") or []
+            except ValueError:
+                rows = []
+                failures.append("generated config account list was not JSON")
+            backends = next(
+                (row.get("backends") or [] for row in rows if row.get("name") == "gmail"),
+                [],
+            )
+            if "imap" not in backends:
+                failures.append("generated config gmail account has no imap backend")
+
+    real_bin = globals()["HIMALAYA_BIN"]
+    real_config = globals()["HIMALAYA_CONFIG"]
+    globals()["HIMALAYA_BIN"] = binary
+    try:
+        with tempfile.TemporaryDirectory(prefix="hermes-himalaya-") as tmp:
+            store = os.path.join(tmp, "store")
+            os.mkdir(store)
+            cfg = os.path.join(tmp, "config.toml")
+            with open(cfg, "w") as fh:
+                fh.write(
+                    "[accounts.test]\ndefault = true\n"
+                    "m2dir.root = '%s'\n"
+                    "mailbox.alias.inbox = 'Inbox'\n" % store
+                )
+            globals()["HIMALAYA_CONFIG"] = cfg
+            for name in ("Inbox", PAPERLESS_QUEUE_LABEL):
+                _himalaya_setup(cfg, ["m2dir", "create", name])
+            msg = os.path.join(tmp, "msg.eml")
+            with open(msg, "w") as fh:
+                fh.write(
+                    "From: sender@example.com\nTo: ammar@example.com\n"
+                    "Subject: invoice 42\nDate: Wed, 4 Mar 2026 12:00:00 +0000\n"
+                    "Message-ID: <a@b>\n\nplease pay the invoice\n"
+                )
+            added = _himalaya_setup(
+                cfg, ["message", "add", "--mailbox", "inbox", "--", msg], json_out=True
+            )
+            msg_id = added["id"]
+
+            folders = op_mail_folders({})
+            names = [row.get("name") for row in folders.get("folders") or []]
+            if "Inbox" not in names or PAPERLESS_QUEUE_LABEL not in names:
+                failures.append("folders missing Inbox/Paperless")
+
+            listed = op_mail_list({"folder": "inbox"})
+            envelopes = listed.get("envelopes") or []
+            if not envelopes or envelopes[0].get("id") != msg_id:
+                failures.append("list missing added message")
+            if envelopes and envelopes[0].get("subject") != "invoice 42":
+                failures.append("list missing expected subject")
+            flags_before = envelopes[0].get("flags") if envelopes else None
+
+            hit = op_mail_list({"folder": "inbox", "query": ["subject", "invoice"]})
+            if not (hit.get("envelopes") or []):
+                failures.append("search missed invoice")
+            miss = op_mail_list(
+                {"folder": "inbox", "query": ["subject", "zzznomatchzz"]}
+            )
+            if miss.get("envelopes"):
+                failures.append("negative search returned hits")
+
+            body = himalaya("message", "read", "--mailbox", "inbox", msg_id)
+            if not isinstance(body, dict) or not (body.get("text_body") or body.get("parts")):
+                failures.append("read missing body")
+
+            after = op_mail_list({"folder": "inbox"})
+            flags_after = (after.get("envelopes") or [{}])[0].get("flags")
+            if flags_after != flags_before:
+                failures.append("read changed flags")
+
+            himalaya(
+                "message",
+                "copy",
+                "--from",
+                "inbox",
+                "--to",
+                PAPERLESS_QUEUE_LABEL,
+                msg_id,
+                parse_json=False,
+            )
+            copied = himalaya_field(
+                "envelopes", "envelope", "list", "--mailbox", PAPERLESS_QUEUE_LABEL
+            )
+            if not copied:
+                failures.append("copy did not land")
+    except BrokerError as exc:
+        failures.append(str(exc))
+    except (OSError, KeyError, TypeError, ValueError) as exc:
+        failures.append("himalaya CLI self-check failed: %s" % exc.__class__.__name__)
+    finally:
+        globals()["HIMALAYA_BIN"] = real_bin
+        globals()["HIMALAYA_CONFIG"] = real_config
     return failures
 
 
@@ -557,9 +730,9 @@ def require_folder(args):
 def himalaya(*extra, parse_json=True):
     if not HIMALAYA_CONFIG:
         raise BrokerError("himalaya config is not configured in the broker unit")
-    # --output is global, so it goes before the subcommand: `envelope
-    # list` takes free-form positional query words after it.
-    cmd = [HIMALAYA_BIN, "--config", HIMALAYA_CONFIG, "--output", "json", *extra]
+    # --json is global, so it goes before the subcommand: `envelope
+    # search` takes free-form positional query words after it.
+    cmd = [HIMALAYA_BIN, "--config", HIMALAYA_CONFIG, "--json", *extra]
     try:
         proc = subprocess.run(
             cmd,
@@ -588,8 +761,15 @@ def himalaya(*extra, parse_json=True):
         raise BrokerError("himalaya returned a non-JSON response")
 
 
+def himalaya_field(field, *extra):
+    payload = himalaya(*extra)
+    if not isinstance(payload, dict) or field not in payload:
+        raise BrokerError("himalaya returned a non-JSON response")
+    return payload[field]
+
+
 def op_mail_folders(args):
-    return {"folders": himalaya("folder", "list")}
+    return {"folders": himalaya_field("mailboxes", "mailbox", "list")}
 
 
 def op_mail_list(args):
@@ -606,17 +786,28 @@ def op_mail_list(args):
         tokens.append(token)
     page = clamp(args.get("page"), 1, 1, 1000)
     page_size = clamp(args.get("page_size"), 20, 1, 100)
-    extra = ["envelope", "list", "--folder", folder, "--page", str(page), "--page-size", str(page_size)]
-    return {"folder": folder, "envelopes": himalaya(*extra, *tokens)}
+    verb = ["envelope", "search"] if tokens else ["envelope", "list"]
+    extra = [
+        *verb,
+        "--mailbox",
+        folder,
+        "--page",
+        str(page),
+        "--page-size",
+        str(page_size),
+    ]
+    return {"folder": folder, "envelopes": himalaya_field("envelopes", *extra, *tokens)}
 
 
 def op_mail_read(args):
     folder = require_folder(args)
     message_id = require_id(args)
+    # v2 IMAP message read uses BODY.PEEK[] (does not set \Seen).
+    # There is no --preview flag; passing it is a clap error.
     return {
         "folder": folder,
         "id": message_id,
-        "message": himalaya("message", "read", "--folder", folder, "--preview", message_id),
+        "message": himalaya("message", "read", "--mailbox", folder, message_id),
     }
 
 
@@ -624,13 +815,14 @@ def op_mail_queue_paperless(args):
     """Copy one message to the fixed Paperless label. Destination is not caller-supplied."""
     folder = require_folder(args)
     message_id = require_id(args)
-    # Himalaya: message copy --folder <source> <destination> <id>
+    # Himalaya v2: message copy --from <source> --to <destination> <id>
     # Destination is the constant PAPERLESS_QUEUE_LABEL only.
     himalaya(
         "message",
         "copy",
-        "--folder",
+        "--from",
         folder,
+        "--to",
         PAPERLESS_QUEUE_LABEL,
         message_id,
         parse_json=False,
@@ -780,8 +972,15 @@ def main():
         return 1
 
     if opts.self_check:
+        cli_failures = himalaya_cli_self_check()
+        if cli_failures:
+            print("broker: himalaya CLI self-check FAILED", file=sys.stderr)
+            for failure in cli_failures:
+                print("  - %s" % failure, file=sys.stderr)
+            return 1
         print("broker: redaction self-test passed")
         print("broker: queue-paperless self-check passed")
+        print("broker: himalaya CLI self-check passed")
         if opts.show:
             print(redacted)
         return 0

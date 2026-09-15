@@ -137,21 +137,18 @@ let
 
   himalayaConfig = (pkgs.formats.toml { }).generate "hermes-himalaya.toml" {
     accounts.gmail = {
-      email = gmailAddress;
-      "display-name" = "Ammar Nanjiani";
       default = true;
-      backend = {
-        type = "imap";
-        host = "imap.gmail.com";
-        port = 993;
-        encryption.type = "tls";
-        login = gmailAddress;
-        auth = {
-          type = "password";
-          cmd = "${pkgs.coreutils}/bin/cat ${gmailPasswordFile}";
+      imap = {
+        server = "imaps://imap.gmail.com:993";
+        sasl.plain = {
+          username = gmailAddress;
+          password.command = [
+            "${pkgs.coreutils}/bin/cat"
+            gmailPasswordFile
+          ];
         };
       };
-      folder.aliases = {
+      mailbox.alias = {
         inbox = "INBOX";
         sent = "[Gmail]/Sent Mail";
         drafts = "[Gmail]/Drafts";
@@ -228,7 +225,7 @@ let
     ---
     name: gmail
     description: "List, search, and read Gmail, and with explicit approval queue a message for Paperless, through the auto-redacted `hermes-read mail` command."
-    version: 2.2.0
+    version: 2.3.0
     author: Hermes Agent
     license: MIT
     platforms: [linux]
@@ -297,14 +294,17 @@ let
     hermes-read mail folders
     hermes-read mail list
     hermes-read mail list --folder archive --page-size 50
-    hermes-read mail list from sender@example.com subject invoice
+    hermes-read mail list from sender@example.com and subject invoice
     hermes-read mail read <id> --folder inbox
     hermes-read mail queue-paperless <id> --folder inbox
     ```
 
     Folders are the aliases `inbox`, `sent`, `drafts`, `trash`, `archive`.
-    Message IDs are folder-relative, so pass the same `--folder` you listed
-    with. Never repeat message content unless the user asked for it.
+    Search uses Himalaya's query DSL: `from`/`to`/`subject`/`body`/`flag`
+    plus `and`/`or`/`not`. Combine conditions with `and` or `or`; a bare
+    word list is not a search. Message IDs are folder-relative, so pass
+    the same `--folder` you listed with. Reading does not mark mail as
+    seen. Never repeat message content unless the user asked for it.
 
     ## Verification Checklist
 
@@ -783,11 +783,6 @@ in
         ];
         wants = [ "network-online.target" ];
         requires = [ "vault-agent-default.service" ];
-
-        # himalaya runs the account's password `cmd` through `sh -c`, so
-        # the unit needs a shell on PATH. The broker passes its own PATH
-        # through to himalaya verbatim.
-        path = [ pkgs.bash ];
 
         environment = {
           HERMES_BROKER_SOCKET = brokerSocket;

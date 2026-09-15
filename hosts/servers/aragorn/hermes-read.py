@@ -72,7 +72,11 @@ def main():
     mail.add_parser("folders", help="list mail folders")
 
     mail_list = mail.add_parser("list", help="list or search message envelopes")
-    mail_list.add_argument("query", nargs="*", help="himalaya search terms")
+    mail_list.add_argument(
+        "query",
+        nargs="*",
+        help="search query (from/to/subject/body/flag, combine with and/or/not)",
+    )
     mail_list.add_argument("--folder", default="inbox")
     mail_list.add_argument("--page", type=int, default=1)
     mail_list.add_argument("--page-size", type=int, default=20)
