@@ -283,6 +283,21 @@ in
   # Enable SSH agent for SSH key management
   services.ssh-agent.enable = true;
 
+  # Thunar uses GTK bookmarks
+  gtk.gtk3.bookmarks = [
+    "file:///home/ammar/Documents/receipts-fall-frso-dallas"
+    "file:///home/ammar/Downloads"
+    "file:///home/ammar/Documents"
+    "file:///home/ammar/.dotfiles"
+    "file:///mnt"
+    "file:///home/ammar/Documents/org-roam"
+    "file:///home/ammar"
+    "sftp://10.27.27.11/"
+    "file:///home/ammar/Documents/org-roam/writing/blog"
+    "file:///home/ammar/Documents/projects"
+    "sftp://ammar@denethor.lan/ Denethor"
+  ];
+
   # SSH askpass for passphrase prompts
   home = {
     packages = [
