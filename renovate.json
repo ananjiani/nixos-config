@@ -67,6 +67,13 @@
       "labels": ["dependencies", "automated", "manual-upgrade-required"]
     },
     {
+      "description": "Keep Nix lock maintenance on its own up-to-date branch",
+      "matchManagers": ["nix"],
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "branchTopic": "nix-lock-file-maintenance",
+      "rebaseWhen": "behind-base-branch"
+    },
+    {
       "description": "Postgres major upgrades require pg_dump/restore - never automerge",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["postgres"],
