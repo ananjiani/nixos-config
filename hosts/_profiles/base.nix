@@ -118,10 +118,12 @@ in
   # Cap journald to prevent disk-pressure on servers with large root FS.
   # Theoden accumulated 4.1G over 60 days with no limit, contributing to
   # kubelet disk-pressure taint (see postmortem 2026-05-01).
-  services.journald.extraConfig = ''
-    SystemMaxUse=500M
-    MaxRetentionSec=30day
-  '';
+  services = {
+    journald.settings.Journal = {
+      SystemMaxUse = "500M";
+      MaxRetentionSec = "30day";
+    };
+  };
 
   time.timeZone = "America/Chicago";
 
