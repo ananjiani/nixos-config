@@ -27,26 +27,8 @@ let
   ];
   ntfyPluginRef = "f07462439b7dde0ac08ffe90d30661520037d561";
   ntfyPluginId = "cobanov.herdr-ntfysh";
+  # Kept only so removeMirrorPlugin can find and clear old deployed state.
   mirrorPluginId = "mirror";
-  # Fully pin herdr-mirror source + prebuilt binary so activation never
-  # downloads mutable GitHub release assets at deploy time.
-  mirrorPluginSrc = pkgs.fetchFromGitHub {
-    owner = "nikok6";
-    repo = "herdr-mirror";
-    rev = "f3340d38ac4edddfd80bc7d0942b88fd457f1eab";
-    hash = "sha256-Qd805gn4pFGLUHB9d1b+wa9GmS7/StrUpQWBQNbUahs=";
-  };
-  mirrorPluginBin = pkgs.fetchurl {
-    url = "https://github.com/nikok6/herdr-mirror/releases/download/v0.1.13/herdr-mirror-linux-x86_64";
-    hash = "sha256-fewx/Voe4yEp89KtBGPcxsvQ7usBSIOpBAPSR39pQKU=";
-  };
-  mirrorPluginRoot = pkgs.runCommand "herdr-mirror-plugin" { } ''
-    mkdir -p $out
-    cp -a ${mirrorPluginSrc}/. $out/
-    chmod -R u+w $out
-    mkdir -p $out/target/release
-    install -m 755 ${mirrorPluginBin} $out/target/release/herdr-mirror
-  '';
   herdrPkg = inputs.herdr.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
   desktopHost = "ammars-pc.lan";
@@ -644,22 +626,6 @@ in
 
         "herdr/plugins/config/cobanov.herdr-ntfysh/.env".source =
           config.lib.file.mkOutOfStoreSymlink "/run/secrets/herdr-ntfy-env";
-
-        "herdr-mirror/hosts.toml".text = ''
-          autostart = true
-          close_remote_on_local_close = false
-          always_control = false
-
-          [hosts.desktop]
-          target = "ammars-pc.lan"
-          prefix = "desktop"
-          remote_bin = "/home/ammar/.nix-profile/bin/herdr"
-
-          [hosts.denethor]
-          target = "denethor.lan"
-          prefix = "denethor"
-          remote_bin = "/etc/profiles/per-user/ammar/bin/herdr"
-        '';
       };
 
       home = {
@@ -718,59 +684,63 @@ in
             fi
           '';
 
-          # Link Nix-pinned herdr-mirror plugin tree when plugin_root drifts.
-          installMirrorPlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+          # One-time cleanup: pause then unlink/uninstall old herdr-mirror if registered.
+          removeMirrorPlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
             export PATH="${
               lib.makeBinPath [
                 herdrPkg
-                pkgs.openssh
                 pkgs.jq
                 pkgs.coreutils
               ]
             }:$PATH"
             plugins_json="$HOME/.config/herdr/plugins.json"
-            want_root="${mirrorPluginRoot}"
-            have_root=""
+            # Key off plugin_id so an empty plugin_root still gets cleaned up.
+            plugin_entry=""
             if [ -f "$plugins_json" ]; then
-              have_root="$(jq -r --arg id "${mirrorPluginId}" \
-                '.[] | select(.plugin_id == $id) | .plugin_root // empty' \
-                "$plugins_json" 2>/dev/null || true)"
+              if ! plugin_entry="$(jq -c --arg id "${mirrorPluginId}" \
+                'first(.[] | select(.plugin_id == $id)) // empty' \
+                "$plugins_json")"; then
+                echo "error: could not read $plugins_json to remove ${mirrorPluginId}" >&2
+                exit 1
+              fi
             fi
-            if [ "$have_root" != "$want_root" ]; then
-              # Pause daemon first so mirrors/remote sessions stay open across relink.
+            if [ -n "$plugin_entry" ]; then
+              have_root="$(printf '%s\n' "$plugin_entry" | jq -r '.plugin_root // empty')"
+              kind="$(printf '%s\n' "$plugin_entry" | jq -r '.source.kind // empty')"
               if [ -n "$have_root" ] && [ -x "$have_root/target/release/herdr-mirror" ]; then
                 run "$have_root/target/release/herdr-mirror" pause 2>/dev/null || true
               fi
-              if [ -n "$have_root" ]; then
-                kind="$(jq -r --arg id "${mirrorPluginId}" \
-                  '.[] | select(.plugin_id == $id) | .source.kind // empty' \
-                  "$plugins_json" 2>/dev/null || true)"
-                case "$kind" in
-                  github)
-                    run herdr plugin uninstall "${mirrorPluginId}" 2>/dev/null || true
-                    ;;
-                  *)
-                    # Local link (or unknown): unlink first, fall back to uninstall.
-                    if ! run herdr plugin unlink "${mirrorPluginId}" 2>/dev/null; then
-                      run herdr plugin uninstall "${mirrorPluginId}" 2>/dev/null || true
+              case "$kind" in
+                github)
+                  if ! run herdr plugin uninstall "${mirrorPluginId}"; then
+                    echo "error: failed to uninstall herdr plugin ${mirrorPluginId}" >&2
+                    exit 1
+                  fi
+                  ;;
+                *)
+                  if ! run herdr plugin unlink "${mirrorPluginId}"; then
+                    if ! run herdr plugin uninstall "${mirrorPluginId}"; then
+                      echo "error: failed to unlink/uninstall herdr plugin ${mirrorPluginId}" >&2
+                      exit 1
                     fi
-                    ;;
-                esac
-              fi
-              if ! run herdr plugin link "$want_root"; then
-                echo "warning: herdr-mirror plugin link failed; deploy continues without mirror" >&2
-              else
-                # Reload then resume daemon with the new pinned binary.
-                if herdr status server >/dev/null 2>&1; then
-                  herdr server reload-config 2>/dev/null || echo "warning: herdr server reload-config failed" >&2
-                  if [ -x "$want_root/target/release/herdr-mirror" ]; then
-                    run "$want_root/target/release/herdr-mirror" start 2>/dev/null \
-                      || echo "warning: herdr-mirror start failed after relink" >&2
+                  fi
+                  ;;
+              esac
+              if [[ ! -v DRY_RUN ]]; then
+                still=""
+                if [ -f "$plugins_json" ]; then
+                  if ! still="$(jq -r --arg id "${mirrorPluginId}" \
+                    '.[] | select(.plugin_id == $id) | .plugin_id // empty' \
+                    "$plugins_json")"; then
+                    echo "error: could not verify herdr plugin ${mirrorPluginId} removal" >&2
+                    exit 1
                   fi
                 fi
+                if [ -n "$still" ]; then
+                  echo "error: herdr plugin ${mirrorPluginId} still registered after removal" >&2
+                  exit 1
+                fi
               fi
-            elif herdr status server >/dev/null 2>&1; then
-              herdr server reload-config 2>/dev/null || echo "warning: herdr server reload-config failed" >&2
             fi
           '';
         };
