@@ -64,6 +64,14 @@
     whisper-dictation.url = "github:ananjiani/whisper-dictation";
     # No follows — upstream pins its own nixpkgs + rust-overlay.
     herdr.url = "github:ogulcancelik/herdr";
+    herdr-hud = {
+      url = "github:ananjiani/herdr-hud-quickshell";
+      inputs = {
+        nixpkgs.follows = "nixpkgs-unstable";
+        home-manager.follows = "home-manager-unstable";
+        niri.follows = "niri";
+      };
+    };
     git-hooks = {
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs-unstable";

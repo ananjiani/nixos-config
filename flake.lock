@@ -879,6 +879,32 @@
         "type": "github"
       }
     },
+    "herdr-hud": {
+      "inputs": {
+        "home-manager": [
+          "home-manager-unstable"
+        ],
+        "niri": [
+          "niri"
+        ],
+        "nixpkgs": [
+          "nixpkgs-unstable"
+        ]
+      },
+      "locked": {
+        "lastModified": 1789586066,
+        "narHash": "sha256-Yw/ytYrz0dVblNBtMrautPrEt6X7sR3911q7SRUnMPI=",
+        "owner": "ananjiani",
+        "repo": "herdr-hud-quickshell",
+        "rev": "11ce4edd7445608ca7f16b6e2ff2f68f1b8d99ad",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ananjiani",
+        "repo": "herdr-hud-quickshell",
+        "type": "github"
+      }
+    },
     "hermes-agent": {
       "inputs": {
         "flake-parts": "flake-parts_4",
@@ -1899,6 +1925,7 @@
         "flake-parts": "flake-parts_3",
         "git-hooks": "git-hooks",
         "herdr": "herdr",
+        "herdr-hud": "herdr-hud",
         "hermes-agent": "hermes-agent",
         "home-manager": "home-manager_3",
         "home-manager-unstable": "home-manager-unstable",

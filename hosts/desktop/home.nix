@@ -320,6 +320,7 @@ in
   };
 
   imports = [
+    inputs.herdr-hud.homeManagerModules.default
     ../_profiles/workstation/home.nix
     # crypto.nix is now imported via dendritic pattern in flake.nix
     ../../modules/home/config/sops.nix
@@ -457,8 +458,16 @@ in
     ];
   };
 
-  # Experimental HDR fork (must match NixOS programs.niri.package)
-  programs.niri.package = pkgs.niri-hdr;
+  programs = {
+    herdr-hud = {
+      enable = true;
+      keybind = "Mod+Alt+H";
+      herdrPackage = inputs.herdr.packages.${pkgs.stdenv.hostPlatform.system}.default;
+    };
+
+    # Experimental HDR fork (must match NixOS programs.niri.package)
+    niri.package = pkgs.niri-hdr;
+  };
 
   # niri owns startup. Disable Vesktop's direct-Electron autostart, which bypasses the wrapper.
   # Back up any existing unmanaged file before the first Home Manager switch.

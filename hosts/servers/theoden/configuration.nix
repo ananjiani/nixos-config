@@ -14,6 +14,10 @@
 }:
 
 let
+  # Fixed package scope; see ./buildbot-packages.nix. Assign these before
+  # consumers so upstream's "${pkgs.path}" defaults are never forced.
+  fixedBuildbotPackages = pkgs.callPackage ./buildbot-packages.nix { inherit inputs; };
+
   # buildbot-prometheus: Exposes Buildbot metrics for Prometheus scraping.
   # Uses the same Python interpreter as buildbot-nix to ensure compatibility.
   buildbotPackages = config.services.buildbot-nix.packages;
@@ -504,50 +508,59 @@ in
     };
 
     # Buildbot-nix CI/CD (Codeberg/Gitea + GitHub)
-    buildbot-nix.master = {
-      enable = true;
-      domain = "ci.dimensiondoor.xyz";
-      useHTTPS = true; # Behind Cloudflare Tunnel
-      authBackend = "gitea";
-      workersFile = "/run/secrets/buildbot_worker_password";
-      buildSystems = [ "x86_64-linux" ];
-      evalMaxMemorySize = 2048;
-      # One worker: two concurrent heavy eval attrs crossed MemoryHigh and reclaim stalled them to timeout.
-      evalWorkerCount = 1;
-      buildMaxSilentTime = 3600;
-      gitea = {
-        enable = true;
-        instanceUrl = "https://codeberg.org";
-        tokenFile = "/run/secrets/codeberg_token";
-        webhookSecretFile = "/run/secrets/codeberg_webhook_secret";
-        oauthId = "3c068786-8f5c-44b6-abe8-153394049c91";
-        oauthSecretFile = "/run/secrets/codeberg_oauth_secret";
-        topic = "buildbot-nix";
+    buildbot-nix = {
+      packages = {
+        inherit (fixedBuildbotPackages)
+          python
+          buildbot
+          buildbot-worker
+          buildbot-plugins
+          ;
       };
-      github = {
+      master = {
         enable = true;
-        appId = 2918119;
-        appSecretKeyFile = "/run/secrets/github_app_secret";
-        webhookSecretFile = "/run/secrets/github_webhook_secret";
-        topic = "buildbot-nix";
-      };
-      admins = [ "ananjiani" ];
-      # Disable GC root registration — buildbot builds are pushed to Attic
-      # binary cache, so full closures don't need to be pinned on local disk.
-      branches = {
-        disable-gcroots = {
-          matchGlob = "*";
-          registerGCRoots = false;
+        domain = "ci.dimensiondoor.xyz";
+        useHTTPS = true; # Behind Cloudflare Tunnel
+        authBackend = "gitea";
+        workersFile = "/run/secrets/buildbot_worker_password";
+        buildSystems = [ "x86_64-linux" ];
+        evalMaxMemorySize = 2048;
+        # One worker: two concurrent heavy eval attrs crossed MemoryHigh and reclaim stalled them to timeout.
+        evalWorkerCount = 1;
+        buildMaxSilentTime = 3600;
+        gitea = {
+          enable = true;
+          instanceUrl = "https://codeberg.org";
+          tokenFile = "/run/secrets/codeberg_token";
+          webhookSecretFile = "/run/secrets/codeberg_webhook_secret";
+          oauthId = "3c068786-8f5c-44b6-abe8-153394049c91";
+          oauthSecretFile = "/run/secrets/codeberg_oauth_secret";
+          topic = "buildbot-nix";
+        };
+        github = {
+          enable = true;
+          appId = 2918119;
+          appSecretKeyFile = "/run/secrets/github_app_secret";
+          webhookSecretFile = "/run/secrets/github_webhook_secret";
+          topic = "buildbot-nix";
+        };
+        admins = [ "ananjiani" ];
+        # Disable GC root registration — buildbot builds are pushed to Attic
+        # binary cache, so full closures don't need to be pinned on local disk.
+        branches = {
+          disable-gcroots = {
+            matchGlob = "*";
+            registerGCRoots = false;
+          };
         };
       };
-    };
-
-    buildbot-nix.worker = {
-      enable = true;
-      workerPasswordFile = "/run/secrets/buildbot_worker_password_plain";
-      workers = 1;
-      nixEvalJobs = {
-        package = patchedNixEvalJobs;
+      worker = {
+        enable = true;
+        workerPasswordFile = "/run/secrets/buildbot_worker_password_plain";
+        workers = 1;
+        nixEvalJobs = {
+          package = patchedNixEvalJobs;
+        };
       };
     };
 
