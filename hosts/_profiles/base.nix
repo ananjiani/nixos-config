@@ -56,6 +56,9 @@ in
 
   nix = {
     settings = {
+      # Flakes set nixConfig caches (see flake.nix); auto-accept so direnv/
+      # nix-direnv never block on the (y/N) trust prompt (it has no TTY).
+      accept-flake-config = true;
       experimental-features = [
         "nix-command"
         "flakes"
