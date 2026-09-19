@@ -892,11 +892,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1789762511,
-        "narHash": "sha256-qXy3al0FyDDcW4K6fvIRubx7279fgRCXW16WZYpdfiw=",
+        "lastModified": 1789789680,
+        "narHash": "sha256-KV8ufyFk/c9jbeDukyv/X5XqGLy+JFzJTxB4Ie2bvoQ=",
         "owner": "ananjiani",
         "repo": "herdr-hud-quickshell",
-        "rev": "05748756dc752ac308f261cfe93be211dffddec5",
+        "rev": "936ff8e603b805ac4fdd52d41d047e557b2a10b8",
         "type": "github"
       },
       "original": {
