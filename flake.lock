@@ -916,17 +916,17 @@
         "uv2nix": "uv2nix"
       },
       "locked": {
-        "lastModified": 1788946560,
-        "narHash": "sha256-UcXt8NyzT49GsgewJzsLhor8ucnrI800yO1VvKf4RGo=",
+        "lastModified": 1789811866,
+        "narHash": "sha256-vtU97XDPuTgtSaVdojJasFDC7NIg170zqNIKSv4rMSc=",
         "owner": "NousResearch",
         "repo": "hermes-agent",
-        "rev": "bf53ff00a7360826ec2c9e2949533160068a8fc8",
+        "rev": "e818827191c6ff44493124b76e3b07ddf208d20a",
         "type": "github"
       },
       "original": {
         "owner": "NousResearch",
         "repo": "hermes-agent",
-        "rev": "bf53ff00a7360826ec2c9e2949533160068a8fc8",
+        "rev": "e818827191c6ff44493124b76e3b07ddf208d20a",
         "type": "github"
       }
     },
