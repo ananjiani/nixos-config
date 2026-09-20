@@ -23,5 +23,6 @@
   # from ammars-pc and aragorn — see terraform/vlans.tf)
   denethor = "10.30.30.10";
   ammars-pc = "192.168.1.50";
+  framework13 = "192.168.1.63";
   steamdeck = "192.168.1.110";
 }

@@ -488,6 +488,12 @@ in
   networking = {
     hostName = "aragorn";
 
+    # Tailscale fallback for framework13 (LAN mapping comes from lib/hosts.nix).
+    hosts."100.64.0.6" = [
+      "framework13"
+      "framework13.lan"
+    ];
+
     # Accept collie-lan-proxy and hermes-dashboard only from k3s nodes.
     # Do not open these ports broadly.
     firewall = {
@@ -833,9 +839,19 @@ in
       };
     };
 
-  programs.ssh.knownHosts."ammars-pc.lan" = {
-    publicKey = desktopHostKey;
-    extraHostNames = [ lanHosts.ammars-pc ];
+  programs.ssh.knownHosts = {
+    "ammars-pc.lan" = {
+      publicKey = desktopHostKey;
+      extraHostNames = [ lanHosts.ammars-pc ];
+    };
+    framework13 = {
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGwbMnc91uIYkfPIZXEifTjLGO3ui7FQ227k1rXE+prY";
+      extraHostNames = [
+        "framework13.lan"
+        lanHosts.framework13
+        "100.64.0.6"
+      ];
+    };
   };
 
   services = {

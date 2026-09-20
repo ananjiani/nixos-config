@@ -483,6 +483,14 @@ resource "opnsense_kea_reservation" "ammars_pc" {
   description = "Desktop PC (VPN exempt)"
 }
 
+resource "opnsense_kea_reservation" "framework13" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.63"
+  mac_address = local.mac_addresses.framework13
+  hostname    = "framework13"
+  description = "Framework 13 laptop"
+}
+
 resource "opnsense_kea_reservation" "phone" {
   subnet_id   = opnsense_kea_subnet.lan.id
   ip_address  = "192.168.1.51"

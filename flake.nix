@@ -437,6 +437,25 @@
             };
           };
         };
+        framework13 = {
+          hostname = "framework13";
+          profilesOrder = [
+            "system"
+            "home"
+          ];
+          profiles = {
+            system = {
+              user = "root";
+              sshUser = "root";
+              path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.framework13;
+            };
+            home = {
+              user = "ammar";
+              sshUser = "root";
+              path = deploy-rs.lib.x86_64-linux.activate.home-manager self.homeConfigurations."ammar@framework13";
+            };
+          };
+        };
         boromir = {
           hostname = "boromir.lan";
           profiles.system = {

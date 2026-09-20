@@ -15,6 +15,7 @@ locals {
     aragorn        = "bc:24:11:00:01:05" # NixOS VM (devbox / command center, on gondor)
     denethor       = "bc:24:11:00:01:06" # NixOS VM (work VM on Work VLAN 30, on gondor)
     ammars_pc      = "30:c5:99:26:f4:c5" # Desktop PC (VPN exempt)
+    framework13    = "a8:3b:76:72:ea:27" # Framework 13 laptop (Wi-Fi)
     phone          = "04:00:6e:82:70:17" # Phone (VPN exempt)
     the_shire      = "18:60:24:27:80:40" # The Shire
     rohan          = "bc:5f:f4:e9:25:8f" # Rohan
