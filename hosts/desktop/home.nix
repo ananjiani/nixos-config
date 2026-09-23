@@ -325,6 +325,7 @@ in
     # crypto.nix is now imported via dendritic pattern in flake.nix
     ../../modules/home/config/sops.nix
     ../../modules/home/dev/tea.nix
+    ../../modules/home/org-roam-sync.nix
   ];
 
   desktop = {

@@ -601,6 +601,7 @@ in
         ../../_profiles/dev/home.nix
         inputs.sops-nix.homeManagerModules.sops
         ../../../modules/home/dev/tea.nix
+        ../../../modules/home/org-roam-sync.nix
       ];
 
       sops = {
