@@ -528,6 +528,12 @@ in
     algorithm = "zstd";
   };
 
+  # System-wide uv (not Hermes-only). Used for ad-hoc Python tools
+  # such as youtube-transcript-api via `uv pip` / `uvx`.
+  environment.systemPackages = with pkgs; [
+    uv
+  ];
+
   # Plain tailnet client — not routing infrastructure
   modules = {
     # Finish before ammars-pc-deploy.timer at 04:30.
