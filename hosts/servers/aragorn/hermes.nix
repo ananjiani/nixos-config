@@ -653,7 +653,7 @@ in
       settings = {
         model = {
           provider = "xai-oauth";
-          default = "grok-4.6";
+          default = "grok-4.7";
         };
         fallback_providers = [
           {
@@ -662,7 +662,7 @@ in
           }
           {
             provider = "openai-codex";
-            model = "gpt-5.6-sol";
+            model = "gpt-6-sol";
           }
         ];
         terminal = {

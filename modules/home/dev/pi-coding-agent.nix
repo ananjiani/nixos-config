@@ -690,17 +690,20 @@ let
   # Screen reads, clicks, typing, and browser driving stay unprompted.
   piSettings = {
     defaultProvider = "openai-codex";
-    defaultModel = "gpt-6-astra";
+    defaultModel = "gpt-6-sol";
     enabledModels =
       let
         all = [
           "xai-auth/grok-4.5"
           "xai-auth/grok-4.6"
+          "xai-auth/grok-4.7"
           "zai/glm-5.3"
           "opencode-go/minimax-m3"
           "opencode-go/deepseek-v4-pro"
           "opencode-go/deepseek-v4-flash"
           "openai-codex/gpt-5.6-sol"
+          "openai-codex/gpt-6-sol"
+          "openai-codex/gpt-6-luna"
           "openai-codex/gpt-6-astra"
         ];
         blockedPrefixes = [
