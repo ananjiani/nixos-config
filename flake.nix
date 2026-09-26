@@ -713,7 +713,11 @@
             check-merge-conflicts.enable = true;
             check-added-large-files.enable = true;
             end-of-file-fixer.enable = true;
-            trim-trailing-whitespace.enable = true;
+            trim-trailing-whitespace = {
+              enable = true;
+              # Unified patches use a single-space marker for blank context lines.
+              excludes = [ "^modules/home/dev/herdr/remote-file-paste\\.patch$" ];
+            };
 
             flake-checker.enable = true;
 

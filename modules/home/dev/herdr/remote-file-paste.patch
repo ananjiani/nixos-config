@@ -1,0 +1,516 @@
+diff --git a/src/client/clipboard_images.rs b/src/client/clipboard_images.rs
+index 1faebf3..3da42f2 100644
+--- a/src/client/clipboard_images.rs
++++ b/src/client/clipboard_images.rs
+@@ -9,6 +9,17 @@ use crate::protocol::{ClientClipboardImageTarget, ClientMessage};
+ 
+ use super::{write_to_server, ClientError};
+ 
++pub(super) fn read_bridged_clipboard_payload() -> Option<crate::platform::ClipboardImage> {
++    #[cfg(target_os = "linux")]
++    {
++        crate::platform::read_clipboard_file().or_else(crate::platform::read_clipboard_image)
++    }
++    #[cfg(not(target_os = "linux"))]
++    {
++        crate::platform::read_clipboard_image()
++    }
++}
++
+ pub(super) fn write_remote_image_to_server(
+     stream: &mut impl super::ClientMessageSink,
+     target: ClientClipboardImageTarget,
+@@ -27,7 +38,7 @@ pub(super) fn write_remote_image_to_server(
+ 
+     info!(
+         bytes = image.bytes.len(),
+-        extension = image.extension,
++        extension = %image.extension,
+         source,
+         "bridging local image to remote server"
+     );
+@@ -35,7 +46,7 @@ pub(super) fn write_remote_image_to_server(
+         stream,
+         &ClientMessage::ClipboardImage {
+             target,
+-            extension: image.extension.to_owned(),
++            extension: image.extension,
+             data: image.bytes,
+         },
+     )
+@@ -165,7 +176,10 @@ fn read_image_file(
+             }
+         };
+ 
+-    Some(crate::platform::ClipboardImage { bytes, extension })
++    Some(crate::platform::ClipboardImage {
++        bytes,
++        extension: extension.to_string(),
++    })
+ }
+ 
+ #[cfg(unix)]
+diff --git a/src/client/mod.rs b/src/client/mod.rs
+index 1cef87a..cfbd840 100644
+--- a/src/client/mod.rs
++++ b/src/client/mod.rs
+@@ -94,7 +94,8 @@ use attach::AttachEscapeState;
+ #[cfg(unix)]
+ use attach::{write_attach_semantic_action, AttachInputAction};
+ use clipboard_images::{
+-    client_remote_image_paste_key, endpoint_accepts_local_images, write_remote_image_to_server,
++    client_remote_image_paste_key, endpoint_accepts_local_images, read_bridged_clipboard_payload,
++    write_remote_image_to_server,
+ };
+ #[cfg(windows)]
+ use clipboard_images::{read_image_file_from_client_events, should_bridge_clipboard_image_events};
+@@ -771,7 +772,7 @@ async fn run_client_loop(
+                             image_bridge_active,
+                             state.remote_image_paste_key,
+                         ) {
+-                            if let Some(image) = crate::platform::read_clipboard_image() {
++                            if let Some(image) = read_bridged_clipboard_payload() {
+                                 write_remote_image_to_server(
+                                     &mut write_stream,
+                                     target,
+@@ -894,7 +895,7 @@ async fn run_client_loop(
+                     image_bridge_active,
+                     state.remote_image_paste_key,
+                 ) {
+-                    if let Some(image) = crate::platform::read_clipboard_image() {
++                    if let Some(image) = read_bridged_clipboard_payload() {
+                         write_remote_image_to_server(
+                             &mut write_stream,
+                             crate::protocol::ClientClipboardImageTarget::DirectTerminal,
+@@ -1046,7 +1047,7 @@ async fn run_client_loop(
+                             image_bridge_active,
+                             state.remote_image_paste_key,
+                         ) {
+-                            if let Some(image) = crate::platform::read_clipboard_image() {
++                            if let Some(image) = read_bridged_clipboard_payload() {
+                                 write_remote_image_to_server(
+                                     &mut write_stream,
+                                     target,
+diff --git a/src/platform/linux.rs b/src/platform/linux.rs
+index 7dd2879..f51baba 100644
+--- a/src/platform/linux.rs
++++ b/src/platform/linux.rs
+@@ -1,7 +1,8 @@
+ use std::{
+     collections::{HashSet, VecDeque},
++    ffi::OsString,
+     io::{Read, Write},
+-    os::fd::RawFd,
++    os::{fd::RawFd, unix::ffi::OsStringExt},
+     path::PathBuf,
+     process::{Command, Stdio},
+     sync::OnceLock,
+@@ -840,6 +841,141 @@ pub fn read_clipboard_image() -> Option<ClipboardImage> {
+     None
+ }
+ 
++// ponytail: ClipboardImage wire + image staging for one local file; generic message if this grows.
++pub fn read_clipboard_file() -> Option<ClipboardImage> {
++    for command in clipboard_file_list_commands() {
++        let Some(bytes) = read_clipboard_image_with_command(command.program, command.args) else {
++            continue;
++        };
++        let Ok(payload) = String::from_utf8(bytes) else {
++            continue;
++        };
++        if let Some(image) = clipboard_image_from_file_list(&payload) {
++            return Some(image);
++        }
++    }
++    None
++}
++
++fn clipboard_file_list_commands() -> Vec<ClipboardCommand> {
++    let mut commands = Vec::new();
++    if std::env::var_os("WAYLAND_DISPLAY").is_some() {
++        commands.push(ClipboardCommand {
++            program: "wl-paste",
++            args: &["--type", "x-special/gnome-copied-files"],
++        });
++        commands.push(ClipboardCommand {
++            program: "wl-paste",
++            args: &["--type", "text/uri-list"],
++        });
++    }
++    if std::env::var_os("DISPLAY").is_some() {
++        commands.push(ClipboardCommand {
++            program: "xclip",
++            args: &["-selection", "clipboard", "-t", "text/uri-list", "-o"],
++        });
++    }
++    commands
++}
++
++fn clipboard_image_from_file_list(payload: &str) -> Option<ClipboardImage> {
++    read_clipboard_file_path(parse_single_clipboard_file_path(payload)?)
++}
++
++fn parse_single_clipboard_file_path(payload: &str) -> Option<PathBuf> {
++    let mut path = None;
++    for line in payload.lines() {
++        let line = line.trim();
++        if line.is_empty() || line.starts_with('#') {
++            continue;
++        }
++        if path.is_none() && (line.eq_ignore_ascii_case("copy") || line.eq_ignore_ascii_case("cut"))
++        {
++            continue;
++        }
++        if path.is_some() {
++            return None;
++        }
++        path = Some(file_uri_to_local_path(line)?);
++    }
++    path
++}
++
++fn file_uri_to_local_path(uri: &str) -> Option<PathBuf> {
++    if uri.len() < 7 || !uri.is_char_boundary(7) || !uri[..7].eq_ignore_ascii_case("file://") {
++        return None;
++    }
++    let rest = &uri[7..];
++    let (host, path) = if rest.starts_with('/') {
++        ("", rest)
++    } else {
++        let slash = rest.find('/')?;
++        (&rest[..slash], &rest[slash..])
++    };
++    if !host.is_empty() && !host.eq_ignore_ascii_case("localhost") {
++        return None;
++    }
++    let decoded = percent_decode(path)?;
++    if decoded.contains(&0) || !decoded.starts_with(b"/") {
++        return None;
++    }
++    Some(PathBuf::from(OsString::from_vec(decoded)))
++}
++
++fn percent_decode(input: &str) -> Option<Vec<u8>> {
++    let bytes = input.as_bytes();
++    let mut out = Vec::with_capacity(bytes.len());
++    let mut i = 0;
++    while i < bytes.len() {
++        match bytes[i] {
++            b'%' => {
++                let hi = *bytes.get(i + 1)?;
++                let lo = *bytes.get(i + 2)?;
++                out.push((hex_digit(hi)? << 4) | hex_digit(lo)?);
++                i += 3;
++            }
++            byte => {
++                out.push(byte);
++                i += 1;
++            }
++        }
++    }
++    Some(out)
++}
++
++fn hex_digit(byte: u8) -> Option<u8> {
++    match byte {
++        b'0'..=b'9' => Some(byte - b'0'),
++        b'a'..=b'f' => Some(byte - b'a' + 10),
++        b'A'..=b'F' => Some(byte - b'A' + 10),
++        _ => None,
++    }
++}
++
++fn read_clipboard_file_path(path: PathBuf) -> Option<ClipboardImage> {
++    let metadata = std::fs::metadata(&path).ok()?;
++    if !metadata.is_file() || metadata.len() == 0 {
++        return None;
++    }
++    if metadata.len() > crate::protocol::MAX_CLIPBOARD_IMAGE_PAYLOAD as u64 {
++        return None;
++    }
++    let file = std::fs::File::open(&path).ok()?;
++    let bytes =
++        match read_limited_reader(file, crate::protocol::MAX_CLIPBOARD_IMAGE_PAYLOAD).ok()? {
++            LimitedRead::Complete(bytes) if !bytes.is_empty() => bytes,
++            _ => return None,
++        };
++    Some(ClipboardImage {
++        bytes,
++        extension: path
++            .extension()
++            .and_then(|ext| ext.to_str())
++            .unwrap_or("")
++            .to_string(),
++    })
++}
++
+ fn read_wsl_clipboard_image_with_command(
+     mut command: impl FnMut(&str) -> Command,
+ ) -> Option<ClipboardImage> {
+@@ -854,7 +990,7 @@ fn read_wsl_clipboard_image_with_command(
+     let bytes = read_clipboard_image_with_spawned_command(command)?;
+     bytes_match_image_signature("png", &bytes).then_some(ClipboardImage {
+         bytes,
+-        extension: "png",
++        extension: "png".to_string(),
+     })
+ }
+ 
+@@ -867,7 +1003,10 @@ fn read_validated_clipboard_image(
+     if !bytes_match_image_signature(extension, &bytes) {
+         return None;
+     }
+-    Some(ClipboardImage { bytes, extension })
++    Some(ClipboardImage {
++        bytes,
++        extension: extension.to_string(),
++    })
+ }
+ 
+ fn bytes_match_image_signature(extension: &str, bytes: &[u8]) -> bool {
+@@ -2074,7 +2213,7 @@ mod tests {
+             ),
+             Some(ClipboardImage {
+                 bytes: b"\x89PNG\r\n\x1a\nrest-of-image".to_vec(),
+-                extension: "png",
++                extension: "png".to_string(),
+             })
+         );
+     }
+@@ -2092,7 +2231,7 @@ mod tests {
+             }),
+             Some(ClipboardImage {
+                 bytes: b"\x89PNG\r\n\x1a\nrest-of-image".to_vec(),
+-                extension: "png",
++                extension: "png".to_string(),
+             })
+         );
+     }
+@@ -2165,4 +2304,125 @@ mod tests {
+         assert!(argv[2].contains("EDITOR:-vi"));
+         assert!(argv[2].contains("/tmp/herdr scrollback.txt"));
+     }
++
++    #[test]
++    fn clipboard_file_list_commands_prefer_wayland_then_x11() {
++        let _guard = env_lock().lock().unwrap();
++        unsafe {
++            std::env::set_var("WAYLAND_DISPLAY", "wayland-0");
++            std::env::set_var("DISPLAY", ":0");
++        }
++        let commands = clipboard_file_list_commands();
++        assert_eq!(commands.len(), 3);
++        assert_eq!(commands[0].program, "wl-paste");
++        assert_eq!(
++            commands[0].args,
++            &["--type", "x-special/gnome-copied-files"]
++        );
++        assert_eq!(commands[1].program, "wl-paste");
++        assert_eq!(commands[1].args, &["--type", "text/uri-list"]);
++        assert_eq!(commands[2].program, "xclip");
++        assert_eq!(
++            commands[2].args,
++            &["-selection", "clipboard", "-t", "text/uri-list", "-o"]
++        );
++    }
++
++    #[test]
++    fn parse_single_clipboard_file_path_reads_gnome_copy_and_uri_list() {
++        assert_eq!(
++            parse_single_clipboard_file_path("copy\nfile:///tmp/one.txt\n"),
++            Some(PathBuf::from("/tmp/one.txt"))
++        );
++        assert_eq!(
++            parse_single_clipboard_file_path("cut\r\nfile:///tmp/one.txt\r\n"),
++            Some(PathBuf::from("/tmp/one.txt"))
++        );
++        assert_eq!(
++            parse_single_clipboard_file_path("# comment\nfile:///tmp/one.txt\n"),
++            Some(PathBuf::from("/tmp/one.txt"))
++        );
++        assert_eq!(
++            parse_single_clipboard_file_path("file:///tmp/one.txt"),
++            Some(PathBuf::from("/tmp/one.txt"))
++        );
++    }
++
++    #[test]
++    fn parse_single_clipboard_file_path_percent_decodes_and_rejects_bad_encoding() {
++        assert_eq!(
++            parse_single_clipboard_file_path("file:///tmp/hello%20world.txt"),
++            Some(PathBuf::from("/tmp/hello world.txt"))
++        );
++        assert_eq!(
++            parse_single_clipboard_file_path("file:///tmp/caf%C3%A9.txt"),
++            Some(PathBuf::from("/tmp/café.txt"))
++        );
++        assert_eq!(parse_single_clipboard_file_path("file:///tmp/bad%zz"), None);
++        assert_eq!(
++            parse_single_clipboard_file_path("file:///tmp/trunc%2"),
++            None
++        );
++        assert_eq!(parse_single_clipboard_file_path("file:///tmp/end%"), None);
++        assert_eq!(
++            parse_single_clipboard_file_path("file:///tmp/bad%00.txt"),
++            None
++        );
++    }
++
++    #[test]
++    fn parse_single_clipboard_file_path_keeps_non_utf8_bytes() {
++        let expected = PathBuf::from(OsString::from_vec(b"/tmp/caf\xe9.txt".to_vec()));
++        assert_eq!(
++            parse_single_clipboard_file_path("file:///tmp/caf%E9.txt"),
++            Some(expected)
++        );
++    }
++
++    #[test]
++    fn parse_single_clipboard_file_path_enforces_one_local_file_uri() {
++        assert_eq!(
++            parse_single_clipboard_file_path("copy\nfile:///tmp/a\nfile:///tmp/b\n"),
++            None
++        );
++        assert_eq!(
++            parse_single_clipboard_file_path("file://host.example/tmp/a"),
++            None
++        );
++        assert_eq!(
++            parse_single_clipboard_file_path("file://localhost/tmp/a"),
++            Some(PathBuf::from("/tmp/a"))
++        );
++        assert_eq!(parse_single_clipboard_file_path("copy\n"), None);
++        assert_eq!(parse_single_clipboard_file_path("https://example/a"), None);
++        assert_eq!(
++            parse_single_clipboard_file_path("file://127.0.0.1/tmp/a"),
++            None
++        );
++    }
++
++    #[test]
++    fn read_clipboard_file_path_rejects_empty_directory_and_oversized() {
++        let dir = std::env::temp_dir().join(format!("herdr-clipboard-file-{}", std::process::id()));
++        std::fs::create_dir_all(&dir).unwrap();
++        let file = dir.join("ok.txt");
++        std::fs::write(&file, b"hello").unwrap();
++        let image = read_clipboard_file_path(file).unwrap();
++        assert_eq!(image.bytes, b"hello");
++        assert_eq!(image.extension, "txt");
++
++        let empty = dir.join("empty.txt");
++        std::fs::write(&empty, b"").unwrap();
++        assert!(read_clipboard_file_path(empty).is_none());
++        assert!(read_clipboard_file_path(dir.clone()).is_none());
++
++        let oversized = dir.join("big.bin");
++        let big = std::fs::File::create(&oversized).unwrap();
++        big.set_len(crate::protocol::MAX_CLIPBOARD_IMAGE_PAYLOAD as u64 + 1)
++            .unwrap();
++        drop(big);
++        assert!(read_clipboard_file_path(oversized).is_none());
++
++        let _ = std::fs::remove_dir_all(dir);
++    }
+ }
+diff --git a/src/platform/macos.rs b/src/platform/macos.rs
+index 8c52934..c2e4932 100644
+--- a/src/platform/macos.rs
++++ b/src/platform/macos.rs
+@@ -719,7 +719,7 @@ pub fn read_clipboard_image() -> Option<ClipboardImage> {
+     let _ = std::fs::remove_file(&path);
+     Some(ClipboardImage {
+         bytes,
+-        extension: "png",
++        extension: "png".to_string(),
+     })
+ }
+ 
+diff --git a/src/platform/mod.rs b/src/platform/mod.rs
+index eb84e0b..751d77c 100644
+--- a/src/platform/mod.rs
++++ b/src/platform/mod.rs
+@@ -229,7 +229,7 @@ pub struct ClipboardCommand {
+ #[derive(Debug, Clone, PartialEq, Eq)]
+ pub struct ClipboardImage {
+     pub bytes: Vec<u8>,
+-    pub extension: &'static str,
++    pub extension: String,
+ }
+ 
+ #[derive(Debug, PartialEq, Eq)]
+diff --git a/src/platform/windows.rs b/src/platform/windows.rs
+index cdf4acf..42e63f5 100644
+--- a/src/platform/windows.rs
++++ b/src/platform/windows.rs
+@@ -2336,7 +2336,7 @@ pub fn read_clipboard_image() -> Option<ClipboardImage> {
+             if let Some(bytes) = read_registered_png_clipboard() {
+                 return Some(ClipboardImage {
+                     bytes,
+-                    extension: "png",
++                    extension: "png".to_string(),
+                 });
+             }
+             for format in [CF_DIBV5 as u32, CF_DIB as u32] {
+@@ -2346,7 +2346,7 @@ pub fn read_clipboard_image() -> Option<ClipboardImage> {
+                     if let Some(bytes) = clipboard_image::dib_to_png(&bytes) {
+                         return Some(ClipboardImage {
+                             bytes,
+-                            extension: "png",
++                            extension: "png".to_string(),
+                         });
+                     }
+                 }
+diff --git a/src/server/clipboard_image.rs b/src/server/clipboard_image.rs
+index 70072f2..71bebed 100644
+--- a/src/server/clipboard_image.rs
++++ b/src/server/clipboard_image.rs
+@@ -55,22 +55,30 @@ pub(crate) fn remove_files(paths: Vec<PathBuf>) {
+     }
+ }
+ 
+-fn sanitize_extension(extension: &str) -> &'static str {
++// ponytail: image staging + ClipboardImage wire for any one local file; generic message if this grows.
++fn sanitize_extension(extension: &str) -> String {
+     if extension.eq_ignore_ascii_case("png") {
+-        "png"
++        "png".to_string()
+     } else if extension.eq_ignore_ascii_case("jpg") || extension.eq_ignore_ascii_case("jpeg") {
+-        "jpg"
++        "jpg".to_string()
+     } else if extension.eq_ignore_ascii_case("gif") {
+-        "gif"
++        "gif".to_string()
+     } else if extension.eq_ignore_ascii_case("webp") {
+-        "webp"
++        "webp".to_string()
+     } else if extension.eq_ignore_ascii_case("bmp") {
+-        "bmp"
++        "bmp".to_string()
++    } else if is_safe_extension(extension) {
++        extension.to_ascii_lowercase()
+     } else {
+-        "png"
++        "bin".to_string()
+     }
+ }
+ 
++fn is_safe_extension(extension: &str) -> bool {
++    let len = extension.len();
++    (1..=16).contains(&len) && extension.bytes().all(|byte| byte.is_ascii_alphanumeric())
++}
++
+ fn staging_dir() -> PathBuf {
+     #[cfg(unix)]
+     let user_id = unsafe { libc::geteuid() };
+@@ -142,6 +150,10 @@ mod tests {
+         assert_eq!(sanitize_extension("PNG"), "png");
+         assert_eq!(sanitize_extension("jpeg"), "jpg");
+         assert_eq!(sanitize_extension("webp"), "webp");
+-        assert_eq!(sanitize_extension("sh"), "png");
++        assert_eq!(sanitize_extension("sh"), "sh");
++        assert_eq!(sanitize_extension("NIX"), "nix");
++        assert_eq!(sanitize_extension("tar.gz"), "bin");
++        assert_eq!(sanitize_extension(""), "bin");
++        assert_eq!(sanitize_extension("thisextensionistoolong"), "bin");
+     }
+ }
