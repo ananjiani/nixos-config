@@ -12,6 +12,33 @@ _: {
     }:
     let
       cfg = config.doom-emacs;
+      argdownManifest = builtins.fromJSON (builtins.readFile ./argdown-cli/package.json);
+      argdownCli = pkgs.buildNpmPackage {
+        pname = "argdown-cli";
+        version = argdownManifest.dependencies."@argdown/cli";
+        src = ./argdown-cli;
+
+        npmDeps = pkgs.importNpmLock { npmRoot = ./argdown-cli; };
+        inherit (pkgs.importNpmLock) npmConfigHook;
+
+        nativeBuildInputs = [ pkgs.makeWrapper ];
+        dontNpmBuild = true;
+
+        installPhase = ''
+          runHook preInstall
+          mkdir -p $out/lib/argdown-cli $out/bin
+          cp -r node_modules package.json $out/lib/argdown-cli/
+          makeWrapper ${pkgs.nodejs}/bin/node $out/bin/argdown \
+            --add-flags $out/lib/argdown-cli/node_modules/@argdown/cli/dist/cli.js
+          runHook postInstall
+        '';
+
+        meta = {
+          description = "Command-line tools for Argdown argument maps";
+          homepage = "https://argdown.org";
+          mainProgram = "argdown";
+        };
+      };
     in
     {
       imports = [ inputs.nix-doom-emacs-unstraightened.homeModule ];
@@ -58,6 +85,7 @@ _: {
                 nodejs
                 prettier
                 mermaid-cli
+                argdownCli
                 (aspellWithDicts (
                   d: with d; [
                     en

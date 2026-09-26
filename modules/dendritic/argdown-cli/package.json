@@ -1,0 +1,8 @@
+{
+  "name": "argdown-cli-nix",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "@argdown/cli": "2.0.0"
+  }
+}
