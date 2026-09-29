@@ -3,7 +3,7 @@
 # Homelab-specific overlays (sops, tea, Herdr plugins) stay on the host.
 # Defaults on for Aragorn/workstations. Isolated hosts (Denethor) set:
 #   claudeCode.homelabBackends.enable = false
-#   piCodingAgent.homelabProviders.enable = false  # empty models + safe settings
+#   piCodingAgent.homelabProviders.enable = false  # no secret-backed providers
 #   piCodingAgent.homelabExtensions.enable = false # drop secret-backed extensions
 #   piCodingAgent.searxngUrl = null
 #   devPrograms.npmGlobalPackages = null           # no install/uninstall

@@ -690,7 +690,7 @@ let
   # Screen reads, clicks, typing, and browser driving stay unprompted.
   piSettings = {
     defaultProvider = "openai-codex";
-    defaultModel = "gpt-6-sol";
+    defaultModel = "gpt-6.1-sol";
     enabledModels =
       let
         all = [
@@ -701,10 +701,7 @@ let
           "opencode-go/minimax-m3"
           "opencode-go/deepseek-v4-pro"
           "opencode-go/deepseek-v4-flash"
-          "openai-codex/gpt-5.6-sol"
-          "openai-codex/gpt-6-sol"
-          "openai-codex/gpt-6-luna"
-          "openai-codex/gpt-6-astra"
+          "openai-codex/gpt-6.1-sol"
         ];
         blockedPrefixes = [
           "kimi-coding/"
@@ -753,11 +750,57 @@ let
   };
 
   # Homelab providers read vault-agent secrets at runtime. Gated so
-  # portable hosts ship a valid empty providers map with no /run/secrets
-  # strings. OAuth/default Pi providers stay always-on.
-  # Passed to programs.pi-coding-agent.models (official HM writes models.json).
+  # portable hosts ship no /run/secrets strings. OAuth/default Pi providers
+  # stay always-on. Passed to programs.pi-coding-agent.models (official HM
+  # writes models.json).
+  #
+  # openai-codex is ALWAYS-ON: GPT-6.1 Sol is not in Pi 0.84.4's built-in
+  # registry, so we declare the custom model here until Pi's catalog exposes
+  # 6.1. Homelab providers stay behind the enable gate and merge with `//`.
+  # Portable hosts therefore still get openai-codex, never an empty map.
   piModelSettings = {
-    providers =
+    providers = {
+      "openai-codex" = {
+        baseUrl = "https://chatgpt.com/backend-api";
+        api = "openai-codex-responses";
+        models = [
+          {
+            id = "gpt-6.1-sol";
+            name = "GPT-6.1 Sol";
+            api = "openai-codex-responses";
+            reasoning = true;
+            input = [
+              "text"
+              "image"
+            ];
+            contextWindow = 272000;
+            maxTokens = 128000;
+            thinkingLevelMap = {
+              off = null;
+              minimal = null;
+              low = "low";
+              medium = "medium";
+              high = "high";
+              xhigh = "xhigh";
+              max = "max";
+            };
+            cost = {
+              input = 2;
+              cacheRead = 0.1;
+              cacheWrite = 2.5;
+              output = 10;
+            };
+            compat = {
+              supportsOpenAIGrammarTools = true;
+              supportsAdditionalTools = true;
+              supportsToolSearch = true;
+              supportsMidConvoSystemMessages = true;
+            };
+          }
+        ];
+      };
+    }
+    // (
       if cfg.homelabProviders.enable then
         {
           # Use pi's built-in kimi-coding + zai providers (see pi-mono
@@ -848,7 +891,8 @@ let
           };
         }
       else
-        { };
+        { }
+    );
   };
 
   # Thin wrapper around pkgs.llm-agents.pi so we can inject CUA env
@@ -1066,9 +1110,10 @@ in
       description = ''
         Include models.json provider entries that read vault-agent secrets
         at /run/secrets/{kimi_code,zai,opencode}_api_key. Set false on
-        isolated hosts (e.g. Denethor); models.json then has an empty
-        providers map and no /run/secrets strings. Settings also omit models
-        backed by those unavailable providers. OAuth models stay on.
+        isolated hosts (e.g. Denethor); models.json then keeps always-on
+        openai-codex only and has no /run/secrets strings. Settings also
+        omit models backed by those unavailable providers. OAuth models
+        stay on.
       '';
     };
 

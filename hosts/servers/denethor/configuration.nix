@@ -242,7 +242,7 @@
           # web-search uses searxng.lan via the pinned /32 + firewall pinhole
           # (module default URL). Tavily stays off: no vault-agent here.
           tavilyKeyFile = null;
-          homelabProviders.enable = false; # empty providers + filtered model list
+          homelabProviders.enable = false; # no secret-backed providers; filtered model list
           homelabExtensions.enable = false; # drop nvidia-nim + usage-tracker
           edgeDevtoolsUrl = "http://127.0.0.1:9222";
           computerUse = {
