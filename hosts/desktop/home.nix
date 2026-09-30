@@ -472,30 +472,48 @@ in
 
   # niri owns startup. Disable Vesktop's direct-Electron autostart, which bypasses the wrapper.
   # Back up any existing unmanaged file before the first Home Manager switch.
-  xdg.configFile."autostart/vesktop.desktop".text = ''
-    [Desktop Entry]
-    Type=Application
-    Name=Vesktop
-    Exec=vesktop --start-minimized
-    Hidden=true
-  '';
+  xdg = {
+    configFile = {
+      "autostart/vesktop.desktop".text = ''
+        [Desktop Entry]
+        Type=Application
+        Name=Vesktop
+        Exec=vesktop --start-minimized
+        Hidden=true
+      '';
 
-  # niri-flake's schema has no `hdr` key. Sunshine's optional include comes
-  # first so its active DP-3 profile shadows the generated DP-3 `off` block;
-  # removing it restores that safe idle default. DP-2 remains in hdr.kdl.
-  xdg.configFile.niri-config.source = lib.mkForce (
-    pkgs.writeText "niri-config.kdl" (
-      ''
-        include "~/.config/niri/sunshine.kdl" optional=true
+      # niri-flake's schema has no `hdr` key. Sunshine's optional include comes
+      # first so its active DP-3 profile shadows the generated DP-3 `off` block;
+      # removing it restores that safe idle default. DP-2 remains in hdr.kdl.
+      niri-config.source = lib.mkForce (
+        pkgs.writeText "niri-config.kdl" (
+          ''
+            include "~/.config/niri/sunshine.kdl" optional=true
 
-      ''
-      + config.programs.niri.finalConfig
-      + ''
+          ''
+          + config.programs.niri.finalConfig
+          + ''
 
-        include "~/.config/niri/hdr.kdl" optional=true
-      ''
-    )
-  );
+            include "~/.config/niri/hdr.kdl" optional=true
+          ''
+        )
+      );
+    };
+
+    desktopEntries.microsoft-edge-no-vpn = {
+      name = "Microsoft Edge (No VPN)";
+      genericName = "Web Browser";
+      comment = "Run Flatpak Microsoft Edge outside Mullvad. Fully quit Edge first so this starts a fresh process.";
+      exec = "/run/wrappers/bin/mullvad-exclude ${pkgs.flatpak}/bin/flatpak run com.microsoft.Edge %U";
+      icon = "com.microsoft.Edge";
+      terminal = false;
+      categories = [
+        "Network"
+        "WebBrowser"
+      ];
+      settings.StartupWMClass = "microsoft-edge";
+    };
+  };
 
   home.activation = {
     # Plan 2026-08-19 Phase 9: re-check the Aragorn auto-deploy marker right
