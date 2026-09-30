@@ -289,6 +289,25 @@ let
         ;;
     esac
   '';
+
+  # Electron 43.4.1 rejects tray registration; fixed in 43.5.0
+  # (https://github.com/electron/electron/pull/53215). Remove pin once
+  # locked nixpkgs supplies the fix.
+  signalElectron = pkgs.electron_43-bin.overrideAttrs (old: {
+    version = "43.5.0";
+    src = pkgs.fetchurl {
+      url = "https://github.com/electron/electron/releases/download/v43.5.0/electron-v43.5.0-linux-x64.zip";
+      hash = "sha256-PZP7C5UX/NdBB8Yo9hmQv/YNPCVDaUwosmse94uA3vE=";
+    };
+    passthru = old.passthru // {
+      headers = pkgs.fetchzip {
+        name = "electron-43.5.0-headers";
+        url = "https://artifacts.electronjs.org/headers/dist/v43.5.0/node-v43.5.0-headers.tar.gz";
+        hash = "sha256-eNB2GnFNlYgZYcRRGpXGifonnUt+V9oX9oLAp9mD6FM=";
+      };
+    };
+  });
+  signalWithTrayFix = pkgs.signal-desktop.override { electron_43 = signalElectron; };
 in
 {
   imports = [
@@ -528,7 +547,7 @@ in
   };
 
   environment.systemPackages = with pkgs; [
-    signal-desktop
+    signalWithTrayFix
     cifs-utils
     brave # fallback during brave-origin transition
     ammarsPcAutoDeployGuard # /run/current-system/sw/bin hook for the HM guard
