@@ -466,6 +466,12 @@ in
                 ip saddr 100.64.0.0/10 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
                 ip6 saddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
               }
+              # Mullvad marks excluded traffic after its source address is chosen.
+              # Fix packets leaving eno1 with the tunnel IP instead of the LAN IP.
+              chain postrouting {
+                type nat hook postrouting priority 99; policy accept;
+                oifname "eno1" meta mark 0x6d6f6c65 masquerade
+              }
             }
             NFT
           '';
