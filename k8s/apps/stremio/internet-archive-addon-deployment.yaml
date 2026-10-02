@@ -27,7 +27,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: addon
-          image: gcr.io/distroless/nodejs24-debian13:nonroot@sha256:7781e8b4fccf59240bd539af6738cccf8dad4be303165c3a1fa065c48699b937
+          image: gcr.io/distroless/nodejs24-debian13:nonroot@sha256:9eeb7f5887d0e239e78264b06f7f11d2e14be534050481803a9e4728fcdd278e
           imagePullPolicy: IfNotPresent
           args:
             - /app/app.js
