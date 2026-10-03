@@ -19,7 +19,10 @@
     # Jovian already provides Steam, gamescope, controller udev rules and
     # MangoHUD. This drops Hydra and the other desktop launcher extras.
     desktop = false;
-    syncthing.enable = true;
+    syncthing = {
+      enable = true;
+      device = "steamdeck";
+    };
     ludusavi.backupPath = "/home/ammar/Games/Saves/steamdeck";
   };
 

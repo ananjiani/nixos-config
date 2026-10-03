@@ -20,7 +20,10 @@
     # MangoHUD, so skip the desktop launcher half: Hydra, Heroic, Lutris,
     # BoilR, protonup-qt, Vesktop and the capture tools.
     desktop = false;
-    syncthing.enable = true;
+    syncthing = {
+      enable = true;
+      device = "steammachine";
+    };
     ludusavi.backupPath = "/home/ammar/Games/Saves/steammachine";
   };
 }

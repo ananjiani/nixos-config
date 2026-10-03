@@ -97,6 +97,12 @@ _:
     let
       cfg = config.gaming;
 
+      # Shared Syncthing device IDs. A host must not declare itself as a peer, so
+      # its own entry is filtered out via cfg.syncthing.device. See
+      # lib/syncthing-hosts.nix for why this is a file rather than computed.
+      syncthingHosts = import ../../lib/syncthing-hosts.nix;
+      syncthingPeers = lib.removeAttrs syncthingHosts [ cfg.syncthing.device ];
+
       sources = import ../../_sources/generated.nix {
         inherit (pkgs)
           fetchurl
@@ -420,6 +426,20 @@ _:
 
         syncthing = {
           enable = lib.mkEnableOption "Syncthing save sync";
+
+          device = lib.mkOption {
+            type = lib.types.str;
+            description = ''
+              This host's key in lib/syncthing-hosts.nix. Used to exclude the
+              host from its own peer list, since Syncthing must not be handed
+              itself as a peer.
+
+              Required whenever `syncthing.enable` is true. It cannot be derived
+              from the hostname: Home Manager exposes no `networking.hostName`,
+              and the standalone configurations (where `nixosConfig` is null)
+              cannot reach the NixOS hostname either.
+            '';
+          };
         };
 
         ludusavi = {
@@ -504,11 +524,22 @@ _:
         # Syncthing for game save sync (Desktop ↔ Deck ↔ theoden)
         services.syncthing = lib.mkIf cfg.syncthing.enable {
           enable = true;
+
+          # Device IDs are cert-derived and therefore per-install: a reinstalled
+          # host gets a new one. Keep the declared peers enforced, but do not
+          # delete a device added by hand after a reinstall. With the default
+          # (true), Home Manager removes every undeclared peer on each
+          # activation — which is why the previous "pair via web UI" comment
+          # here never actually survived a switch.
+          overrideDevices = false;
+
           settings = {
+            devices = syncthingPeers;
             folders."game-saves" = {
               path = "${config.home.homeDirectory}/Games/Saves";
               id = "game-saves";
-              # Devices are paired via web UI (device IDs are per-install)
+              # Every peer: all hosts hold the same sendreceive folder.
+              devices = lib.attrNames syncthingPeers;
             };
           };
         };

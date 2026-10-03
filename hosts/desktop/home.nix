@@ -360,7 +360,10 @@ in
 
   gaming = {
     enable = true;
-    syncthing.enable = true;
+    syncthing = {
+      enable = true;
+      device = "ammars-pc";
+    };
     ludusavi.backupPath = "/home/ammar/Games/Saves/ammars-pc";
     octowow = {
       enable = true;

@@ -14,6 +14,10 @@
 }:
 
 let
+  # Shared Syncthing device IDs, minus this host, which must not be declared as
+  # its own peer. See lib/syncthing-hosts.nix.
+  syncthingPeers = builtins.removeAttrs (import ../../../lib/syncthing-hosts.nix) [ "theoden" ];
+
   # Fixed package scope; see ./buildbot-packages.nix. Assign these before
   # consumers so upstream's "${pkgs.path}" defaults are never forced.
   fixedBuildbotPackages = pkgs.callPackage ./buildbot-packages.nix { inherit inputs; };
@@ -277,21 +281,29 @@ in
       runAsLocalSuperUser = true;
     };
 
-    # Syncthing for game save sync (Desktop ↔ Deck ↔ theoden)
+    # Syncthing for game save sync (Desktop ↔ Deck ↔ Steam Machine ↔ theoden).
     syncthing = {
       enable = true;
       user = "ammar";
       group = "storage";
       dataDir = "/home/ammar/.syncthing";
+
+      # Device IDs are cert-derived and therefore per-install, so keep the
+      # declared peers enforced without deleting a device added by hand after a
+      # reinstall. With the default (true) every undeclared peer is removed on
+      # each activation, which is why pairing via the web UI never survived.
+      overrideDevices = false;
+
       settings = {
         gui = {
           user = "ammar";
           password = ""; # No password on LAN, firewall-restricted
         };
+        devices = syncthingPeers;
         folders."game-saves" = {
           path = "/mnt/storage/games/saves";
           id = "game-saves";
-          # Devices are paired via web UI (device IDs are per-install)
+          devices = builtins.attrNames syncthingPeers;
         };
       };
     };
