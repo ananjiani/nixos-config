@@ -25,7 +25,8 @@ locals {
     # VMs on rohan
     theoden = "BC:24:11:00:01:04" # k3s server VM
     # Bare metal
-    rivendell = "00:e0:9d:87:1d:e4" # HTPC (Trycoo WI6 N100)
-    steamdeck = "e8:8d:a6:e2:29:0d" # Steam Deck (Jovian NixOS)
+    rivendell    = "00:e0:9d:87:1d:e4" # HTPC (Trycoo WI6 N100)
+    steamdeck    = "e8:8d:a6:e2:29:0d" # Steam Deck (Jovian NixOS)
+    steammachine = "90:82:c3:39:05:81" # Steam Machine (Jovian NixOS, wired enp5s0)
   }
 }

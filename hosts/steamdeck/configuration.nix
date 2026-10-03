@@ -91,8 +91,18 @@
   };
 
   # ── Gaming system services (Steam, gamemode, gamescope) ────────────
-  # Disable NixOS gamescope — Jovian's steam module provides its own wrapper
-  gaming.enable = true;
+  # desktop = false drops the desktop Steam extras: gamemode, the NixOS
+  # gamescope module, the 8BitDo udev rules and SteamTinkerLaunch. Jovian
+  # supplies gamescope with cap_sys_nice, an unfiltered hidraw uaccess rule,
+  # and its own performance path.
+  #
+  # This is the NixOS half of the option. home.nix sets the Home Manager half
+  # separately: the two module classes are independent namespaces, so the flag
+  # does not carry across on its own.
+  gaming = {
+    enable = true;
+    desktop = false;
+  };
 
   # ── Tailscale mesh VPN (no exit node on Deck) ──────────────────────
   modules.tailscale = {

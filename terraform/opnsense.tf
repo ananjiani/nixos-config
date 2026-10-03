@@ -563,6 +563,14 @@ resource "opnsense_kea_reservation" "steamdeck" {
   description = "Steam Deck (Jovian NixOS)"
 }
 
+resource "opnsense_kea_reservation" "steammachine" {
+  subnet_id   = opnsense_kea_subnet.lan.id
+  ip_address  = "192.168.1.111"
+  mac_address = local.mac_addresses.steammachine
+  hostname    = "steammachine"
+  description = "Steam Machine (Jovian NixOS)"
+}
+
 # =============================================================================
 # Port Forwarding for Traefik (k8s ingress)
 # =============================================================================

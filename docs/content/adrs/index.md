@@ -20,3 +20,4 @@ ADRs capture *why* a choice was made, what alternatives were considered, and wha
 | [ADR-012](adr-012-2026-08-24-multi-host-project-supervisors.md) | 2026-08-24 | One Telegram bot per Project Supervisor host | Accepted |
 | [ADR-013](adr-013-2026-08-27-isolate-buildbot-nix-store.md) | 2026-08-27 | Isolate Buildbot onto a dedicated Nix store daemon | Accepted |
 | [ADR-014](adr-014-2026-09-04-comin-auto-reboot.md) | 2026-09-04 | Unattended Comin auto-reboot with staggered per-host windows | Accepted |
+| [ADR-015](adr-015-2026-10-02-steam-machine-jovian-unmerged-fork.md) | 2026-10-02 | Steam Machine runs Jovian NixOS from an unmerged fork branch | Accepted |

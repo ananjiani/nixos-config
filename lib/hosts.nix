@@ -25,4 +25,5 @@
   ammars-pc = "192.168.1.50";
   framework13 = "192.168.1.63";
   steamdeck = "192.168.1.110";
+  steammachine = "192.168.1.111";
 }

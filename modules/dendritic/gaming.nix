@@ -18,6 +18,22 @@ _:
     {
       options.gaming = {
         enable = lib.mkEnableOption "gaming system services and packages";
+
+        desktop = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Desktop Steam extras: gamemode, the NixOS gamescope module, the
+            8BitDo udev rules and the SteamTinkerLaunch tooling.
+
+            Turn this off on Jovian (SteamOS-style) hosts. Jovian already
+            provides Steam, gamescope with cap_sys_nice, and an unfiltered
+            `KERNEL=="hidraw*", TAG+="uaccess"` rule that covers every
+            controller, so the 8BitDo rules add nothing. Its performance path is
+            gamescope plus dmemcg-booster rather than gamemode, and nothing in
+            Jovian invokes gamemoderun, so gamemode would sit inert.
+          '';
+        };
       };
 
       config = lib.mkIf cfg.enable {
@@ -42,26 +58,31 @@ _:
                 ];
             };
           };
-          gamemode.enable = true;
-          gamemode.enableRenice = true;
-          gamescope = {
+          gamemode = lib.mkIf cfg.desktop {
+            enable = true;
+            enableRenice = true;
+          };
+          gamescope = lib.mkIf cfg.desktop {
             enable = true;
             capSysNice = false;
           };
         };
 
-        services.udev.extraRules = ''
+        services.udev.extraRules = lib.mkIf cfg.desktop ''
           # 8BitDo Ultimate 2 Wireless - 2.4GHz/Dongle (DInput: gyro + back buttons)
           KERNEL=="hidraw*", ATTRS{idProduct}=="6012", ATTRS{idVendor}=="2dc8", MODE="0660", TAG+="uaccess"
           # 8BitDo Ultimate 2 Wireless - Bluetooth
           KERNEL=="hidraw*", KERNELS=="*2DC8:6012*", MODE="0660", TAG+="uaccess"
         '';
 
-        environment.systemPackages = with pkgs; [
-          steamtinkerlaunch
-          yad
-          gamescope-wsi
-        ];
+        environment.systemPackages = lib.mkIf cfg.desktop (
+          with pkgs;
+          [
+            steamtinkerlaunch
+            yad
+            gamescope-wsi
+          ]
+        );
       };
     };
 
@@ -384,6 +405,19 @@ _:
       options.gaming = {
         enable = lib.mkEnableOption "gaming user-level tools and launchers";
 
+        desktop = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Desktop launcher extras: Hydra, Heroic, Lutris, BoilR, protonup-qt,
+            protontricks, winetricks, Vesktop and the capture tools.
+
+            Turn this off on Jovian (SteamOS-style) hosts, which play through
+            Steam alone. Hydra belongs to this group deliberately: it is a
+            desktop acquisition tool and is not wanted on a console.
+          '';
+        };
+
         syncthing = {
           enable = lib.mkEnableOption "Syncthing save sync";
         };
@@ -442,7 +476,10 @@ _:
 
         home.packages =
           with pkgs;
-          [
+          lib.optionals cfg.ludusavi.enable [
+            ludusavi
+          ]
+          ++ lib.optionals cfg.desktop [
             gpu-screen-recorder
             gpu-screen-recorder-gtk
             wine-wayland
@@ -451,9 +488,8 @@ _:
             heroic
             hydralauncher
             umu-launcher
-          ]
-          ++ lib.optionals cfg.ludusavi.enable [
-            ludusavi
+            boilr
+            protonup-qt
           ]
           ++ lib.optionals cfg.octowow.enable [
             octowow
@@ -463,10 +499,6 @@ _:
           ]
           ++ lib.optionals cfg.tlopo.enable [
             tlopo
-          ]
-          ++ [
-            boilr
-            protonup-qt
           ];
 
         # Syncthing for game save sync (Desktop ↔ Deck ↔ theoden)
@@ -511,7 +543,7 @@ _:
 
         programs = {
           # Lutris with nix-managed GE-Proton runner (no Lutris runner downloads).
-          lutris = {
+          lutris = lib.mkIf cfg.desktop {
             enable = true;
             protonPackages = [ pkgs.proton-ge-bin ];
           };
@@ -530,7 +562,7 @@ _:
               hdr = true;
             };
           };
-          vesktop = {
+          vesktop = lib.mkIf cfg.desktop {
             enable = true;
             settings = {
               discordBranch = "stable";

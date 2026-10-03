@@ -99,6 +99,15 @@
       flake = false;
     };
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
+    # Steam Machine (Valve "fremont") support. Unmerged upstream as PR #584, so
+    # this tracks the author's fork branch; flake.lock records the exact commit.
+    # Update deliberately with:
+    #   nix flake lock --update-input jovian-fremont
+    #
+    # If that branch is deleted once the PR merges or closes, this input 404s
+    # and the flake stops evaluating. That is the trigger to move to released
+    # Jovian. Only hosts/steammachine imports it; steamdeck stays on chaotic.
+    jovian-fremont.url = "github:duckysocks22/Jovian-NixOS/development";
     nixos-avf = {
       url = "github:nix-community/nixos-avf";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
@@ -395,6 +404,32 @@
           ];
         };
 
+        # Steam Machine — Jovian NixOS on Valve "fremont" hardware
+        #
+        # Unlike steamdeck this does not import chaotic. The Jovian overlay
+        # comes from the pinned jovian-fremont input and is applied by Jovian's
+        # own modules/jovian/overlay.nix, so the host must not set
+        # nixpkgs.overlays itself.
+        steammachine = lib.nixosSystem {
+          inherit system specialArgs;
+          modules = [
+            ./hosts/steammachine/configuration.nix
+            inputs.sops-nix.nixosModules.sops
+            inputs.disko.nixosModules.disko
+            # Import dendritic gaming NixOS module
+            (if self._modules ? nixos && self._modules.nixos ? gaming then self._modules.nixos.gaming else { })
+            # Import dendritic gaming HM module (Ludusavi, Syncthing, MangoHUD, etc.)
+            (
+              if self._modules ? homeManager && self._modules.homeManager ? gaming then
+                {
+                  home-manager.sharedModules = [ self._modules.homeManager.gaming ];
+                }
+              else
+                { }
+            )
+          ];
+        };
+
         # Minas-tirith - Hetzner VPS (OpenBao secrets manager)
         erebor = lib.nixosSystem {
           inherit system specialArgs;
@@ -651,6 +686,7 @@
         nixos-rivendell = self.nixosConfigurations.rivendell.config.system.build.toplevel;
         nixos-erebor = self.nixosConfigurations.erebor.config.system.build.toplevel;
         nixos-steamdeck = self.nixosConfigurations.steamdeck.config.system.build.toplevel;
+        nixos-steammachine = self.nixosConfigurations.steammachine.config.system.build.toplevel;
         nixos-wsl-work = self.nixosConfigurations.wsl-work.config.system.build.toplevel;
 
         # Home Manager builds (for CI caching)
