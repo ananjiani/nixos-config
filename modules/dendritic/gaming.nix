@@ -416,11 +416,15 @@ _:
           default = true;
           description = ''
             Desktop launcher extras: Hydra, Heroic, Lutris, BoilR, protonup-qt,
-            protontricks, winetricks, Vesktop and the capture tools.
+            Vesktop and the capture tools.
 
             Turn this off on Jovian (SteamOS-style) hosts, which play through
             Steam alone. Hydra belongs to this group deliberately: it is a
             desktop acquisition tool and is not wanted on a console.
+
+            protontricks and winetricks are deliberately NOT in this group.
+            They repair game prefixes rather than launch games, and a Jovian
+            host has no package manager to fall back on for that.
           '';
         };
 
@@ -496,15 +500,23 @@ _:
 
         home.packages =
           with pkgs;
-          lib.optionals cfg.ludusavi.enable [
+          # Proton maintenance tools. These repair game prefixes — missing
+          # redistributables, DLL overrides — and Jovian supplies no equivalent,
+          # so they are not "desktop launcher extras". Grouping them behind
+          # cfg.desktop removed them from the Steam Machine and the Steam Deck,
+          # which is exactly where a Jovian host needs them: there is no distro
+          # package manager to fall back on for fixing a prefix.
+          [
+            protontricks
+            winetricks
+          ]
+          ++ lib.optionals cfg.ludusavi.enable [
             ludusavi
           ]
           ++ lib.optionals cfg.desktop [
             gpu-screen-recorder
             gpu-screen-recorder-gtk
             wine-wayland
-            protontricks
-            winetricks
             heroic
             hydralauncher
             umu-launcher
