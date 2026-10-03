@@ -115,6 +115,22 @@
   services = {
     desktopManager.plasma6.enable = true;
     pipewire.alsa.support32Bit = true;
+
+    # The Steam Machine's Bluetooth radio is an integrated Valve USB device
+    # (28de:1401). btusb enables USB autosuspend by default and this adapter
+    # genuinely sleeps: one boot showed it suspended 3,238,298 ms against
+    # 4,053,263 ms active. Waking it mid-session tears down the radio link
+    # ("Bluetooth: hci0: ACL packet for unknown connection handle 2"), which
+    # made an external controller drop and re-pair every few minutes.
+    #
+    # The Steam Controller's own puck arrives with power/control already "on",
+    # which is why it was never affected. Nothing declarative sets that, so pin
+    # the Bluetooth radio here rather than relying on the same accident.
+    udev = {
+      extraRules = ''
+        ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="28de", ATTR{idProduct}=="1401", TEST=="power/control", ATTR{power/control}="on"
+      '';
+    };
   };
 
   # ── Programs ──────────────────────────────────────────────────────
