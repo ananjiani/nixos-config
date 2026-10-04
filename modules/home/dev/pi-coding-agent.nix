@@ -722,6 +722,8 @@ let
       "npm:pi-init"
       "git:github.com/DietrichGebert/ponytail"
       "git:github.com/mattpocock/skills"
+      "git:github.com/aliceisjustplaying/pi-you-should-know"
+      "git:github.com/aliceisjustplaying/pi-remember-last-model"
       "npm:pi-mcp-adapter"
       "npm:@tintinweb/pi-subagents"
       {

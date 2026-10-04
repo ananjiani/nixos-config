@@ -1,14 +1,20 @@
+--- a/src/cache-status-resolver.cc
++++ b/src/cache-status-resolver.cc
+@@ -282,6 +282,11 @@ void CacheStatusResolver::visitDrv(Traversal *traversal,
+  * The job is retried after the next resolveWanted() round.
+  */
+ auto CacheStatusResolver::tryResolve(Drv &drv) -> bool {
++    // Remote-store jobs already defer cache checks to child Nix builds.
++    // Do not read their derivations from the client's filesystem here.
++    if (drv.cacheStatus == Drv::CacheStatus::NotBuilt) {
++        return true;
++    }
+     attemptComplete = true;
+
+     /* Fast path: all output paths are statically known.
 --- a/src/drv.cc
 +++ b/src/drv.cc
-@@ -1,6 +1,7 @@
- #include <nix/store/path-with-outputs.hh>
- #include <nix/store/store-api.hh>
- #include <nix/store/local-fs-store.hh>
-+#include <nix/store/remote-store.hh>
- #include <nix/store/globals.hh>
- #include <nix/expr/value-to-json.hh>
- #include <nix/store/derivations.hh>
-@@ -38,7 +39,7 @@
+@@ -40,7 +40,7 @@
  namespace {
 
  auto queryOutputs(nix::PackageInfo &packageInfo, nix::EvalState &state,
@@ -17,7 +23,7 @@
      -> std::map<std::string, std::optional<nix::StorePath>> {
      std::map<std::string, std::optional<nix::StorePath>> outputs;
 
-@@ -50,8 +51,10 @@
+@@ -52,8 +52,10 @@ auto queryOutputs(nix::PackageInfo &packageInfo, nix::EvalState &state,
          try {
              outputsQueried = packageInfo.queryOutputs(true);
          } catch (const nix::Error &e) {
@@ -30,17 +36,12 @@
                      nix::Xp::CaDerivations)) {
                  throw;
              }
-@@ -186,23 +189,25 @@
+@@ -114,27 +116,26 @@ auto Drv::fromPackageInfo(std::string &attrPath, nix::EvalState &state,
+                           nix::PackageInfo &packageInfo, MyArgs &args,
                            Constituents constituents) -> Drv {
      auto store = state.store;
-
-+    // UDSRemoteStore inherits LocalFSStore for indirect GC roots, but its
-+    // logical paths may not exist in the client's filesystem.
-+    auto localStore = store.dynamic_pointer_cast<nix::LocalFSStore>();
 +    auto remoteStore = store.dynamic_pointer_cast<nix::RemoteStore>();
-+    const bool canReadDerivation =
-+        localStore && !remoteStore && !nix::settings.readOnlyMode;
-+
+
      Drv result{
          .name = packageInfo.queryName(),
          .storeDir = store->storeDir,
@@ -54,19 +55,26 @@
          .constituents = std::move(constituents),
      };
 
--    // Check if we can read derivations (requires LocalFSStore and not in
--    // read-only mode)
--    auto localStore = store.dynamic_pointer_cast<nix::LocalFSStore>();
--    const bool canReadDerivation = localStore && !nix::settings.readOnlyMode;
--
-     if (canReadDerivation) {
-         // We can read the derivation directly for precise information
-         auto drv = localStore->readDerivation(packageInfo.requireDrvPath());
-@@ -231,6 +236,9 @@
-         // - In read-only/no-instantiate mode
-         // - Store is not a LocalFSStore (e.g., remote store)
+-    /* Skip stores that would read the .drv over the wire. The daemon
+-       (UDSRemoteStore) is a LocalFSStore and reads locally. A store that
+-       fails to read is remembered. */
++    /* UDSRemoteStore inherits LocalFSStore for indirect GC roots, but its
++       logical paths may not exist in the client's filesystem. Skip all
++       RemoteStores. A local store that fails to read is remembered. */
+     static std::atomic<bool> storeReadsDrvs = true;
+-    const bool overTheWire = store.dynamic_pointer_cast<nix::RemoteStore>() &&
+-                             !store.dynamic_pointer_cast<nix::LocalFSStore>();
+     const bool tryReadDerivation =
+-        !nix::settings.readOnlyMode && storeReadsDrvs && !overTheWire;
++        !nix::settings.readOnlyMode && storeReadsDrvs && !remoteStore;
+
+     bool precise = false;
+     if (tryReadDerivation) {
+@@ -155,6 +156,9 @@ auto Drv::fromPackageInfo(std::string &attrPath, nix::EvalState &state,
+     }
+     if (!precise) {
          result.system = packageInfo.querySystem();
-+        if (args.checkCacheStatus) {
++        if (remoteStore && args.checkCacheStatus) {
 +            result.cacheStatus = Drv::CacheStatus::NotBuilt;
 +        }
      }

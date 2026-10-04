@@ -45,10 +45,10 @@ let
     patches = (old.patches or [ ]) ++ [ ./patches/attic-watch-store-path.patch ];
   });
 
-  # nix-eval-jobs 2.34.1 queryOutputs always opens the logical drv path on the
-  # host filesystem. Remote/chroot stores keep those files only under the
-  # dedicated store, so eval fails. Pass queryOutputPaths=false for remote
-  # stores and report cacheStatus=notBuilt so child Nix builds substitute.
+  # Remote/chroot stores can lack logical drv paths on the client filesystem.
+  # Keep the output-name fallback and skip client-side derivation/cache reads.
+  # nix-eval-jobs 2.35.4 resolves cache status separately; preserve notBuilt
+  # there too so child Nix builds handle substitution in the dedicated store.
   patchedNixEvalJobs = pkgs.nix-eval-jobs.overrideAttrs (old: {
     patches = (old.patches or [ ]) ++ [ ./patches/nix-eval-jobs-remote-store.patch ];
   });
