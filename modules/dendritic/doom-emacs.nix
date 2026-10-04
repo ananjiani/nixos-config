@@ -86,13 +86,7 @@ _: {
                 prettier
                 mermaid-cli
                 argdownCli
-                (aspellWithDicts (
-                  d: with d; [
-                    en
-                    en-computers
-                    en-science
-                  ]
-                ))
+                (aspellWithDicts (d: [ d.en ]))
               ];
             };
 
