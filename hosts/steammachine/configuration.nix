@@ -30,8 +30,7 @@
   # already applies it: modules/default.nix -> modules/jovian/default.nix
   # -> modules/jovian/overlay.nix sets `nixpkgs.overlays`. Assigning it
   # again runs the overlay twice, and the second pass re-appends patches
-  # (e.g. pkgs/mangohud), which breaks the build. Only our own overlay
-  # belongs in the list further down.
+  # (e.g. pkgs/mangohud), which breaks the build.
   jovian = {
     devices.steammachine = {
       enable = true;
@@ -48,48 +47,6 @@
       desktopSession = "plasma";
     };
   };
-
-  # ── BlueZ: Valve's Switch Pro Controller fix ───────────────────────
-  # Valve patches BlueZ on SteamOS so the Nintendo Switch Pro Controller
-  # (057e:2009) stops dropping its Bluetooth link. None of it is upstream: it
-  # went to review as bluez/bluez#2480 and was closed unmerged, so no BlueZ
-  # release will ever carry it and an upgrade will never deliver it. The patch
-  # adds BT_IO_OPT_FORCE_ACTIVE and, for this one controller's interrupt
-  # channel, sets BT_POWER_FORCE_ACTIVE_OFF — it stops forcing the link out of
-  # sniff mode on every outgoing packet.
-  #
-  # It is written against 5.83 but all 15 hunks apply to the 5.87 source
-  # nixpkgs pins, with zero fuzz. It is fetched and extracted from Valve's own
-  # source archive rather than vendored, so its provenance stays visible.
-  # btio is compiled into bluetoothd and not into libbluetooth, so the change
-  # is daemon-side only and alters no ABI.
-  #
-  # hardware.bluetooth.package is pinned explicitly, below, so that a later
-  # override of that option cannot silently drop the patch.
-  nixpkgs.overlays = [
-    (final: prev: {
-      bluez = prev.bluez.overrideAttrs (old: {
-        patches = (old.patches or [ ]) ++ [
-          (final.runCommand "bluez-nintendo-force-active.patch"
-            {
-              src = final.fetchurl {
-                url = "https://steamdeck-packages.steamos.cloud/archlinux-mirror/sources/holo-3.8/bluez-5.83-1.4.src.tar.gz";
-                hash = "sha256-f+LwtPDnNy9/Xp2tRm+Om2/P6euLmIG6Qpbsb91LUgc=";
-              };
-              nativeBuildInputs = [
-                final.gnutar
-                final.gzip
-              ];
-            }
-            ''
-              tar -xOf "$src" \
-                bluez/0024-Modify-Nintendo-gamepad-abnormal-disconnect-during-use.patch > "$out"
-            ''
-          )
-        ];
-      });
-    })
-  ];
 
   # ── Gaming system services (Steam, gamemode, gamescope) ────────────
   # desktop = false drops the desktop Steam extras: gamemode, the NixOS
@@ -195,9 +152,30 @@
     enableRedistributableFirmware = true;
     cpu.amd.updateMicrocode = true;
 
-    # Pinned to the overlaid pkgs.bluez so that a later override of this option
-    # cannot silently drop Valve's controller patch. See `nixpkgs.overlays`.
-    bluetooth.package = pkgs.bluez;
+    # Unmerged bluez/bluez#2480: Valve SteamOS patch for the Switch Pro
+    # Controller interrupt socket (057e:2009) only. Daemon-only (btio in
+    # bluetoothd, no libbluetooth ABI) so stock pkgs.bluez reverse deps stay
+    # valid. Fetched from Valve's source archive, not vendored.
+    bluetooth.package = pkgs.bluez.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [
+        (pkgs.runCommand "bluez-nintendo-force-active.patch"
+          {
+            src = pkgs.fetchurl {
+              url = "https://steamdeck-packages.steamos.cloud/archlinux-mirror/sources/holo-3.8/bluez-5.83-1.4.src.tar.gz";
+              hash = "sha256-f+LwtPDnNy9/Xp2tRm+Om2/P6euLmIG6Qpbsb91LUgc=";
+            };
+            nativeBuildInputs = [
+              pkgs.gnutar
+              pkgs.gzip
+            ];
+          }
+          ''
+            tar -xOf "$src" \
+              bluez/0024-Modify-Nintendo-gamepad-abnormal-disconnect-during-use.patch > "$out"
+          ''
+        )
+      ];
+    });
   };
 
   # ── User ───────────────────────────────────────────────────────────
