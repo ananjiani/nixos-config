@@ -26,11 +26,11 @@
   ];
 
   # ── Jovian Steam Machine ───────────────────────────────────────────
-  # No `nixpkgs.overlays` here, deliberately. Importing the Jovian module
-  # already applies its overlay: modules/default.nix -> modules/jovian/
-  # default.nix -> modules/jovian/overlay.nix sets `nixpkgs.overlays`.
-  # Assigning it again runs the overlay twice, and the second pass
-  # re-appends patches (e.g. pkgs/mangohud), which breaks the build.
+  # Do not declare the Jovian overlay here. Importing the Jovian module
+  # already applies it: modules/default.nix -> modules/jovian/default.nix
+  # -> modules/jovian/overlay.nix sets `nixpkgs.overlays`. Assigning it
+  # again runs the overlay twice, and the second pass re-appends patches
+  # (e.g. pkgs/mangohud), which breaks the build.
   jovian = {
     devices.steammachine = {
       enable = true;
@@ -147,9 +147,36 @@
     };
   };
 
-  # ── Firmware ───────────────────────────────────────────────────────
-  hardware.enableRedistributableFirmware = true;
-  hardware.cpu.amd.updateMicrocode = true;
+  # ── Hardware ───────────────────────────────────────────────────────
+  hardware = {
+    enableRedistributableFirmware = true;
+    cpu.amd.updateMicrocode = true;
+
+    # Unmerged bluez/bluez#2480: Valve SteamOS patch for the Switch Pro
+    # Controller interrupt socket (057e:2009) only. Daemon-only (btio in
+    # bluetoothd, no libbluetooth ABI) so stock pkgs.bluez reverse deps stay
+    # valid. Fetched from Valve's source archive, not vendored.
+    bluetooth.package = pkgs.bluez.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [
+        (pkgs.runCommand "bluez-nintendo-force-active.patch"
+          {
+            src = pkgs.fetchurl {
+              url = "https://steamdeck-packages.steamos.cloud/archlinux-mirror/sources/holo-3.8/bluez-5.83-1.4.src.tar.gz";
+              hash = "sha256-f+LwtPDnNy9/Xp2tRm+Om2/P6euLmIG6Qpbsb91LUgc=";
+            };
+            nativeBuildInputs = [
+              pkgs.gnutar
+              pkgs.gzip
+            ];
+          }
+          ''
+            tar -xOf "$src" \
+              bluez/0024-Modify-Nintendo-gamepad-abnormal-disconnect-during-use.patch > "$out"
+          ''
+        )
+      ];
+    });
+  };
 
   # ── User ───────────────────────────────────────────────────────────
   users.users.ammar = {
