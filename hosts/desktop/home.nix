@@ -70,6 +70,14 @@ let
         WAYLAND_DISPLAY="$host_wayland" ${pkgs.wl-clipboard}/bin/wl-paste --type text --watch ${pkgs.xclip}/bin/xclip -selection clipboard -in &
         watcher=$!
       fi
+      # Restore Steam overlay/GameMode libs for the game; watcher kept the sanitized env.
+      if [ "''${GAMESCOPE_ORIGINAL_LD_LIBRARY_PATH+x}" = x ]; then
+        export LD_LIBRARY_PATH="$GAMESCOPE_ORIGINAL_LD_LIBRARY_PATH"
+      fi
+      if [ "''${GAMESCOPE_ORIGINAL_LD_PRELOAD+x}" = x ]; then
+        export LD_PRELOAD="$GAMESCOPE_ORIGINAL_LD_PRELOAD"
+      fi
+      unset GAMESCOPE_ORIGINAL_LD_LIBRARY_PATH GAMESCOPE_ORIGINAL_LD_PRELOAD
       status=0
       "$@" || status=$?
       exit "$status"
@@ -82,71 +90,88 @@ let
       name,
       hdr,
     }:
-    pkgs.writeShellApplication {
-      inherit name;
-      text = ''
-        width=5120
-        height=1440
-        refresh=240
-        ${
-          if hdr then
-            ''
-              hdr_args=(--hdr-enabled)
-              game_env=(${pkgs.coreutils}/bin/env ENABLE_HDR_WSI=1 DXVK_HDR=1)
-            ''
-          else
-            ''
-              hdr_args=()
-              game_env=(${pkgs.coreutils}/bin/env -u ENABLE_HDR_WSI -u DXVK_HDR)
-            ''
-        }
+    let
+      inner = pkgs.writeShellApplication {
+        inherit name;
+        text = ''
+          width=5120
+          height=1440
+          refresh=240
+          ${
+            if hdr then
+              ''
+                hdr_args=(--hdr-enabled)
+                game_env=(${pkgs.coreutils}/bin/env ENABLE_HDR_WSI=1 DXVK_HDR=1)
+              ''
+            else
+              ''
+                hdr_args=()
+                game_env=(${pkgs.coreutils}/bin/env -u ENABLE_HDR_WSI -u DXVK_HDR)
+              ''
+          }
 
-        if [ -f "${sunshineFragmentPath}" ]; then
-          if ${pkgs.gnugrep}/bin/grep -Fq 'mode custom=true "1280x800@90"' "${sunshineFragmentPath}"; then
-            width=1280
-            height=800
-            refresh=90
-          elif ${pkgs.gnugrep}/bin/grep -Fq 'mode custom=true "1920x1080@120"' "${sunshineFragmentPath}"; then
-            width=1920
-            height=1080
-            refresh=120
+          if [ -f "${sunshineFragmentPath}" ]; then
+            if ${pkgs.gnugrep}/bin/grep -Fq 'mode custom=true "1280x800@90"' "${sunshineFragmentPath}"; then
+              width=1280
+              height=800
+              refresh=90
+            elif ${pkgs.gnugrep}/bin/grep -Fq 'mode custom=true "1920x1080@120"' "${sunshineFragmentPath}"; then
+              width=1920
+              height=1080
+              refresh=120
+            else
+              echo "unsupported Sunshine niri fragment" >&2
+              exit 1
+            fi
+            ${
+              if hdr then
+                ''
+                  if ! ${pkgs.gnugrep}/bin/grep -Fq 'hdr mode="on"' "${sunshineFragmentPath}"; then
+                    hdr_args=()
+                    game_env=(${pkgs.coreutils}/bin/env -u ENABLE_HDR_WSI -u DXVK_HDR)
+                  fi
+                ''
+              else
+                ""
+            }
           else
-            echo "unsupported Sunshine niri fragment" >&2
-            exit 1
+            ${
+              if hdr then
+                ''
+                  ${hdrOn}/bin/hdr-on
+                  trap '${hdrOff}/bin/hdr-off' EXIT
+                  sleep 1
+                ''
+              else
+                ":"
+            }
           fi
-          ${
-            if hdr then
-              ''
-                if ! ${pkgs.gnugrep}/bin/grep -Fq 'hdr mode="on"' "${sunshineFragmentPath}"; then
-                  hdr_args=()
-                  game_env=(${pkgs.coreutils}/bin/env -u ENABLE_HDR_WSI -u DXVK_HDR)
-                fi
-              ''
-            else
-              ""
-          }
-        else
-          ${
-            if hdr then
-              ''
-                ${hdrOn}/bin/hdr-on
-                trap '${hdrOff}/bin/hdr-off' EXIT
-                sleep 1
-              ''
-            else
-              ":"
-          }
-        fi
 
-        # Capture host Wayland before Gamescope replaces the session display.
-        host_wayland="''${WAYLAND_DISPLAY:-}"
+          # Capture host Wayland before Gamescope replaces the session display.
+          host_wayland="''${WAYLAND_DISPLAY:-}"
 
-        ${pkgs.gamescope}/bin/gamescope \
-          -W "$width" -H "$height" -w "$width" -h "$height" -r "$refresh" -f \
-          "''${hdr_args[@]}" --force-grab-cursor --virtual-connector-strategy PerWindow \
-          -- "''${game_env[@]}" ${gamescopeClipboardBridge}/bin/gamescope-clipboard-bridge "$host_wayland" "$@"
-      '';
-    };
+          ${pkgs.gamescope}/bin/gamescope \
+            -W "$width" -H "$height" -w "$width" -h "$height" -r "$refresh" -f \
+            "''${hdr_args[@]}" --force-grab-cursor --virtual-connector-strategy PerWindow \
+            -- "''${game_env[@]}" ${gamescopeClipboardBridge}/bin/gamescope-clipboard-bridge "$host_wayland" "$@"
+        '';
+      };
+    in
+    # Steam FHS injects old glibc via LD_LIBRARY_PATH; this flake's Bash is newer
+    # and SIGABRTs. /bin/sh from Steam's FHS matches those libs; clear them only
+    # for wrapper tools, then restore before the game (see clipboard bridge).
+    pkgs.writeScriptBin name ''
+      #!/bin/sh
+      unset GAMESCOPE_ORIGINAL_LD_LIBRARY_PATH GAMESCOPE_ORIGINAL_LD_PRELOAD
+      if [ "''${LD_LIBRARY_PATH+x}" = x ]; then
+        export GAMESCOPE_ORIGINAL_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+      fi
+      if [ "''${LD_PRELOAD+x}" = x ]; then
+        export GAMESCOPE_ORIGINAL_LD_PRELOAD="$LD_PRELOAD"
+      fi
+      unset LD_LIBRARY_PATH LD_PRELOAD
+      exec ${inner}/bin/${name} "$@"
+    '';
   gamescopeSdr = mkGamescopeWrapper {
     name = "gamescope-sdr";
     hdr = false;
