@@ -71,7 +71,7 @@ in
       package = lib.mkIf anyCloudflare (
         pkgs.caddy.withPlugins {
           plugins = [ "github.com/caddy-dns/cloudflare@v0.2.1" ];
-          hash = "sha256-EYyPGOsJbIqeZzHFpVMJAlho6XJjQzF6OyUrxZRsn/o=";
+          hash = "sha256-ijDzBvNhN6kVRNkjbLMHRh1K8qP7kLCiirQJLwkzrCc=";
         }
       );
 
