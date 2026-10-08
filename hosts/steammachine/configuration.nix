@@ -116,6 +116,26 @@
     # NixOS owns /etc/systemd/system for unit files, so `systemctl mask` cannot
     # be used; suppressedSystemUnits is the declarative equivalent.
     suppressedSystemUnits = [ "drkonqi-coredump-processor@.service" ];
+
+    # This host is wired and never needs WiFi, and its radio shares an antenna
+    # with Bluetooth. NetworkManager scans for networks even while
+    # disconnected, and that 2.4 GHz traffic competes with the controller link.
+    #
+    # Measured here: dropping the radio took Bluetooth packet loss on a Pro
+    # Controller from ~3.2 to ~1.5 dropped IMU reports per minute, and cut the
+    # report gap from 15 ms to 11 ms.
+    #
+    # The ceiling is neighbour congestion — several access points at signal
+    # 90-95 on 2.4 GHz — and no setting here changes that.
+    services.wifi-radio-off = {
+      description = "Keep the WiFi radio off (Bluetooth shares its antenna)";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "NetworkManager.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = "${lib.getBin pkgs.util-linux}/bin/rfkill block wifi";
+      };
+    };
   };
 
   # ── KDE Plasma 6 for Desktop Mode ──────────────────────────────────
