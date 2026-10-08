@@ -153,7 +153,9 @@ in
             fi
             run herdr plugin link "$want_root"
           fi
-          if herdr status server >/dev/null 2>&1; then
+          # The status command exits successfully even when no server is running.
+          status_json="$(herdr status server --json)"
+          if printf '%s\n' "$status_json" | jq -e '.running == true' >/dev/null; then
             run herdr server reload-config
           fi
         '';
