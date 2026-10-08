@@ -5,6 +5,7 @@
 #
 # Managed Home Manager: one nixos-anywhere run deploys everything.
 {
+  config,
   pkgs,
   lib,
   inputs,
@@ -45,6 +46,12 @@
       autoStart = true;
       user = "ammar";
       desktopSession = "plasma";
+      # Jovian launcher bypasses NixOS Steam wrapper; reuse declared extra tools.
+      environment = {
+        STEAM_EXTRA_COMPAT_TOOLS_PATHS =
+          lib.makeSearchPathOutput "steamcompattool" ""
+            config.programs.steam.extraCompatPackages;
+      };
     };
   };
 
