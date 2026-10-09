@@ -1,8 +1,8 @@
-# Org-roam Syncthing folder shared by ammars-pc, framework13, and aragorn.
-# Bootstrap only: folder.devices = [] because framework13/aragorn have no IDs yet.
-# After first start, add actual device IDs to settings.devices and each
-# folder.devices in Nix before sharing. Manual sharing on declared folders
-# is overwritten. overrideDevices/overrideFolders = false preserve undeclared
+# Org-roam Syncthing folder on ammars-pc, framework13, and aragorn.
+# Host home configs pair ammars-pc and framework13; aragorn stays unpaired.
+# The empty folder.devices below merges with host-specific peer lists.
+# Manual sharing on declared folders is overwritten.
+# overrideDevices/overrideFolders = false preserve undeclared
 # devices/folders only, not declared folder membership. Future game-saves
 # peers must also be declared in Nix. Staggered versioning is not a backup.
 { config, ... }:

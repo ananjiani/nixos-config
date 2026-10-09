@@ -20,8 +20,19 @@
     hostname = "192.168.1.27";
   };
 
-  services.blueman-applet.enable = true;
-  services.mpris-proxy.enable = true;
+  services = {
+    blueman-applet.enable = true;
+    mpris-proxy.enable = true;
+    syncthing.settings = {
+      devices.ammars-pc = (import ../../lib/syncthing-hosts.nix).ammars-pc // {
+        addresses = [
+          "tcp://100.64.0.4:22000"
+          "dynamic"
+        ];
+      };
+      folders.org-roam.devices = [ "ammars-pc" ];
+    };
+  };
 
   home.packages = with pkgs; [
     signal-desktop

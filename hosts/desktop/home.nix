@@ -306,7 +306,19 @@ let
 in
 {
   # Enable SSH agent for SSH key management
-  services.ssh-agent.enable = true;
+  services = {
+    ssh-agent.enable = true;
+    syncthing.settings = {
+      devices.framework13 = {
+        id = "KISOSMG-24FT4H2-56MXI7C-BXPRLRT-6MJRCNE-WTE2L6I-TVV3TB7-CTK4HAN";
+        addresses = [
+          "tcp://100.64.0.6:22000"
+          "dynamic"
+        ];
+      };
+      folders.org-roam.devices = [ "framework13" ];
+    };
+  };
 
   # Thunar uses GTK bookmarks
   gtk.gtk3.bookmarks = [
