@@ -67,8 +67,22 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    # OpenBao 2.7 dropped the built-in awskms wrapper. Keep the plugin name
+    # awskms so seal "awskms" still unwraps the existing Raft data.
+    assertions = [
+      {
+        assertion =
+          cfg.awsKmsKeyId == null
+          ||
+            (config.services.openbao.settings.plugin.kms.awskms.command or null)
+            == pkgs.openbaoPlugins.kms-aws.meta.mainProgram;
+        message = "AWS KMS auto-unseal needs declarative plugin kms/awskms; OpenBao 2.7 removed the built-in wrapper.";
+      }
+    ];
+
     services.openbao = {
       enable = true;
+      plugins = lib.optionals (cfg.awsKmsKeyId != null) [ pkgs.openbaoPlugins.kms-aws ];
       settings = {
         ui = cfg.enableUI;
         api_addr = cfg.apiAddr;

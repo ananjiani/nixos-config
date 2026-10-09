@@ -387,15 +387,13 @@ in
   # Make Tailscale coexist with Mullvad without the cgroup exclusion. See ADR-004.
   #
   # tailscaled is NOT excluded from Mullvad (modules.tailscale.excludeFromMullvad
-  # = false). Two independent paths need help, both fixed by nft *filter*
-  # ct/meta marks (drift-immune — no type-route re-fib or ordered ip rule):
+  # = false). Two independent paths need help, both fixed by nft ct/meta marks
+  # (no ordered ip rule; underlay needs type-route re-fib, overlay stays filter):
   #
-  # 1. tailscaled's own underlay (DERP / WireGuard to peers): Tailscale marks
-  #    these SO_MARK 0x80000 and its own `ip rule` sends them out eno1 (bare
-  #    WAN — ammars-pc is VPN-exempt at the router, same egress the exclusion
-  #    gave). Mullvad's kill-switch firewall then RSTs that eno1 traffic
-  #    ("connection refused", NoState) unless it carries both Mullvad's
-  #    split-tunnel ct mark 0xf41 and routing mark 0x6d6f6c65.
+  # 1. tailscaled's underlay (DERP / WireGuard to peers) has SO_MARK 0x80000.
+  #    Mullvad's tunnel-catch can initially select wg0-mullvad. The route hook
+  #    below sets both ct mark 0xf41 and routing mark 0x6d6f6c65, then Linux
+  #    picks eno1 instead. Both marks are needed for Mullvad's firewall.
   #
   # 2. Unmarked local processes → tailnet CGNAT (curl/vault-agent →
   #    100.64.0.21): Mullvad's unmarked-catch `ip rule` pulls these into the
@@ -416,10 +414,9 @@ in
     timers.nix-optimise.timerConfig.WakeSystem = true;
 
     services = {
-      # nft mark table. Must be up BEFORE tailscaled authenticates — its
-      # underlay leaves eno1 marked 0x80000 and Mullvad's kill-switch RSTs it
-      # ("connection refused", permanent NoState) without both Mullvad marks. This
-      # needs no tailscale0, so it can safely order before tailscaled.
+      # Mark and reroute underlay BEFORE tailscaled authenticates. Otherwise
+      # Mullvad drops excluded traffic that still leaves through wg0-mullvad.
+      # This needs no tailscale0, so it can safely order before tailscaled.
       mullvad-tailscale-fixup = {
         description = "Mark Tailscale traffic for Mullvad's firewall";
         after = [ "mullvad-daemon.service" ];
@@ -436,9 +433,17 @@ in
             ${pkgs.nftables}/bin/nft delete table inet mullvad-mark-fixup 2>/dev/null || true
             ${pkgs.nftables}/bin/nft -f - <<'NFT'
             table inet mullvad-mark-fixup {
+              # Filter marks land after the first route pick. SO_MARK 0x80000
+              # underlay already chose wg; Mullvad then drops marked excluded
+              # traffic oif wg. type route at -149 re-fibs underlay only.
+              # Keep 100.64/fd7a in filter — route-hook marks would re-fib
+              # overlay out eno1 and break CGNAT.
+              chain underlay {
+                type route hook output priority -149; policy accept;
+                meta mark and 0xff0000 == 0x80000 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
+              }
               chain output {
                 type filter hook output priority -10; policy accept;
-                meta mark and 0xff0000 == 0x80000 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
                 ip daddr 100.64.0.0/10 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
                 ip6 daddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
               }
@@ -469,20 +474,26 @@ in
         # this route.
         partOf = [ "tailscaled.service" ];
         wantedBy = [ "multi-user.target" ];
+        # A slow link must recover without a manual service restart.
+        unitConfig.StartLimitIntervalSec = 0;
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
+          Restart = "on-failure";
+          RestartSec = 5;
           # tailscaled.service being "started" doesn't mean tailscale0 exists;
           # `ip route ... dev tailscale0` fails "Device for nexthop is not up".
           ExecStartPre = pkgs.writeShellScript "wait-for-tailscale0" ''
             for _ in $(seq 1 60); do
-              [ -e /sys/class/net/tailscale0 ] && exit 0
+              if [ -n "$(${pkgs.iproute2}/bin/ip -o link show up dev tailscale0 2>/dev/null)" ]; then
+                exit 0
+              fi
               sleep 1
             done
-            exit 0
+            exit 1
           '';
           ExecStart = pkgs.writeShellScript "mullvad-tailscale-route-start" ''
-            set -uo pipefail
+            set -euo pipefail
             ip=${pkgs.iproute2}/bin/ip
             # Resolved by Mullvad's own suppress rule, so immune to its drift.
             $ip    route replace 100.64.0.0/10 dev tailscale0
