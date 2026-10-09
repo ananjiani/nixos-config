@@ -596,6 +596,8 @@ in
       tunnels = {
         "b33ec739-7324-4c6f-b6fa-daedbe0828c8" = {
           credentialsFile = "/run/secrets/cloudflared_tunnel_creds";
+          # Cloudflare's IPv4 tunnel edges time out on this host; IPv6 works.
+          edgeIPVersion = "6";
           default = "http_status:404";
           ingress = {
             "attic.dimensiondoor.xyz" = "http://localhost:8080";
@@ -894,8 +896,6 @@ in
         unitConfig.RequiresMountsFor = [ "/srv/nfs/attic" ];
       };
       cloudflared-tunnel-b33ec739-7324-4c6f-b6fa-daedbe0828c8 = {
-        # Cloudflare's IPv4 tunnel edges time out on this host; IPv6 works.
-        environment.TUNNEL_EDGE_IP_VERSION = "6";
         after = [ "vault-agent-default.service" ];
         wants = [ "vault-agent-default.service" ];
       };
