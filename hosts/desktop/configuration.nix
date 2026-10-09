@@ -474,9 +474,13 @@ in
         # this route.
         partOf = [ "tailscaled.service" ];
         wantedBy = [ "multi-user.target" ];
+        # A slow link must recover without a manual service restart.
+        unitConfig.StartLimitIntervalSec = 0;
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
+          Restart = "on-failure";
+          RestartSec = 5;
           # tailscaled.service being "started" doesn't mean tailscale0 exists;
           # `ip route ... dev tailscale0` fails "Device for nexthop is not up".
           ExecStartPre = pkgs.writeShellScript "wait-for-tailscale0" ''
