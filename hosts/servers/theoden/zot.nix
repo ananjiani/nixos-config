@@ -68,6 +68,9 @@ in
     mode = "0400";
   };
 
+  # Retry Zot after secret recovery; maintenance stops need a runtime mask.
+  systemd.services.vault-agent-default.unitConfig.Upholds = [ "zot.service" ];
+
   virtualisation = {
     podman.enable = true;
     quadlet.containers.zot = {
