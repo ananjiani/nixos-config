@@ -40,8 +40,9 @@ Selection:
 1. Apply hard constraints: vision, write/read-only role, provider separation.
 2. Choose model from matrix. Prefer highest-quota model within roughly 1 capability point of best fit. Routine scout is DeepSeek V4 Flash; use Grok for harder or vision discovery.
 3. Worker and reviewer come from different providers/pools — never burn one pool on both sides of the same ticket. Opus 5.5 reviews Sol and Grok workers; Sol reviews Opus workers. Grok 4.7 is the fallback reviewer for Sol or Opus workers; Sol is the fallback reviewer for Grok workers. Never let a model review its own work. Do not pair an OpenAI worker with an OpenAI reviewer, or an Opus worker with an Opus reviewer.
-4. Use the worker decision rule below. Grok 4.7 and Claude Opus 5.5 take investigations and escalation; Sol is first choice for fully scoped implementation. Do not default to Opus for long unattended implementation when Sol fits.
-5. Vision tasks require Vision >= 7.
+4. Model listing alone does not prove a provider is ready. If no reviewer from a different pool completes the review, mark the review incomplete and stop before merge or deployment. Request human review instead of self-review or same-pool review.
+5. Use the worker decision rule below. Grok 4.7 and Claude Opus 5.5 take investigations and escalation; Sol is first choice for fully scoped implementation. Do not default to Opus for long unattended implementation when Sol fits.
+6. Vision tasks require Vision >= 7.
 
 Thinking effort:
 - Grok 4.5 workers: `high`.

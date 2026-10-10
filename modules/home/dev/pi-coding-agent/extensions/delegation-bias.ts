@@ -46,7 +46,7 @@ for routine scouting (Grok for harder or vision discovery) and Grok 4.5 for
 fully specified cheap workers. Review across pools: Opus 5.5 reviews Sol and
 Grok workers, Sol reviews Opus workers. Grok 4.7 is the fallback reviewer for
 Sol or Opus workers; Sol is the fallback for Grok workers. Never review your own work. Reviewer and
-worker come from different pools. The main session and all Claude subagents
+worker come from different pools. If no reviewer from a different pool completes the review, mark the review incomplete and stop before merge or deployment. Request human review; never use self-review or same-pool review as a fallback. The main session and all Claude subagents
 share one Claude Max account, so keep unnecessary parallel Claude workers down
 to protect the main session's quota.
 `;
