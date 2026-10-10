@@ -42,7 +42,8 @@ in
   };
 
   systemd.tmpfiles.rules = [
-    "d /var/lib/romm-db 0755 root root -"
+    # MariaDB runs as UID 999. Root ownership blocks tc.log removal on shutdown.
+    "d /var/lib/romm-db 0755 999 999 -"
     # redis runs as UID 999 inside the container (not root); the data dir
     # must be owned 999 so bgsave can fork+write temp-*.rdb. root:root 0755
     # causes 'Permission denied' on bgsave -> MISCONF -> login 500s.
