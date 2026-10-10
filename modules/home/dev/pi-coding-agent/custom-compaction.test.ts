@@ -20,6 +20,9 @@ mock.module("@earendil-works/pi-ai", () => ({
 
 const { default: customCompaction } = await import("./extensions/custom-compaction.ts");
 
+const FLASH_PROVIDER = "opencode-go";
+const FLASH_MODEL = "deepseek-v4-flash";
+
 const usage = {
 	input: 1,
 	output: 2,
@@ -31,7 +34,7 @@ const usage = {
 
 function model(id: string, maxTokens = 16000) {
 	return {
-		provider: id.startsWith("glm") ? "zai" : "opencode-go",
+		provider: FLASH_PROVIDER,
 		api: "openai-completions",
 		id,
 		name: id,
@@ -94,14 +97,24 @@ function ctxFor(
 	};
 }
 
+// Every find call must resolve only opencode-go/deepseek-v4-flash, including
+// error paths. Returns `result` so callers can simulate a missing model.
+function findFlash(result: unknown) {
+	return (provider: string, modelId: string) => {
+		expect(provider).toBe(FLASH_PROVIDER);
+		expect(modelId).toBe(FLASH_MODEL);
+		return result;
+	};
+}
+
 afterEach(() => {
 	sessionSeq = 0;
 });
 
 test("accepted summary keeps usage and kept-entry boundary", async () => {
 	const handler = loadHandler();
-	const flash = model("deepseek-v4-flash");
-	const ctx = ctxFor(async () => assistant("ok summary"), (p, id) => (id === "deepseek-v4-flash" ? flash : undefined));
+	const flash = model(FLASH_MODEL);
+	const ctx = ctxFor(async () => assistant("ok summary"), findFlash(flash));
 
 	const result = await handler(compactEvent(), ctx);
 
@@ -114,6 +127,7 @@ test("accepted summary keeps usage and kept-entry boundary", async () => {
 		},
 	});
 	expect(ctx.modelRegistry.complete.mock.calls).toHaveLength(1);
+	expect(ctx.modelRegistry.find.mock.calls).toEqual([[FLASH_PROVIDER, FLASH_MODEL]]);
 });
 
 test.each(["length", "error", "pending", "deferred", "toolUse"])(
@@ -121,70 +135,57 @@ test.each(["length", "error", "pending", "deferred", "toolUse"])(
 	async (stopReason) => {
 		const handler = loadHandler();
 		const ctx = ctxFor(
-			async (m: { id: string }) => m.id === "deepseek-v4-flash"
-				? assistant("partial text", stopReason)
-				: assistant("glm summary"),
-			(_p, id) => model(id),
+			async () => assistant("partial text", stopReason),
+			findFlash(model(FLASH_MODEL)),
 		);
 
-		expect(await handler(compactEvent(), ctx)).toMatchObject({ compaction: { summary: "glm summary" } });
-		expect(ctx.modelRegistry.complete.mock.calls).toHaveLength(2);
+		expect(await handler(compactEvent(), ctx)).toBeUndefined();
+		expect(ctx.modelRegistry.complete.mock.calls).toHaveLength(1);
+		expect(ctx.modelRegistry.find.mock.calls).toEqual([[FLASH_PROVIDER, FLASH_MODEL]]);
 	},
 );
 
 test("tool-call responses are rejected even with text", async () => {
 	const handler = loadHandler();
-	const flash = model("deepseek-v4-flash");
-	const glm = model("glm-5.3");
 	const ctx = ctxFor(
-		async (_model: { id: string }) => {
-			if ((_model as { id: string }).id === "deepseek-v4-flash") {
-				return assistant("also a tool", "stop", {
-					content: [
-						{ type: "text", text: "also a tool" },
-						{ type: "toolCall", name: "bash", id: "1", arguments: {} },
-					],
-				});
-			}
-			return assistant("clean glm");
-		},
-		(_p, id) => (id === "deepseek-v4-flash" ? flash : glm),
+		async () =>
+			assistant("also a tool", "stop", {
+				content: [
+					{ type: "text", text: "also a tool" },
+					{ type: "toolCall", name: "bash", id: "1", arguments: {} },
+				],
+			}),
+		findFlash(model(FLASH_MODEL)),
 	);
 
-	const result = await handler(compactEvent(), ctx);
-	expect(result).toMatchObject({ compaction: { summary: "clean glm" } });
+	expect(await handler(compactEvent(), ctx)).toBeUndefined();
+	expect(ctx.modelRegistry.complete.mock.calls).toHaveLength(1);
 });
 
-test("missing model and exceptions fall back; both fail uses native", async () => {
+test("missing model, exceptions, and empty text use native compaction", async () => {
 	const handler = loadHandler();
-	const glm = model("glm-5.3");
 
-	const missing = ctxFor(async () => assistant("from glm"), (_p, id) => (id === "glm-5.3" ? glm : undefined));
-	expect(await handler(compactEvent(), missing)).toMatchObject({ compaction: { summary: "from glm" } });
-	expect(missing.modelRegistry.complete.mock.calls).toHaveLength(1);
+	const missing = ctxFor(async () => assistant("unused"), findFlash(undefined));
+	expect(await handler(compactEvent(), missing)).toBeUndefined();
+	expect(missing.modelRegistry.complete.mock.calls).toHaveLength(0);
+	expect(missing.modelRegistry.find.mock.calls).toEqual([[FLASH_PROVIDER, FLASH_MODEL]]);
 
-	const flash = model("deepseek-v4-flash");
-	const thrown = ctxFor(
-		async (m: { id: string }) => {
-			if ((m as { id: string }).id === "deepseek-v4-flash") throw new Error("boom");
-			return assistant("after throw");
-		},
-		(_p, id) => (id === "deepseek-v4-flash" ? flash : glm),
-	);
-	expect(await handler(compactEvent(), thrown)).toMatchObject({ compaction: { summary: "after throw" } });
+	const thrown = ctxFor(async () => {
+		throw new Error("boom");
+	}, findFlash(model(FLASH_MODEL)));
+	expect(await handler(compactEvent(), thrown)).toBeUndefined();
+	expect(thrown.modelRegistry.complete.mock.calls).toHaveLength(1);
+	expect(thrown.modelRegistry.find.mock.calls).toEqual([[FLASH_PROVIDER, FLASH_MODEL]]);
 
-	const both = ctxFor(async () => {
-		throw new Error("nope");
-	}, (_p, id) => (id === "deepseek-v4-flash" ? flash : glm));
-	expect(await handler(compactEvent(), both)).toBeUndefined();
-	expect(both.modelRegistry.complete.mock.calls).toHaveLength(2);
+	const empty = ctxFor(async () => assistant(""), findFlash(model(FLASH_MODEL)));
+	expect(await handler(compactEvent(), empty)).toBeUndefined();
+	expect(empty.modelRegistry.complete.mock.calls).toHaveLength(1);
+	expect(empty.modelRegistry.find.mock.calls).toEqual([[FLASH_PROVIDER, FLASH_MODEL]]);
 });
 
-test("cancellation does not start the next model", async () => {
+test("cancellation cancels compaction without another model call", async () => {
 	const handler = loadHandler();
-	const flash = model("deepseek-v4-flash");
-	const glm = model("glm-5.3");
-	const find = (_p: string, id: string) => (id === "deepseek-v4-flash" ? flash : glm);
+	const find = findFlash(model(FLASH_MODEL));
 
 	const aborted = ctxFor(async () => assistant("partial abort", "aborted"), find);
 	expect(await handler(compactEvent(), aborted)).toEqual({ cancel: true });
@@ -205,44 +206,35 @@ test("cancellation does not start the next model", async () => {
 	expect(pre.modelRegistry.complete.mock.calls).toHaveLength(0);
 });
 
-test("request uses no cache, fresh session id, clamped maxTokens, low glm reasoning", async () => {
+test("request options use no cache, fresh session ids, clamped maxTokens, and no reasoning overrides", async () => {
 	const handler = loadHandler();
-	const flash = model("deepseek-v4-flash", 100);
-	const glm = model("glm-5.3", 20000);
 	const signal = new AbortController().signal;
-	const ctx = ctxFor(
-		async (m: { id: string }) => {
-			if ((m as { id: string }).id === "deepseek-v4-flash") return assistant("", "stop");
-			return assistant("glm ok");
-		},
-		(_p, id) => (id === "deepseek-v4-flash" ? flash : glm),
-	);
 
-	await handler(compactEvent({ signal }), ctx);
+	const small = ctxFor(async () => assistant("small ok"), findFlash(model(FLASH_MODEL, 100)));
+	await handler(compactEvent({ signal }), small);
+	const smallOpts = small.modelRegistry.complete.mock.calls[0][2] as Record<string, unknown>;
+	expect(smallOpts.cacheRetention).toBe("none");
+	expect(smallOpts.sessionId).toBe("sid-1");
+	expect(smallOpts.maxTokens).toBe(100);
+	expect(smallOpts.signal).toBe(signal);
+	expect(smallOpts.reasoningEffort).toBeUndefined();
+	expect(small.modelRegistry.complete.mock.calls[0][1]).toEqual({ messages: expect.any(Array) });
 
-	const calls = ctx.modelRegistry.complete.mock.calls;
-	expect(calls).toHaveLength(2);
-
-	const flashOpts = calls[0][2] as Record<string, unknown>;
-	const glmOpts = calls[1][2] as Record<string, unknown>;
-	expect(flashOpts.cacheRetention).toBe("none");
-	expect(glmOpts.cacheRetention).toBe("none");
-	expect(flashOpts.sessionId).toBe("sid-1");
-	expect(glmOpts.sessionId).toBe("sid-2");
-	expect(flashOpts.sessionId).not.toBe(glmOpts.sessionId);
-	expect(flashOpts.maxTokens).toBe(100);
-	expect(glmOpts.maxTokens).toBe(8192);
-	expect(flashOpts.signal).toBe(signal);
-	expect(glmOpts.signal).toBe(signal);
-	expect(flashOpts.reasoningEffort).toBeUndefined();
-	expect(glmOpts.reasoningEffort).toBe("low");
-	expect(calls[0][1]).toEqual({ messages: expect.any(Array) });
+	// Repeated accepted compaction gets a fresh session id and default clamp.
+	const big = ctxFor(async () => assistant("big ok"), findFlash(model(FLASH_MODEL, 20000)));
+	await handler(compactEvent({ signal }), big);
+	const bigOpts = big.modelRegistry.complete.mock.calls[0][2] as Record<string, unknown>;
+	expect(bigOpts.cacheRetention).toBe("none");
+	expect(bigOpts.sessionId).toBe("sid-2");
+	expect(bigOpts.sessionId).not.toBe(smallOpts.sessionId);
+	expect(bigOpts.maxTokens).toBe(8192);
+	expect(bigOpts.signal).toBe(signal);
+	expect(bigOpts.reasoningEffort).toBeUndefined();
 });
 
 test("prompt keeps constraints, custom instructions, previous summary, and retained history wording", async () => {
 	const handler = loadHandler();
-	const flash = model("deepseek-v4-flash");
-	const ctx = ctxFor(async () => assistant("ok"), () => flash);
+	const ctx = ctxFor(async () => assistant("ok"), findFlash(model(FLASH_MODEL)));
 
 	await handler(compactEvent(), ctx);
 

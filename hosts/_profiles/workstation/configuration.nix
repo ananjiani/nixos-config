@@ -18,7 +18,7 @@
   desktop.hyprland.enable = lib.mkDefault true;
 
   # LLM API keys from consolidated Bao path (secret/llm/keys).
-  # Used by claude-kimi/claude-glm fish wrappers and pi coding agent.
+  # Used by the claude-kimi fish wrapper and pi coding agent.
   # See terraform/openbao.tf vault_policy.vault_agent for the llm/* grant.
   modules.vault-agent.secrets = {
     # Kimi Code (api.kimi.com/coding) membership key used by `claude-kimi`.
@@ -29,19 +29,9 @@
       mode = "0400";
     };
 
-    # z.ai API key used by `claude-glm`. Bifrost can't proxy z.ai's
-    # Anthropic endpoint (Responses-API translation mismatch), so the
-    # wrapper hits api.z.ai directly.
-    zai_api_key = {
-      path = "secret/llm/keys";
-      field = "zai-api-key";
-      owner = "ammar";
-      mode = "0400";
-    };
-
-    # Tavily API key for the Tavily MCP server wired into both wrappers
-    # as an external WebSearch replacement (neither z.ai nor Kimi Code
-    # can proxy Anthropic's server-side web_search_20250305 tool).
+    # Tavily API key for the Tavily MCP server wired into claude-kimi
+    # as an external WebSearch replacement (Kimi Code cannot proxy
+    # Anthropic's server-side web_search_20250305 tool).
     tavily_api_key = {
       path = "secret/llm/keys";
       field = "tavily-api-key";

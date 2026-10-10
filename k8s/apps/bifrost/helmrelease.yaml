@@ -87,22 +87,6 @@ spec:
             - name: "deepseek"
               value: "env.DEEPSEEK_API_KEY"
               weight: 1.0
-        zai:
-          network_config:
-            base_url: "https://api.z.ai/api/coding/paas/v4"
-            default_request_timeout_in_seconds: 120
-          custom_provider_config:
-            base_provider_type: openai
-            request_path_overrides:
-              chat_completion: "/chat/completions"
-              chat_completion_stream: "/chat/completions"
-          keys:
-            - name: "zai"
-              value: "env.ZAI_API_KEY"
-              weight: 1.0
-              models:
-                - "glm-5"
-                - "glm-5.1"
         cliproxy:
           network_config:
             base_url: "http://cliproxy.cliproxy.svc:8317"
@@ -125,10 +109,6 @@ spec:
           existingSecret: bifrost-secrets
           key: deepseek-api-key
           envVar: DEEPSEEK_API_KEY
-        zai:
-          existingSecret: bifrost-secrets
-          key: zai-api-key
-          envVar: ZAI_API_KEY
         cliproxy:
           existingSecret: bifrost-secrets
           key: cliproxy-api-key

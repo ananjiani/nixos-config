@@ -9,8 +9,6 @@
  *
  * Providers:
  * - kimi-coding:  api.kimi.com/coding/v1/usages
- * - zai:          api.z.ai/api/monitor/usage/quota/limit
- *   (TOKENS_LIMIT = 5h rolling token quota, TIME_LIMIT = monthly MCP tool quota)
  * - opencode-go:  dashboard scraping + model probing fallback
  *   (OpenCode Go tracking adapted from timm-u/pi-usage, MIT © 2026 timm-u)
  */
@@ -47,23 +45,6 @@ interface KimiUsage {
 	parallelLimit: number;
 	totalQuotaLimit: number;
 	totalQuotaRemaining: number;
-	lastFetched: number;
-	error?: string;
-}
-
-interface ZaiLimit {
-	type: string;
-	used?: number; // actual usage (from currentValue in API)
-	limit?: number; // quota limit (from "usage" field in API — misleading name)
-	remaining?: number;
-	percentage: number;
-	nextResetTime: number;
-	details?: Array<{ model: string; usage: number }>;
-}
-
-interface ZaiUsage {
-	plan: string;
-	limits: ZaiLimit[];
 	lastFetched: number;
 	error?: string;
 }
@@ -233,42 +214,6 @@ async function fetchKimiUsage(signal?: AbortSignal): Promise<KimiUsage> {
 		};
 	} catch (e: any) {
 		return { plan: "?", limit: 0, used: 0, remaining: 0, resetTime: "", windows: [], parallelLimit: 0, totalQuotaLimit: 0, totalQuotaRemaining: 0, lastFetched: Date.now(), error: e.message };
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Provider fetchers: ZAI
-// ---------------------------------------------------------------------------
-
-async function fetchZaiUsage(signal?: AbortSignal): Promise<ZaiUsage> {
-	const apiKey = readApiKey("zai");
-	if (!apiKey) return { plan: "?", limits: [], lastFetched: Date.now(), error: "No API key found" };
-
-	try {
-		const data = await fetchJSON("https://api.z.ai/api/monitor/usage/quota/limit", {
-			Authorization: `Bearer ${apiKey}`,
-		}, signal);
-
-		const limits = (data.data?.limits ?? []).map((l: any) => ({
-			type: l.type,
-			used: l.currentValue ?? undefined, // actual usage counter
-			limit: l.usage ?? undefined, // quota limit (API field is misleadingly named "usage")
-			remaining: l.remaining,
-			percentage: l.percentage,
-			nextResetTime: l.nextResetTime,
-			details: (l.usageDetails ?? []).map((d: any) => ({
-				model: d.modelCode,
-				usage: d.usage,
-			})),
-		}));
-
-		return {
-			plan: data.data?.level ?? "?",
-			limits,
-			lastFetched: Date.now(),
-		};
-	} catch (e: any) {
-		return { plan: "?", limits: [], lastFetched: Date.now(), error: e.message };
 	}
 }
 
@@ -631,7 +576,6 @@ export default function (pi: ExtensionAPI) {
 
 	// Cached account data
 	let kimiData: KimiUsage | null = null;
-	let zaiData: ZaiUsage | null = null;
 	let goData: OpenCodeGoUsage | null = null;
 	let fetching = false;
 
@@ -643,13 +587,11 @@ export default function (pi: ExtensionAPI) {
 		if (fetching) return;
 		fetching = true;
 		try {
-			const [kimi, zai, go] = await Promise.all([
+			const [kimi, go] = await Promise.all([
 				fetchKimiUsage(signal),
-				fetchZaiUsage(signal),
 				fetchOpencodeGoUsage(signal),
 			]);
 			kimiData = kimi;
-			zaiData = zai;
 			goData = go;
 			updateStatus(ctx);
 		} finally {
@@ -721,10 +663,6 @@ export default function (pi: ExtensionAPI) {
 			const usedPct = kimiData.limit > 0 ? Math.round((kimiData.used / kimiData.limit) * 100) : 0;
 			return { label: "kimi", pct: usedPct, remaining: kimiData.remaining, limit: kimiData.limit };
 		}
-		if (provider === "zai" && zaiData && !zaiData.error && zaiData.limits.length > 0) {
-			const l = zaiData.limits.find(x => x.type === "TOKENS_LIMIT") ?? zaiData.limits[0];
-			return { label: "zai", pct: l.percentage, remaining: l.remaining ?? 0, limit: l.limit ?? 0 };
-		}
 		if (provider === "opencode-go" && goData && goData.status !== "no_key") {
 			const pct = goData.weeklyUsedPercent ?? (goData.available ? 0 : 100);
 			return { label: "go", pct, remaining: 0, limit: 0 };
@@ -733,10 +671,6 @@ export default function (pi: ExtensionAPI) {
 		if (goData && goData.status !== "no_key") {
 			const pct = goData.weeklyUsedPercent ?? (goData.available ? 0 : 100);
 			return { label: "go", pct, remaining: 0, limit: 0 };
-		}
-		if (zaiData && !zaiData.error && zaiData.limits.length > 0) {
-			const l = zaiData.limits.find(x => x.type === "TOKENS_LIMIT") ?? zaiData.limits[0];
-			return { label: "zai", pct: l.percentage, remaining: l.remaining ?? 0, limit: l.limit ?? 0 };
 		}
 		if (kimiData && !kimiData.error) {
 			const usedPct = kimiData.limit > 0 ? Math.round((kimiData.used / kimiData.limit) * 100) : 0;
@@ -800,32 +734,6 @@ export default function (pi: ExtensionAPI) {
 					const wUsedPct = w.limit > 0 ? Math.round((w.used / w.limit) * 100) : 0;
 					const dur = w.duration > 60 ? `${w.duration / 60}h` : `${w.duration}m`;
 					lines.push(`  Window (${dur}): ${pctBar(wUsedPct)}  resets ${formatResetTime(w.resetTime)}`);
-				}
-			}
-			lines.push("");
-
-			// Z.AI
-			lines.push("🤖 Z.AI / GLM");
-			if (!zaiData) {
-				lines.push("  No data — fetch failed");
-			} else if (zaiData.error) {
-				lines.push(`  ❌ ${zaiData.error}`);
-			} else {
-				lines.push(`  Plan: ${zaiData.plan}`);
-				for (const l of zaiData.limits) {
-					const label = l.type === "TIME_LIMIT" ? "MCP monthly" : "5h tokens";
-					const usedPct = l.percentage;
-					const parts = [`  ${label}: ${pctBar(usedPct)}`];
-					if (l.limit !== undefined && l.remaining !== undefined) {
-						parts.push(`${l.remaining}/${l.limit} remaining`);
-					}
-					parts.push(`resets ${formatResetTime(l.nextResetTime)}`);
-					lines.push(parts.join("  "));
-					if (l.details && l.details.length > 0) {
-						for (const d of l.details) {
-							lines.push(`    ${d.model}: ${d.usage}`);
-						}
-					}
 				}
 			}
 			lines.push("");

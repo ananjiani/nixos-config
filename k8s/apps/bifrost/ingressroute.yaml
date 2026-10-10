@@ -9,7 +9,7 @@ metadata:
     gethomepage.dev/name: "Bifrost"
     gethomepage.dev/group: "Infrastructure"
     gethomepage.dev/icon: "openai.png"
-    gethomepage.dev/description: "LLM Gateway - DeepSeek, z.ai, cliproxy"
+    gethomepage.dev/description: "LLM Gateway - DeepSeek, cliproxy, ollama"
     gethomepage.dev/href: "https://bifrost.dimensiondoor.xyz"
     gethomepage.dev/pod-selector: "app.kubernetes.io/name=bifrost"
     gethomepage.dev/siteMonitor: "http://bifrost.bifrost.svc:8080"

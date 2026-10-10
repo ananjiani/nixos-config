@@ -1,0 +1,55 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "type": "stdio",
+      "exposure": "codemode"
+    },
+    "nixos": {
+      "command": "uvx",
+      "args": [
+        "mcp-nixos"
+      ],
+      "env": {
+        "NIXOS_CHANNEL": "unstable"
+      },
+      "type": "stdio",
+      "exposure": "codemode"
+    },
+    "sequential_thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "type": "stdio",
+      "exposure": "codemode"
+    },
+    "vault": {
+      "type": "http",
+      "url": "http://100.64.0.21:8282/mcp",
+      "exposure": "codemode"
+    },
+    "chrome-desktop": {
+      "command": "ssh",
+      "args": [
+        "-T",
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "ConnectTimeout=5",
+        "ammars-pc.lan",
+        "npx",
+        "-y",
+        "chrome-devtools-mcp@1.6.0",
+        "--browser-url=http://127.0.0.1:9222"
+      ],
+      "type": "stdio",
+      "exposure": "codemode"
+    }
+  }
+}

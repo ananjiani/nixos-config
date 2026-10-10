@@ -45,10 +45,9 @@ let
     '';
   };
 
-  # Pi ships built-in providers `kimi-coding` (api.kimi.com/coding) and
-  # `zai` (api.z.ai/api/anthropic) — see pi-mono packages/ai/src/models.generated.ts.
-  # We only need to supply apiKeys; the base URLs, model IDs, and auth
-  # flavors are already correct.
+  # Pi ships a built-in `kimi-coding` provider (api.kimi.com/coding) — see
+  # pi-mono packages/ai/src/models.generated.ts. We only need to supply the
+  # apiKey; the base URL, model IDs, and auth flavor are already correct.
   #
   # IMPORTANT: custom provider names that COLLIDE with or don't match
   # pi's built-in registry fall back to fuzzy model matching (e.g.
@@ -56,8 +55,8 @@ let
   # first try, yielding a 401 from HF's token auth). Always use exact
   # built-in provider ids to override, or use fully novel names.
   #
-  # Reuses /run/secrets/* already rendered by vault-agent for claude-kimi
-  # and claude-glm. Pi's "!cmd" apiKey form runs the cat at invocation
+  # Reuses /run/secrets/* already rendered by vault-agent for claude-kimi.
+  # Pi's "!cmd" apiKey form runs the cat at invocation
   # time, stripping trailing whitespace — key stays out of the env table
   # and rotates with vault-agent's lease.
   # Web access via small bash scripts on PATH. Mario's pitch is
@@ -689,6 +688,7 @@ let
   # The package asks before launching apps and six high-risk actions.
   # Screen reads, clicks, typing, and browser driving stay unprompted.
   piSettings = {
+    defaultTools = [ "+codemode" ];
     defaultProvider = "openai-codex";
     defaultModel = "gpt-6.1-sol";
     enabledModels =
@@ -697,7 +697,6 @@ let
           "xai-auth/grok-4.5"
           "xai-auth/grok-4.6"
           "xai-auth/grok-4.7"
-          "zai/glm-5.3"
           "opencode-go/minimax-m3"
           "opencode-go/deepseek-v4-pro"
           "opencode-go/deepseek-v4-flash"
@@ -705,7 +704,6 @@ let
         ];
         blockedPrefixes = [
           "kimi-coding/"
-          "zai/"
           "opencode-go/"
         ];
       in
@@ -724,7 +722,6 @@ let
       "git:github.com/mattpocock/skills"
       "git:github.com/aliceisjustplaying/pi-you-should-know"
       "git:github.com/aliceisjustplaying/pi-remember-last-model"
-      "npm:pi-mcp-adapter"
       "npm:@tintinweb/pi-subagents"
       {
         source = "git:github.com/anthropics/skills";
@@ -805,16 +802,12 @@ let
     // (
       if cfg.homelabProviders.enable then
         {
-          # Use pi's built-in kimi-coding + zai providers (see pi-mono
-          # packages/ai/src/models.generated.ts) — correct baseUrls, model
-          # ids, and API protocols already wired. We only supply apiKeys.
+          # Use pi's built-in kimi-coding provider (see pi-mono
+          # packages/ai/src/models.generated.ts) — correct baseUrl, model
+          # ids, and API protocol already wired. We only supply the apiKey.
           #
           # NOTE: kimi-coding uses anthropic-messages at api.kimi.com/coding
-          # (same as claude-kimi). zai uses openai-completions at
-          # api.z.ai/api/coding/paas/v4 — DIFFERENT from claude-glm, which
-          # speaks anthropic-messages at api.z.ai/api/anthropic. Pi doesn't
-          # need Anthropic-protocol-everywhere like Claude Code does, so
-          # the Coding-PaaS endpoint is the right default.
+          # (same as claude-kimi).
           #
           # `baseUrl` redeclaration is required: pi 0.68.1's model-registry
           # rejects override-only configs that don't declare one of baseUrl/
@@ -831,35 +824,13 @@ let
             };
           };
 
-          # z.ai's Coding-PaaS endpoint (openai-completions protocol).
-          # Different from claude-glm's api.z.ai/api/anthropic — pi doesn't
-          # need Anthropic-protocol-everywhere like Claude Code does, so the
-          # native PaaS endpoint is the right default.
-          # GLM-5.3: built-in direct-zai metadata lacks reasoning-level support
-          # (supportsReasoningEffort=false, no thinkingLevelMap). Official API
-          # supports low/high/max only and cannot disable thinking. Override
-          # context, maxTokens, thinkingLevelMap, and supportsReasoningEffort.
-          zai = {
-            apiKey = "!cat /run/secrets/zai_api_key";
-            baseUrl = "https://api.z.ai/api/coding/paas/v4";
-            modelOverrides."glm-5.3" = {
-              contextWindow = 1000000;
-              maxTokens = 131072;
-              thinkingLevelMap = {
-                off = null;
-                minimal = null;
-                low = "low";
-                medium = null;
-                high = "high";
-                xhigh = null;
-                max = "max";
-              };
-              compat.supportsReasoningEffort = true;
-            };
+          # OpenCode Zen classifiers use the same workspace key as Go.
+          opencode = {
+            apiKey = "!cat /run/secrets/opencode_api_key";
           };
 
           # OpenCode Go ($10/month) — pi's built-in opencode-go provider.
-          # Same !cat /run/secrets/* pattern as kimi-coding and zai.
+          # Same !cat /run/secrets/* pattern as kimi-coding.
           # Renders to /run/secrets/opencode_api_key by vault-agent
           # (see hosts/_profiles/workstation/configuration.nix).
           #
@@ -918,14 +889,13 @@ let
     ''}
     exec ${pkgs.llm-agents.pi}/bin/pi "$@"
   '';
-  # ─── Browser automation (chrome-devtools-mcp via pi-mcp-adapter) ─────────
+  # ─── Browser automation (chrome-devtools-mcp) ────────────────────────────
   #
-  # pi-mcp-adapter (nicopreme, `pi install npm:pi-mcp-adapter`) exposes MCP
-  # servers as ONE lazy proxy tool (~200 tokens) instead of registering every
-  # server's tools up-front — directly addresses Mario's MCP token-bloat
-  # objection ("what if you don't need MCP"). Servers start on first call,
-  # idle-disconnect; the agent does `mcp({ search: "screenshot" })` then
-  # `mcp({ tool: "...", args: '{}' })`.
+  # Pi's native MCP reads this mcp.json. Enabled servers connect in the
+  # background at session start; codemode exposure (the default) discovers
+  # their tools on demand via searchTools/describeTool/ALL_TOOLS instead of
+  # declaring them up-front. That is the same token-bloat fix Mario's
+  # "what if you don't need MCP" objection asks for, without pi-mcp-adapter.
   #
   # We drive chrome-devtools-mcp (Google) rather than @playwright/mcp here:
   # playwright-mcp bundles its own playwright-core which expects specific
@@ -941,9 +911,11 @@ let
   #
   # `${pkgs.nodejs}` and `${pkgs.chromium}` interpolate at BUILD time (JSON
   # can't interpolate at runtime). npx -y ...@latest mirrors the tavily-mcp
-  # pattern in claude-code.nix. lifecycle=lazy is the adapter default but
-  # stated for clarity. --headless = no visible window; drop it when you want
-  # eyes on the page while the agent drives it.
+  # pattern in claude-code.nix. --headless = no visible window; drop it when
+  # you want eyes on the page while the agent drives it.
+  #
+  # exposure=codemode is Pi's default for MCP servers; set explicitly here so
+  # the intent (script-only, not declared to the model) stays visible.
   piMcp = pkgs.writeText "mcp.json" (
     builtins.toJSON {
       mcpServers = {
@@ -956,7 +928,7 @@ let
             "--executable-path"
             "${pkgs.chromium}/bin/chromium"
           ];
-          lifecycle = "lazy";
+          exposure = "codemode";
         };
       }
       // lib.optionalAttrs (cfg.edgeDevtoolsUrl != null) {
@@ -969,7 +941,7 @@ let
             "--no-usage-statistics"
             "--no-performance-crux"
           ];
-          lifecycle = "lazy";
+          exposure = "codemode";
         };
       };
     }
@@ -1111,7 +1083,7 @@ in
       default = true;
       description = ''
         Include models.json provider entries that read vault-agent secrets
-        at /run/secrets/{kimi_code,zai,opencode}_api_key. Set false on
+        at /run/secrets/{kimi_code,opencode}_api_key. Set false on
         isolated hosts (e.g. Denethor); models.json then keeps always-on
         openai-codex only and has no /run/secrets strings. Settings also
         omit models backed by those unavailable providers. OAuth models

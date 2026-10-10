@@ -2,9 +2,9 @@
  * Custom Compaction — delegate summarization to a cheap model.
  *
  * Hooks session_before_compact and routes the summary call to
- * deepseek-v4-flash (opencode-go) with fallback to glm-5.3 (zai)
- * when the first model fails. Falls back to default compaction
- * only when both fail. Abort does not start the next model.
+ * deepseek-v4-flash (opencode-go). Falls back to native Pi compaction
+ * when the model call fails or returns an unusable response. Abort
+ * cancels compaction.
  */
 
 import { uuidv7, type Usage } from "@earendil-works/pi-ai";
@@ -58,7 +58,6 @@ async function tryCompactionModel(
 	prompt: string,
 	signal: AbortSignal,
 	ctx: ExtensionContext,
-	reasoningEffort?: "low",
 ): Promise<SummaryAttempt> {
 	if (signal.aborted) return "aborted";
 
@@ -82,7 +81,6 @@ async function tryCompactionModel(
 				signal,
 				cacheRetention: "none",
 				sessionId: uuidv7(),
-				...(reasoningEffort ? { reasoningEffort } : {}),
 			},
 		);
 
@@ -110,32 +108,24 @@ export default function (pi: ExtensionAPI) {
 		);
 		const prompt = buildPrompt(conversationText, previousSummary, customInstructions);
 
-		const attempts: Array<{ provider: string; modelId: string; reasoningEffort?: "low" }> = [
-			{ provider: "opencode-go", modelId: "deepseek-v4-flash" },
-			{ provider: "zai", modelId: "glm-5.3", reasoningEffort: "low" },
-		];
+		const result = await tryCompactionModel(
+			"opencode-go",
+			"deepseek-v4-flash",
+			prompt,
+			signal,
+			ctx,
+		);
+		if (result === "aborted") return { cancel: true };
+		if (!result) return;
 
-		for (const attempt of attempts) {
-			const result = await tryCompactionModel(
-				attempt.provider,
-				attempt.modelId,
-				prompt,
-				signal,
-				ctx,
-				attempt.reasoningEffort,
-			);
-			if (result === "aborted") return { cancel: true };
-			if (!result) continue;
-
-			ctx.ui.notify(`Compacted ${tokensBefore.toLocaleString()} tokens via ${result.modelName}`, "info");
-			return {
-				compaction: {
-					summary: result.text,
-					firstKeptEntryId,
-					tokensBefore,
-					usage: result.usage,
-				},
-			};
-		}
+		ctx.ui.notify(`Compacted ${tokensBefore.toLocaleString()} tokens via ${result.modelName}`, "info");
+		return {
+			compaction: {
+				summary: result.text,
+				firstKeptEntryId,
+				tokensBefore,
+				usage: result.usage,
+			},
+		};
 	});
 }

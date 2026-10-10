@@ -26,29 +26,19 @@ spec:
           secretKeyRef:
             name: holmesgpt-ai-secret
             key: deepseek-api-key
-      - name: ZAI_API_KEY
-        valueFrom:
-          secretKeyRef:
-            name: holmesgpt-ai-secret
-            key: zai-api-key
       - name: OPENCODE_API_KEY
         valueFrom:
           secretKeyRef:
             name: holmesgpt-ai-secret
             key: opencode-api-key
       - name: MODEL
-        value: zai-glm
+        value: opencode-kimi
 
     modelList:
       opencode-kimi:
         api_key: "{{ env.OPENCODE_API_KEY }}"
         api_base: "https://opencode.ai/zen/go/v1"
         model: openai/kimi-k2.6
-        temperature: 0.7
-      zai-glm:
-        api_key: "{{ env.ZAI_API_KEY }}"
-        api_base: "https://api.z.ai/api/coding/paas/v4"
-        model: openai/glm-5.3
         temperature: 0.7
 
     customClusterRoleRules:

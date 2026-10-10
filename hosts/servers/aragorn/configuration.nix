@@ -554,11 +554,6 @@ in
         field = "kimi-code-api-key";
         owner = "ammar";
       };
-      zai_api_key = {
-        path = "secret/llm/keys";
-        field = "zai-api-key";
-        owner = "ammar";
-      };
       tavily_api_key = {
         path = "secret/llm/keys";
         field = "tavily-api-key";

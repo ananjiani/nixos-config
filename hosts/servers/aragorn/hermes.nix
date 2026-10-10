@@ -611,7 +611,6 @@ in
         TELEGRAM_BOT_TOKEN={{ with secret "secret/data/nixos/hermes" }}{{ index .Data.data "bot_token" }}{{ end }}
         TELEGRAM_ALLOWED_USERS={{ with secret "secret/data/nixos/hermes" }}{{ index .Data.data "allowed_users" }}{{ end }}
         TELEGRAM_HOME_CHANNEL={{ with secret "secret/data/nixos/hermes" }}{{ index .Data.data "home_channel" }}{{ end }}
-        GLM_API_KEY={{ with secret "secret/data/llm/keys" }}{{ index .Data.data "zai-api-key" }}{{ end }}
       '';
       owner = "ammar";
       group = "hermes";
@@ -656,10 +655,6 @@ in
           default = "grok-4.7";
         };
         fallback_providers = [
-          {
-            provider = "zai";
-            model = "glm-5.3";
-          }
           {
             provider = "openai-codex";
             model = "gpt-6-sol";

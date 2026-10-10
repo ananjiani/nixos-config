@@ -36,8 +36,8 @@ Work directly ONLY when:
 - user explicitly says no subagents
 
 Every Agent call to scout/worker/reviewer MUST include a model. Pick from the
-matrix in the Agent tool description. Prefer high-quota models (Z.ai/GLM,
-OpenCode Go) within ~1 capability point of the best fit. GPT-6.1 Sol is the
+matrix in the Agent tool description. Prefer high-quota models (OpenCode Go)
+within ~1 capability point of the best fit. GPT-6.1 Sol is the
 main coordinator and default review lane. Use Grok 4.5 for fully specified
 workers and Grok 4.7 for investigative workers. GPT-6.1 Sol can handle hard,
 focused worker tasks; use Grok 4.7 to review its work. Reviewer and worker

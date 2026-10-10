@@ -13,7 +13,7 @@ let
   # ignores NODE_OPTIONS, so we run the package's reverse proxy
   # (proxy/server.mjs) as a user systemd service on 127.0.0.1:9801 and
   # point the default claude wrapper at it via ANTHROPIC_BASE_URL.
-  # claude-kimi/claude-glm set their own base URL and bypass the proxy.
+  # claude-kimi sets its own base URL and bypasses the proxy.
   # Runtime deps (hpagent, proper-lockfile) come from buildNpmPackage.
   # Upstream npm tarball has no package-lock.json — inject a generated one.
   claudeCacheFix =
@@ -119,8 +119,8 @@ let
 
   # Wrap native pkgs.claude-code so default invocations hit the localhost
   # cache-fix reverse proxy. Only set ANTHROPIC_BASE_URL when unset so
-  # claude-kimi / claude-glm (and any caller that sets its own endpoint)
-  # bypass the proxy. Restores `claude` binary name for
+  # claude-kimi (and any caller that sets its own endpoint) bypasses the
+  # proxy. Restores `claude` binary name for
   # programs.claude-code.package and ~/.local/bin/claude.
   claudeCodeWithCacheFix =
     let
@@ -137,14 +137,14 @@ let
       ln -s ${wrapper} $out/bin/claude
     '';
 
-  # Homelab-only alternate backends (vault-agent secrets + searxng.lan +
-  # z.ai MCP). Built only when referenced under
-  # claudeCode.homelabBackends.enable so portable hosts never embed them.
+  # Homelab-only alternate backends (vault-agent secrets + searxng.lan MCP).
+  # Built only when referenced under claudeCode.homelabBackends.enable so
+  # portable hosts never embed them.
   homelabBackends =
     let
       # Shim that reads the Tavily API key from vault-agent's runtime secret
       # at exec time, then execs the real MCP server. Keeps the secret out of
-      # the nix store and out of `ps` argv. Mirrors the claude-kimi/claude-glm
+      # the nix store and out of `ps` argv. Mirrors the claude-kimi
       # /run/secrets/... pattern.
       #
       # Tavily (via Cloudflare) rate-limits / blocks Mullvad exit IPs, so when
@@ -170,12 +170,7 @@ let
         fi
       '';
 
-      # MCP config templates. Both use `__ZAI_KEY__` as a sentinel for the
-      # z.ai Bearer token so the JSON can be built as a Nix attrset and
-      # materialised to the store at eval time. At runtime the wrapper
-      # does `sed "s|__ZAI_KEY__|$key|g"` into a mode-0600 temp file.
-
-      # Shared between both wrappers — Tavily + self-hosted SearXNG.
+      # Tavily + self-hosted SearXNG MCP config for claude-kimi.
       claudeAltMcpConfig = pkgs.writeText "claude-alt-mcp.json" (
         builtins.toJSON {
           mcpServers = {
@@ -197,53 +192,9 @@ let
           };
         }
       );
-
-      # Full config for claude-glm: Tavily + SearXNG + z.ai HTTP MCPs.
-      claudeGlmMcpTemplate = pkgs.writeText "claude-glm-mcp-template.json" (
-        builtins.toJSON {
-          mcpServers = {
-            tavily = {
-              command = "${tavilyMcpShim}";
-              args = [ ];
-            };
-            searxng = {
-              command = "${pkgs.nodejs}/bin/npx";
-              args = [
-                "-y"
-                "mcp-searxng"
-              ];
-              env = {
-                SEARXNG_URL = "https://searxng.lan";
-                NODE_TLS_REJECT_UNAUTHORIZED = "0";
-              };
-            };
-            web-reader = {
-              type = "http";
-              url = "https://api.z.ai/api/mcp/web_reader/mcp";
-              headers = {
-                Authorization = "Bearer __ZAI_KEY__";
-              };
-            };
-            web-search-prime = {
-              type = "http";
-              url = "https://api.z.ai/api/mcp/web_search_prime/mcp";
-              headers = {
-                Authorization = "Bearer __ZAI_KEY__";
-              };
-            };
-            zread = {
-              type = "http";
-              url = "https://api.z.ai/api/mcp/zread/mcp";
-              headers = {
-                Authorization = "Bearer __ZAI_KEY__";
-              };
-            };
-          };
-        }
-      );
     in
     {
-      inherit claudeAltMcpConfig claudeGlmMcpTemplate;
+      inherit claudeAltMcpConfig;
     };
 
   cfgBase = ./claude-code;
@@ -253,11 +204,11 @@ in
     type = lib.types.bool;
     default = true;
     description = ''
-      Enable homelab-only Claude Code alternate backends (claude-kimi,
-      claude-glm fish functions and their Tavily/SearXNG/z.ai MCP configs
-      that reference /run/secrets and searxng.lan). Portable default Claude
-      Code, cache-fix proxy, agents/commands/hooks stay enabled either way.
-      Set false on isolated hosts (e.g. Denethor).
+      Enable homelab-only Claude Code alternate backends (the claude-kimi
+      fish function and its Tavily/SearXNG MCP config that reference
+      /run/secrets and searxng.lan). Portable default Claude Code, cache-fix
+      proxy, agents/commands/hooks stay enabled either way. Set false on
+      isolated hosts (e.g. Denethor).
     '';
   };
 
@@ -347,14 +298,14 @@ in
         # proved unreliable in practice.
         #
         # Auth: Kimi Code `sk-kimi-*` keys are x-api-key style, so we use
-        # ANTHROPIC_API_KEY (NOT ANTHROPIC_AUTH_TOKEN / Bearer, which is
-        # what z.ai uses for claude-glm). API_TIMEOUT_MS is bumped because
-        # K2.6 produces deeper reasoning traces and longer agent plans.
+        # ANTHROPIC_API_KEY (NOT ANTHROPIC_AUTH_TOKEN / Bearer).
+        # API_TIMEOUT_MS is bumped because K2.6 produces deeper reasoning
+        # traces and longer agent plans.
         #
         # WebSearch is deny-listed and replaced with a Tavily + SearXNG MCP
         # bundle because Kimi Code doesn't implement Anthropic's server-side
         # web_search_20250305 tool. ENABLE_TOOL_SEARCH=false disables the
-        # ToolSearch beta for the same reason (same situation as claude-glm).
+        # ToolSearch beta for the same reason.
         #
         # Usage: claude-kimi [any claude args]
         claude-kimi = ''
@@ -377,61 +328,6 @@ in
               $argv
         '';
 
-        # Wrapper that routes Claude Code directly to z.ai's Anthropic-
-        # compatible endpoint using GLM-5.1. Bypasses Bifrost because
-        # Bifrost's /anthropic/v1/messages translates to the OpenAI
-        # Responses API, which z.ai doesn't implement (see claude-kimi
-        # comment above for the full story).
-        #
-        # z.ai requires Bearer auth, so we use ANTHROPIC_AUTH_TOKEN (sent
-        # as Authorization: Bearer …), NOT ANTHROPIC_API_KEY (x-api-key).
-        # API_TIMEOUT_MS is bumped per z.ai docs because GLM-5.1 is tuned
-        # for long-horizon agentic runs.
-        #
-        # WebSearch is deny-listed and replaced with a Tavily MCP (same
-        # reasoning as claude-kimi above). ENABLE_TOOL_SEARCH=false because
-        # z.ai doesn't implement Anthropic's ToolSearch beta either.
-        #
-        # Also wires three z.ai remote HTTP MCPs (all Bearer-auth'd with the
-        # same zai_api_key):
-        #   - web-reader: fetch/parse arbitrary URLs, complements Tavily's
-        #     search-only API. docs.z.ai/devpack/mcp/reader-mcp-server
-        #   - web-search-prime: z.ai native web search, returns titles/URLs/
-        #     summaries. docs.z.ai/devpack/mcp/search-mcp-server
-        #   - zread: read docs/code from GitHub-style repos via zread.ai.
-        #     docs.z.ai/devpack/mcp/zread-mcp-server
-        # The MCP config is a Nix-generated JSON template (claudeGlmMcpTemplate)
-        # with a __ZAI_KEY__ sentinel. At runtime the wrapper sed-replaces the
-        # sentinel into a mode-0600 temp file so the Bearer token never hits
-        # the nix store.
-        #
-        # Usage: claude-glm [any claude args]
-        claude-glm = ''
-          set -l key_file /run/secrets/zai_api_key
-          if not test -r $key_file
-            echo "claude-glm: $key_file not readable — is vault-agent configured for this host?" >&2
-            return 1
-          end
-          set -l zai_key (cat $key_file)
-          set -l mcp_config (mktemp -t claude-glm-mcp.XXXXXX.json)
-          chmod 600 $mcp_config
-          sed "s|__ZAI_KEY__|$zai_key|g" ${homelabBackends.claudeGlmMcpTemplate} > $mcp_config
-          env \
-            ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic \
-            ANTHROPIC_AUTH_TOKEN=$zai_key \
-            ANTHROPIC_DEFAULT_SONNET_MODEL=glm-5.1 \
-            ANTHROPIC_DEFAULT_OPUS_MODEL=glm-5.1 \
-            ANTHROPIC_DEFAULT_HAIKU_MODEL=glm-4.5-air \
-            API_TIMEOUT_MS=3000000 \
-            ENABLE_TOOL_SEARCH=false \
-            claude \
-              --mcp-config $mcp_config \
-              --disallowedTools WebSearch \
-              $argv
-          set -l rc $status
-          rm -f $mcp_config
-          return $rc
-        '';
       };
     })
   ];
