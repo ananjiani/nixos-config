@@ -535,7 +535,7 @@ in
           instanceUrl = "https://git.dimensiondoor.xyz";
           tokenFile = "/run/secrets/forgejo_token";
           webhookSecretFile = "/run/secrets/forgejo_webhook_secret";
-          oauthId = "3c068786-8f5c-44b6-abe8-153394049c91";
+          oauthId = "33ea8a24-6143-441f-af12-ac214a2048fe";
           oauthSecretFile = "/run/secrets/forgejo_oauth_secret";
           topic = "buildbot-nix";
         };
