@@ -11,7 +11,7 @@ This is a NixOS and Home Manager dotfiles repository that manages system configu
 - **Multi-Host Support**: Configurations for desktop, laptops, and Surface Go
 - **Secure Secrets**: SOPS-NIX integration for encrypted credentials
 - **Unified Theming**: Consistent colors and styles across applications
-- **CI/CD Automation**: Buildbot-nix on Theoden with Attic binary cache
+- **CI/CD Automation**: NixCI for this repo; Buildbot-nix on Theoden for private Forgejo projects; Attic binary cache
 - **Pre-commit Hooks**: Automatic formatting and linting with git-hooks.nix
 - **Dendritic Modules**: Aspect-oriented configuration using flake-parts and import-tree in `modules/dendritic/`
 
@@ -134,12 +134,12 @@ ssh root@boromir.lan comin resume
 - **Laptop Profile**: Common laptop configurations in `modules/home/profiles/laptop.nix`
 - **Wallpaper Module**: Centralized wallpaper management in `modules/home/config/wallpaper.nix`
 - **Pre-commit Hooks**: Automatic formatting (nixfmt), linting (statix), dead code removal (deadnix), and secret scanning (ripsecrets)
-- **CI/CD**: Buildbot-nix validates all configurations on push, caches builds to Attic binary cache
+- **CI/CD**: NixCI validates all configurations on push; Buildbot-nix builds private Forgejo repos (topic `buildbot-nix`) and fills Attic
 
 ### Repository & CI
 - **Primary**: Codeberg (https://codeberg.org/ananjiani/infra)
 - **Mirror**: GitHub (auto-synced via Codeberg push mirror)
-- **CI**: Buildbot-nix at https://ci.dimensiondoor.xyz
+- **CI**: NixCI for this repo; Buildbot-nix (LAN-only) at https://ci.dimensiondoor.xyz for git.dimensiondoor.xyz repos
 - **Binary Cache**: Attic at theoden.lan:8080 (middle-earth cache)
 
 ## Working with This Repository
@@ -237,8 +237,8 @@ Load-bearing repo gotchas — each is a hard-won lesson that silently breaks thi
 
 ### Deployment workflow
 
-- **`main` is production**: work on feature branches. Direct pushes are blocked; merge only after all required NixCI contexts (`configure`, `show x86_64-linux`, `build <flake attribute>`) succeed. Buildbot remains advisory only.
-- **Comin owns routine server deployment**: Buildbot checks/builds and fills Attic; it never activates hosts. Use deploy-rs only for recovery after suspending Comin.
+- **`main` is production**: work on feature branches. Direct pushes are blocked; merge only after all required NixCI contexts (`configure`, `show x86_64-linux`, `build <flake attribute>`) succeed. Buildbot no longer builds this repo.
+- **Comin owns routine server deployment**: CI checks/builds; it never activates hosts. Denethor gets no cache.nix-ci.com (no SOPS), so it builds dotfiles locally. Use deploy-rs only for recovery after suspending Comin.
 - **Testing branches are disposable targets**: use `testing-<hostname>` for a host test deployment. Do normal work on `feat/*` or `fix/*`, then promote the tested SHA to `main`.
 - **Full runbook**: read `docs/content/deployment.md` before changing CI, Comin, branch protection, desktop deployment, or recovery behavior.
 

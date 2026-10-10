@@ -1,0 +1,24 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: buildbot
+  namespace: buildbot
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Buildbot"
+    gethomepage.dev/group: "Development"
+    gethomepage.dev/icon: "buildbot.png"
+    gethomepage.dev/description: "Nix CI for Forgejo"
+    gethomepage.dev/href: "https://ci.dimensiondoor.xyz"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`ci.dimensiondoor.xyz`)
+      kind: Rule
+      services:
+        - name: buildbot-external
+          port: 8010
+  tls:
+    secretName: buildbot-tls
