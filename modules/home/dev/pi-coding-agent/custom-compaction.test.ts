@@ -183,6 +183,25 @@ test("missing model, exceptions, and empty text use native compaction", async ()
 	expect(empty.modelRegistry.find.mock.calls).toEqual([[FLASH_PROVIDER, FLASH_MODEL]]);
 });
 
+test("glm-5.3 is never requested even when present in registry", async () => {
+	const handler = loadHandler();
+	const flash = model(FLASH_MODEL);
+	// Real z.ai provider entry: routing must not fall back to it.
+	const glm = { ...model("glm-5.3"), provider: "zai" };
+	const requested: string[] = [];
+	const ctx = ctxFor(
+		async (...args: unknown[]) => {
+			requested.push((args[0] as { id: string }).id);
+			throw new Error("flash failed");
+		},
+		(provider, id) => (provider === FLASH_PROVIDER && id === FLASH_MODEL ? flash : glm),
+	);
+
+	expect(await handler(compactEvent(), ctx)).toBeUndefined();
+	expect(ctx.modelRegistry.find.mock.calls).toEqual([[FLASH_PROVIDER, FLASH_MODEL]]);
+	expect(requested).toEqual([FLASH_MODEL]);
+});
+
 test("cancellation cancels compaction without another model call", async () => {
 	const handler = loadHandler();
 	const find = findFlash(model(FLASH_MODEL));

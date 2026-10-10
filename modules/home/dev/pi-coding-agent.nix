@@ -689,8 +689,8 @@ let
   # Screen reads, clicks, typing, and browser driving stay unprompted.
   piSettings = {
     defaultTools = [ "+codemode" ];
-    defaultProvider = "openai-codex";
-    defaultModel = "gpt-6.1-sol";
+    defaultProvider = "claude-bridge";
+    defaultModel = "claude-opus-5-5";
     enabledModels =
       let
         all = [
@@ -701,6 +701,7 @@ let
           "opencode-go/deepseek-v4-pro"
           "opencode-go/deepseek-v4-flash"
           "openai-codex/gpt-6.1-sol"
+          "claude-bridge/claude-opus-5-5"
         ];
         blockedPrefixes = [
           "kimi-coding/"
@@ -722,6 +723,7 @@ let
       "git:github.com/mattpocock/skills"
       "git:github.com/aliceisjustplaying/pi-you-should-know"
       "git:github.com/aliceisjustplaying/pi-remember-last-model"
+      "npm:pi-claude-bridge@0.9.2"
       "npm:@tintinweb/pi-subagents"
       {
         source = "git:github.com/anthropics/skills";
@@ -738,7 +740,7 @@ let
     ]
     ++ lib.optional cfg.computerUse.blockForegroundInput "${piForegroundInputGuard}";
     hideThinkingBlock = false;
-    defaultThinkingLevel = "high";
+    defaultThinkingLevel = "medium";
   }
   // lib.optionalAttrs cfg.computerUse.enable {
     "pi-computer-use" = {
@@ -889,6 +891,34 @@ let
     ''}
     exec ${pkgs.llm-agents.pi}/bin/pi "$@"
   '';
+  # Bypass the user's cache-fix/proxy wrapper and Claude settings/hooks.
+  # Keep runtime/auth state available; Pi owns instructions and tools.
+  claudeBridgeExecutable = pkgs.writeShellScript "claude-bridge-isolated" ''
+    set -eu
+    for name in "''${!ANTHROPIC_@}"; do
+      unset "$name"
+    done
+    unset CLAUDE_CODE_USE_BEDROCK CLAUDE_CODE_USE_VERTEX CLAUDE_CODE_USE_FOUNDRY
+    unset API_TIMEOUT_MS ENABLE_TOOL_SEARCH
+    export CLAUDE_CODE_DISABLE_AUTO_MEMORY=1
+    exec ${pkgs.claude-code}/bin/claude --setting-sources "" "$@"
+  '';
+
+  piClaudeBridgeConfig = pkgs.writeText "pi-claude-bridge.json" (
+    builtins.toJSON {
+      provider = {
+        pathToClaudeCodeExecutable = "${claudeBridgeExecutable}";
+        # The bridge still ignores this setting; the wrapper enforces it.
+        settingSources = [ ];
+        strictMcpConfig = true;
+        plan = "max";
+      };
+      askClaude.enabled = false;
+      # Suppress the one-time notice without writing to the read-only store config.
+      startupNoticeShown = "2026-10-09";
+    }
+  );
+
   # ─── Browser automation (chrome-devtools-mcp) ────────────────────────────
   #
   # Pi's native MCP reads this mcp.json. Enabled servers connect in the
@@ -1217,6 +1247,7 @@ in
         ".pi/agent/subagents.json".source =
           config.lib.file.mkOutOfStoreSymlink "${piUserDir}/subagents.json";
         ".pi/agent/pi-sense.json".source = config.lib.file.mkOutOfStoreSymlink "${piUserDir}/pi-sense.json";
+        ".pi/agent/claude-bridge.json".source = piClaudeBridgeConfig;
         ".pi/agent/mcp.json".source = piMcp;
         ".pi/agent/themes/gruvbox-material.json".source = piTheme;
       };
