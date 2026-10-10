@@ -142,29 +142,19 @@ in
         field = "worker_password_plain";
         owner = "buildbot-worker";
       };
-      codeberg_token = {
-        path = "secret/nixos/codeberg";
+      forgejo_token = {
+        path = "secret/nixos/forgejo-buildbot";
         field = "token";
         owner = "buildbot";
       };
-      codeberg_webhook_secret = {
-        path = "secret/nixos/codeberg";
+      forgejo_webhook_secret = {
+        path = "secret/nixos/forgejo-buildbot";
         field = "webhook_secret";
         owner = "buildbot";
       };
-      codeberg_oauth_secret = {
-        path = "secret/nixos/codeberg";
+      forgejo_oauth_secret = {
+        path = "secret/nixos/forgejo-buildbot";
         field = "oauth_secret";
-        owner = "buildbot";
-      };
-      github_app_secret = {
-        path = "secret/nixos/github";
-        field = "app_secret";
-        owner = "buildbot";
-      };
-      github_webhook_secret = {
-        path = "secret/nixos/github";
-        field = "webhook_secret";
         owner = "buildbot";
       };
       cloudflared_tunnel_creds = {
@@ -519,7 +509,7 @@ in
       };
     };
 
-    # Buildbot-nix CI/CD (Codeberg/Gitea + GitHub)
+    # Buildbot-nix CI/CD for the private LAN Forgejo (served via k8s Traefik, not the tunnel)
     buildbot-nix = {
       packages = {
         inherit (fixedBuildbotPackages)
@@ -542,21 +532,14 @@ in
         buildMaxSilentTime = 3600;
         gitea = {
           enable = true;
-          instanceUrl = "https://codeberg.org";
-          tokenFile = "/run/secrets/codeberg_token";
-          webhookSecretFile = "/run/secrets/codeberg_webhook_secret";
+          instanceUrl = "https://git.dimensiondoor.xyz";
+          tokenFile = "/run/secrets/forgejo_token";
+          webhookSecretFile = "/run/secrets/forgejo_webhook_secret";
           oauthId = "3c068786-8f5c-44b6-abe8-153394049c91";
-          oauthSecretFile = "/run/secrets/codeberg_oauth_secret";
+          oauthSecretFile = "/run/secrets/forgejo_oauth_secret";
           topic = "buildbot-nix";
         };
-        github = {
-          enable = true;
-          appId = 2918119;
-          appSecretKeyFile = "/run/secrets/github_app_secret";
-          webhookSecretFile = "/run/secrets/github_webhook_secret";
-          topic = "buildbot-nix";
-        };
-        admins = [ "ananjiani" ];
+        admins = [ "ammar" ];
         # Disable GC root registration — buildbot builds are pushed to Attic
         # binary cache, so full closures don't need to be pinned on local disk.
         branches = {
@@ -601,7 +584,6 @@ in
           default = "http_status:404";
           ingress = {
             "attic.dimensiondoor.xyz" = "http://localhost:8080";
-            "ci.dimensiondoor.xyz" = "http://localhost:8010";
             "voicemail.dimensiondoor.xyz" = {
               service = "https://192.168.1.52";
               originRequest.noTLSVerify = true; # Internal traffic, skip cert validation

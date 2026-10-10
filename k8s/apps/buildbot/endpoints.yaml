@@ -1,0 +1,12 @@
+---
+# External endpoints pointing to Buildbot on theoden
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: buildbot-external
+  namespace: buildbot
+subsets:
+  - addresses:
+      - ip: 192.168.1.27
+    ports:
+      - port: 8010

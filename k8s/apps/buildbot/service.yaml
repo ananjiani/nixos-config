@@ -1,0 +1,11 @@
+---
+# Headless service pointing to Buildbot on theoden
+apiVersion: v1
+kind: Service
+metadata:
+  name: buildbot-external
+  namespace: buildbot
+spec:
+  ports:
+    - port: 8010
+      targetPort: 8010

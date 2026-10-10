@@ -70,10 +70,6 @@ in
             url = "https://ts.dimensiondoor.xyz/health";
           })
           (mkEndpoint {
-            name = "Buildbot CI";
-            url = "https://ci.dimensiondoor.xyz/";
-          })
-          (mkEndpoint {
             name = "Attic binary cache";
             url = "https://attic.dimensiondoor.xyz/middle-earth/nix-cache-info";
           })

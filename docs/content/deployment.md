@@ -35,7 +35,6 @@ Operator guide for how code reaches hosts. Rationale lives in
           +--> NixCI: build every flake output, fill cache.nix-ci.com,
           |    publish the required commit statuses
           |
-          +--> Buildbot: advisory eval + build + status (A/B comparison)
           |    Attic watcher: upload outputs asynchronously
           |    (none of these activate a host)
           |
@@ -50,7 +49,6 @@ Operator guide for how code reaches hosts. Rationale lives in
 | Role | What it does | What it never does |
 | --- | --- | --- |
 | Codeberg `main` / PRs | Source of truth. Direct push to `main` is blocked. PRs to `main` use squash merges. | Host activation |
-| Buildbot | Advisory checks and builds for A/B comparison and private projects | Required merge status; deploy / SSH activate |
 | Attic (`middle-earth`) | Store watcher uploads outputs asynchronously; hosts use this warm binary cache | Decide what is live |
 | Comin (7 servers) | Polls Codeberg, builds/substitutes, `switch` on `main`, `test` on `testing-<host>` | Auto health rollback |
 | Comin NixCI gate (6 SOPS servers) | After eval, confirm `build` only if the output is not already local; confirm `deploy` for every actual activation, including local-ready outputs. NixCI green + root narinfo (or cache down). Not a full-closure guarantee. | Blanket `comin confirmation accept`; Codeberg/Buildbot status |
@@ -58,7 +56,7 @@ Operator guide for how code reaches hosts. Rationale lives in
 
 Required PR checks: every NixCI context for the flake — `configure`, `show x86_64-linux`, and one `build <flake attribute>` per built output (22 at the time of writing). The exact live list is the set of Codeberg commit-status contexts that do not start with `buildbot/` or `operator/` and contain no `/`. Never use a wildcard pattern: Forgejo glob protection passes once already-published statuses are green and does not wait for missing jobs, so a partially published suite merges prematurely.
 
-Buildbot stays enabled on this repo (`buildbot-nix` topic) but is advisory — for A/B comparison and private projects.
+Buildbot no longer builds this repo; it only serves private projects on the LAN Forgejo (`git.dimensiondoor.xyz`).
 
 When you add a flake check/package/devShell output, NixCI publishes a new `build <attribute>` context on the next run. Add it to the required list or it merges ungated; if you remove an output, remove its context or every merge stays pending. Update the protection with the pipeline below after the merge that adds or removes outputs:
 
@@ -84,7 +82,7 @@ succeeded with warnings. Do not block a merge on eval alone.
 2. Open a PR to `main`.
 3. Wait for all NixCI `build <attribute>` contexts (plus `configure` and `show x86_64-linux`) to succeed on the PR head. The separate Attic upload may still be finishing.
 4. Squash-merge. An outdated PR can still merge without conflicts after that required head check passes.
-5. Buildbot checks the new squash commit on `main`. That SHA is what hosts consume — not the old PR head.
+5. NixCI checks the new squash commit on `main`. That SHA is what hosts consume — not the old PR head.
 6. Servers: Comin polls (~1 minute) and evaluates. The six SOPS servers wait for the NixCI gate before build (if the output is not already local) and before deploy; Denethor builds immediately. Then switch (or test).
 7. Desktop (`ammars-pc`): waits for Aragorn's **04:30** local timer and a green NixCI suite (exact commit/ref match, every run `success`/`cached`) on that exact `main` SHA. No midday catch-up.
 
@@ -355,7 +353,7 @@ journalctl -u ammars-pc-deploy.service
 - All **7** Comin servers track `main`; exporters are healthy (including
   Erebor via Tailscale and Denethor via the Work VLAN metrics pinhole).
 - Buildbot deploy hook / fleet key removed — CI builds and caches only.
-- Codeberg requires all NixCI contexts for `main` (no wildcards), allows mergeable outdated PRs, and defaults to squash merge. Buildbot is advisory.
+- Codeberg requires all NixCI contexts for `main` (no wildcards), allows mergeable outdated PRs, and defaults to squash merge.
 - Desktop active/unlocked skip path and new ntfy wording are confirmed.
 - Docs/k8s-only pre-WOL filter is implemented in
   `hosts/servers/aragorn/configuration.nix` but **not live** until that change

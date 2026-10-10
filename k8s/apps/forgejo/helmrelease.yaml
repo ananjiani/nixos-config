@@ -74,6 +74,10 @@ spec:
         actions:
           ENABLED: true
 
+        # Buildbot (ci.dimensiondoor.xyz) resolves to the LAN Traefik IP; the default "external" blocks it.
+        webhook:
+          ALLOWED_HOST_LIST: ci.dimensiondoor.xyz
+
       # Authentik OAuth2 provider
       oauth:
         - name: authentik
