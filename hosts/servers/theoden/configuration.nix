@@ -573,7 +573,7 @@ in
     ]);
     buildbot-master.reporters = [ "reporters.Prometheus(port=9101)" ];
 
-    # Cloudflare Tunnel for external access (webhooks, binary cache)
+    # Cloudflare Tunnel for external access (webhooks)
     cloudflared = {
       enable = true;
       tunnels = {
@@ -583,7 +583,6 @@ in
           edgeIPVersion = "6";
           default = "http_status:404";
           ingress = {
-            "attic.dimensiondoor.xyz" = "http://localhost:8080";
             "voicemail.dimensiondoor.xyz" = {
               service = "https://192.168.1.52";
               originRequest.noTLSVerify = true; # Internal traffic, skip cert validation

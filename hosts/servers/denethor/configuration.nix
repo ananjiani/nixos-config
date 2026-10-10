@@ -2,10 +2,10 @@
 #
 # Employer-approved workstation, deliberately isolated from the homelab:
 # no Tailscale, no OpenBao/vault-agent, no SOPS secrets, no k3s/AdGuard,
-# no LAN CA trust, no LAN Attic cache. One deliberate exception: HTTPS to
-# SearXNG's k3s ingress VIP (OPNsense pass rule + pinned /32 below), kept
-# off the work VPN's full-tunnel default route so nothing homelab-bound
-# ever enters tun0. It sits on VLAN 30 (10.30.30.0/24)
+# no LAN CA trust, no LAN Attic cache (NixCI cache via a hand-placed
+# netrc). One deliberate exception: HTTPS to SearXNG's k3s ingress VIP
+# (OPNsense pass rule + pinned /32 below), kept off the work VPN's
+# full-tunnel default route so nothing homelab-bound ever enters tun0. It sits on VLAN 30 (10.30.30.0/24)
 # and reaches the internet straight through WAN (not the router's Mullvad
 # policy route) so Cisco AnyConnect and its SAML MFA flow see a normal
 # residential IP.
@@ -138,14 +138,20 @@
   };
 
   # Public caches only: theoden.lan (LAN Attic) is unreachable from VLAN 30
-  # and a dead substituter stalls every build. Public Attic is HTTPS and does
-  # not require LAN CA, Tailscale, or theoden.lan.
-  nix.settings.substituters = lib.mkForce [
-    "https://cache.nixos.org"
-    "https://nix-community.cachix.org"
-    "https://claude-code.cachix.org"
-    "https://attic.dimensiondoor.xyz/middle-earth?priority=10"
-  ];
+  # and a dead substituter stalls every build. NixCI builds nixos-denethor, so
+  # its cache replaces the old public Attic endpoint.
+  # No SOPS here: /etc/nix/nix-ci-netrc (root 0400) is placed by hand. Without
+  # it, `fallback = true` just builds locally.
+  nix.settings = {
+    substituters = lib.mkForce [
+      "https://cache.nix-ci.com?priority=5"
+      "https://cache.nixos.org"
+      "https://nix-community.cachix.org"
+      "https://claude-code.cachix.org"
+    ];
+    extra-trusted-public-keys = [ "nix-ci:g3xV5BDTLtIBZr/A00IU1x0EtKKlb7YLgBN2SgYgM6A=" ];
+    netrc-file = "/etc/nix/nix-ci-netrc";
+  };
 
   # Do not trust the homelab LAN CA — this host must not accept homelab-issued
   # certificates for any name.

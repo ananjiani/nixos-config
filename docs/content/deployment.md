@@ -117,7 +117,7 @@ rebuilding from scratch.
 | `theoden` | Comin | Attic cache host |
 | `rivendell` | Comin | No Tailscale |
 | `erebor` | Comin | Exporter scraped via Tailscale (`100.64.0.21:4243`), not public |
-| `denethor` | Comin (no NixCI gate) | Work VLAN; metrics-only OPNsense pinhole to TCP 4243. Ungated: no SOPS NixCI netrc. |
+| `denethor` | Comin (no NixCI gate) | Work VLAN; metrics-only OPNsense pinhole to TCP 4243. Ungated. Substitutes from cache.nix-ci.com via a hand-placed `/etc/nix/nix-ci-netrc` (no SOPS). |
 | `ammars-pc` | Aragorn deploy-rs @ 04:30 | Standalone Home Manager; local `nh home switch` stays the fast loop |
 
 ## Server behavior (Comin)

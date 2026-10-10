@@ -71,7 +71,12 @@ in
           })
           (mkEndpoint {
             name = "Attic binary cache";
-            url = "https://attic.dimensiondoor.xyz/middle-earth/nix-cache-info";
+            # Tailscale, not public: Attic is no longer behind Cloudflare.
+            url = "http://100.64.0.3:8080/middle-earth/nix-cache-info";
+            conditions = [
+              "[STATUS] == 200"
+              "[RESPONSE_TIME] < 5000"
+            ];
           })
           (mkEndpoint {
             name = "Voicemail receiver";

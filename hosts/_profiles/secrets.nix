@@ -1,7 +1,7 @@
 # Secrets infrastructure — SOPS bootstrap, vault-agent, Attic, and NixCI cache
 #
 # Imported by server and workstation profiles and steamdeck.
-# Not used by the ISO, WSL, or denethor (no SOPS; do not leak cache.nix-ci.com).
+# Not used by the ISO, WSL, or denethor (no SOPS; denethor sets up NixCI itself).
 {
   config,
   lib,
@@ -64,6 +64,7 @@
       "nix-community.cachix.org-1"
       "hyprland.cachix.org-1"
       "pre-commit-hooks.cachix.org-1"
+      "nix-ci" # skip paths already in cache.nix-ci.com
     ];
   };
 }

@@ -9,12 +9,12 @@ let
   cfg = config.services.attic-watch-store;
   hostname = config.networking.hostName;
   # Use localhost if we're on theoden (where atticd runs),
-  # Cloudflare Tunnel for erebor (can't reach theoden.lan), otherwise theoden.lan
+  # theoden's Tailscale IP for erebor (can't reach theoden.lan), otherwise theoden.lan
   endpoint =
     if hostname == "theoden" then
       "http://localhost:8080"
     else if hostname == "erebor" then
-      "https://attic.dimensiondoor.xyz"
+      "http://100.64.0.3:8080"
     else
       "http://theoden.lan:8080";
 in

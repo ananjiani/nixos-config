@@ -172,9 +172,9 @@
     restic-backups-openbao-offsite.after = [ "vault-agent-default.service" ];
   };
 
-  # Public Attic over Cloudflare. Erebor has no LAN path to theoden.lan;
-  # Comin substitutes from this endpoint the same way Buildbot-warmed builds do.
-  nix.settings.extra-substituters = [ "https://attic.dimensiondoor.xyz/middle-earth?priority=10" ];
+  # Attic over Tailscale (theoden). Erebor has no LAN path to theoden.lan, and
+  # Attic is no longer published through Cloudflare. Tailscale encrypts the hop.
+  nix.settings.extra-substituters = [ "http://100.64.0.3:8080/middle-earth?priority=10" ];
 
   # Boot: GRUB for BIOS boot (Hetzner CX-series uses SeaBIOS)
   # Device is set automatically by disko via the EF02 partition

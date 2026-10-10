@@ -242,17 +242,6 @@ resource "cloudflare_dns_record" "collie" {
 # Cloudflare Tunnel Services
 # =============================================================================
 
-# Attic binary cache (via Cloudflare Tunnel for GitHub Actions)
-resource "cloudflare_dns_record" "attic" {
-  zone_id = local.zone_id
-  name    = "attic"
-  content = "b33ec739-7324-4c6f-b6fa-daedbe0828c8.cfargotunnel.com"
-  type    = "CNAME"
-  proxied = true # Must be proxied for Cloudflare Tunnel
-  ttl     = 1    # Auto when proxied
-  comment = "Attic binary cache (Cloudflare Tunnel) - managed by Terraform"
-}
-
 # Buildbot CI/CD for private Forgejo (internal only)
 resource "cloudflare_dns_record" "buildbot" {
   zone_id = local.zone_id
