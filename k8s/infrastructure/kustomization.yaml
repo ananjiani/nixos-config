@@ -9,3 +9,4 @@ resources:
   - controllers/traefik
   - controllers/k8sgpt
   - controllers/external-secrets
+  - controllers/coredns-custom

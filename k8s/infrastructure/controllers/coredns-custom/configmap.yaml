@@ -1,0 +1,17 @@
+---
+# k3s imports *.server keys from this ConfigMap into CoreDNS.
+# Send dimensiondoor.xyz only to AdGuard: OPNsense (the other node resolver)
+# rebind-protects public names with LAN IPs and returns an empty answer, which
+# broke Forgejo -> Buildbot webhooks at random.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  dimensiondoor.server: |
+    dimensiondoor.xyz:53 {
+      errors
+      cache 30
+      forward . 192.168.1.53
+    }
