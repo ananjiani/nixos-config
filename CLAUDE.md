@@ -207,6 +207,10 @@ Load-bearing repo gotchas — each is a hard-won lesson that silently breaks thi
 - **NEVER `nix run home-manager -- switch`**: it builds from its own flake (not the repo's) and produces a broken generation with almost no packages. Always `nh home switch`.
 - **File clobbering on `nh home switch`** (standalone HM — no `backupFileExtension`): before switching, manually `mv` any files HM reports would be clobbered (common repeaters: `~/.mozilla/firefox/profiles.ini`, `~/.config/atuin/config.toml`, `~/.local/share/applications/mimeapps.list`, `~/.pi/agent/settings.json`).
 
+### Public repo privacy
+
+- **This repo, its PRs, and its GitHub mirror are public.** Never name or describe private projects on the LAN Forgejo (`git.dimensiondoor.xyz`), their repos, or their contents in code, comments, commit messages, PR titles/bodies, or docs. Write generically ("private Forgejo repos"). A force-push does not undo a leak: Codeberg keeps PR description edit history and both forges keep old commits reachable by SHA.
+
 ### Tooling
 
 - Use `tofu` (OpenTofu, devshell ships 1.11.5), NOT `terraform`.

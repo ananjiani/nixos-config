@@ -89,6 +89,18 @@ in
     ./rclone-webdav.nix
   ];
 
+  # Buildbot evals fetch private flake inputs over SSH
+  # as buildbot-worker. Key belongs to Forgejo user ammar, so all repos resolve.
+  programs.ssh = {
+    knownHosts."ssh.git.dimensiondoor.xyz".publicKey =
+      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDlC+h+HatRDvIf7Pch5Ll9z4IHbsFK6yLY8ALIXNNIER+tWkmpipsr7ZTKF9eXwUeaYFwZvmb4ktyKXc2/CEmWPXO3D7+99fWOXPf0TNQrG68l2B4SkoEveTguezCSEpNuJWRo7U95yyvHJqBOT++G6cu08Lm7bvcSX/v7l8RbA7k3xNg9ipf+TOY5DwoTqbCasK/VysDhAw65RS/E2cuASVAgwIzCBuLzbfdIQ6y1GlJPAYWEmc0ni+hP7Ssrf+Iy4gTPy5nBRE0K2IV3WkckWmpSrtdCiJKkc94dMiRng0Fpyk+rTNXQLOBQAFZ/T5sIXI2/LhH3OxpwcczpuLUCF0GBuLyaVowVrGyPm6PNcteLFlMLzRVNjgXXjy7TM020YsyagzIqlU0Yjp4c9qnfJyQduye+ub0/kfcTE0y33N1fC9sYvlnSmYXC1rIw4VQgDTb/5BWkP+knjifLUeygrQWqXhNF5E2UHwu9h/UYTQiV5nau4XuagLyJAO39K/rJ6B+TFK/l59aDEnXWKsg/5dCfHP7SNux64OqjtWXW0uQ7LpL1wTe2zEu+dOH7D9+P/SV3JaEKrR1Em26ZxN3VKvlYPnOEYiVpFKbfyuS46Hrx+lUh/Z9xcwDoeuhuc6ikk3GSmMVSSV4f1wh4PqOMS/02QbVHin7CetK2MK8s9w=="; # pragma: allowlist secret (public host key)
+    extraConfig = ''
+      Match host ssh.git.dimensiondoor.xyz localuser buildbot-worker
+        IdentityFile /run/secrets/forgejo_ssh_key
+        IdentitiesOnly yes
+    '';
+  };
+
   networking = {
     hostName = "theoden";
     firewall = {
@@ -156,6 +168,11 @@ in
         path = "secret/nixos/forgejo-buildbot";
         field = "oauth_secret";
         owner = "buildbot";
+      };
+      forgejo_ssh_key = {
+        path = "secret/nixos/forgejo-buildbot";
+        field = "ssh_key";
+        owner = "buildbot-worker";
       };
       cloudflared_tunnel_creds = {
         path = "secret/nixos/cloudflared";
