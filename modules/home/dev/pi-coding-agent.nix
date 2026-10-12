@@ -1228,7 +1228,12 @@ in
         # cua-driver 0.9.0 types via wtype on native Wayland.
         pkgs.wtype
       ];
-      sessionVariables.PI_CACHE_RETENTION = "long";
+      sessionVariables = {
+        PI_CACHE_RETENTION = "long";
+        # YSK reuses the main model by default; via claude-bridge that injects its
+        # side prompt into the live Claude Code session. Route checks to Sol instead.
+        YSK_MODEL = "openai-codex/gpt-6.1-sol";
+      };
       file = {
         ".pi/agent/extensions".source =
           if cfg.homelabExtensions.enable then
