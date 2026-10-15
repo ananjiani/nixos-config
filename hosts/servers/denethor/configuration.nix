@@ -244,6 +244,13 @@
           ../../_profiles/essentials/home.nix
           ../../_profiles/dev/home.nix
         ];
+
+        # Terminal Doom Emacs
+        doom-emacs = {
+          enable = true;
+          variant = "nox";
+        };
+
         piCodingAgent = {
           # web-search uses searxng.lan via the pinned /32 + firewall pinhole
           # (module default URL). Tavily stays off: no vault-agent here.
