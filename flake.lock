@@ -327,11 +327,11 @@
     "doom-config": {
       "flake": false,
       "locked": {
-        "lastModified": 1790796353,
-        "narHash": "sha256-9Xvaaf/4uo+UXRdiaAyqquI0j5kEQbSS9678loAs0ds=",
+        "lastModified": 1792095164,
+        "narHash": "sha256-7LpLkCIRZZE4LLU4tbtDNxvbfkatlRxyPXlD2ez/ZUU=",
         "owner": "ananjiani",
         "repo": "doom-emacs",
-        "rev": "0d06f86722894317add11c6a87716240dd1a38af",
+        "rev": "f22c7ba1d8f3d21d529b30c17dea0b4d10aef71f",
         "type": "github"
       },
       "original": {
