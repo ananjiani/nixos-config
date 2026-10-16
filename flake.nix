@@ -331,6 +331,7 @@
           modules = [
             ./hosts/servers/denethor/configuration.nix
             inputs.disko.nixosModules.disko
+            inputs.sops-nix.nixosModules.sops
             # Overlays for agent packages; portable HM is embedded in the host module
             {
               nixpkgs.overlays = [

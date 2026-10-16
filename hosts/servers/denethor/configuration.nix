@@ -1,7 +1,7 @@
 # Denethor - Work VM (Proxmox VM on gondor, Work VLAN 30)
 #
 # Employer-approved workstation, deliberately isolated from the homelab:
-# no Tailscale, no OpenBao/vault-agent, no SOPS secrets, no k3s/AdGuard,
+# no Tailscale, no OpenBao/vault-agent (SOPS only, for the Pi OpenCode key), no k3s/AdGuard,
 # no LAN CA trust, no LAN Attic cache (NixCI cache via a hand-placed
 # netrc). One deliberate exception: HTTPS to SearXNG's k3s ingress VIP
 # (OPNsense pass rule + pinned /32 below), kept off the work VPN's
@@ -120,6 +120,17 @@
     };
   };
 
+  # SOPS only (no Tailscale → no OpenBao/vault-agent), like rivendell.
+  # Age key at /var/lib/sops-nix/key.txt was placed by hand.
+  sops = {
+    defaultSopsFile = ../../../secrets/secrets.yaml;
+    age.keyFile = "/var/lib/sops-nix/key.txt";
+    secrets.opencode_api_key = {
+      owner = "ammar";
+      mode = "0400";
+    };
+  };
+
   # NM needs the user in networkmanager for GUI/VPN control; merge with base
   # wheel + dialout (list concat, does not replace).
   users.users.ammar.extraGroups = [ "networkmanager" ];
@@ -227,8 +238,9 @@
   };
 
   # Portable embedded HM only — essentials + dev. No server profile, no sops,
-  # no tea, no homelab Herdr plugins. Homelab Claude backends + Pi secret
-  # providers/extensions + searxng.lan + npm management are all off. Pi
+  # no tea, no homelab Herdr plugins. Homelab Claude backends + homelab Pi
+  # extensions + npm management are off; Pi secret providers are on (the
+  # OpenCode key comes from system SOPS above). Pi
   # settings/extensions become immutable filtered store paths here; other
   # Pi/Herdr paths still need a ~/.dotfiles checkout (encrypted secret files
   # may be present but are not decrypted here).
@@ -248,7 +260,7 @@
           # web-search uses searxng.lan via the pinned /32 + firewall pinhole
           # (module default URL). Tavily stays off: no vault-agent here.
           tavilyKeyFile = null;
-          homelabProviders.enable = false; # no secret-backed providers; filtered model list
+          homelabProviders.enable = true; # opencode key via SOPS; kimi unused (no key here)
           homelabExtensions.enable = false; # drop nvidia-nim + usage-tracker
           edgeDevtoolsUrl = "http://127.0.0.1:9222";
           computerUse = {
