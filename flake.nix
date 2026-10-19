@@ -314,6 +314,7 @@
             inputs.sops-nix.nixosModules.sops
             inputs.disko.nixosModules.disko
             inputs.hermes-agent.nixosModules.default
+            { home-manager.sharedModules = [ self._modules.homeManager.doom-emacs ]; }
             # Overlays for the dev/agent home modules (servers use the HM
             # NixOS module with global pkgs, so these must be system-level)
             {
@@ -332,6 +333,7 @@
             ./hosts/servers/denethor/configuration.nix
             inputs.disko.nixosModules.disko
             inputs.sops-nix.nixosModules.sops
+            { home-manager.sharedModules = [ self._modules.homeManager.doom-emacs ]; }
             # Overlays for agent packages; portable HM is embedded in the host module
             {
               nixpkgs.overlays = [

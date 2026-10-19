@@ -242,7 +242,7 @@ Load-bearing repo gotchas — each is a hard-won lesson that silently breaks thi
 ### Deployment workflow
 
 - **`main` is production**: work on feature branches. Direct pushes are blocked; merge only after all required NixCI contexts (`configure`, `show x86_64-linux`, `build <flake attribute>`) succeed. Buildbot no longer builds this repo.
-- **Comin owns routine server deployment**: CI checks/builds; it never activates hosts. Denethor gets no cache.nix-ci.com (no SOPS), so it builds dotfiles locally. Use deploy-rs only for recovery after suspending Comin.
+- **Comin owns routine server deployment**: CI checks/builds; it never activates hosts. Denethor substitutes from cache.nix-ci.com via a hand-placed `/etc/nix/nix-ci-netrc`, but Comin there is ungated, so it may build locally if it polls before NixCI pushes. Use deploy-rs only for recovery after suspending Comin.
 - **Testing branches are disposable targets**: use `testing-<hostname>` for a host test deployment. Do normal work on `feat/*` or `fix/*`, then promote the tested SHA to `main`.
 - **Full runbook**: read `docs/content/deployment.md` before changing CI, Comin, branch protection, desktop deployment, or recovery behavior.
 

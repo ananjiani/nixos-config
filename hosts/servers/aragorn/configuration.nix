@@ -611,6 +611,12 @@ in
         ../../../modules/home/org-roam-sync.nix
       ];
 
+      # Terminal Doom Emacs (headless devbox)
+      doom-emacs = {
+        enable = true;
+        variant = "nox";
+      };
+
       sops = {
         age.keyFile = "/home/ammar/.config/sops/age/keys.txt";
         defaultSopsFile = ../../../secrets/secrets.yaml;
