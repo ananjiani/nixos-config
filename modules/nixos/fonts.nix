@@ -11,6 +11,8 @@
     hack-font
     emacs-all-the-icons-fonts
     liberation_ttf
+    carlito # metric-compatible Calibri
+    caladea # metric-compatible Cambria
     inter
     ia-writer-duospace
     etBook
