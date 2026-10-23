@@ -58,7 +58,6 @@ in
 
               environment.systemPackages =
                 (with pkgs-stable; [
-                  libreoffice
                   imagemagick
                   remmina
                   wl-clipboard
@@ -75,6 +74,18 @@ in
                 ])
                 ++ [
                   pkgs.bibata-cursors
+                  # Force a light GTK theme: the dark system theme turns blank cells
+                  # dark, hiding spreadsheets' explicitly dark-colored text.
+                  (pkgs.symlinkJoin {
+                    name = "libreoffice-light";
+                    paths = [ pkgs-stable.libreoffice ];
+                    buildInputs = [ pkgs.makeWrapper ];
+                    postBuild = ''
+                      for f in $out/bin/*; do
+                        wrapProgram "$f" --set GTK_THEME Adwaita:light
+                      done
+                    '';
+                  })
                 ];
 
               services = {
