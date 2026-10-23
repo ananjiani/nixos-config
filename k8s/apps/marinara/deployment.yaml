@@ -22,7 +22,7 @@ spec:
       terminationGracePeriodSeconds: 120
       containers:
         - name: marinara
-          image: ghcr.io/pasta-devs/marinara-engine:2.4.4-lite
+          image: ghcr.io/pasta-devs/marinara-engine:2.5.1-lite
           ports:
             - name: http
               containerPort: 7860
@@ -55,6 +55,9 @@ spec:
             - name: BYPASS_AUTH_TAILSCALE
               value: "false"
             - name: BYPASS_AUTH_DOCKER
+              value: "false"
+            # The admin-proxy sidecar forwards from 127.0.0.1; keep the 2.4 auth behavior for it.
+            - name: REQUIRE_AUTH_FOR_LOOPBACK_PROXY
               value: "false"
             - name: LOG_LEVEL
               value: warn
