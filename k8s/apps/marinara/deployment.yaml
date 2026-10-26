@@ -76,9 +76,6 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /app/data
-            - name: secrets
-              mountPath: /secrets
-              readOnly: true
           resources:
             requests:
               memory: "256Mi"
@@ -119,100 +116,6 @@ spec:
                     while kill -0 1 2>/dev/null; do
                       sleep 1
                     done
-            postStart:
-              exec:
-                command:
-                  - node
-                  - -e
-                  - |
-                    (async () => {
-                      const fs = require("fs");
-
-                      const key = fs.readFileSync("/secrets/deepseek-api-key", "utf8").trim();
-                      if (!key) {
-                        console.error("deepseek-api-key is empty; refusing to configure");
-                        process.exit(1);
-                      }
-
-                      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-                      const fetchWithTimeout = async (url, options = {}, ms = 5000) => {
-                        const controller = new AbortController();
-                        const timer = setTimeout(() => controller.abort(), ms);
-                        try {
-                          return await fetch(url, { ...options, signal: controller.signal });
-                        } finally {
-                          clearTimeout(timer);
-                        }
-                      };
-
-                      let ready = false;
-                      for (let i = 0; i < 120; i++) {
-                        try {
-                          const health = await fetchWithTimeout("http://127.0.0.1:7860/api/health");
-                          if (health.ok) {
-                            ready = true;
-                            break;
-                          }
-                        } catch (_) {
-                          // not ready yet
-                        }
-                        await sleep(1000);
-                      }
-                      if (!ready) {
-                        console.error("Marinara health endpoint never became ready");
-                        process.exit(1);
-                      }
-
-                      const listRes = await fetchWithTimeout("http://127.0.0.1:7860/api/connections");
-                      if (!listRes.ok) {
-                        console.error("list connections failed: " + listRes.status);
-                        process.exit(1);
-                      }
-                      const connections = await listRes.json();
-                      const existing = Array.isArray(connections)
-                        ? connections.find((c) => c && c.name === "DeepSeek (OpenBao)")
-                        : null;
-
-                      const body = {
-                        name: "DeepSeek (OpenBao)",
-                        provider: "custom",
-                        baseUrl: "https://api.deepseek.com",
-                        apiKey: key,
-                        model: "deepseek-v4-pro",
-                        maxContext: 131072,
-                        isDefault: true,
-                        defaultForAgents: true,
-                        treatAsLocalEndpoint: false,
-                      };
-
-                      let res;
-                      if (existing && existing.id != null) {
-                        const id = encodeURIComponent(String(existing.id));
-                        res = await fetchWithTimeout(
-                          "http://127.0.0.1:7860/api/connections/" + id,
-                          {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(body),
-                          },
-                        );
-                      } else {
-                        res = await fetchWithTimeout("http://127.0.0.1:7860/api/connections", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify(body),
-                        });
-                      }
-
-                      if (!res.ok) {
-                        console.error("configure connection failed: " + res.status);
-                        process.exit(1);
-                      }
-                      console.log("DeepSeek connection configured");
-                    })().catch((err) => {
-                      console.error(err && err.message ? err.message : "postStart failed");
-                      process.exit(1);
-                    });
         - name: admin-proxy
           image: caddy:2.11.4-alpine
           ports:
@@ -255,10 +158,6 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: marinara-data
-        - name: secrets
-          secret:
-            secretName: marinara-secrets
-            defaultMode: 0400
         - name: admin-proxy
           configMap:
             name: marinara-admin-proxy
