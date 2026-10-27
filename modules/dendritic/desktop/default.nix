@@ -74,17 +74,30 @@ in
                 ])
                 ++ [
                   pkgs.bibata-cursors
-                  # Force a light GTK theme: the dark system theme turns blank cells
-                  # dark, hiding spreadsheets' explicitly dark-colored text.
+                  # Force light mode: the dark system theme turns blank cells dark,
+                  # hiding spreadsheets' explicitly dark-colored text. GTK_THEME covers
+                  # the UI; document colors follow the portal's prefer-dark unless
+                  # LibreOffice's Appearance is set to Light (1).
                   (pkgs.symlinkJoin {
                     name = "libreoffice-light";
                     paths = [ pkgs-stable.libreoffice ];
                     buildInputs = [ pkgs.makeWrapper ];
-                    postBuild = ''
-                      for f in $out/bin/*; do
-                        wrapProgram "$f" --set GTK_THEME Adwaita:light
-                      done
-                    '';
+                    postBuild =
+                      let
+                        # shortcut: seeds the setting only when unset and the profile exists
+                        # (first-ever launch stays dark once); a manual choice in Options wins.
+                        seedLightAppearance = pkgs.writeShellScript "libreoffice-seed-light" ''
+                          xcu="''${XDG_CONFIG_HOME:-$HOME/.config}/libreoffice/4/user/registrymodifications.xcu"
+                          if [ -f "$xcu" ] && ! ${pkgs.gnugrep}/bin/grep -q 'oor:name="ApplicationAppearance"' "$xcu"; then
+                            ${pkgs.gnused}/bin/sed -i 's|</oor:items>|<item oor:path="/org.openoffice.Office.Common/Appearance"><prop oor:name="ApplicationAppearance" oor:op="fuse"><value>1</value></prop></item>\n</oor:items>|' "$xcu"
+                          fi
+                        '';
+                      in
+                      ''
+                        for f in $out/bin/*; do
+                          wrapProgram "$f" --set GTK_THEME Adwaita:light --run ${seedLightAppearance}
+                        done
+                      '';
                   })
                 ];
 
