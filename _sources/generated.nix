@@ -14,6 +14,25 @@
       sha256 = "sha256-xaTPFQyvISRAr9oWYYLTqnNHCVQwY4aSJfrMP2145XQ=";
     };
   };
+  herdr-reviewr = {
+    pname = "herdr-reviewr";
+    version = "v0.48.0";
+    src = fetchFromGitHub {
+      owner = "persiyanov";
+      repo = "herdr-reviewr";
+      rev = "v0.48.0";
+      fetchSubmodules = false;
+      sha256 = "sha256-Y1AJHvXiIoIkjC3eU9rIBvBl99lvsQ2RIusNXONu2tY=";
+    };
+  };
+  herdr-reviewr-bin = {
+    pname = "herdr-reviewr-bin";
+    version = "v0.48.0";
+    src = fetchurl {
+      url = "https://github.com/persiyanov/herdr-reviewr/releases/download/v0.48.0/herdr-reviewr-x86_64-unknown-linux-musl.tar.gz";
+      sha256 = "sha256-RwB5d9uEAWA2RYcecyXZW9KW/jCFm6oRCVrndiEztlo=";
+    };
+  };
   jacktook = {
     pname = "jacktook";
     version = "c22f23fc7df9705cb7e42c1b54f631358869d182";

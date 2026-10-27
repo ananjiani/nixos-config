@@ -36,6 +36,5 @@ resources:
   - paperless
   - jellyfin
   - pi-web
-  - collie
   - sillytavern
   - marinara

@@ -1,6 +1,6 @@
 # Portable Home Manager dev profile — coding agents + toolchain only.
-# No secrets, LAN services, Tailscale, Collie, ntfy, mirror, or tea.
-# Homelab-specific overlays (sops, tea, Herdr plugins) stay on the host.
+# No secrets, LAN services, Tailscale, or tea.
+# Homelab-specific overlays (sops, tea) stay on the host.
 # Defaults on for Aragorn/workstations. Isolated hosts (Denethor) set:
 #   claudeCode.homelabBackends.enable = false
 #   piCodingAgent.homelabProviders.enable = false  # no secret-backed providers

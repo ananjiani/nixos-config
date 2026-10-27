@@ -14,6 +14,42 @@
         },
         "version": "2.1.0"
     },
+    "herdr-reviewr": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "herdr-reviewr",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "deepClone": false,
+            "fetchSubmodules": false,
+            "leaveDotGit": false,
+            "name": null,
+            "owner": "persiyanov",
+            "repo": "herdr-reviewr",
+            "rev": "v0.48.0",
+            "sha256": "sha256-Y1AJHvXiIoIkjC3eU9rIBvBl99lvsQ2RIusNXONu2tY=",
+            "sparseCheckout": [],
+            "type": "github"
+        },
+        "version": "v0.48.0"
+    },
+    "herdr-reviewr-bin": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "herdr-reviewr-bin",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-RwB5d9uEAWA2RYcecyXZW9KW/jCFm6oRCVrndiEztlo=",
+            "type": "url",
+            "url": "https://github.com/persiyanov/herdr-reviewr/releases/download/v0.48.0/herdr-reviewr-x86_64-unknown-linux-musl.tar.gz"
+        },
+        "version": "v0.48.0"
+    },
     "jacktook": {
         "cargoLock": null,
         "date": "2026-07-10",

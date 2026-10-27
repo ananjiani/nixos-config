@@ -12,25 +12,14 @@
 
 let
   lanHosts = import ../../../lib/hosts.nix;
-  collieRef = "8c898a013d65fe1c33eb9b947d4d5e3b32eb936f";
-  colliePluginId = "herdr.collie";
-  collieLanIp = lanHosts.aragorn;
-  collieLanPort = 8788;
-  collieLoopbackPort = 8787;
   hermesLanPort = 9119;
-  # k3s node LAN IPs that may reach the collie-lan-proxy socket
-  collieSourceIps = [
+  # k3s node LAN IPs that may reach the hermes dashboard
+  hermesSourceIps = [
     lanHosts.boromir
     lanHosts.samwise
     lanHosts.theoden
     lanHosts.rivendell
   ];
-  ntfyPluginRef = "f07462439b7dde0ac08ffe90d30661520037d561";
-  ntfyPluginId = "cobanov.herdr-ntfysh";
-  # Kept only so removeMirrorPlugin can find and clear old deployed state.
-  mirrorPluginId = "mirror";
-  herdrPkg = inputs.herdr.packages.${pkgs.stdenv.hostPlatform.system}.default;
-
   desktopHost = "ammars-pc.lan";
   desktopMac = "30:c5:99:26:f4:c5";
   desktopBroadcast = "192.168.1.255";
@@ -494,31 +483,14 @@ in
       "framework13.lan"
     ];
 
-    # Accept collie-lan-proxy and hermes-dashboard only from k3s nodes.
-    # Do not open these ports broadly.
+    # Accept hermes-dashboard only from k3s nodes. Do not open this port broadly.
     firewall = {
-      extraCommands = lib.concatMapStrings (
-        src:
-        lib.concatMapStrings
-          (port: ''
-            iptables -A nixos-fw -p tcp -s ${src} -d ${collieLanIp} --dport ${toString port} -j nixos-fw-accept
-          '')
-          [
-            collieLanPort
-            hermesLanPort
-          ]
-      ) collieSourceIps;
-      extraStopCommands = lib.concatMapStrings (
-        src:
-        lib.concatMapStrings
-          (port: ''
-            iptables -D nixos-fw -p tcp -s ${src} -d ${collieLanIp} --dport ${toString port} -j nixos-fw-accept 2>/dev/null || true
-          '')
-          [
-            collieLanPort
-            hermesLanPort
-          ]
-      ) collieSourceIps;
+      extraCommands = lib.concatMapStrings (src: ''
+        iptables -A nixos-fw -p tcp -s ${src} -d ${lanHosts.aragorn} --dport ${toString hermesLanPort} -j nixos-fw-accept
+      '') hermesSourceIps;
+      extraStopCommands = lib.concatMapStrings (src: ''
+        iptables -D nixos-fw -p tcp -s ${src} -d ${lanHosts.aragorn} --dport ${toString hermesLanPort} -j nixos-fw-accept 2>/dev/null || true
+      '') hermesSourceIps;
     };
   };
 
@@ -564,20 +536,6 @@ in
         field = "opencode-api-key";
         owner = "ammar";
       };
-      herdr-ntfy-env = {
-        path = "secret/nixos/ntfy-publishers";
-        field = "herdr-token"; # ignored because template is set
-        template = ''
-          HERDR_NTFY_SERVER=https://ntfy.dimensiondoor.xyz
-          HERDR_NTFY_TOPIC=herdr
-          HERDR_NTFY_TOKEN={{ with secret "secret/data/nixos/ntfy-publishers" }}{{ index .Data.data "herdr-token" }}{{ end }}
-          HERDR_NTFY_NOTIFY_ON=done,blocked
-          HERDR_NTFY_CLICK=https://collie.dimensiondoor.xyz
-        '';
-        owner = "ammar";
-        group = "users";
-        mode = "0400";
-      };
       desktop-ntfy-curl-config = {
         path = "secret/nixos/ntfy-publishers";
         field = "desktop-deploy-token"; # ignored because template is set
@@ -595,257 +553,27 @@ in
   users.users.ammar.linger = true;
 
   # Dev/agent tooling on top of the minimal shared server home profile.
-  # Function form so lib.hm (home-manager) is in scope for activation scripts.
-  home-manager.users.ammar =
-    {
-      config,
-      lib,
-      pkgs,
-      ...
-    }:
-    {
-      imports = [
-        ../../_profiles/dev/home.nix
-        inputs.sops-nix.homeManagerModules.sops
-        ../../../modules/home/dev/tea.nix
-        ../../../modules/home/org-roam-sync.nix
-      ];
+  home-manager.users.ammar = {
+    imports = [
+      ../../_profiles/dev/home.nix
+      inputs.sops-nix.homeManagerModules.sops
+      ../../../modules/home/dev/tea.nix
+      ../../../modules/home/org-roam-sync.nix
+    ];
 
-      # Terminal Doom Emacs (headless devbox)
-      doom-emacs = {
-        enable = true;
-        variant = "nox";
-      };
-
-      sops = {
-        age.keyFile = "/home/ammar/.config/sops/age/keys.txt";
-        defaultSopsFile = ../../../secrets/secrets.yaml;
-        defaultSymlinkPath = "/run/user/1000/secrets";
-        defaultSecretsMountPoint = "/run/user/1000/secrets.d";
-      };
-
-      xdg.configFile = {
-        "herdr/plugins/config/herdr.collie/.env".text = ''
-          COLLIE_PORT=${toString collieLoopbackPort}
-          COLLIE_HOST=127.0.0.1
-          COLLIE_SKIP_SERVE=1
-          COLLIE_PUBLIC_URL=https://collie.dimensiondoor.xyz
-          COLLIE_PUBLIC_HOSTS=collie.dimensiondoor.xyz
-          COLLIE_ALLOWED_ORIGINS=https://collie.dimensiondoor.xyz
-          COLLIE_MULTI_SESSION=on
-          # Write gate only — firewall remains the read/confidentiality boundary.
-          COLLIE_DEVICE_HEADER=X-authentik-uid
-          COLLIE_DEVICE_ALLOWLIST=22fb6423c4bb0c1f65d8720b50cbfcfd993da9b47bd0375bd007b1051412d07f
-        '';
-
-        "herdr/plugins/config/cobanov.herdr-ntfysh/.env".source =
-          config.lib.file.mkOutOfStoreSymlink "/run/secrets/herdr-ntfy-env";
-      };
-
-      home = {
-        packages = [ pkgs.bun ];
-        activation = {
-          # Install pinned Collie plugin only when missing or at the wrong revision.
-          installColliePlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-            export PATH="${
-              lib.makeBinPath [
-                herdrPkg
-                pkgs.bun
-                pkgs.git
-                pkgs.jq
-                pkgs.coreutils
-              ]
-            }:$PATH"
-            plugins_json="$HOME/.config/herdr/plugins.json"
-            want_ref="${collieRef}"
-            have_ref=""
-            if [ -f "$plugins_json" ]; then
-              have_ref="$(jq -r --arg id "${colliePluginId}" \
-                '.[] | select(.plugin_id == $id) | .source.resolved_commit // empty' \
-                "$plugins_json" 2>/dev/null || true)"
-            fi
-            if [ "$have_ref" != "$want_ref" ]; then
-              if ! run herdr plugin install AltanS/collie --ref "$want_ref" --yes; then
-                echo "warning: collie plugin install failed (GitHub/Bun); deploy continues without collie" >&2
-              fi
-            fi
-          '';
-
-          # Install pinned herdr-ntfysh plugin only when missing or at the wrong revision.
-          installNtfyPlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-            export CGO_ENABLED=0
-            export PATH="${
-              lib.makeBinPath [
-                herdrPkg
-                pkgs.go
-                pkgs.git
-                pkgs.jq
-                pkgs.coreutils
-              ]
-            }:$PATH"
-            plugins_json="$HOME/.config/herdr/plugins.json"
-            want_ref="${ntfyPluginRef}"
-            have_ref=""
-            if [ -f "$plugins_json" ]; then
-              have_ref="$(jq -r --arg id "${ntfyPluginId}" \
-                '.[] | select(.plugin_id == $id) | .source.resolved_commit // empty' \
-                "$plugins_json" 2>/dev/null || true)"
-            fi
-            if [ "$have_ref" != "$want_ref" ]; then
-              if ! run herdr plugin install cobanov/herdr-ntfysh --ref "$want_ref" --yes; then
-                echo "warning: herdr-ntfysh plugin install failed (Go build); deploy continues without ntfy" >&2
-              fi
-            fi
-          '';
-
-          # One-time cleanup: pause then unlink/uninstall old herdr-mirror if registered.
-          removeMirrorPlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-            export PATH="${
-              lib.makeBinPath [
-                herdrPkg
-                pkgs.jq
-                pkgs.coreutils
-              ]
-            }:$PATH"
-            plugins_json="$HOME/.config/herdr/plugins.json"
-            # Key off plugin_id so an empty plugin_root still gets cleaned up.
-            plugin_entry=""
-            if [ -f "$plugins_json" ]; then
-              if ! plugin_entry="$(jq -c --arg id "${mirrorPluginId}" \
-                'first(.[] | select(.plugin_id == $id)) // empty' \
-                "$plugins_json")"; then
-                echo "error: could not read $plugins_json to remove ${mirrorPluginId}" >&2
-                exit 1
-              fi
-            fi
-            if [ -n "$plugin_entry" ]; then
-              have_root="$(printf '%s\n' "$plugin_entry" | jq -r '.plugin_root // empty')"
-              kind="$(printf '%s\n' "$plugin_entry" | jq -r '.source.kind // empty')"
-              if [ -n "$have_root" ] && [ -x "$have_root/target/release/herdr-mirror" ]; then
-                run "$have_root/target/release/herdr-mirror" pause 2>/dev/null || true
-              fi
-              case "$kind" in
-                github)
-                  if ! run herdr plugin uninstall "${mirrorPluginId}"; then
-                    echo "error: failed to uninstall herdr plugin ${mirrorPluginId}" >&2
-                    exit 1
-                  fi
-                  ;;
-                *)
-                  if ! run herdr plugin unlink "${mirrorPluginId}"; then
-                    if ! run herdr plugin uninstall "${mirrorPluginId}"; then
-                      echo "error: failed to unlink/uninstall herdr plugin ${mirrorPluginId}" >&2
-                      exit 1
-                    fi
-                  fi
-                  ;;
-              esac
-              if [[ ! -v DRY_RUN ]]; then
-                still=""
-                if [ -f "$plugins_json" ]; then
-                  if ! still="$(jq -r --arg id "${mirrorPluginId}" \
-                    '.[] | select(.plugin_id == $id) | .plugin_id // empty' \
-                    "$plugins_json")"; then
-                    echo "error: could not verify herdr plugin ${mirrorPluginId} removal" >&2
-                    exit 1
-                  fi
-                fi
-                if [ -n "$still" ]; then
-                  echo "error: herdr plugin ${mirrorPluginId} still registered after removal" >&2
-                  exit 1
-                fi
-              fi
-            fi
-          '';
-        };
-      };
-
-      systemd.user = {
-        services = {
-          # Named collie-bridge so it cannot collide with upstream plugin collie.service.
-          collie-bridge = {
-            Unit = {
-              Description = "Collie Herdr bridge (loopback)";
-              After = [ "default.target" ];
-              StartLimitIntervalSec = 0;
-            };
-            Service = {
-              Type = "simple";
-              Environment = [
-                "HERDR_SOCKET_PATH=%h/.config/herdr/herdr.sock"
-                "HERDR_PLUGIN_CONFIG_DIR=%h/.config/herdr/plugins/config/herdr.collie"
-              ];
-              EnvironmentFile = "%h/.config/herdr/plugins/config/herdr.collie/.env";
-              # Resolve plugin_root from plugins.json at start so reinstalls don't
-              # need a unit rewrite.
-              ExecStart = toString (
-                pkgs.writeShellScript "collie-bridge-start" ''
-                  set -euo pipefail
-                  export PATH="${
-                    lib.makeBinPath [
-                      pkgs.bun
-                      pkgs.jq
-                      pkgs.coreutils
-                    ]
-                  }:$PATH"
-                  plugins_json="$HOME/.config/herdr/plugins.json"
-                  plugin_root="$(jq -r --arg id "${colliePluginId}" \
-                    '.[] | select(.plugin_id == $id) | .plugin_root // empty' \
-                    "$plugins_json")"
-                  if [ -z "$plugin_root" ] || [ ! -d "$plugin_root" ]; then
-                    echo "collie-bridge: plugin_root for ${colliePluginId} missing in $plugins_json" >&2
-                    exit 1
-                  fi
-                  cd "$plugin_root"
-                  exec bun run "$plugin_root/bridge/index.ts"
-                ''
-              );
-              Restart = "on-failure";
-              RestartSec = 5;
-              NoNewPrivileges = true;
-              PrivateTmp = true;
-            };
-            Install = {
-              WantedBy = [ "default.target" ];
-            };
-          };
-
-          collie-lan-proxy = {
-            Unit = {
-              Description = "Proxy collie LAN socket to loopback bridge";
-              Requires = [
-                "collie-bridge.service"
-                "collie-lan-proxy.socket"
-              ];
-              After = [
-                "collie-bridge.service"
-                "collie-lan-proxy.socket"
-              ];
-            };
-            Service = {
-              Type = "simple";
-              ExecStart = "${pkgs.systemd}/lib/systemd/systemd-socket-proxyd 127.0.0.1:${toString collieLoopbackPort}";
-              PrivateTmp = true;
-              NoNewPrivileges = true;
-            };
-          };
-        };
-
-        sockets.collie-lan-proxy = {
-          Unit = {
-            Description = "LAN listen socket for Collie (${collieLanIp}:${toString collieLanPort})";
-          };
-          Socket = {
-            ListenStream = "${collieLanIp}:${toString collieLanPort}";
-            Accept = false;
-            FreeBind = true;
-          };
-          Install = {
-            WantedBy = [ "sockets.target" ];
-          };
-        };
-      };
+    # Terminal Doom Emacs (headless devbox)
+    doom-emacs = {
+      enable = true;
+      variant = "nox";
     };
+
+    sops = {
+      age.keyFile = "/home/ammar/.config/sops/age/keys.txt";
+      defaultSopsFile = ../../../secrets/secrets.yaml;
+      defaultSymlinkPath = "/run/user/1000/secrets";
+      defaultSecretsMountPoint = "/run/user/1000/secrets.d";
+    };
+  };
 
   programs.ssh.knownHosts = {
     "ammars-pc.lan" = {

@@ -251,27 +251,17 @@ data:
     metadata:
       name: Forward auth apps
     entries:
-      - model: authentik_providers_proxy.proxyprovider
-        id: collie-provider
-        identifiers:
-          name: Collie
-        attrs:
-          name: Collie
-          mode: forward_single
-          external_host: https://collie.dimensiondoor.xyz
-          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
-          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-
+      # Collie retired: delete its app and provider (blueprints never prune
+      # removed entries). Drop these two entries once applied.
       - model: authentik_core.application
-        id: collie-app
+        state: absent
         identifiers:
           slug: collie
-        attrs:
+
+      - model: authentik_providers_proxy.proxyprovider
+        state: absent
+        identifiers:
           name: Collie
-          slug: collie
-          provider: !KeyOf collie-provider
-          meta_launch_url: https://collie.dimensiondoor.xyz
-          policy_engine_mode: any
 
       - model: authentik_providers_proxy.proxyprovider
         id: sillytavern-provider
@@ -339,6 +329,5 @@ data:
           managed: goauthentik.io/outposts/embedded
         attrs:
           providers:
-            - !KeyOf collie-provider
             - !KeyOf sillytavern-provider
             - !KeyOf marinara-provider

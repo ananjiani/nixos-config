@@ -12,13 +12,13 @@
 #
 # Only the base profile (SSH/nix/locale), the NetworkManager OpenConnect
 # module, and the portable HM profiles (essentials + dev) are shared.
-# Homelab overlays (sops, tea, Collie/ntfy/mirror Herdr plugins, vault-agent)
+# Homelab overlays (sops, tea, vault-agent)
 # must never land here.
 #
 # WARNING: embedded portable Home Manager (essentials + dev) is supported.
 # Standalone `nh home switch` / homeConfiguration remains unsupported — do
 # not add one casually; this host must stay free of homelab HM modules
-# (secrets, LAN CA, Tailscale, Collie, etc.).
+# (secrets, LAN CA, Tailscale, etc.).
 {
   lib,
   pkgs,

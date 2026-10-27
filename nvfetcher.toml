@@ -44,3 +44,13 @@ fetch.github = "dividebysandwich/niri"
 src.git = "https://github.com/dividebysandwich/smithay.git"
 src.branch = "ds-hdr-master"
 fetch.github = "dividebysandwich/smithay"
+
+# Herdr plugin: source tree (manifest, install scripts) + prebuilt binary,
+# both pinned to the same release tag. See modules/home/dev/herdr/default.nix.
+[herdr-reviewr]
+src.github = "persiyanov/herdr-reviewr"
+fetch.github = "persiyanov/herdr-reviewr"
+
+[herdr-reviewr-bin]
+src.github = "persiyanov/herdr-reviewr"
+fetch.url = "https://github.com/persiyanov/herdr-reviewr/releases/download/$ver/herdr-reviewr-x86_64-unknown-linux-musl.tar.gz"

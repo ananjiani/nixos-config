@@ -2,45 +2,15 @@
   config,
   pkgs,
   lib,
-  inputs,
   ...
 }:
 
 let
   cfg = config.devPrograms;
-  herdrPkg = inputs.herdr.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs (old: {
-    patches = (old.patches or [ ]) ++ [ ./herdr/remote-file-paste.patch ];
-  });
-  reviewrPluginId = "persiyanov.reviewr";
-  # persiyanov/herdr-reviewr v0.38.0
-  reviewrPluginSrc = pkgs.fetchFromGitHub {
-    owner = "persiyanov";
-    repo = "herdr-reviewr";
-    rev = "dca1fb88a56c0d6246a2e9004ecbe27fd11a4436";
-    hash = "sha256-nHQlbENR4NQBKz2GTkYQqhr0JuulqFYSi7CjiIY9IhY=";
-  };
-  reviewrPluginArchive = pkgs.fetchurl {
-    url = "https://github.com/persiyanov/herdr-reviewr/releases/download/v0.38.0/herdr-reviewr-x86_64-unknown-linux-musl.tar.gz";
-    hash = "sha256-lr1qk35ZuJNFnXZxUsEUarhRbkqxRm4vdAFGAXNXWbQ=";
-  };
-  reviewrPluginRoot =
-    pkgs.runCommand "herdr-reviewr-plugin"
-      {
-        nativeBuildInputs = [
-          pkgs.gnutar
-          pkgs.gzip
-        ];
-      }
-      ''
-        mkdir -p $out
-        cp -a ${reviewrPluginSrc}/. $out/
-        chmod -R u+w $out
-        mkdir -p $out/bin
-        tar -xzf ${reviewrPluginArchive} -C $out/bin
-        chmod +x $out/bin/herdr-reviewr
-      '';
 in
 {
+  imports = [ ./herdr ];
+
   options.devPrograms.npmGlobalPackages = lib.mkOption {
     type = lib.types.nullOr (lib.types.listOf lib.types.str);
     default = [ "happy-coder" ];
@@ -54,9 +24,6 @@ in
   };
 
   config = {
-    xdg.configFile."herdr/config.toml".source =
-      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/home/dev/herdr/config.toml";
-
     home = {
       # After other sessionPath entries (e.g. ~/.local/bin from claude-code)
       # so merge order stays deterministic across hosts.
@@ -117,55 +84,12 @@ in
           ''
         );
 
-        # Link Nix-pinned herdr-reviewr when plugin_root drifts. herdr plugin
-        # link skips [[build]], so activation never downloads GitHub assets.
-        installReviewrPlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-          export PATH="${
-            lib.makeBinPath [
-              herdrPkg
-              pkgs.jq
-              pkgs.coreutils
-            ]
-          }:$PATH"
-          plugins_json="$HOME/.config/herdr/plugins.json"
-          want_root="${reviewrPluginRoot}"
-          have_root=""
-          if [ -f "$plugins_json" ]; then
-            have_root="$(jq -r --arg id "${reviewrPluginId}" \
-              '.[] | select(.plugin_id == $id) | .plugin_root // empty' \
-              "$plugins_json" 2>/dev/null || true)"
-          fi
-          if [ "$have_root" != "$want_root" ]; then
-            if [ -n "$have_root" ]; then
-              kind="$(jq -r --arg id "${reviewrPluginId}" \
-                '.[] | select(.plugin_id == $id) | .source.kind // empty' \
-                "$plugins_json" 2>/dev/null || true)"
-              case "$kind" in
-                github)
-                  run herdr plugin uninstall "${reviewrPluginId}" 2>/dev/null || true
-                  ;;
-                *)
-                  if ! run herdr plugin unlink "${reviewrPluginId}" 2>/dev/null; then
-                    run herdr plugin uninstall "${reviewrPluginId}" 2>/dev/null || true
-                  fi
-                  ;;
-              esac
-            fi
-            run herdr plugin link "$want_root"
-          fi
-          # The status command exits successfully even when no server is running.
-          status_json="$(herdr status server --json)"
-          if printf '%s\n' "$status_json" | jq -e '.running == true' >/dev/null; then
-            run herdr server reload-config
-          fi
-        '';
       };
 
       packages = with pkgs; [
         # inputs.opencode.packages.${pkgs.system}.default
         nodejs # for npm global packages
         gh
-        herdrPkg
         # inputs.claude-desktop.packages.${pkgs.system}.claude-desktop-with-fhs # Temporarily disabled - hash mismatch
       ];
     };

@@ -82,6 +82,18 @@ type = "plugin_action"
 description = "toggle code review"
 command = "persiyanov.reviewr.toggle"
 
+[[keys.command]]
+key = "prefix+shift+a"
+type = "plugin_action"
+description = "archive the current tab"
+command = "herdr-archive.archive-tab"
+
+[[keys.command]]
+key = "prefix+shift+s"
+type = "plugin_action"
+description = "restore an archived tab"
+command = "herdr-archive.restore"
+
 [ui]
 show_agent_labels_on_pane_borders = true
 hide_tab_bar_when_single_tab = true
