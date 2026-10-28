@@ -67,6 +67,7 @@ let
   linkPlugin = id: root: ''
     want_root="${root}"
     have_root=""
+    kind=""
     if [ -f "$plugins_json" ]; then
       have_root="$(jq -r --arg id "${id}" \
         '.[] | select(.plugin_id == $id) | .plugin_root // empty' \
@@ -88,9 +89,15 @@ let
             ;;
         esac
       fi
-      # Warn, don't abort activation: an nvfetcher bump may need a newer herdr.
-      run herdr plugin link "$want_root" \
-        || echo "warning: herdr plugin link failed for ${id}" >&2
+      # Warn, don't abort activation: an nvfetcher bump may need a newer herdr
+      # server. Relink the previous local root so the plugin isn't lost.
+      if ! run herdr plugin link "$want_root"; then
+        echo "warning: herdr plugin link failed for ${id}" >&2
+        if [ "$kind" != github ] && [ -n "$have_root" ] && [ -d "$have_root" ]; then
+          run herdr plugin link "$have_root" \
+            || echo "warning: could not restore ${id} from $have_root" >&2
+        fi
+      fi
     fi
   '';
 in
