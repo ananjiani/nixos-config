@@ -1278,6 +1278,27 @@
         "type": "github"
       }
     },
+    "nix-warcraft": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "proton-ge-nix": []
+      },
+      "locked": {
+        "lastModified": 1793701923,
+        "narHash": "sha256-7BPQ5kdOpSdpE82izC5TIPM8SxcecRt77V2S9CW0iQY=",
+        "owner": "raccube",
+        "repo": "nix-warcraft",
+        "rev": "8a969cdd6dc41d4a1a74fa5b0f34cba8ad1caf69",
+        "type": "github"
+      },
+      "original": {
+        "owner": "raccube",
+        "repo": "nix-warcraft",
+        "type": "github"
+      }
+    },
     "nixarr": {
       "inputs": {
         "nixpkgs": [
@@ -1957,6 +1978,7 @@
         "nix-index-database": "nix-index-database",
         "nix-std": "nix-std",
         "nix-vscode-extensions": "nix-vscode-extensions",
+        "nix-warcraft": "nix-warcraft",
         "nixarr": "nixarr",
         "nixos-avf": "nixos-avf",
         "nixos-hardware": "nixos-hardware",

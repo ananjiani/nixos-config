@@ -414,6 +414,10 @@ in
       enable = true;
       prefixPath = "/mnt/nvme/Games/tlopo/prefix";
     };
+    wowForever = {
+      enable = true;
+      prefixPath = "/mnt/nvme/Games/wow/prefix";
+    };
   };
 
   moondeck = {

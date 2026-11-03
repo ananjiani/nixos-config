@@ -35,6 +35,12 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     stylix.url = "github:nix-community/stylix";
+    nix-warcraft = {
+      url = "github:raccube/nix-warcraft";
+      inputs.nixpkgs.follows = "nixpkgs";
+      # Only read by the protonPackage default, which gaming.nix overrides.
+      inputs.proton-ge-nix.follows = "";
+    };
     emacs-overlay.url = "github:nix-community/emacs-overlay";
     doom-config = {
       url = "github:ananjiani/doom-emacs";

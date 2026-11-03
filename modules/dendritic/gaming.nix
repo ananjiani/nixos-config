@@ -92,6 +92,7 @@ _:
       pkgs,
       lib,
       config,
+      inputs,
       ...
     }:
     let
@@ -408,6 +409,8 @@ _:
           '';
     in
     {
+      imports = [ inputs.nix-warcraft.homeManagerModules.default ];
+
       options.gaming = {
         enable = lib.mkEnableOption "gaming user-level tools and launchers";
 
@@ -479,6 +482,15 @@ _:
             type = lib.types.str;
             default = "${config.xdg.dataHome}/swgr/prefix";
             description = "Writable Proton prefix for SWG Restoration";
+          };
+        };
+
+        wowForever = {
+          enable = lib.mkEnableOption "World of Warcraft Forever via Battle.net under Proton (nix-warcraft)";
+          prefixPath = lib.mkOption {
+            type = lib.types.str;
+            default = "${config.xdg.dataHome}/wineprefixes/battlenet-wow";
+            description = "Writable Proton compat-data directory for Battle.net and WoW";
           };
         };
 
@@ -585,6 +597,21 @@ _:
         };
 
         programs = {
+          wow = lib.mkIf cfg.wowForever.enable {
+            enable = true;
+            # Defaults read osConfig and nix-warcraft's own inputs, which standalone HM lacks.
+            protonPackage = pkgs.proton-ge-bin.steamcompattool;
+            uiLayoutName = "16:9";
+            prefixDir = cfg.wowForever.prefixPath;
+            # Upstream hardcodes these to the default prefix instead of following prefixDir.
+            versions.forever = {
+              addonDir = "${cfg.wowForever.prefixPath}/pfx/drive_c/Program Files (x86)/World of Warcraft/_forever_/Interface/AddOns";
+              wtfDir = "${cfg.wowForever.prefixPath}/pfx/drive_c/Program Files (x86)/World of Warcraft/_forever_/WTF";
+              # Retail addons only upstream; keep any added by hand.
+              mutableAddOns = true;
+            };
+          };
+
           # Lutris with nix-managed GE-Proton runner (no Lutris runner downloads).
           lutris = lib.mkIf cfg.desktop {
             enable = true;
