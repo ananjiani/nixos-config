@@ -407,6 +407,11 @@ _:
                 "--path", backup_path, "--force"
             ])
           '';
+
+      # nix-warcraft's launchers read this to find a runtime outside ~/.local/share/Steam.
+      wowRuntimeEnv = lib.optionalAttrs (cfg.wowForever.enable && cfg.wowForever.steamRuntime != null) {
+        STEAM_RUNTIME_ENTRY_POINT = cfg.wowForever.steamRuntime;
+      };
     in
     {
       imports = [ inputs.nix-warcraft.homeManagerModules.default ];
@@ -492,6 +497,11 @@ _:
             default = "${config.xdg.dataHome}/wineprefixes/battlenet-wow";
             description = "Writable Proton compat-data directory for Battle.net and WoW";
           };
+          steamRuntime = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            default = null;
+            description = "SteamLinuxRuntime_4 _v2-entry-point, when it is not in the default Steam library";
+          };
         };
 
         tlopo = {
@@ -508,7 +518,8 @@ _:
         home.sessionVariables = {
           DXVK_HDR = "1";
           WINE_LARGE_ADDRESS_AWARE = "1";
-        };
+        }
+        // wowRuntimeEnv;
 
         home.packages =
           with pkgs;
@@ -568,33 +579,37 @@ _:
           };
         };
 
-        # Ludusavi systemd user timer for automated save backups
-        systemd.user = lib.mkIf cfg.ludusavi.enable {
-          services.ludusavi-backup = {
-            Unit = {
-              Description = "Ludusavi save backup";
-              Documentation = "https://github.com/mtkennerly/ludusavi";
-              After = [ "network-online.target" ];
-              Wants = [ "network-online.target" ];
+        systemd.user = lib.mkMerge [
+          # Shells read home.sessionVariables; app-menu launches only see environment.d.
+          { sessionVariables = wowRuntimeEnv; }
+          # Ludusavi systemd user timer for automated save backups
+          (lib.mkIf cfg.ludusavi.enable {
+            services.ludusavi-backup = {
+              Unit = {
+                Description = "Ludusavi save backup";
+                Documentation = "https://github.com/mtkennerly/ludusavi";
+                After = [ "network-online.target" ];
+                Wants = [ "network-online.target" ];
+              };
+              Service = {
+                Type = "oneshot";
+                ExecStart = "${ludusaviBackupWrapper}/bin/ludusavi-backup-wrapper ${cfg.ludusavi.backupPath}";
+              };
             };
-            Service = {
-              Type = "oneshot";
-              ExecStart = "${ludusaviBackupWrapper}/bin/ludusavi-backup-wrapper ${cfg.ludusavi.backupPath}";
+            timers.ludusavi-backup = {
+              Unit = {
+                Description = "Ludusavi save backup timer";
+              };
+              Install = {
+                WantedBy = [ "timers.target" ];
+              };
+              Timer = {
+                OnCalendar = cfg.ludusavi.timerInterval;
+                Persistent = true;
+              };
             };
-          };
-          timers.ludusavi-backup = {
-            Unit = {
-              Description = "Ludusavi save backup timer";
-            };
-            Install = {
-              WantedBy = [ "timers.target" ];
-            };
-            Timer = {
-              OnCalendar = cfg.ludusavi.timerInterval;
-              Persistent = true;
-            };
-          };
-        };
+          })
+        ];
 
         programs = {
           wow = lib.mkIf cfg.wowForever.enable {
