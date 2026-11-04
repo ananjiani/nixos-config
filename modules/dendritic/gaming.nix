@@ -515,46 +515,63 @@ _:
       };
 
       config = lib.mkIf cfg.enable {
-        home.sessionVariables = {
-          DXVK_HDR = "1";
-          WINE_LARGE_ADDRESS_AWARE = "1";
-        }
-        // wowRuntimeEnv;
+        home = {
+          sessionVariables = {
+            DXVK_HDR = "1";
+            WINE_LARGE_ADDRESS_AWARE = "1";
+          }
+          // wowRuntimeEnv;
 
-        home.packages =
-          with pkgs;
-          # Proton maintenance tools. These repair game prefixes — missing
-          # redistributables, DLL overrides — and Jovian supplies no equivalent,
-          # so they are not "desktop launcher extras". Grouping them behind
-          # cfg.desktop removed them from the Steam Machine and the Steam Deck,
-          # which is exactly where a Jovian host needs them: there is no distro
-          # package manager to fall back on for fixing a prefix.
-          [
-            protontricks
-            winetricks
-          ]
-          ++ lib.optionals cfg.ludusavi.enable [
-            ludusavi
-          ]
-          ++ lib.optionals cfg.desktop [
-            gpu-screen-recorder
-            gpu-screen-recorder-gtk
-            wine-wayland
-            heroic
-            hydralauncher
-            umu-launcher
-            boilr
-            protonup-qt
-          ]
-          ++ lib.optionals cfg.octowow.enable [
-            octowow
-          ]
-          ++ lib.optionals cfg.swgr.enable [
-            swgr
-          ]
-          ++ lib.optionals cfg.tlopo.enable [
-            tlopo
-          ];
+          # Skip Mullvad like the other game launchers. Aliases, not wrappers: the
+          # upstream launchers live inside nix-warcraft and can't be shadowed by name.
+          shellAliases = lib.mkIf cfg.wowForever.enable (
+            lib.genAttrs [
+              "wow-battlenet"
+              "wow-battlenet-install"
+              "wow-forever"
+            ] (cmd: "/run/wrappers/bin/mullvad-exclude ${cmd}")
+          );
+
+          packages =
+            with pkgs;
+            # Proton maintenance tools. These repair game prefixes — missing
+            # redistributables, DLL overrides — and Jovian supplies no equivalent,
+            # so they are not "desktop launcher extras". Grouping them behind
+            # cfg.desktop removed them from the Steam Machine and the Steam Deck,
+            # which is exactly where a Jovian host needs them: there is no distro
+            # package manager to fall back on for fixing a prefix.
+            [
+              protontricks
+              winetricks
+            ]
+            ++ lib.optionals cfg.ludusavi.enable [
+              ludusavi
+            ]
+            ++ lib.optionals cfg.desktop [
+              gpu-screen-recorder
+              gpu-screen-recorder-gtk
+              wine-wayland
+              heroic
+              hydralauncher
+              umu-launcher
+              boilr
+              protonup-qt
+            ]
+            ++ lib.optionals cfg.octowow.enable [
+              octowow
+            ]
+            ++ lib.optionals cfg.swgr.enable [
+              swgr
+            ]
+            ++ lib.optionals cfg.tlopo.enable [
+              tlopo
+            ];
+        };
+
+        xdg.desktopEntries = lib.mkIf cfg.wowForever.enable {
+          bnet.exec = lib.mkForce "/run/wrappers/bin/mullvad-exclude wow-battlenet --disable-gpu";
+          wow-forever.exec = lib.mkForce "/run/wrappers/bin/mullvad-exclude wow-forever";
+        };
 
         # Syncthing for game save sync (Desktop ↔ Deck ↔ theoden)
         services.syncthing = lib.mkIf cfg.syncthing.enable {
