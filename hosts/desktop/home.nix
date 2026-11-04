@@ -417,6 +417,7 @@ in
     wowForever = {
       enable = true;
       prefixPath = "/mnt/nvme/Games/wow/prefix";
+      steamRuntime = "/mnt/nvme/SteamLibrary/steamapps/common/SteamLinuxRuntime_4/_v2-entry-point";
     };
   };
 
