@@ -35,12 +35,13 @@ spec:
               resources:
                 requests:
                   storage: 20Gi
+        # ~370k head series: 2Gi OOM-killed WAL replay in a loop until the WAL filled the PVC.
         resources:
           requests:
-            memory: "512Mi"
+            memory: "1536Mi"
             cpu: "1000m"
           limits:
-            memory: "2Gi"
+            memory: "4Gi"
             cpu: "1000m"
         # Discover all ServiceMonitors, Probes, Rules without label filtering
         ruleSelectorNilUsesHelmValues: false
