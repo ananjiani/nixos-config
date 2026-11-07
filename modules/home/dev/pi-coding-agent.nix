@@ -15,6 +15,13 @@ let
   # and the changes land directly in the git working tree.
   piUserDir = "${config.home.homeDirectory}/.dotfiles/modules/home/dev/pi-coding-agent";
 
+  runpodSkills = pkgs.fetchFromGitHub {
+    owner = "runpod";
+    repo = "runpod-plugins-official";
+    rev = "91b9f9671af0f15186420ec466fe6e80c1b13f25";
+    hash = "sha256-HMcHASDgEWttG7JXp1OPBR3cTeIUkJhpHtEeAiGbyII=";
+  };
+
   # Sources tracked by nvfetcher (run `nix run github:berberman/nvfetcher`
   # to bump). Mirrors modules/nixos/htpc.nix; depth differs (3 vs 2), so
   # the `../../` there would land at `modules/_sources/` here.
@@ -714,6 +721,8 @@ let
         builtins.filter (model: !lib.any (prefix: lib.hasPrefix prefix model) blockedPrefixes) all;
     theme = "gruvbox-material";
     lastChangelogVersion = pkgs.llm-agents.pi.version;
+    # Not a Pi package (no package.json or top-level skills/), so point at the dir directly.
+    skills = [ "${runpodSkills}/plugins/runpod/skills" ];
     packages = [
       "git:github.com/annapurna-himal/pi-vim-editor"
       "npm:pi-mermaid"
@@ -958,6 +967,11 @@ let
             "--executable-path"
             "${pkgs.chromium}/bin/chromium"
           ];
+          exposure = "codemode";
+        };
+        # OAuth on first use: `pi mcp login runpod` (no API key stored).
+        runpod = {
+          url = "https://mcp.runpod.io/";
           exposure = "codemode";
         };
       }
