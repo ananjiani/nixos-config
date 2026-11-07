@@ -43,6 +43,15 @@ spec:
           limits:
             memory: "4Gi"
             cpu: "1000m"
+        # samwise (4 CPU / 8Gi, etcd voter) went NotReady twice under Prometheus disk load.
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: kubernetes.io/hostname
+                      operator: NotIn
+                      values: ["samwise"]
         # Discover all ServiceMonitors, Probes, Rules without label filtering
         ruleSelectorNilUsesHelmValues: false
         serviceMonitorSelectorNilUsesHelmValues: false
