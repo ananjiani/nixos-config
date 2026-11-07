@@ -7,6 +7,14 @@
 
 let
   cfg = config.devPrograms;
+
+  # nixpkgs ships 1.x; Runpod's skills need 2.x+. Upstream's static binary, not a source build.
+  runpodctl = pkgs.runCommand "runpodctl-3.1.0" {
+    src = pkgs.fetchurl {
+      url = "https://github.com/runpod/runpodctl/releases/download/v3.1.0/runpodctl-linux-amd64";
+      hash = "sha256-VR0weVWYotFM/a/X979H9cajE/s3ptx7QBzRuUtFb9Q=";
+    };
+  } "install -Dm755 $src $out/bin/runpodctl";
 in
 {
   imports = [ ./herdr ];
@@ -90,6 +98,7 @@ in
         # inputs.opencode.packages.${pkgs.system}.default
         nodejs # for npm global packages
         gh
+        runpodctl
         # inputs.claude-desktop.packages.${pkgs.system}.claude-desktop-with-fhs # Temporarily disabled - hash mismatch
       ];
     };
