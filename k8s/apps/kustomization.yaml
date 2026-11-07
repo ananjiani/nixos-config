@@ -20,7 +20,6 @@ resources:
   - voicemail-receiver
   - stremio
   - bifrost
-  - lobechat
   - monitoring
   - renovate
   - rivendell-probation

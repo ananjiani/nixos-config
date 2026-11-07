@@ -56,7 +56,6 @@ declare -A SECRETS=(
   ["k8s/homepage"]="k8s/apps/homepage/secret.yaml"
   ["k8s/authentik"]="k8s/apps/authentik/secret.yaml"
   ["k8s/bifrost"]="k8s/apps/bifrost/secret.yaml"
-  ["k8s/lobechat"]="k8s/apps/lobechat/secret.yaml"
   ["k8s/cert-manager"]="k8s/infrastructure/controllers/cert-manager-config/cloudflare-secret.yaml"
   ["k8s/k8sgpt"]="k8s/infrastructure/controllers/k8sgpt-config/secret.yaml"
 )
