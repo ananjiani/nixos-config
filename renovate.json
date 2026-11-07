@@ -80,11 +80,19 @@
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "labels": ["dependencies", "automated", "manual-upgrade-required"]
+    },
+    {
+      "description": "Core cluster charts: CI doesn't validate Helm values, and a bad bump blocks every Flux app rollout - never automerge",
+      "matchManagers": ["flux"],
+      "matchFileNames": ["k8s/infrastructure/**"],
+      "automerge": false,
+      "labels": ["dependencies", "automated", "manual-upgrade-required"]
     }
   ],
   "flux": {
     "managerFilePatterns": [
-      "/k8s/apps/.+\\.yaml$/"
+      "/k8s/apps/.+\\.yaml$/",
+      "/k8s/infrastructure/.+\\.yaml$/"
     ]
   },
   "kubernetes": {
