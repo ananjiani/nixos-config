@@ -565,6 +565,10 @@ _:
             ]
             ++ lib.optionals cfg.tlopo.enable [
               tlopo
+            ]
+            # Addon updater; the AddOns dirs stay mutable (mutableAddOns) so it can manage them.
+            ++ lib.optionals cfg.wowForever.enable [
+              wowup-cf
             ];
         };
 
