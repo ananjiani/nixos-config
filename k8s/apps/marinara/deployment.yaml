@@ -22,7 +22,7 @@ spec:
       terminationGracePeriodSeconds: 120
       containers:
         - name: marinara
-          image: ghcr.io/pasta-devs/marinara-engine:2.5.1-lite
+          image: ghcr.io/pasta-devs/marinara-engine:2.5.2-lite
           ports:
             - name: http
               containerPort: 7860
