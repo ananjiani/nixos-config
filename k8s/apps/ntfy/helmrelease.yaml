@@ -9,6 +9,7 @@ spec:
   chart:
     spec:
       chart: ntfy
+      version: 0.2.0
       sourceRef:
         kind: HelmRepository
         name: rm3l
@@ -19,6 +20,10 @@ spec:
       baseUrl: "https://ntfy.dimensiondoor.xyz"
       behindProxy: true
       cacheFile: "/var/cache/ntfy/cache.db"
+
+    # RWO volume: a surge pod can't attach until the old one stops.
+    strategy:
+      type: Recreate
 
     persistence:
       enabled: true
