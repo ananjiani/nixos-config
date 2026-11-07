@@ -194,28 +194,6 @@ resource "cloudflare_dns_record" "dns_dot" {
   comment = "AdGuard DNS-over-TLS (internal) - managed by Terraform"
 }
 
-# LobeChat AI workspace
-resource "cloudflare_dns_record" "lobe" {
-  zone_id = local.zone_id
-  name    = "lobe"
-  content = "192.168.1.52" # Traefik LoadBalancer (internal)
-  type    = "A"
-  proxied = false # Internal IP, cannot be proxied
-  ttl     = 300
-  comment = "LobeChat AI workspace (internal) - managed by Terraform"
-}
-
-# LobeChat MinIO S3 storage
-resource "cloudflare_dns_record" "lobe_s3" {
-  zone_id = local.zone_id
-  name    = "lobe-s3"
-  content = "192.168.1.52" # Traefik LoadBalancer (internal)
-  type    = "A"
-  proxied = false # Internal IP, cannot be proxied
-  ttl     = 300
-  comment = "LobeChat S3 storage (internal) - managed by Terraform"
-}
-
 # pi-web coding agent UI (on ammars-pc, HTTPS via k8s Traefik)
 resource "cloudflare_dns_record" "pi" {
   zone_id = local.zone_id
