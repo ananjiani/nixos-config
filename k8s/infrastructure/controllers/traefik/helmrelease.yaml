@@ -22,10 +22,10 @@ spec:
   values:
     # Service configuration - use MetalLB LoadBalancer
     service:
-      type: LoadBalancer
       annotations:
         metallb.universe.tf/loadBalancerIPs: "192.168.1.52"
       spec:
+        type: LoadBalancer
         externalTrafficPolicy: Local
 
     # Ports configuration (v39+ schema)
