@@ -24,7 +24,7 @@ let
   # different ports can't swap their positions.
   ultrawide = "Samsung Electric Company Odyssey G93SC HNTW800771";
   monitor4k = "Dell Inc. DELL S2721QS CLT7M43";
-  monitor1440 = "Dell Inc. Dell S2417DG RFNPC74O08FU";
+  monitor1440 = "Dell Inc. Dell S2417DG #ASPm736iU83d"; # serial differs over HDMI (RFNPC74O08FU)
   dp2Fragment =
     hdrMode:
     pkgs.writeText "niri-dp2-${hdrMode}.kdl" ''
