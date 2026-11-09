@@ -20,10 +20,15 @@ let
   # into. 203 is the BT.2408 default; raise if HDR looks washed/lifted, lower if
   # crushed. Panel is DisplayHDR True Black 400 (EDID: 400 peak / 248 avg).
   hdrReferenceLuminance = 203;
+  # Match monitors by make/model/serial, not connector, so replugging cables into
+  # different ports can't swap their positions.
+  ultrawide = "Samsung Electric Company Odyssey G93SC HNTW800771";
+  monitor4k = "Dell Inc. DELL S2721QS CLT7M43";
+  monitor1440 = "Dell Inc. Dell S2417DG RFNPC74O08FU";
   dp2Fragment =
     hdrMode:
     pkgs.writeText "niri-dp2-${hdrMode}.kdl" ''
-      output "DP-2" {
+      output "${ultrawide}" {
           hdr mode="${hdrMode}" {
               reference-luminance ${toString hdrReferenceLuminance}
           }
@@ -482,21 +487,21 @@ in
     #   xx_color_management_v4 = true;
     # };
     monitor = [
-      "DP-2,5120x1440@240,0x1440,1,vrr,2" # bitdepth,10,cm,hdr,sdrbrightness,1.2,sdrsaturation,1.1
-      "DP-1,3840x2160@60,2560x0,1.5"
-      "HDMI-A-1,2560x1440@60,0x0,1"
+      "desc:${ultrawide},5120x1440@240,0x1440,1,vrr,2" # bitdepth,10,cm,hdr,sdrbrightness,1.2,sdrsaturation,1.1
+      "desc:${monitor4k},3840x2160@60,0x0,1.5"
+      "desc:${monitor1440},2560x1440@60,2560x0,1"
     ];
     workspace = [
       # Main monitor (DP-2) - workspaces 1-3 for focused work (always visible)
-      "1, monitor:DP-2, default:true, layoutopt:orientation:center, persistent:true"
-      "2, monitor:DP-2, layoutopt:orientation:center, persistent:true"
-      "3, monitor:DP-2, layoutopt:orientation:center, persistent:true"
+      "1, monitor:desc:${ultrawide}, default:true, layoutopt:orientation:center, persistent:true"
+      "2, monitor:desc:${ultrawide}, layoutopt:orientation:center, persistent:true"
+      "3, monitor:desc:${ultrawide}, layoutopt:orientation:center, persistent:true"
 
-      # Left monitor (HDMI-A-1) - workspace 4 for communication (dwindle for multiple chats)
-      "4, monitor:HDMI-A-1, default:true, persistent:true"
+      # Right 1440p - workspace 4 for communication (dwindle for multiple chats)
+      "4, monitor:desc:${monitor1440}, default:true, persistent:true"
 
-      # Right monitor (DP-1) - workspace 5 for media/reference
-      "5, monitor:DP-1, default:true, persistent:true"
+      # Left 4K - workspace 5 for media/reference
+      "5, monitor:desc:${monitor4k}, default:true, persistent:true"
     ];
     exec-once = [
       "corectrl"
@@ -636,29 +641,29 @@ in
         scale = 1.0;
       };
 
-      # Right 4K @ scale 1.5 → 2560x1440 logical footprint, placed to the right of HDMI-A-1
-      "DP-1" = {
+      # Left 4K @ scale 1.5 → 2560x1440 logical footprint, top-left corner of the logical layout
+      ${monitor4k} = {
         mode = {
           width = 3840;
           height = 2160;
           refresh = 60.0;
         };
         position = {
-          x = 2560;
+          x = 0;
           y = 0;
         };
         scale = 1.5;
       };
 
-      # Left 1440p @ scale 1, top-left corner of the logical layout
-      "HDMI-A-1" = {
+      # Right 1440p @ scale 1, placed to the right of the 4K
+      ${monitor1440} = {
         mode = {
           width = 2560;
           height = 1440;
           refresh = 60.0;
         };
         position = {
-          x = 0;
+          x = 2560;
           y = 0;
         };
         scale = 1.0;
@@ -667,12 +672,12 @@ in
 
     # Persistent workspaces pinned to monitors
     workspaces = {
-      "main".open-on-output = "DP-2";
-      "reading".open-on-output = "DP-2";
-      "work".open-on-output = "DP-2";
-      "chat".open-on-output = "HDMI-A-1";
-      "media".open-on-output = "DP-1";
-      "gaming".open-on-output = "DP-2";
+      "main".open-on-output = ultrawide;
+      "reading".open-on-output = ultrawide;
+      "work".open-on-output = ultrawide;
+      "chat".open-on-output = monitor1440;
+      "media".open-on-output = monitor4k;
+      "gaming".open-on-output = ultrawide;
     };
   };
 }
