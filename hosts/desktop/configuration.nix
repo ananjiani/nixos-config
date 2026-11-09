@@ -266,7 +266,7 @@ let
     restore() {
       failed=0
       "$lease" release sunshine || failed=1
-      "$niri" msg action move-workspace-to-monitor --reference "gaming" DP-2 || failed=1
+      "$niri" msg action move-workspace-to-monitor --reference "gaming" "Samsung Electric Company Odyssey G93SC HNTW800771" || failed=1
       "$rm" -f "$fragment_path" || failed=1
       "$niri" msg action load-config-file || failed=1
       "$niri" msg output DP-3 off || failed=1
