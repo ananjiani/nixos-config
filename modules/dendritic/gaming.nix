@@ -655,6 +655,7 @@ _:
                   bug-grabber
                   bugsack
                   forever-dungeon-journal
+                  opie
                   questie
                   syndicator
                 ])
