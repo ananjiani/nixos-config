@@ -1,0 +1,6 @@
+## Interface: 16001
+## Title: QuestTimers
+## Notes: A small movable box with your quest timers (Forever Quest Log hides the game's own).
+## SavedVariables: QuestTimersDB
+
+QuestTimers.lua
