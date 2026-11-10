@@ -643,8 +643,23 @@ _:
             versions.forever = {
               addonDir = "${cfg.wowForever.prefixPath}/pfx/drive_c/Program Files (x86)/World of Warcraft/_forever_/Interface/AddOns";
               wtfDir = "${cfg.wowForever.prefixPath}/pfx/drive_c/Program Files (x86)/World of Warcraft/_forever_/WTF";
-              # Retail addons only upstream; keep any added by hand.
+              # Keep the addons WowUp and hand installs manage; Nix only resets the ones below.
               mutableAddOns = true;
+              # Upstream builds that ship a Forever (16001) TOC. QuestieDB stays out of Nix:
+              # Questie refuses to start, with a message, if the two drift onto different contracts.
+              addonPackages =
+                (with inputs.nix-warcraft.packages.${pkgs.stdenv.hostPlatform.system}; [
+                  angleur
+                  auctionator
+                  baganator
+                  bug-grabber
+                  bugsack
+                  forever-dungeon-journal
+                  opie
+                  questie
+                  syndicator
+                ])
+                ++ [ (pkgs.runCommand "wow-local-addons" { } "cp -r ${./wow-addons} $out") ];
             };
           };
 

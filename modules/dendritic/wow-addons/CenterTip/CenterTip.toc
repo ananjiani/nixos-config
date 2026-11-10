@@ -1,0 +1,5 @@
+## Interface: 16001
+## Title: CenterTip
+## Notes: Default tooltips grow sideways from the middle of the Edit Mode tooltip spot.
+
+CenterTip.lua
