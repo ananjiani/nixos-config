@@ -655,6 +655,7 @@ _:
                   bug-grabber
                   bugsack
                   forever-dungeon-journal
+                  forever-loot-sparkles
                   opie
                   questie
                   syndicator
