@@ -90,10 +90,6 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
-    nvfetcher = {
-      url = "github:berberman/nvfetcher";
-      inputs.nixpkgs.follows = "nixpkgs-unstable";
-    };
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs-unstable";
@@ -843,7 +839,7 @@
           pkgs.kubectl
           pkgs.fluxcd
           pkgs.wakeonlan
-          inputs.nvfetcher.packages.${system}.default
+          pkgs.nvfetcher
           deploy-rs.packages.${system}.default
         ];
       };
