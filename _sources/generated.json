@@ -28,12 +28,12 @@
             "name": null,
             "owner": "persiyanov",
             "repo": "herdr-reviewr",
-            "rev": "v0.48.0",
-            "sha256": "sha256-Y1AJHvXiIoIkjC3eU9rIBvBl99lvsQ2RIusNXONu2tY=",
+            "rev": "v0.52.1",
+            "sha256": "sha256-i+JtSYpEfBO9QF+UM1+TQTUvmRMQyGf1J+EKdhw0gOo=",
             "sparseCheckout": [],
             "type": "github"
         },
-        "version": "v0.48.0"
+        "version": "v0.52.1"
     },
     "herdr-reviewr-bin": {
         "cargoLock": null,
@@ -44,15 +44,15 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-RwB5d9uEAWA2RYcecyXZW9KW/jCFm6oRCVrndiEztlo=",
+            "sha256": "sha256-+av+rCdF8MKT4d2gacAxk1GygEGfBbciXEjoGn/dVs0=",
             "type": "url",
-            "url": "https://github.com/persiyanov/herdr-reviewr/releases/download/v0.48.0/herdr-reviewr-x86_64-unknown-linux-musl.tar.gz"
+            "url": "https://github.com/persiyanov/herdr-reviewr/releases/download/v0.52.1/herdr-reviewr-x86_64-unknown-linux-musl.tar.gz"
         },
-        "version": "v0.48.0"
+        "version": "v0.52.1"
     },
     "jacktook": {
         "cargoLock": null,
-        "date": "2026-07-10",
+        "date": "2026-11-02",
         "extract": null,
         "name": "jacktook",
         "passthru": null,
@@ -64,12 +64,12 @@
             "name": null,
             "owner": "Sam-Max",
             "repo": "plugin.video.jacktook",
-            "rev": "c22f23fc7df9705cb7e42c1b54f631358869d182",
-            "sha256": "sha256-JI+yfI2axUrVm/TyhGFuMaMgEEo05+XzoEfklW6yXlw=",
+            "rev": "cb3bd2d2dc08dd35a98aabc668f319e31137fff9",
+            "sha256": "sha256-YaYLh3ug6gZHZHJ5NbApazHjHIFxeGbd8Hf5GobrmJ4=",
             "sparseCheckout": [],
             "type": "github"
         },
-        "version": "c22f23fc7df9705cb7e42c1b54f631358869d182"
+        "version": "cb3bd2d2dc08dd35a98aabc668f319e31137fff9"
     },
     "moondeck-buddy": {
         "cargoLock": null,
@@ -80,11 +80,11 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-SfaqrBJJZlJwhSPLPUlwfvZ8RxIWrbwY6uys8ziRvek=",
+            "sha256": "sha256-qw4J0rAPgATvLDzbCsP0nIW8B2KWgWggOj34yOyXbUc=",
             "type": "url",
-            "url": "https://github.com/FrogTheFrog/moondeck-buddy/releases/download/v1.9.2/MoonDeckBuddy-1.9.2-x86_64.AppImage"
+            "url": "https://github.com/FrogTheFrog/moondeck-buddy/releases/download/v1.11.0/MoonDeckBuddy-1.11.0-x86_64.AppImage"
         },
-        "version": "1.9.2"
+        "version": "1.11.0"
     },
     "niri-hdr": {
         "cargoLock": null,
@@ -116,11 +116,11 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-ZIlkG2LEGiH3hT65s0H/cB2Bmq4hIbfzisrJFWGmmHA=",
+            "sha256": "sha256-hRUab2PMFLheg87CEKhCXAVkr2F0+onhXTtow6LS+2M=",
             "type": "url",
-            "url": "https://dl.octowow.st/launcher-updates/OctoLauncher_Installer-1.3.8.exe"
+            "url": "https://dl.octowow.st/launcher-updates/OctoLauncher_Installer-1.5.0.exe"
         },
-        "version": "1.3.8"
+        "version": "1.5.0"
     },
     "opendeck": {
         "cargoLock": null,
@@ -131,11 +131,11 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-SXKZrF8fMYjoCc5cVpiOiSoJHf61+Q+r9E03xiHI4uw=",
+            "sha256": "sha256-4ARSQjMw/PDRvDfEo/4Gbp50z9NqY5Pv/FrPG+oQrMQ=",
             "type": "url",
-            "url": "https://github.com/nekename/OpenDeck/releases/download/v2.13.1/opendeck_2.13.1_amd64.AppImage"
+            "url": "https://github.com/nekename/OpenDeck/releases/download/v2.14.2/opendeck_2.14.2_amd64.AppImage"
         },
-        "version": "2.13.1"
+        "version": "2.14.2"
     },
     "smithay-hdr": {
         "cargoLock": null,
@@ -167,11 +167,11 @@
         "pinned": false,
         "src": {
             "name": "swgr-install.exe",
-            "sha256": "sha256-Z+8BPMpTDNLxKZNrFqpXjpDYsV5cx2MmtbGUpsDQVas=",
+            "sha256": "sha256-jYSyD8CxPAxtrm6jpHvB3UgorW4oAJMC8rTuxBgd6ik=",
             "type": "url",
             "url": "https://patch.swgr.media/patch/launcher/SWG%20Restoration%20Install.exe"
         },
-        "version": "4.0.3"
+        "version": "4.1.2"
     },
     "tlopo": {
         "cargoLock": null,
@@ -182,11 +182,11 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-8xx2HJi5sbJBpnRLMLVroNQ+ykNprA45xWPw+x6QRVA=",
+            "sha256": "sha256-3/Ge8zBkQsjBaaVZw1RVP9sMfLjRw8jwxSUZ9fPMBOg=",
             "type": "url",
-            "url": "https://download.tlopo.com/TLOPO_win64_setup_1.4.1.exe"
+            "url": "https://download.tlopo.com/TLOPO_win64_setup_1.7.19.exe"
         },
-        "version": "1.4.1"
+        "version": "1.7.19"
     },
     "wow-atlasloot-forever": {
         "cargoLock": null,
@@ -422,11 +422,11 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-RhNtJfVqAGRVvqcNpsOIT07IZ/J5vmZpEwW4PILsIAY=",
+            "sha256": "sha256-f4pDTknCTIEkaIYdBJLcduXSLEznkg3DuesbQLZcfHQ=",
             "type": "url",
-            "url": "https://edge.forgecdn.net/files/9571/905/OpenMap-v0.8.5-forever.zip"
+            "url": "https://edge.forgecdn.net/files/9580/110/OpenMap-v0.8.6-forever.zip"
         },
-        "version": "9571/905/OpenMap-v0.8.5-forever.zip"
+        "version": "9580/110/OpenMap-v0.8.6-forever.zip"
     },
     "wow-pawn": {
         "cargoLock": null,
