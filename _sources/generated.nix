@@ -16,41 +16,41 @@
   };
   herdr-reviewr = {
     pname = "herdr-reviewr";
-    version = "v0.48.0";
+    version = "v0.52.1";
     src = fetchFromGitHub {
       owner = "persiyanov";
       repo = "herdr-reviewr";
-      rev = "v0.48.0";
+      rev = "v0.52.1";
       fetchSubmodules = false;
-      sha256 = "sha256-Y1AJHvXiIoIkjC3eU9rIBvBl99lvsQ2RIusNXONu2tY=";
+      sha256 = "sha256-i+JtSYpEfBO9QF+UM1+TQTUvmRMQyGf1J+EKdhw0gOo=";
     };
   };
   herdr-reviewr-bin = {
     pname = "herdr-reviewr-bin";
-    version = "v0.48.0";
+    version = "v0.52.1";
     src = fetchurl {
-      url = "https://github.com/persiyanov/herdr-reviewr/releases/download/v0.48.0/herdr-reviewr-x86_64-unknown-linux-musl.tar.gz";
-      sha256 = "sha256-RwB5d9uEAWA2RYcecyXZW9KW/jCFm6oRCVrndiEztlo=";
+      url = "https://github.com/persiyanov/herdr-reviewr/releases/download/v0.52.1/herdr-reviewr-x86_64-unknown-linux-musl.tar.gz";
+      sha256 = "sha256-+av+rCdF8MKT4d2gacAxk1GygEGfBbciXEjoGn/dVs0=";
     };
   };
   jacktook = {
     pname = "jacktook";
-    version = "c22f23fc7df9705cb7e42c1b54f631358869d182";
+    version = "cb3bd2d2dc08dd35a98aabc668f319e31137fff9";
     src = fetchFromGitHub {
       owner = "Sam-Max";
       repo = "plugin.video.jacktook";
-      rev = "c22f23fc7df9705cb7e42c1b54f631358869d182";
+      rev = "cb3bd2d2dc08dd35a98aabc668f319e31137fff9";
       fetchSubmodules = false;
-      sha256 = "sha256-JI+yfI2axUrVm/TyhGFuMaMgEEo05+XzoEfklW6yXlw=";
+      sha256 = "sha256-YaYLh3ug6gZHZHJ5NbApazHjHIFxeGbd8Hf5GobrmJ4=";
     };
-    date = "2026-07-10";
+    date = "2026-11-02";
   };
   moondeck-buddy = {
     pname = "moondeck-buddy";
-    version = "1.9.2";
+    version = "1.11.0";
     src = fetchurl {
-      url = "https://github.com/FrogTheFrog/moondeck-buddy/releases/download/v1.9.2/MoonDeckBuddy-1.9.2-x86_64.AppImage";
-      sha256 = "sha256-SfaqrBJJZlJwhSPLPUlwfvZ8RxIWrbwY6uys8ziRvek=";
+      url = "https://github.com/FrogTheFrog/moondeck-buddy/releases/download/v1.11.0/MoonDeckBuddy-1.11.0-x86_64.AppImage";
+      sha256 = "sha256-qw4J0rAPgATvLDzbCsP0nIW8B2KWgWggOj34yOyXbUc=";
     };
   };
   niri-hdr = {
@@ -67,18 +67,18 @@
   };
   octowow = {
     pname = "octowow";
-    version = "1.3.8";
+    version = "1.5.0";
     src = fetchurl {
-      url = "https://dl.octowow.st/launcher-updates/OctoLauncher_Installer-1.3.8.exe";
-      sha256 = "sha256-ZIlkG2LEGiH3hT65s0H/cB2Bmq4hIbfzisrJFWGmmHA=";
+      url = "https://dl.octowow.st/launcher-updates/OctoLauncher_Installer-1.5.0.exe";
+      sha256 = "sha256-hRUab2PMFLheg87CEKhCXAVkr2F0+onhXTtow6LS+2M=";
     };
   };
   opendeck = {
     pname = "opendeck";
-    version = "2.13.1";
+    version = "2.14.2";
     src = fetchurl {
-      url = "https://github.com/nekename/OpenDeck/releases/download/v2.13.1/opendeck_2.13.1_amd64.AppImage";
-      sha256 = "sha256-SXKZrF8fMYjoCc5cVpiOiSoJHf61+Q+r9E03xiHI4uw=";
+      url = "https://github.com/nekename/OpenDeck/releases/download/v2.14.2/opendeck_2.14.2_amd64.AppImage";
+      sha256 = "sha256-4ARSQjMw/PDRvDfEo/4Gbp50z9NqY5Pv/FrPG+oQrMQ=";
     };
   };
   smithay-hdr = {
@@ -95,19 +95,19 @@
   };
   swgr = {
     pname = "swgr";
-    version = "4.0.3";
+    version = "4.1.2";
     src = fetchurl {
       url = "https://patch.swgr.media/patch/launcher/SWG%20Restoration%20Install.exe";
       name = "swgr-install.exe";
-      sha256 = "sha256-Z+8BPMpTDNLxKZNrFqpXjpDYsV5cx2MmtbGUpsDQVas=";
+      sha256 = "sha256-jYSyD8CxPAxtrm6jpHvB3UgorW4oAJMC8rTuxBgd6ik=";
     };
   };
   tlopo = {
     pname = "tlopo";
-    version = "1.4.1";
+    version = "1.7.19";
     src = fetchurl {
-      url = "https://download.tlopo.com/TLOPO_win64_setup_1.4.1.exe";
-      sha256 = "sha256-8xx2HJi5sbJBpnRLMLVroNQ+ykNprA45xWPw+x6QRVA=";
+      url = "https://download.tlopo.com/TLOPO_win64_setup_1.7.19.exe";
+      sha256 = "sha256-3/Ge8zBkQsjBaaVZw1RVP9sMfLjRw8jwxSUZ9fPMBOg=";
     };
   };
   wow-atlasloot-forever = {
@@ -232,10 +232,10 @@
   };
   wow-openmap = {
     pname = "wow-openmap";
-    version = "9571/905/OpenMap-v0.8.5-forever.zip";
+    version = "9580/110/OpenMap-v0.8.6-forever.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9571/905/OpenMap-v0.8.5-forever.zip";
-      sha256 = "sha256-RhNtJfVqAGRVvqcNpsOIT07IZ/J5vmZpEwW4PILsIAY=";
+      url = "https://edge.forgecdn.net/files/9580/110/OpenMap-v0.8.6-forever.zip";
+      sha256 = "sha256-f4pDTknCTIEkaIYdBJLcduXSLEznkg3DuesbQLZcfHQ=";
     };
   };
   wow-pawn = {
