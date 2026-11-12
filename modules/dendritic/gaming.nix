@@ -408,6 +408,46 @@ _:
             ])
           '';
 
+      syndicator =
+        inputs.nix-warcraft.packages.${pkgs.stdenv.hostPlatform.system}.syndicator.overrideAttrs
+          (old: {
+            nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.lua5_1 ];
+            postFixup = (old.postFixup or "") + ''
+              search="$out/Syndicator/Search/CheckItem.lua"
+              requireAnchor() {
+                if ! grep -Fq "$1" "$search"; then
+                  echo "Syndicator keyword patch: missing anchor: $1" >&2
+                  exit 1
+                fi
+              }
+              requireAnchor 'local function AddKeywordDirect(keyword, check, group)'
+              requireAnchor 'local sortedKeywords = {}'
+              requireAnchor 'function addonTable.Search.RebuildKeywordList()'
+              requireAnchor 'function addonTable.Search.ClearCache()'
+              requireAnchor 'Syndicator.Search.ClearCache = addonTable.Search.ClearCache'
+              if ! grep -Pzq '  for key in pairs\(KEYWORDS_TO_CHECK\) do\n    table\.insert\(sortedKeywords, key\)\n  end\n  table\.sort\(sortedKeywords\)' "$search"; then
+                echo 'Syndicator keyword patch: missing keyword sort loop' >&2
+                exit 1
+              fi
+              cat ${pkgs.writeText "syndicator-keywords.lua" ''
+
+                -- local patch (nix): expose dynamic keywords and rebuild without duplicate search entries.
+                local rebuildKeywordList = addonTable.Search.RebuildKeywordList
+                function addonTable.Search.RebuildKeywordList()
+                  sortedKeywords = {}
+                  rebuildKeywordList()
+                end
+
+                function Syndicator.Search.AddKeyword(keyword, check, group)
+                  AddKeywordDirect(keyword, check, group)
+                  addonTable.Search.RebuildKeywordList()
+                  Syndicator.Search.ClearCache()
+                end
+              ''} >> "$search"
+              luac -p "$search"
+            '';
+          });
+
       # nix-warcraft's launchers read this to find a runtime outside ~/.local/share/Steam.
       wowRuntimeEnv = lib.optionalAttrs (cfg.wowForever.enable && cfg.wowForever.steamRuntime != null) {
         STEAM_RUNTIME_ENTRY_POINT = cfg.wowForever.steamRuntime;
@@ -654,6 +694,7 @@ _:
                 (with inputs.nix-warcraft.packages.${pkgs.stdenv.hostPlatform.system}; [
                   angleur
                   auctionator
+                  baganator
                   bug-grabber
                   bugsack
                   forever-dungeon-journal
@@ -663,6 +704,7 @@ _:
                   spoken
                   whats-training
                 ])
+                ++ [ syndicator ]
                 ++ (import ../../pkgs/wow-addons { inherit pkgs sources; })
                 ++ [ (pkgs.runCommand "wow-local-addons" { } "cp -r ${./wow-addons} $out") ];
             };

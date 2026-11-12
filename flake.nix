@@ -710,15 +710,41 @@
 
         wow-addons-tests =
           let
-            bagnon = builtins.head (
+            syndicator = builtins.head (
               builtins.filter (
-                p: p.name == "wow-bagnon"
+                p: (p.pname or "") == "Syndicator"
               ) self.homeConfigurations."ammar@ammars-pc".config.programs.wow.versions.forever.addonPackages
             );
           in
           pkgs.runCommand "wow-addons-tests" { } ''
             ${pkgs.python3}/bin/python3 ${./pkgs/wow-addons/test.py} ${./scripts/cf-forever-latest} ${./pkgs/wow-addons/unpack.py}
-            ${pkgs.lua5_1}/bin/lua ${./tests/itemtree-search.lua} ${./modules/dendritic/wow-addons/ItemTreeSearch/ItemTreeSearch.lua} ${bagnon}/BagBrother/libs/CustomSearch-1.0/CustomSearch-1.0.lua
+            ${pkgs.lua5_1}/bin/luac -p ${syndicator}/Syndicator/Search/CheckItem.lua
+            ${pkgs.lua5_1}/bin/lua ${./tests/itemtree-search.lua} ${./modules/dendritic/wow-addons/ItemTreeSearch/ItemTreeSearch.lua} ${syndicator}/Syndicator/Search/CheckItem.lua
+            ${pkgs.python3}/bin/python3 - ${pkgs.writeShellScript "syndicator-keyword-patch" syndicator.postFixup} ${syndicator}/Syndicator/Search/CheckItem.lua <<'PY'
+            import os
+            from pathlib import Path
+            import subprocess
+            import sys
+            import tempfile
+
+            patch, source = sys.argv[1:]
+            original = Path(source).read_text().split("-- local patch (nix):")[0]
+            for anchor in (
+                "local function AddKeywordDirect(keyword, check, group)",
+                "local sortedKeywords = {}",
+                "function addonTable.Search.RebuildKeywordList()",
+                "function addonTable.Search.ClearCache()",
+                "Syndicator.Search.ClearCache = addonTable.Search.ClearCache",
+                "  for key in pairs(KEYWORDS_TO_CHECK) do",
+            ):
+                with tempfile.TemporaryDirectory() as out:
+                    target = Path(out) / "Syndicator/Search/CheckItem.lua"
+                    target.parent.mkdir(parents=True)
+                    target.write_text(original.replace(anchor, "-- missing anchor", 1))
+                    result = subprocess.run([patch], env={**os.environ, "out": out}, capture_output=True, text=True)
+                    assert result.returncode != 0 and "Syndicator keyword patch: missing" in result.stderr, (anchor, result)
+            print("Syndicator patch rejects all six missing anchors")
+            PY
             touch "$out"
           '';
 

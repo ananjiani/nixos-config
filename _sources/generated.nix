@@ -118,14 +118,6 @@
       sha256 = "sha256-oYGoPjVev5N+0cCnJXxNWEwDODVWcHMC1RtXZ2uZjq8=";
     };
   };
-  wow-bagnon = {
-    pname = "wow-bagnon";
-    version = "9546/609/Bagnon-12.1.9.zip";
-    src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9546/609/Bagnon-12.1.9.zip";
-      sha256 = "sha256-GNJ0+Z/zygLLc5R7XjbBP+pVX7WmXyv8RD4GSsFcCEc=";
-    };
-  };
   wow-bartender4 = {
     pname = "wow-bartender4";
     version = "9414/749/Bartender4-4.18.4.zip";
