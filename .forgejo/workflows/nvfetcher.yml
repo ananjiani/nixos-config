@@ -62,9 +62,10 @@ jobs:
               \"title\": \"chore(deps): update nvfetcher sources\",
               \"body\": \"Automated nvfetcher source update.\n\nThis PR was created by the nvfetcher CI workflow.\",
               \"head\": \"$BRANCH\",
-              \"base\": \"main\",
-              \"labels\": [\"dependencies\", \"automated\"]
+              \"base\": \"main\"
             }")
+          # Log the reply so a failed PR creation shows Forgejo's error
+          echo "$PR_RESPONSE"
 
           PR_NUMBER=$(echo "$PR_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['number'])")
 
