@@ -9,7 +9,7 @@ data:
       level: info
     runner:
       file: /config/.runner
-      capacity: 2
+      capacity: 1
       timeout: 3h
       labels:
         # Pinned by digest: act-latest moves upstream and a silent refresh broke CI.
@@ -21,7 +21,8 @@ data:
     container:
       network: host
       privileged: false
-      options: ""
+      # Job containers are siblings under dind, outside the pod memory limit; cap them here
+      options: "--memory=3g --memory-swap=3g --cpus=2"
       workdir_parent: /workspace
   daemon.json: |
     {
