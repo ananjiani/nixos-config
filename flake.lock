@@ -1286,11 +1286,11 @@
         "proton-ge-nix": []
       },
       "locked": {
-        "lastModified": 1794307846,
-        "narHash": "sha256-uiQtIGTvOaweIGhpbre3C5IMHu0ODP5x2WCOZ1V0hL0=",
+        "lastModified": 1794480231,
+        "narHash": "sha256-k7ir7DWiRDTbpocnDfonmJNzaheVN6DH96S5TSflYzU=",
         "owner": "raccube",
         "repo": "nix-warcraft",
-        "rev": "eab92b5715bd64763e63839644f3f722d087c88c",
+        "rev": "36c33e1967d824cee96bf4dadc00d9df75ab373f",
         "type": "github"
       },
       "original": {

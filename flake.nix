@@ -708,6 +708,20 @@
         # DevShell (cached in Attic for faster `nix develop` across machines)
         devshell = self.devShells.${system}.default;
 
+        wow-addons-tests =
+          let
+            bagnon = builtins.head (
+              builtins.filter (
+                p: p.name == "wow-bagnon"
+              ) self.homeConfigurations."ammar@ammars-pc".config.programs.wow.versions.forever.addonPackages
+            );
+          in
+          pkgs.runCommand "wow-addons-tests" { } ''
+            ${pkgs.python3}/bin/python3 ${./pkgs/wow-addons/test.py} ${./scripts/cf-forever-latest} ${./pkgs/wow-addons/unpack.py}
+            ${pkgs.lua5_1}/bin/lua ${./tests/itemtree-search.lua} ${./modules/dendritic/wow-addons/ItemTreeSearch/ItemTreeSearch.lua} ${bagnon}/BagBrother/libs/CustomSearch-1.0/CustomSearch-1.0.lua
+            touch "$out"
+          '';
+
         comin-ci-gate-tests =
           pkgs.runCommand "comin-ci-gate-tests"
             {
@@ -797,6 +811,8 @@
           pkgs.opentofu
           pkgs.openbao
           pkgs.yq-go
+          pkgs.curl
+          pkgs.python3
           pkgs.ansible
           pkgs.kubectl
           pkgs.fluxcd

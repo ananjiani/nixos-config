@@ -187,5 +187,455 @@
             "url": "https://download.tlopo.com/TLOPO_win64_setup_1.4.1.exe"
         },
         "version": "1.4.1"
+    },
+    "wow-atlasloot-forever": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-atlasloot-forever",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-oYGoPjVev5N+0cCnJXxNWEwDODVWcHMC1RtXZ2uZjq8=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9567/495/AtlasLoot-Classic-Forever-1.3.7-121126-16001.zip"
+        },
+        "version": "9567/495/AtlasLoot-Classic-Forever-1.3.7-121126-16001.zip"
+    },
+    "wow-bagnon": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-bagnon",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-GNJ0+Z/zygLLc5R7XjbBP+pVX7WmXyv8RD4GSsFcCEc=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9546/609/Bagnon-12.1.9.zip"
+        },
+        "version": "9546/609/Bagnon-12.1.9.zip"
+    },
+    "wow-bartender4": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-bartender4",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-cPEc6yDOFLRfU2z1Ky21QEsHun7omQcGg6wNW1Q8O+Y=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9414/749/Bartender4-4.18.4.zip"
+        },
+        "version": "9414/749/Bartender4-4.18.4.zip"
+    },
+    "wow-better-personal-resource-display": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-better-personal-resource-display",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-mhHvVgt7iIjr+ZUdePmca3oC8SYIQolD53/3vrLOpG8=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9538/917/BetterPersonalResourceDisplay-v2.5.0.zip"
+        },
+        "version": "9538/917/BetterPersonalResourceDisplay-v2.5.0.zip"
+    },
+    "wow-blizzmove": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-blizzmove",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-VUQEFw1301vaBrnfW+yH2qA2Gpw+uuODuVUrCsE45EE=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9492/856/BlizzMove-v3.8.8.zip"
+        },
+        "version": "9492/856/BlizzMove-v3.8.8.zip"
+    },
+    "wow-btw-quests": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-btw-quests",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-yNlGGPauGSt5TkjMhUyXV0or3re0I9jerSSWV2NtqBg=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9547/866/BtWQuests-v2.70.0-forever.zip"
+        },
+        "version": "9547/866/BtWQuests-v2.70.0-forever.zip"
+    },
+    "wow-cooldown-manager-centered": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-cooldown-manager-centered",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-5EraTgiMEkXsKOQpt/GboTB0cUYikzhcfEG9lGrGQkY=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9538/908/CooldownManagerCentered-v5.10.0.zip"
+        },
+        "version": "9538/908/CooldownManagerCentered-v5.10.0.zip"
+    },
+    "wow-details": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-details",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-UAK91cPpLdWb/6Pr38hn+YCwntYpxR2rBW+1RC+SrUE=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9521/145/Details-Details.20261109.15410.172.zip"
+        },
+        "version": "9521/145/Details-Details.20261109.15410.172.zip"
+    },
+    "wow-dialogueui": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-dialogueui",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-XY9AcpgedqEJr6KUi/RfafCcj45Zx29ll/LrgpxSKf0=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9575/134/DialogueUI-1.0.7-c.zip"
+        },
+        "version": "9575/134/DialogueUI-1.0.7-c.zip"
+    },
+    "wow-edit-mode-expanded": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-edit-mode-expanded",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-Qb+URujjvRmIpxxdGC6VBnCP2+ofK2PfrWW2OxiU4Xo=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9551/661/EditModeExpanded-12.1-024.zip"
+        },
+        "version": "9551/661/EditModeExpanded-12.1-024.zip"
+    },
+    "wow-forever-companion-discovery-journal": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-forever-companion-discovery-journal",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-NX6+V7IETYeGF6XWm3taoPsSe/wqgP6gBJ8COkyd604=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9559/468/ForeverCompanion-3.3.0.zip"
+        },
+        "version": "9559/468/ForeverCompanion-3.3.0.zip"
+    },
+    "wow-forever-quest-log": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-forever-quest-log",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-eloAxAEHdMbJCr2MebdSsDWJXLX0arCxWIgE3+kGfcA=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9563/63/ForeverQuestLog-0.4.9.zip"
+        },
+        "version": "9563/63/ForeverQuestLog-0.4.9.zip"
+    },
+    "wow-itemtree": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-itemtree",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-s9vIQk4V4NyFS8swpJELNPsWcpB62+9guzm9yYXSJa4=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9543/379/ItemTree-v1.2.2-forever.zip"
+        },
+        "version": "9543/379/ItemTree-v1.2.2-forever.zip"
+    },
+    "wow-leatrix-maps": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-leatrix-maps",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-P0p+XRUZormbi6qdzdxVmi+x4p+AZiFFHMG7clWsk1o=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9571/295/Leatrix_Maps-1.60.31-forever.zip"
+        },
+        "version": "9571/295/Leatrix_Maps-1.60.31-forever.zip"
+    },
+    "wow-leatrix-plus": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-leatrix-plus",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-i3LlhuT9X0pOTteOS/AyUqK1V9c21t3UM71xB8h7Y+c=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9565/653/Leatrix_Plus-1.60.30-forever.zip"
+        },
+        "version": "9565/653/Leatrix_Plus-1.60.30-forever.zip"
+    },
+    "wow-macroforge": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-macroforge",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-nkb1SXpRF7urUoIvrmS+7xt6dOsqBD32vtszeIKgECE=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9435/84/MacroForge-v7.8.0.zip"
+        },
+        "version": "9435/84/MacroForge-v7.8.0.zip"
+    },
+    "wow-openmap": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-openmap",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-RhNtJfVqAGRVvqcNpsOIT07IZ/J5vmZpEwW4PILsIAY=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9571/905/OpenMap-v0.8.5-forever.zip"
+        },
+        "version": "9571/905/OpenMap-v0.8.5-forever.zip"
+    },
+    "wow-pawn": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-pawn",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-ybAkqTzo2pAcNOzchJaaCsnBsvOGFtwKNqFuaZwN26s=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9410/140/Pawn-2.14.1-Forever.zip"
+        },
+        "version": "9410/140/Pawn-2.14.1-Forever.zip"
+    },
+    "wow-platynator": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-platynator",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-MPILD7GLHzavvrchSLHWRCN7PSvsz4xhJqyGriM5D6U=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9577/945/Platynator-545.zip"
+        },
+        "version": "9577/945/Platynator-545.zip"
+    },
+    "wow-procdoc": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-procdoc",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-Mla8zbylHr4Uy25o8qcUV+UZonAidCOYG7Ai1lLfbLg=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9568/275/ProcDoc-v4.18.0.zip"
+        },
+        "version": "9568/275/ProcDoc-v4.18.0.zip"
+    },
+    "wow-spoken-audio-gossip": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-spoken-audio-gossip",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-iBLeaADFG3h/offhpsBja1seL0Fyyw7jbF9pt38vqRE=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9533/689/SpokenQuestsAudioGossip-2.6.0.zip"
+        },
+        "version": "9533/689/SpokenQuestsAudioGossip-2.6.0.zip"
+    },
+    "wow-spoken-audio-places": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-spoken-audio-places",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-NnUQ5PLDQ5H1F+zsVzP2gSmgyO5K4+izhfPRuGbkjFs=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9452/701/SpokenPlacesAudio-2.1.1.zip"
+        },
+        "version": "9452/701/SpokenPlacesAudio-2.1.1.zip"
+    },
+    "wow-spoken-audio-quests-alliance": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-spoken-audio-quests-alliance",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-EoAfDFR2Of6nBB1A98ZQxHc3TP/exvJMK7I+1aGrAmM=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9533/635/SpokenQuestsAudioAlliance-2.6.0.zip"
+        },
+        "version": "9533/635/SpokenQuestsAudioAlliance-2.6.0.zip"
+    },
+    "wow-spoken-audio-quests-horde": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-spoken-audio-quests-horde",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-AtN6WH3kf7pJQZYbvRVOzO0gSsOG2RCZAuTvS3KCSKQ=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9533/654/SpokenQuestsAudioHorde-2.6.0.zip"
+        },
+        "version": "9533/654/SpokenQuestsAudioHorde-2.6.0.zip"
+    },
+    "wow-spoken-audio-quests-shared": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-spoken-audio-quests-shared",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-N7kETHeKm3DYaSeJoJ7BA7jA/rrltnxmdaI+IiHBjKY=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9533/669/SpokenQuestsAudioShared-2.6.0.zip"
+        },
+        "version": "9533/669/SpokenQuestsAudioShared-2.6.0.zip"
+    },
+    "wow-spoken-audio-readables": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-spoken-audio-readables",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-ifOQKlsK62QCYG3TPPF92p0ppwycVBDUnJnCo190yjU=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9411/848/SpokenReadablesAudio-2.3.1.zip"
+        },
+        "version": "9411/848/SpokenReadablesAudio-2.3.1.zip"
+    },
+    "wow-total-rp-3": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-total-rp-3",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-Mf6JxQMUc2CsNjOvUSKY9Iz0sBF08n1ydrPKzNBeS7Q=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9546/499/totalRP3-3.5.5.zip"
+        },
+        "version": "9546/499/totalRP3-3.5.5.zip"
+    },
+    "wow-total-rp-3-extended": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-total-rp-3-extended",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-I5j1XjjG9vUHd4zisviKJ876OMyEJntIAAbAT63BhR0=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9546/545/totalRP3_Extended-2.3.7.zip"
+        },
+        "version": "9546/545/totalRP3_Extended-2.3.7.zip"
+    },
+    "wow-total-rp-3-unit-frames": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-total-rp-3-unit-frames",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-JahhuZ+z8eAVXVTTp4Wt8YefQ2V/ekxGfpwY9e3xA48=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9329/556/totalRP3_UnitFrames-1.1.4d.zip"
+        },
+        "version": "9329/556/totalRP3_UnitFrames-1.1.4d.zip"
+    },
+    "wow-wim-3": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "wow-wim-3",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-XtlYm4WzlIYY/+Wk3uDfF9FBJWXk5D4CobYxDlNttpE=",
+            "type": "url",
+            "url": "https://edge.forgecdn.net/files/9575/832/WIM-3.19.6.zip"
+        },
+        "version": "9575/832/WIM-3.19.6.zip"
     }
 }

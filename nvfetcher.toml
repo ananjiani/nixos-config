@@ -54,3 +54,127 @@ fetch.github = "persiyanov/herdr-reviewr"
 [herdr-reviewr-bin]
 src.github = "persiyanov/herdr-reviewr"
 fetch.url = "https://github.com/persiyanov/herdr-reviewr/releases/download/$ver/herdr-reviewr-x86_64-unknown-linux-musl.tar.gz"
+
+# CurseForge builds tagged with a 1.x game version (Forever and compatible Classic builds).
+[wow-bartender4]
+src.cmd = "scripts/cf-forever-latest bartender4"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-details]
+src.cmd = "scripts/cf-forever-latest details"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-pawn]
+src.cmd = "scripts/cf-forever-latest pawn"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-leatrix-plus]
+src.cmd = "scripts/cf-forever-latest leatrix-plus"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-leatrix-maps]
+src.cmd = "scripts/cf-forever-latest leatrix-maps"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-platynator]
+src.cmd = "scripts/cf-forever-latest platynator"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-blizzmove]
+src.cmd = "scripts/cf-forever-latest blizzmove"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-wim-3]
+src.cmd = "scripts/cf-forever-latest wim-3"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-total-rp-3]
+src.cmd = "scripts/cf-forever-latest total-rp-3"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-total-rp-3-extended]
+src.cmd = "scripts/cf-forever-latest total-rp-3-extended"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+# cfwidget returns 404 for this project's canonical slug; its project ID works.
+[wow-total-rp-3-unit-frames]
+src.cmd = "scripts/cf-forever-latest 709299"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-atlasloot-forever]
+src.cmd = "scripts/cf-forever-latest atlasloot-forever"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-itemtree]
+src.cmd = "scripts/cf-forever-latest itemtree"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-macroforge]
+src.cmd = "scripts/cf-forever-latest macroforge"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-forever-quest-log]
+src.cmd = "scripts/cf-forever-latest forever-quest-log"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-procdoc]
+src.cmd = "scripts/cf-forever-latest procdoc"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-cooldown-manager-centered]
+src.cmd = "scripts/cf-forever-latest cooldown-manager-centered"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-edit-mode-expanded]
+src.cmd = "scripts/cf-forever-latest edit-mode-expanded"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-better-personal-resource-display]
+src.cmd = "scripts/cf-forever-latest better-personal-resource-display"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+# The Forever archive includes BtWQuestsClassic; upstream's Nix package is retail.
+[wow-btw-quests]
+src.cmd = "scripts/cf-forever-latest btw-quests"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-forever-companion-discovery-journal]
+src.cmd = "scripts/cf-forever-latest forever-companion-discovery-journal"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-dialogueui]
+src.cmd = "scripts/cf-forever-latest dialogueui"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-openmap]
+src.cmd = "scripts/cf-forever-latest openmap"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-bagnon]
+src.cmd = "scripts/cf-forever-latest bagnon"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+# Quest audio is now split into four projects.
+[wow-spoken-audio-places]
+src.cmd = "scripts/cf-forever-latest spoken-audio-places"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-spoken-audio-readables]
+src.cmd = "scripts/cf-forever-latest spoken-audio-readables"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-spoken-audio-quests-alliance]
+src.cmd = "scripts/cf-forever-latest spoken-audio-quests-alliance"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-spoken-audio-quests-horde]
+src.cmd = "scripts/cf-forever-latest spoken-audio-quests-horde"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-spoken-audio-quests-shared]
+src.cmd = "scripts/cf-forever-latest spoken-audio-quests-shared"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
+[wow-spoken-audio-gossip]
+src.cmd = "scripts/cf-forever-latest spoken-audio-gossip"
+fetch.url = "https://edge.forgecdn.net/files/$ver"

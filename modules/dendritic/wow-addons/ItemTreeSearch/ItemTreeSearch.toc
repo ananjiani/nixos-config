@@ -1,0 +1,6 @@
+## Interface: 16001
+## Title: ItemTreeSearch
+## Notes: Search Bagnon bags by ItemTree verdict words.
+## OptionalDeps: Bagnon, BagBrother, ItemTree
+
+ItemTreeSearch.lua

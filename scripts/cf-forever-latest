@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+"""Print the newest CurseForge 1.x file as an edge.forgecdn.net/files path."""
+
+import json
+import subprocess
+import sys
+from urllib.parse import quote
+
+
+def latest_path(files):
+    forever = [f for f in files if any(v.startswith("1.") for v in f["versions"])]
+    if not forever:
+        raise ValueError("no 1.x build found")
+    latest = max(forever, key=lambda f: (f["uploaded_at"], f["id"]))
+    return f'{latest["id"] // 1000}/{latest["id"] % 1000}/{quote(latest["name"], safe="")}'
+
+
+if __name__ == "__main__":
+    project = sys.argv[1]
+    endpoint = project if project.isdigit() else f"wow/addons/{project}"
+    response = subprocess.run(
+        [
+            "curl", "--fail", "--silent", "--show-error", "--retry", "3",
+            "--max-time", "60", f"https://api.cfwidget.com/{endpoint}",
+        ],
+        check=True, capture_output=True, text=True,
+    )
+    print(latest_path(json.loads(response.stdout)["files"]))
