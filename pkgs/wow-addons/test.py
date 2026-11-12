@@ -26,6 +26,7 @@ class AddonTests(unittest.TestCase):
             dict(id=1001, name="old.zip", versions=["1.60.1"], uploaded_at="2026-01-01"),
             dict(id=2002, name="new build+.zip", versions=["1.60.2"], uploaded_at="2026-02-01"),
             dict(id=3003, name="retail.zip", versions=["12.1.5"], uploaded_at="2026-03-01"),
+            dict(id=4004, name="era.zip", versions=["1.15.9"], uploaded_at="2026-04-01"),
         ]
         self.assertEqual(latest.latest_path(files), "2/2/new%20build%2B.zip")
         with self.assertRaises(ValueError):

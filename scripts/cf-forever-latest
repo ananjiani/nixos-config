@@ -7,8 +7,15 @@ import sys
 from urllib.parse import quote
 
 
+def is_forever(version):
+    # Forever is 1.60+; Classic Era (1.15) also starts with "1.".
+    major, _, rest = version.partition(".")
+    minor = rest.partition(".")[0]
+    return major == "1" and minor.isdigit() and int(minor) >= 60
+
+
 def latest_path(files):
-    forever = [f for f in files if any(v.startswith("1.") for v in f["versions"])]
+    forever = [f for f in files if any(is_forever(v) for v in f["versions"])]
     if not forever:
         raise ValueError("no 1.x build found")
     latest = max(forever, key=lambda f: (f["uploaded_at"], f["id"]))
