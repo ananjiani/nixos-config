@@ -19,8 +19,10 @@ jobs:
             substituters = https://cache.nixos.org http://192.168.1.27:8080/middle-earth
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= middle-earth:QJM6g097RUDyZA0OG00fXc7JxFMOXN3J5ZBX8j+QfFI=
 
+      # Not `nix develop`: the devshell compiles uncached tools (deploy-rs, tflint),
+      # which starved k8s nodes. nixos-unstable is fully built on cache.nixos.org.
       - name: Run nvfetcher
-        run: nix develop --command nvfetcher
+        run: nix run nixpkgs/nixos-unstable#nvfetcher -- -l /tmp/changelog
 
       - name: Check for changes
         id: diff
@@ -43,13 +45,14 @@ jobs:
           git checkout -b "$BRANCH"
           git add _sources/
 
-          # Run pre-commit hooks so fixers (e.g. end-of-file-fixer) apply before committing
-          nix develop --command pre-commit run --files _sources/* || true
+          # Match the pre-commit hooks (end-of-file-fixer, nixfmt); CI's pre-commit-check verifies
+          sed -i -e '$a\' _sources/*
+          nix run nixpkgs/nixos-unstable#nixfmt -- _sources/generated.nix
           git add _sources/
 
           git commit -m "chore(deps): update nvfetcher sources
 
-          $(nix develop --command nvfetcher 2>&1 | grep '^[a-z].*→' || echo 'Updated sources')"
+          $(cat /tmp/changelog 2>/dev/null || echo 'Updated sources')"
 
           git push origin "$BRANCH"
 
