@@ -639,6 +639,13 @@ _:
             protonPackage = pkgs.proton-ge-bin.steamcompattool;
             uiLayoutName = "16:9";
             prefixDir = cfg.wowForever.prefixPath;
+            # Back up WTF/Account to git after the game exits. The repo was seeded by hand:
+            # nix-warcraft would init it as SHA-256, which GitHub rejects.
+            wtfSync = {
+              enable = true;
+              remoteUrl = "git@github.com:ananjiani/wow-wtf.git";
+              branch = "main";
+            };
             # Upstream hardcodes these to the default prefix instead of following prefixDir.
             versions.forever = {
               addonDir = "${cfg.wowForever.prefixPath}/pfx/drive_c/Program Files (x86)/World of Warcraft/_forever_/Interface/AddOns";
