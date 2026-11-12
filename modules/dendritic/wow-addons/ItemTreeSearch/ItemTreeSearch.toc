@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Title: ItemTreeSearch
-## Notes: Search Bagnon bags by ItemTree verdict words.
-## OptionalDeps: Bagnon, BagBrother, ItemTree
+## Notes: Search Baganator bags by ItemTree verdict words (it-keep, it-auction, it-vendor, it-disenchant, it-worthless).
+## OptionalDeps: Syndicator, Baganator, ItemTree
 
 ItemTreeSearch.lua

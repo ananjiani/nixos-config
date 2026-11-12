@@ -150,10 +150,6 @@ fetch.url = "https://edge.forgecdn.net/files/$ver"
 src.cmd = "scripts/cf-forever-latest openmap"
 fetch.url = "https://edge.forgecdn.net/files/$ver"
 
-[wow-bagnon]
-src.cmd = "scripts/cf-forever-latest bagnon"
-fetch.url = "https://edge.forgecdn.net/files/$ver"
-
 # Quest audio is now split into four projects.
 [wow-spoken-audio-places]
 src.cmd = "scripts/cf-forever-latest spoken-audio-places"

@@ -203,21 +203,6 @@
         },
         "version": "9567/495/AtlasLoot-Classic-Forever-1.3.7-121126-16001.zip"
     },
-    "wow-bagnon": {
-        "cargoLock": null,
-        "date": null,
-        "extract": null,
-        "name": "wow-bagnon",
-        "passthru": null,
-        "pinned": false,
-        "src": {
-            "name": null,
-            "sha256": "sha256-GNJ0+Z/zygLLc5R7XjbBP+pVX7WmXyv8RD4GSsFcCEc=",
-            "type": "url",
-            "url": "https://edge.forgecdn.net/files/9546/609/Bagnon-12.1.9.zip"
-        },
-        "version": "9546/609/Bagnon-12.1.9.zip"
-    },
     "wow-bartender4": {
         "cargoLock": null,
         "date": null,

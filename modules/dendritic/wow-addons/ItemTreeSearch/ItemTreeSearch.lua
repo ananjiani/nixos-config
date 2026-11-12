@@ -1,25 +1,30 @@
--- ItemTreeSearch: expose ItemTree verdict words to Bagnon's public ItemSearch filters.
-local search = LibStub and LibStub("ItemSearch-1.3", true)
-if not search or not search.Filters then return end
+-- ItemTreeSearch: ItemTree verdicts as Baganator search words, never cached per item.
+local search = Syndicator and Syndicator.Search
+if not search or type(search.AddKeyword) ~= "function" then return end
 
-local verdicts = { keep = true, auction = true, vendor = true, disenchant = true, worthless = true }
-search.Filters.itemtree = {
-	tags = { "itemtree", "it" },
-	onlyTags = false,
-	canSearch = function(self, operator, word)
-		return not operator and verdicts[word] and word
-	end,
-	match = function(self, item, operator, word)
+for _, verdict in ipairs({ "keep", "auction", "vendor", "disenchant", "worthless" }) do
+	search.AddKeyword("it-" .. verdict, function(details)
 		local api = ItemTreeAPI
-		if not api or type(api.GetItemFacts) ~= "function" or not item then return false end
-		local link = item.link
-		local id = tonumber(item.id) or tonumber(link) or
-			(type(link) == "string" and tonumber(link:match("item:(%d+)")))
-		if not id then return false end
-		local facts = api.GetItemFacts(id, link)
-		for _, tag in ipairs(facts and facts.keep and facts.keep.tags or {}) do
-			if tag == word then return true end
+		if not api or type(api.GetItemFacts) ~= "function" then return nil end
+		if not details or not details.itemID then return false, true end
+		local facts = api.GetItemFacts(details.itemID, details.itemLink)
+		if not facts then return nil end
+		for _, tag in ipairs(facts.keep and facts.keep.tags or {}) do
+			if tag == verdict then return true, true end
 		end
-		return false
-	end,
-}
+		return false, true
+	end, "ItemTree")
+end
+
+local function refresh()
+	if type(search.ClearCache) == "function" then search.ClearCache() end
+	if Baganator and Baganator.API and type(Baganator.API.RequestItemButtonsRefresh) == "function" then
+		Baganator.API.RequestItemButtonsRefresh()
+	end
+end
+
+local api = ItemTreeAPI
+if api then
+	if type(api.RegisterReadyCallback) == "function" then api.RegisterReadyCallback(refresh) end
+	if type(api.RegisterChangeCallback) == "function" then api.RegisterChangeCallback(refresh) end
+end
