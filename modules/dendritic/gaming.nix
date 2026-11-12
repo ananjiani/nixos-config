@@ -565,10 +565,6 @@ _:
             ]
             ++ lib.optionals cfg.tlopo.enable [
               tlopo
-            ]
-            # Addon updater; the AddOns dirs stay mutable (mutableAddOns) so it can manage them.
-            ++ lib.optionals cfg.wowForever.enable [
-              wowup-cf
             ];
         };
 
@@ -650,7 +646,7 @@ _:
             versions.forever = {
               addonDir = "${cfg.wowForever.prefixPath}/pfx/drive_c/Program Files (x86)/World of Warcraft/_forever_/Interface/AddOns";
               wtfDir = "${cfg.wowForever.prefixPath}/pfx/drive_c/Program Files (x86)/World of Warcraft/_forever_/WTF";
-              # Keep the addons WowUp and hand installs manage; Nix only resets the ones below.
+              # Keep hand installs; Nix only resets the managed folders below.
               mutableAddOns = true;
               # Upstream builds that ship a Forever (16001) TOC. QuestieDB stays out of Nix:
               # Questie refuses to start, with a message, if the two drift onto different contracts.
@@ -658,15 +654,16 @@ _:
                 (with inputs.nix-warcraft.packages.${pkgs.stdenv.hostPlatform.system}; [
                   angleur
                   auctionator
-                  baganator
                   bug-grabber
                   bugsack
                   forever-dungeon-journal
                   forever-loot-sparkles
                   opie
                   questie
-                  syndicator
+                  spoken
+                  whats-training
                 ])
+                ++ (import ../../pkgs/wow-addons { inherit pkgs sources; })
                 ++ [ (pkgs.runCommand "wow-local-addons" { } "cp -r ${./wow-addons} $out") ];
             };
           };
