@@ -106,24 +106,66 @@ db.QueryQuestSingle = function() error("still loading") end
 assert(Q.Build(4) == nil)
 db.QueryQuestSingle = query
 
-assert(Q.CampfireText(1) == nil)
+assert(#Q.CampfirePages(1) == 0)
 CampfireDB = { lexicon = { entries = {
 	other = { kind = "npc", questID = 1, pages = { "Not quest text" } },
 	quest = { kind = "quest", questID = 1, title = "First", pages = { [1] = "Plain page", [3] = { deflate = "packed" } } },
 } } }
-local title, text = Q.CampfireText(1)
-assert(title == "First" and text == "Plain page", "skip compressed pages without LibDeflate")
+local pages = Q.CampfirePages(1)
+assert(#pages == 1 and pages[1].phase == 1 and pages[1].text == "Plain page", "skip compressed pages without LibDeflate")
 LibStub = function(name, silent)
 	assert(name == "LibDeflate" and silent)
 	return { DecompressDeflate = function(_, packed) assert(packed == "packed") return "Unpacked page" end }
 end
-title, text = Q.CampfireText(1)
-assert(title == "First" and text == "Plain page\n\nUnpacked page")
+pages = Q.CampfirePages(1)
+assert(#pages == 2 and pages[1].phase == 1 and pages[1].text == "Plain page")
+assert(pages[2].phase == 3 and pages[2].text == "Unpacked page", "sparse pages keep their phase")
+local lines = Q.WindowLines(Q.Build(4)[1])
+local function Line(kind, text)
+	for _, line in ipairs(lines) do if line.kind == kind and line.text == text then return true end end
+end
+assert(lines[1].kind == "title" and lines[1].text == "First")
+assert(lines[2].kind == "meta" and lines[2].text == "[10] Completed")
+assert(lines[3].kind == "fact" and lines[3].text == "From: Apothecary Lydon – Hillsbrad Foothills")
+assert(lines[4].kind == "fact" and lines[4].text == "Turn in: Turn-in NPC – Tirisfal Glades")
+assert(lines[5].kind == "header" and lines[5].text == "Quest")
+assert(lines[6].kind == "text" and lines[6].text == "Plain page")
+assert(lines[7].kind == "header" and lines[7].text == "Completion")
+assert(lines[8].text == "Unpacked page" and lines[9].text == "Objectives")
+assert(lines[10].text == "Collect ten samples." and lines[11].text == "Return to Lydon.")
+assert(lines[#lines].kind == "link" and lines[#lines].text == "https://www.wowhead.com/forever/quest=1")
+for _, line in ipairs(lines) do assert(line.kind ~= "muted") end
+CampfireDB.lexicon.entries.progress = { kind = "quest", questID = 2, pages = { [2] = "Still at work." } }
+pages = Q.CampfirePages(2)
+assert(#pages == 1 and pages[1].phase == 2 and pages[1].text == "Still at work.")
+lines = Q.WindowLines({ id = 2, name = "Second", kind = "earlier" })
+assert(Line("header", "Progress"))
+lines = Q.WindowLines(Q.Build(4)[4])
+assert(lines[1].text == "Elixir of Pain (part 1)" and lines[2].text == "[?] In your log")
+assert(Line("muted", "Campfire has no saved text for this quest."))
+assert(lines[#lines].kind == "link" and lines[#lines].text == "https://www.wowhead.com/forever/quest=4")
+lines = Q.WindowLines({ id = 999, name = "Missing" })
+assert(lines[2].text == "[?] Not done")
 LibStub = function() return { DecompressDeflate = function() error("corrupt") end } end
-assert(select(2, Q.CampfireText(1)) == "Plain page")
+assert(#Q.CampfirePages(1) == 1)
 LibStub = function() return { DecompressDeflate = function() return nil end } end
-assert(select(2, Q.CampfireText(1)) == "Plain page")
-assert(Q.CampfireText(2) == nil)
+assert(#Q.CampfirePages(1) == 1)
+assert(#Q.CampfirePages(999) == 0)
+
+local opened
+QuestMapFrame_OpenToQuestDetails = function(id) opened = id end
+assert(Q.Click({ id = 4, kind = "current", inLog = true }) == "details" and opened == 4)
+assert(Q.Click({ id = 6, kind = "next", inLog = true }) == "details" and opened == 6)
+opened = nil
+assert(Q.Click({ id = 1, kind = "earlier", done = true }) == "window")
+assert(Q.Click({ id = 4, kind = "current" }) == "window")
+assert(Q.Click({ id = 6, kind = "next" }) == nil and opened == nil)
+InCombatLockdown = function() return true end
+assert(Q.Click({ id = 4, inLog = true }) == "details" and opened == nil)
+InCombatLockdown = nil
+QuestMapFrame_OpenToQuestDetails = nil
+assert(Q.Click({ id = 4, inLog = true }) == "details", "missing details API must not error")
+QuestMapFrame_OpenToQuestDetails = function(id) opened = id end
 
 -- Run the UI with small frame stubs: hook setup, selection, retry, and the saved toggle.
 local frames, hooks, timers = {}, {}, {}
@@ -139,6 +181,12 @@ function methods:GetParent() return self.parent end
 function methods:SetText(text) self.textValue = text end
 function methods:SetPoint(...) self.point = { ... } end
 function methods:SetHeight(height) self.height = height end
+function methods:SetSize(width, height) self.width, self.height = width, height end
+function methods:GetWidth() return self.width end
+function methods:GetLeft() return rawget(self, "left") or 800 end
+function methods:SetTexture(path) self.texture = path return true end
+function methods:SetAtlas(name) self.atlas = name end
+function methods:HighlightText() self.highlighted = true end
 function methods:SetScrollChild(child) self.child = child end
 function methods:GetStringHeight()
 	local _, lines = (self.textValue or ""):gsub("\n", "")
@@ -153,12 +201,15 @@ local function frame(name, parent)
 	return f
 end
 function methods:CreateFontString() return frame(nil, self) end
+function methods:CreateTexture() return frame(nil, self) end
+UISpecialFrames = {}
 CreateFrame = function(_, name, parent) return frame(name, parent) end
 UIParent = frame()
 SlashCmdList = {}
 C_Timer = { After = function(_, fn) timers[#timers + 1] = fn end }
 hooksecurefunc = function(name, fn) assert(not hooks[name]) hooks[name] = fn end
 Q = dofile(addon) -- The quest UI can load after this addon.
+assert(frames.QuestChainQuestFrame.children[1].texture == "Interface\\QuestFrame\\QuestBG", "parchment path fallback")
 QuestMapFrame = frame(nil, UIParent)
 QuestMapFrame.DetailsFrame = frame(nil, QuestMapFrame)
 QuestMapFrame_ShowQuestDetails = function() end
@@ -170,6 +221,7 @@ CreateFrame = function(kind, name, parent, template)
 	if not name and not parent then events = f end
 	return f
 end
+C_Texture = { GetAtlasInfo = function(name) assert(name == "QuestBG-Parchment") return {} end }
 Q = dofile(addon)
 local panel = frames.QuestChainFrame
 assert(hooks.QuestMapFrame_ShowQuestDetails)
@@ -180,12 +232,11 @@ assert(QuestChainDB.showNext)
 local content
 for _, child in ipairs(panel.children) do if rawget(child, "child") then content = child.child end end
 assert(content)
-local buttons, detail = {}, nil
+local buttons = {}
 for _, child in ipairs(content.children) do
-	if rawget(child, "quest") then buttons[#buttons + 1] = child
-	elseif child ~= content.children[1] then detail = child end
+	if rawget(child, "quest") then buttons[#buttons + 1] = child end
 end
-assert(#buttons == 5 and detail)
+assert(#buttons == 5 and #content.children == 6, "no pinned detail fontstring")
 assert(buttons[4].text.textValue:find("Elixir of Pain (part 1)", 1, true))
 assert(buttons[5].text.textValue:find("Elixir of Pain (part 2)", 1, true))
 GameTooltip = frame()
@@ -195,30 +246,45 @@ CampfireDB.lexicon.entries.current = { kind = "quest", questID = 4, pages = { "C
 CampfireDB.lexicon.entries.next = { kind = "quest", questID = 6, pages = { "Next saved text" } }
 for _, i in ipairs({ 1, 4, 5 }) do
 	buttons[i].scripts.OnEnter(buttons[i])
-	local _, saved = Q.CampfireText(buttons[i].quest.id)
-	assert(GameTooltip.lines[#GameTooltip.lines] == saved, "every row kind shows saved text")
+	local saved = Q.CampfirePages(buttons[i].quest.id)
+	assert(GameTooltip.lines[#GameTooltip.lines] == saved[#saved].text, "every row kind shows saved text")
 	if i == 1 then
 		assert(GameTooltip.lines[2] == "From: Apothecary Lydon – Hillsbrad Foothills")
 		assert(GameTooltip.lines[3] == "Turn in: Turn-in NPC – Tirisfal Glades")
 		assert(GameTooltip.lines[4] == "Collect ten samples." and GameTooltip.lines[5] == "Return to Lydon.")
 	end
-	local tooltip = table.concat(GameTooltip.lines, "\n")
 	local before = buttons[i + 1] and buttons[i + 1].point[3]
 	buttons[i].scripts.OnClick(buttons[i])
-	assert(detail:IsShown() and detail.textValue == tooltip, "pin uses the same details as hover")
-	if before then assert(buttons[i + 1].point[3] < before, "pin shifts later rows down") end
 	panel.scripts.OnUpdate(nil, 2)
-	assert(detail:IsShown(), "refresh keeps the pinned quest")
-	buttons[i].scripts.OnClick(buttons[i])
-	assert(not detail:IsShown(), "click again unpins")
-	if before then assert(buttons[i + 1].point[3] == before, "unpin restores row offsets") end
+	if before then assert(buttons[i + 1].point[3] == before, "clicks keep fixed row offsets") end
 end
-buttons[1].scripts.OnClick(buttons[1])
-buttons[4].scripts.OnClick(buttons[4])
-assert(detail.textValue:find("Current saved text", 1, true), "another click moves the pin")
+local window = frames.QuestChainQuestFrame
+assert(window:IsShown() and window.point[1] == "TOPRIGHT" and window.point[2] == panel)
+assert(window.children[1].atlas == "QuestBG-Parchment", "use the atlas only when this client has it")
+assert(UISpecialFrames[#UISpecialFrames] == "QuestChainQuestFrame")
+window:Hide()
 buttons[5].scripts.OnClick(buttons[5])
+assert(not window:IsShown(), "next quests do not open a window")
+opened = nil
+buttons[4].scripts.OnClick(buttons[4])
+assert(opened == 4 and not window:IsShown(), "in-log click opens game details")
+panel.left = 100
+buttons[1].scripts.OnClick(buttons[1])
+assert(window:IsShown() and window.point[1] == "TOPLEFT", "dock on the other side near the screen edge")
+local body
+for _, child in ipairs(window.children) do if rawget(child, "child") then body = child.child end end
+local link = body.children[1]
+assert(link.textValue == "https://www.wowhead.com/forever/quest=1")
+link:SetText("edited")
+link.scripts.OnTextChanged(link, true)
+assert(link.textValue == link.url, "copy box restores the URL after user edits")
+link.highlighted = false
+link.scripts.OnEditFocusGained(link)
+assert(link.highlighted, "focus selects the URL for copy")
+link.scripts.OnEscapePressed(link)
+assert(not window:IsShown())
 SlashCmdList.QUESTCHAIN("next")
-assert(not buttons[5]:IsShown() and not detail:IsShown(), "hidden successors cannot show pinned details")
+assert(not buttons[5]:IsShown())
 assert(QuestChainDB.showNext == false)
 QuestMapFrame.DetailsFrame.scripts.OnHide()
 assert(not panel:IsShown())
@@ -253,4 +319,8 @@ ns.Actions.QuestClick({}, { id = 4 }, "RightButton")
 assert(entries["Quest chain"])
 entries["Quest chain"]()
 assert(shown == 4)
-print("QuestChain tests passed (chains, details, parts, Campfire, hover, pins, UI hooks, packaged quest menu)")
+hooks, C_Texture = {}, nil
+function methods:SetTexture() return false end
+Q = dofile(addon)
+assert(not frames.QuestChainQuestFrame.children[1]:IsShown(), "missing parchment leaves the dark backdrop")
+print("QuestChain tests passed (chains, details, parts, Campfire pages, window lines, clicks, hover, quest window, UI hooks, packaged quest menu)")
