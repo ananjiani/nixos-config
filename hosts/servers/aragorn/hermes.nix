@@ -660,6 +660,8 @@ in
             model = "gpt-6-sol";
           }
         ];
+        # Let unpinned cron jobs follow the live model after a provider switch.
+        cron.model_drift_guard = false;
         terminal = {
           backend = "local";
           env_passthrough = [ ];
