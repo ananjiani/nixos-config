@@ -711,10 +711,17 @@
                 p: (p.pname or "") == "Syndicator"
               ) self.homeConfigurations."ammar@ammars-pc".config.programs.wow.versions.forever.addonPackages
             );
+            questLog = builtins.head (
+              builtins.filter (
+                p: (p.name or "") == "wow-forever-quest-log"
+              ) self.homeConfigurations."ammar@ammars-pc".config.programs.wow.versions.forever.addonPackages
+            );
           in
           pkgs.runCommand "wow-addons-tests" { } ''
             ${pkgs.python3}/bin/python3 ${./pkgs/wow-addons/test.py} ${./scripts/cf-forever-latest} ${./pkgs/wow-addons/unpack.py}
             ${pkgs.lua5_1}/bin/luac -p ${syndicator}/Syndicator/Search/CheckItem.lua
+            ${pkgs.lua5_1}/bin/luac -p ${./modules/dendritic/wow-addons/QuestChain/QuestChain.lua} ${questLog}/ForeverQuestLog/Actions.lua
+            ${pkgs.lua5_1}/bin/lua ${./tests/questchain.lua} ${./modules/dendritic/wow-addons/QuestChain/QuestChain.lua} ${questLog}/ForeverQuestLog/Actions.lua
             ${pkgs.lua5_1}/bin/lua ${./tests/itemtree-search.lua} ${./modules/dendritic/wow-addons/ItemTreeSearch/ItemTreeSearch.lua} ${syndicator}/Syndicator/Search/CheckItem.lua
             ${pkgs.python3}/bin/python3 - ${pkgs.writeShellScript "syndicator-keyword-patch" syndicator.postFixup} ${syndicator}/Syndicator/Search/CheckItem.lua <<'PY'
             import os

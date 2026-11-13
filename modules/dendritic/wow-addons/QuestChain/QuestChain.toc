@@ -1,0 +1,7 @@
+## Interface: 16001
+## Title: QuestChain
+## Notes: Questie's quest chains, with saved Campfire dialogue on hover.
+## OptionalDeps: Questie, QuestieDB, Campfire, ForeverQuestLog
+## SavedVariables: QuestChainDB
+
+QuestChain.lua
