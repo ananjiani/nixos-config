@@ -1,4 +1,4 @@
--- QuestChain: Questie's prerequisites and next quests, with saved Campfire dialogue on hover.
+-- QuestChain: Questie's chain details, with saved Campfire dialogue.
 local _, Q = ...
 Q = Q or {}
 
@@ -21,11 +21,41 @@ function Q.Build(questID, showNext)
 			return not (race and races ~= 0 and bit.band(races, 2 ^ (race - 1)) == 0)
 				and not (class and classes ~= 0 and bit.band(classes, 2 ^ (class - 1)) == 0)
 		end
+		local function Query(fn, ...)
+			if type(fn) ~= "function" then return end
+			local success, value = pcall(fn, ...)
+			if success then return value end
+		end
+		local function Contact(ids)
+			if type(ids) ~= "table" then return end
+			local queries = { db.QueryNPCSingle, db.QueryObjectSingle, db.QueryItemSingle }
+			for kind = 1, 3 do
+				local id = type(ids[kind]) == "table" and ids[kind][1]
+				if type(id) == "number" then
+					local name = Query(queries[kind], id, "name")
+					if type(name) ~= "string" or name == "" then return end
+					local zoneID = kind ~= 3 and Query(queries[kind], id, "zoneID")
+					local zone = type(zoneID) == "number" and zoneID > 0
+						and Query(C_Map and C_Map.GetAreaInfo, zoneID)
+					return { name = kind == 3 and ("item: " .. name) or name,
+						zone = type(zone) == "string" and zone or nil }
+				end
+			end
+		end
 		local function Add(id, kind)
 			local index = C_QuestLog.GetLogIndexForQuestID(id)
+			local texts, objectives = Query(db.QueryQuestSingle, id, "objectivesText"), {}
+			if type(texts) == "table" then
+				for _, text in ipairs(texts) do
+					if type(text) == "string" then objectives[#objectives + 1] = text end
+				end
+			end
 			rows[#rows + 1] = { id = id, kind = kind, name = Get(id, "name") or ("Quest #" .. id),
 				level = Get(id, "questLevel"), done = C_QuestLog.IsQuestFlaggedCompleted(id) or false,
-				inLog = index ~= nil and index > 0 }
+				inLog = index ~= nil and index > 0,
+				giver = Contact(Query(db.QueryQuestSingle, id, "startedBy")),
+				turnIn = Contact(Query(db.QueryQuestSingle, id, "finishedBy")),
+				objectives = #objectives > 0 and objectives or nil }
 		end
 		seen[questID] = true
 		local function Before(id, depth)
@@ -49,6 +79,14 @@ function Q.Build(questID, showNext)
 				if type(id) ~= "number" or id <= 0 or seen[id] then break end
 				seen[id] = true
 				if ForYou(id) then Add(id, "next") end
+			end
+		end
+		local counts, parts = {}, {}
+		for _, row in ipairs(rows) do counts[row.name] = (counts[row.name] or 0) + 1 end
+		for _, row in ipairs(rows) do
+			if counts[row.name] > 1 then
+				parts[row.name] = (parts[row.name] or 0) + 1
+				row.part = parts[row.name]
 			end
 		end
 		return rows
@@ -104,7 +142,7 @@ scroll:SetPoint("BOTTOMRIGHT", -30, 12)
 local content = CreateFrame("Frame", nil, scroll)
 content:SetSize(258, 1)
 scroll:SetScrollChild(content)
-local buttons, selected, elapsed = {}, nil, 0
+local buttons, selected, elapsed, pinned = {}, nil, 0, nil
 local status = content:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 status:SetPoint("TOPLEFT")
 status:SetWidth(258)
@@ -114,6 +152,46 @@ local function Settings()
 	QuestChainDB = QuestChainDB or {}
 	if QuestChainDB.showNext == nil then QuestChainDB.showNext = true end
 	return QuestChainDB
+end
+
+local function RowTitle(row)
+	return row.name .. (row.part and (" (part " .. row.part .. ")") or "")
+end
+
+local function DetailLines(row)
+	local lines = { RowTitle(row) }
+	for _, contact in ipairs({ { "From: ", row.giver }, { "Turn in: ", row.turnIn } }) do
+		local who = contact[2]
+		if who then lines[#lines + 1] = contact[1] .. who.name .. (who.zone and (" – " .. who.zone) or "") end
+	end
+	for _, text in ipairs(row.objectives or {}) do lines[#lines + 1] = text end
+	local _, text = Q.CampfireText(row.id)
+	if text then lines[#lines + 1] = text end
+	return lines
+end
+
+local detail = content:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+detail:SetWidth(246)
+detail:SetJustifyH("LEFT")
+detail:SetWordWrap(true)
+local function Layout()
+	local offset = 0
+	detail:Hide()
+	for _, button in ipairs(buttons) do
+		if button:IsShown() then
+			button:ClearAllPoints()
+			button:SetPoint("TOPLEFT", 0, -offset)
+			offset = offset + 22
+			if button.quest.id == pinned then
+				detail:ClearAllPoints()
+				detail:SetPoint("TOPLEFT", 12, -offset)
+				detail:SetText(table.concat(DetailLines(button.quest), "\n"))
+				detail:Show()
+				offset = offset + detail:GetStringHeight() + 8
+			end
+		end
+	end
+	content:SetHeight(math.max(40, offset))
 end
 
 local function Refresh()
@@ -126,7 +204,6 @@ local function Refresh()
 			button = CreateFrame("Button", nil, content)
 			buttons[i] = button
 			button:SetSize(258, 22)
-			button:SetPoint("TOPLEFT", 0, -(i - 1) * 22)
 			button.text = button:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 			button.text:SetAllPoints()
 			button.text:SetJustifyH("LEFT")
@@ -134,23 +211,25 @@ local function Refresh()
 			button:SetScript("OnEnter", function(self)
 				local q = self.quest
 				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-				GameTooltip:SetText(q.name)
-				if q.kind == "earlier" then
-					local _, text = Q.CampfireText(q.id)
-					if text then GameTooltip:AddLine(text, 1, 1, 1, true) end
-				end
+				local lines = DetailLines(q)
+				GameTooltip:SetText(lines[1])
+				for line = 2, #lines do GameTooltip:AddLine(lines[line], 1, 1, 1, true) end
 				GameTooltip:Show()
 			end)
 			button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+			button:SetScript("OnClick", function(self)
+				pinned = pinned ~= self.quest.id and self.quest.id or nil
+				Layout()
+			end)
 		end
 		button.quest = row
 		local mark = row.done and "|TInterface\\RaidFrame\\ReadyCheck-Ready:12|t "
 			or row.kind == "current" and "> " or row.inLog and "* " or "  "
 		local color = row.kind == "current" and "|cffffd100" or row.kind == "next" and "|cff888888" or "|cffffffff"
-		button.text:SetText(color .. mark .. "[" .. (row.level or "?") .. "] " .. row.name .. "|r")
+		button.text:SetText(color .. mark .. "[" .. (row.level or "?") .. "] " .. RowTitle(row) .. "|r")
 		button:Show()
 	end
-	content:SetHeight(math.max(40, #(rows or {}) * 22))
+	Layout()
 end
 
 local function Show(questID, automatic)
@@ -159,6 +238,7 @@ local function Show(questID, automatic)
 	local details = QuestMapFrame and QuestMapFrame.DetailsFrame
 	local dock = details and details:IsVisible()
 	if automatic and not dock then return end
+	if selected ~= questID then pinned = nil end
 	selected = questID
 	panel:SetParent(dock and details or UIParent)
 	panel:ClearAllPoints()
