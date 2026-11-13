@@ -174,7 +174,13 @@ panel:SetMovable(true)
 panel:EnableMouse(true)
 panel:RegisterForDrag("LeftButton")
 panel:SetScript("OnDragStart", panel.StartMoving)
-panel:SetScript("OnDragStop", panel.StopMovingOrSizing)
+panel:SetScript("OnDragStop", function(self)
+	self:StopMovingOrSizing()
+	-- Saved in UIParent units: the panel's parent (and scale) changes between the map and UIParent.
+	local ratio = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
+	QuestChainDB = QuestChainDB or {}
+	QuestChainDB.pos = { x = self:GetLeft() * ratio, y = self:GetTop() * ratio }
+end)
 panel:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
 	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", tile = true, tileSize = 16, edgeSize = 16,
 	insets = { left = 4, right = 4, top = 4, bottom = 4 } })
@@ -351,7 +357,11 @@ local function Show(questID, automatic)
 	selected = questID
 	panel:SetParent(dock and details or UIParent)
 	panel:ClearAllPoints()
-	if dock then panel:SetPoint("TOPRIGHT", details, "TOPLEFT", -8, 0)
+	local pos = Settings().pos
+	if pos then
+		local ratio = UIParent:GetEffectiveScale() / panel:GetEffectiveScale()
+		panel:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", pos.x * ratio, pos.y * ratio)
+	elseif dock then panel:SetPoint("TOPRIGHT", details, "TOPLEFT", -8, 0)
 	else panel:SetPoint("CENTER") end
 	panel:SetFrameStrata("DIALOG")
 	scroll:SetVerticalScroll(0)
@@ -361,7 +371,11 @@ end
 QuestChain_Show = Show
 SLASH_QUESTCHAIN1 = "/questchain"
 SlashCmdList.QUESTCHAIN = function(command)
-	if command:lower():match("^%s*next%s*$") then
+	if command:lower():match("^%s*reset%s*$") then
+		Settings().pos = nil
+		print("QuestChain: position reset")
+		if selected and panel:IsShown() then Show(selected) end
+	elseif command:lower():match("^%s*next%s*$") then
 		local db = Settings()
 		db.showNext = not db.showNext
 		print("QuestChain: next quests " .. (db.showNext and "shown" or "hidden"))

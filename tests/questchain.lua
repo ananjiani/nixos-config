@@ -184,6 +184,8 @@ function methods:SetHeight(height) self.height = height end
 function methods:SetSize(width, height) self.width, self.height = width, height end
 function methods:GetWidth() return self.width end
 function methods:GetLeft() return rawget(self, "left") or 800 end
+function methods:GetTop() return rawget(self, "top") or 600 end
+function methods:GetEffectiveScale() return rawget(self, "scale") or 1 end
 function methods:SetTexture(path) self.texture = path return true end
 function methods:SetAtlas(name) self.atlas = name end
 function methods:HighlightText() self.highlighted = true end
@@ -292,6 +294,16 @@ QuestMapFrame:Hide()
 assert(QuestMapFrame.DetailsFrame:IsShown() and not QuestMapFrame.DetailsFrame:IsVisible())
 SlashCmdList.QUESTCHAIN("")
 assert(panel:IsVisible() and panel:GetParent() == UIParent, "a hidden map must not swallow the panel")
+-- A dragged panel stays where it was left, in UIParent units, until /questchain reset.
+panel.left, panel.top, panel.scale = 120, 500, 2
+panel.scripts.OnDragStop(panel)
+assert(QuestChainDB.pos.x == 240 and QuestChainDB.pos.y == 1000)
+QuestMapFrame:Show()
+QuestChain_Show(4)
+assert(panel.point[1] == "TOPLEFT" and panel.point[2] == UIParent and panel.point[4] == 120 and panel.point[5] == 500)
+SlashCmdList.QUESTCHAIN("reset")
+assert(QuestChainDB.pos == nil and panel.point[2] == QuestMapFrame.DetailsFrame, "reset docks again")
+panel.scale = nil
 QuestieLoader = nil
 panel.scripts.OnUpdate(nil, 2) -- Missing DB must not error, and the next refresh must retry.
 QuestieLoader = { ImportModule = function() return db end }
