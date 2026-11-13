@@ -639,6 +639,37 @@ _:
         systemd.user = lib.mkMerge [
           # Shells read home.sessionVariables; app-menu launches only see environment.d.
           { sessionVariables = wowRuntimeEnv; }
+          # Git writes WTF/.git objects read-only; Battle.net scans the game folder after each
+          # sync, fails to clear the read-only flag, and keeps asking to update.
+          (lib.mkIf cfg.wowForever.enable (
+            let
+              gitDir = "${cfg.wowForever.prefixPath}/pfx/drive_c/Program Files (x86)/World of Warcraft/_forever_/WTF/.git";
+            in
+            {
+              services.wow-wtf-writable = {
+                Unit.Description = "Keep the WoW WTF git repo writable for Battle.net";
+                Service = {
+                  Type = "oneshot";
+                  ExecStart = "${pkgs.writeShellScript "wow-wtf-writable" ''
+                    [ -d "${gitDir}" ] && ${pkgs.coreutils}/bin/chmod -R u+w "${gitDir}"
+                    exit 0
+                  ''}";
+                };
+                Install.WantedBy = [ "default.target" ];
+              };
+              paths.wow-wtf-writable = {
+                Unit.Description = "Watch the WoW WTF git repo for new read-only objects";
+                Path = {
+                  PathChanged = [
+                    "${gitDir}/refs/heads/main"
+                    "${gitDir}/objects/pack"
+                  ];
+                  Unit = "wow-wtf-writable.service";
+                };
+                Install.WantedBy = [ "default.target" ];
+              };
+            }
+          ))
           # Ludusavi systemd user timer for automated save backups
           (lib.mkIf cfg.ludusavi.enable {
             services.ludusavi-backup = {
