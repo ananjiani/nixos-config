@@ -13,7 +13,16 @@ local quests = {
 	[8] = { requiredRaces = 2 },
 	[9] = { requiredClasses = 2 },
 }
-local db = { QueryQuestSingle = function(id, field) return (quests[id] or {})[field] end }
+local npcs = { [10] = { name = "Apothecary Lydon", zoneID = 267 }, [11] = { name = "Turn-in NPC", zoneID = 85 } }
+local objects = { [20] = { name = "Wanted Board", zoneID = 267 } }
+local items = { [30] = { name = "A Letter" } }
+local db = {
+	QueryQuestSingle = function(id, field) return (quests[id] or {})[field] end,
+	QueryNPCSingle = function(id, field) return (npcs[id] or {})[field] end,
+	QueryObjectSingle = function(id, field) return (objects[id] or {})[field] end,
+	QueryItemSingle = function(id, field) return (items[id] or {})[field] end,
+}
+C_Map = { GetAreaInfo = function(id) return ({ [267] = "Hillsbrad Foothills", [85] = "Tirisfal Glades" })[id] end }
 QuestieLoader = { ImportModule = function(_, name) assert(name == "QuestieDB") return db end }
 assert(Q.Build(4) == nil, "must wait for Questie initialization")
 db.QuestPointers = {}
@@ -43,6 +52,51 @@ quests[5].requiredRaces = 2
 assert(IDs(Q.Build(4)) == "1,2,3,4,6", "a filtered successor must not hide later eligible quests")
 assert(IDs(Q.Build(8)) == "", "filter a wrong-race root too")
 assert(IDs(Q.Build(999)) == "999", "missing quest data must keep the selected quest")
+quests[1].startedBy, quests[1].finishedBy = { { 10 }, { 20 }, { 30 } }, { { 11 }, { 20 } }
+quests[1].objectivesText = { "Collect ten samples.", "Return to Lydon." }
+quests[2].startedBy, quests[2].finishedBy = { {}, { 20 }, { 30 } }, { {}, { 20 } }
+quests[3].startedBy = { {}, {}, { 30 } }
+quests[4].name, quests[6].name = "Elixir of Pain", "Elixir of Pain"
+rows = assert(Q.Build(4))
+assert(rows[1].giver.name == "Apothecary Lydon" and rows[1].giver.zone == "Hillsbrad Foothills")
+assert(rows[1].turnIn.name == "Turn-in NPC" and rows[1].turnIn.zone == "Tirisfal Glades")
+assert(table.concat(rows[1].objectives, "|") == "Collect ten samples.|Return to Lydon.")
+assert(rows[2].giver.name == "Wanted Board" and rows[2].giver.zone == "Hillsbrad Foothills")
+assert(rows[2].turnIn.name == "Wanted Board" and rows[2].turnIn.zone == "Hillsbrad Foothills")
+assert(rows[3].giver.name == "item: A Letter" and rows[3].giver.zone == nil)
+assert(rows[3].turnIn == nil and rows[3].objectives == nil)
+assert(rows[4].part == 1 and rows[5].part == 2 and rows[1].part == nil, "number repeated names in chain order")
+assert(Q.Build(4, false)[4].part == nil, "hidden successors do not add parts")
+local missing = assert(Q.Build(999))[1]
+assert(missing.giver == nil and missing.turnIn == nil and missing.objectives == nil and missing.part == nil)
+local npcQuery, areaQuery, questQuery = db.QueryNPCSingle, C_Map.GetAreaInfo, db.QueryQuestSingle
+db.QueryNPCSingle = function() error("NPC unavailable") end
+assert(Q.Build(4)[1].giver == nil, "optional lookup errors must not discard the chain")
+db.QueryNPCSingle = npcQuery
+C_Map.GetAreaInfo = function() error("zone unavailable") end
+assert(Q.Build(4)[1].giver.zone == nil)
+C_Map.GetAreaInfo = nil
+assert(Q.Build(4)[1].giver.zone == nil)
+C_Map.GetAreaInfo = areaQuery
+db.QueryQuestSingle = function(id, field)
+	if field == "startedBy" or field == "finishedBy" or field == "objectivesText" then error("detail unavailable") end
+	return questQuery(id, field)
+end
+missing = assert(Q.Build(4))[1]
+assert(missing.giver == nil and missing.turnIn == nil and missing.objectives == nil)
+db.QueryQuestSingle = questQuery
+npcs[10].zoneID = nil
+assert(Q.Build(4)[1].giver.name == "Apothecary Lydon" and Q.Build(4)[1].giver.zone == nil)
+npcs[10].zoneID = 267
+local objectQuery, itemQuery = db.QueryObjectSingle, db.QueryItemSingle
+db.QueryObjectSingle, db.QueryItemSingle = nil, nil
+rows = assert(Q.Build(4))
+assert(rows[2].giver == nil and rows[2].turnIn == nil and rows[3].giver == nil)
+db.QueryObjectSingle, db.QueryItemSingle = objectQuery, itemQuery
+quests[3].startedBy, quests[3].objectivesText = { { 999 } }, "not a list"
+assert(Q.Build(4)[3].giver == nil and Q.Build(4)[3].objectives == nil)
+quests[3].startedBy, quests[3].objectivesText = { {}, {}, { 30 } }, { 123, "A valid objective." }
+assert(Q.Build(4)[3].objectives[1] == "A valid objective.")
 for id = 100, 180 do quests[id] = { preQuestSingle = { id - 1 }, nextQuestInChain = id + 1 } end
 rows = Q.Build(140)
 assert(#rows == 61 and rows[1].id == 110 and rows[31].id == 140 and rows[61].id == 170, "30 steps each way")
@@ -83,14 +137,22 @@ function methods:IsVisible() return self.shown and (not self.parent or self.pare
 function methods:SetParent(parent) self.parent = parent end
 function methods:GetParent() return self.parent end
 function methods:SetText(text) self.textValue = text end
+function methods:SetPoint(...) self.point = { ... } end
+function methods:SetHeight(height) self.height = height end
+function methods:SetScrollChild(child) self.child = child end
+function methods:GetStringHeight()
+	local _, lines = (self.textValue or ""):gsub("\n", "")
+	return (lines + 1) * 14
+end
 local function frame(name, parent)
-	local f = setmetatable({ name = name, parent = parent or false, scripts = {}, shown = true }, { __index = function(_, key)
+	local f = setmetatable({ name = name, parent = parent or false, scripts = {}, children = {}, shown = true }, { __index = function(_, key)
 		return methods[key] or function() end
 	end })
+	if parent then parent.children[#parent.children + 1] = f end
 	if name then frames[name] = f end
 	return f
 end
-function methods:CreateFontString() return frame() end
+function methods:CreateFontString() return frame(nil, self) end
 CreateFrame = function(_, name, parent) return frame(name, parent) end
 UIParent = frame()
 SlashCmdList = {}
@@ -115,7 +177,48 @@ events.scripts.OnEvent(nil, "ADDON_LOADED") -- No duplicate hooks.
 hooks.QuestMapFrame_ShowQuestDetails(4)
 assert(panel:IsShown() and panel:GetParent() == QuestMapFrame.DetailsFrame)
 assert(QuestChainDB.showNext)
+local content
+for _, child in ipairs(panel.children) do if rawget(child, "child") then content = child.child end end
+assert(content)
+local buttons, detail = {}, nil
+for _, child in ipairs(content.children) do
+	if rawget(child, "quest") then buttons[#buttons + 1] = child
+	elseif child ~= content.children[1] then detail = child end
+end
+assert(#buttons == 5 and detail)
+assert(buttons[4].text.textValue:find("Elixir of Pain (part 1)", 1, true))
+assert(buttons[5].text.textValue:find("Elixir of Pain (part 2)", 1, true))
+GameTooltip = frame()
+function GameTooltip:SetText(text) self.lines = { text } end
+function GameTooltip:AddLine(text) self.lines[#self.lines + 1] = text end
+CampfireDB.lexicon.entries.current = { kind = "quest", questID = 4, pages = { "Current saved text" } }
+CampfireDB.lexicon.entries.next = { kind = "quest", questID = 6, pages = { "Next saved text" } }
+for _, i in ipairs({ 1, 4, 5 }) do
+	buttons[i].scripts.OnEnter(buttons[i])
+	local _, saved = Q.CampfireText(buttons[i].quest.id)
+	assert(GameTooltip.lines[#GameTooltip.lines] == saved, "every row kind shows saved text")
+	if i == 1 then
+		assert(GameTooltip.lines[2] == "From: Apothecary Lydon – Hillsbrad Foothills")
+		assert(GameTooltip.lines[3] == "Turn in: Turn-in NPC – Tirisfal Glades")
+		assert(GameTooltip.lines[4] == "Collect ten samples." and GameTooltip.lines[5] == "Return to Lydon.")
+	end
+	local tooltip = table.concat(GameTooltip.lines, "\n")
+	local before = buttons[i + 1] and buttons[i + 1].point[3]
+	buttons[i].scripts.OnClick(buttons[i])
+	assert(detail:IsShown() and detail.textValue == tooltip, "pin uses the same details as hover")
+	if before then assert(buttons[i + 1].point[3] < before, "pin shifts later rows down") end
+	panel.scripts.OnUpdate(nil, 2)
+	assert(detail:IsShown(), "refresh keeps the pinned quest")
+	buttons[i].scripts.OnClick(buttons[i])
+	assert(not detail:IsShown(), "click again unpins")
+	if before then assert(buttons[i + 1].point[3] == before, "unpin restores row offsets") end
+end
+buttons[1].scripts.OnClick(buttons[1])
+buttons[4].scripts.OnClick(buttons[4])
+assert(detail.textValue:find("Current saved text", 1, true), "another click moves the pin")
+buttons[5].scripts.OnClick(buttons[5])
 SlashCmdList.QUESTCHAIN("next")
+assert(not buttons[5]:IsShown() and not detail:IsShown(), "hidden successors cannot show pinned details")
 assert(QuestChainDB.showNext == false)
 QuestMapFrame.DetailsFrame.scripts.OnHide()
 assert(not panel:IsShown())
@@ -150,4 +253,4 @@ ns.Actions.QuestClick({}, { id = 4 }, "RightButton")
 assert(entries["Quest chain"])
 entries["Quest chain"]()
 assert(shown == 4)
-print("QuestChain tests passed (chains, Campfire, UI hooks, packaged quest menu)")
+print("QuestChain tests passed (chains, details, parts, Campfire, hover, pins, UI hooks, packaged quest menu)")
