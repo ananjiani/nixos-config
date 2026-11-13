@@ -54,16 +54,20 @@ class AddonTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     unpacker.unpack(src, out)
 
-    def test_openmap_patch(self):
-        for anchor, succeeds in [(unpacker.OPENMAP_ANCHOR, True), ("changed", False), (unpacker.OPENMAP_ANCHOR * 2, False)]:
-            with self.subTest(anchor=anchor):
-                src, out = self.archive({"OpenMap/OpenMap.toc": "## Interface: 16001", "OpenMap/Map/Dungeons.lua": anchor})
-                if succeeds:
-                    unpacker.unpack(src, out)
-                    self.assertIn(unpacker.OPENMAP_PATCH, (out / "OpenMap/Map/Dungeons.lua").read_text())
-                else:
-                    with self.assertRaises(ValueError):
+    def test_patches(self):
+        for folder, file, anchor, patch in [
+            ("OpenMap", "Map/Dungeons.lua", unpacker.OPENMAP_ANCHOR, unpacker.OPENMAP_PATCH),
+            ("ForeverQuestLog", "Actions.lua", unpacker.QUESTLOG_ANCHOR, unpacker.QUESTLOG_PATCH),
+        ]:
+            for text, succeeds in [(anchor, True), ("changed", False), (anchor * 2, False), (anchor + patch, False)]:
+                with self.subTest(folder=folder, text=text):
+                    src, out = self.archive({f"{folder}/{folder}.toc": "## Interface: 16001", f"{folder}/{file}": text})
+                    if succeeds:
                         unpacker.unpack(src, out)
+                        self.assertEqual((out / folder / file).read_text(), anchor + patch)
+                    else:
+                        with self.assertRaises(ValueError):
+                            unpacker.unpack(src, out)
 
 
 unittest.main()

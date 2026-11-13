@@ -142,14 +142,6 @@
       sha256 = "sha256-VUQEFw1301vaBrnfW+yH2qA2Gpw+uuODuVUrCsE45EE=";
     };
   };
-  wow-btw-quests = {
-    pname = "wow-btw-quests";
-    version = "9547/866/BtWQuests-v2.70.0-forever.zip";
-    src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9547/866/BtWQuests-v2.70.0-forever.zip";
-      sha256 = "sha256-yNlGGPauGSt5TkjMhUyXV0or3re0I9jerSSWV2NtqBg=";
-    };
-  };
   wow-cooldown-manager-centered = {
     pname = "wow-cooldown-manager-centered";
     version = "9538/908/CooldownManagerCentered-v5.10.0.zip";

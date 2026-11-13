@@ -133,11 +133,6 @@ fetch.url = "https://edge.forgecdn.net/files/$ver"
 src.cmd = "scripts/cf-forever-latest better-personal-resource-display"
 fetch.url = "https://edge.forgecdn.net/files/$ver"
 
-# The Forever archive includes BtWQuestsClassic; upstream's Nix package is retail.
-[wow-btw-quests]
-src.cmd = "scripts/cf-forever-latest btw-quests"
-fetch.url = "https://edge.forgecdn.net/files/$ver"
-
 [wow-forever-companion-discovery-journal]
 src.cmd = "scripts/cf-forever-latest forever-companion-discovery-journal"
 fetch.url = "https://edge.forgecdn.net/files/$ver"
