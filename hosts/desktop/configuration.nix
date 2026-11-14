@@ -357,6 +357,13 @@ in
   };
   boot.initrd.extraFirmwarePaths = [ "edid/${sunshineEdidName}.bin" ];
 
+  # Compressed RAM swap, used before the NVMe swap file (higher priority by default).
+  zramSwap = {
+    enable = true;
+    memoryPercent = 50;
+    algorithm = "zstd";
+  };
+
   networking = {
     hostName = "ammars-pc";
 

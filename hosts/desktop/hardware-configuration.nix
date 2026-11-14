@@ -51,8 +51,13 @@
     };
   };
 
+  # NVMe swap file instead of the SATA SSD partition, which stalled the game on page-in.
+  # zram (configuration.nix) takes swap first; this only catches overflow.
   swapDevices = [
-    { device = "/dev/disk/by-uuid/25a17f92-7a90-4fb8-b209-41a3b2c1c56a"; }
+    {
+      device = "/mnt/nvme/swapfile";
+      size = 16 * 1024;
+    }
   ];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
