@@ -72,6 +72,10 @@ fetch.url = "https://edge.forgecdn.net/files/$ver"
 src.cmd = "scripts/cf-forever-latest leatrix-plus"
 fetch.url = "https://edge.forgecdn.net/files/$ver"
 
+[wow-auto-potion]
+src.cmd = "scripts/cf-forever-latest auto-potion"
+fetch.url = "https://edge.forgecdn.net/files/$ver"
+
 [wow-leatrix-maps]
 src.cmd = "scripts/cf-forever-latest leatrix-maps"
 fetch.url = "https://edge.forgecdn.net/files/$ver"

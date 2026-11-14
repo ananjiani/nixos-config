@@ -99,7 +99,7 @@
     src = fetchurl {
       url = "https://patch.swgr.media/patch/launcher/SWG%20Restoration%20Install.exe";
       name = "swgr-install.exe";
-      sha256 = "sha256-jYSyD8CxPAxtrm6jpHvB3UgorW4oAJMC8rTuxBgd6ik=";
+      sha256 = "sha256-Z+8BPMpTDNLxKZNrFqpXjpDYsV5cx2MmtbGUpsDQVas=";
     };
   };
   tlopo = {
@@ -116,6 +116,14 @@
     src = fetchurl {
       url = "https://edge.forgecdn.net/files/9567/495/AtlasLoot-Classic-Forever-1.3.7-121126-16001.zip";
       sha256 = "sha256-oYGoPjVev5N+0cCnJXxNWEwDODVWcHMC1RtXZ2uZjq8=";
+    };
+  };
+  wow-auto-potion = {
+    pname = "wow-auto-potion";
+    version = "9600/118/AutoPotion-4.0.8.zip";
+    src = fetchurl {
+      url = "https://edge.forgecdn.net/files/9600/118/AutoPotion-4.0.8.zip";
+      sha256 = "sha256-LKwt/7N4FzEzipP7tIiZ26hGUm6708Y7uHtFtAs34QA=";
     };
   };
   wow-bartender4 = {
