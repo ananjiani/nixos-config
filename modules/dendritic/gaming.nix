@@ -608,9 +608,10 @@ _:
             ];
         };
 
+        # single_queue: vkd3d's async compute queues stall on this amdgpu ("Fence fallback timer expired on ring comp_1.x"), hitching the game.
         xdg.desktopEntries = lib.mkIf cfg.wowForever.enable {
-          bnet.exec = lib.mkForce "/run/wrappers/bin/mullvad-exclude wow-battlenet --disable-gpu";
-          wow-forever.exec = lib.mkForce "/run/wrappers/bin/mullvad-exclude wow-forever";
+          bnet.exec = lib.mkForce "env VKD3D_CONFIG=single_queue /run/wrappers/bin/mullvad-exclude wow-battlenet --disable-gpu";
+          wow-forever.exec = lib.mkForce "env VKD3D_CONFIG=single_queue /run/wrappers/bin/mullvad-exclude wow-forever";
         };
 
         # Syncthing for game save sync (Desktop ↔ Deck ↔ theoden)
