@@ -449,13 +449,18 @@ in
                 type route hook output priority -149; policy accept;
                 meta mark and 0xff0000 == 0x80000 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
               }
+              # Tailscale's mangle CONNMARK --save-mark (mask 0xff0000) copies the 0x6f
+              # byte of Mullvad's meta mark into the ct mark. Mullvad matches
+              # ct mark == 0xf41 exactly, so the reply (e.g. WoW's SYN-ACK) is dropped.
               chain output {
                 type filter hook output priority -10; policy accept;
+                ct mark and 0x0000ffff == 0x00000f41 ct mark set 0x00000f41
                 ip daddr 100.64.0.0/10 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
                 ip6 daddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
               }
               chain input {
                 type filter hook input priority -100; policy accept;
+                ct mark and 0x0000ffff == 0x00000f41 ct mark set 0x00000f41
                 ip saddr 100.64.0.0/10 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
                 ip6 saddr fd7a:115c:a1e0::/48 ct mark set 0x00000f41 meta mark set 0x6d6f6c65
               }
