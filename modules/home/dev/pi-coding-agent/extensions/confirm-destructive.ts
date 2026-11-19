@@ -84,11 +84,17 @@ export default function (pi: ExtensionAPI) {
     }
 
     void notifyPending(ctx, `wants to run: ${match.reason}`);
-    const choice = await ctx.ui.select(
-      `⚠️  Destructive command (${match.reason}):\n\n  ${command}\n\nAllow?`,
-      ["Yes", "No"],
-    );
-    dismissPending();
+    pi.events.emit("herdr:blocked", { active: true, label: `Approve: ${match.reason}` });
+    let choice: string | undefined;
+    try {
+      choice = await ctx.ui.select(
+        `⚠️  Destructive command (${match.reason}):\n\n  ${command}\n\nAllow?`,
+        ["Yes", "No"],
+      );
+    } finally {
+      pi.events.emit("herdr:blocked", { active: false });
+      dismissPending();
+    }
 
     if (choice !== "Yes") {
       ctx.ui.notify("Command blocked", "warning");
