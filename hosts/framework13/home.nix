@@ -15,9 +15,14 @@
 
   desktop.niri.enable = true;
 
-  # SSH alias — stopgap until /etc/hosts has theoden.lan
-  programs.ssh.matchBlocks."theoden.lan" = {
-    hostname = "192.168.1.27";
+  programs.ssh.matchBlocks = {
+    # SSH alias — stopgap until /etc/hosts has theoden.lan
+    "theoden.lan".hostname = "192.168.1.27";
+    # Denethor's Work VLAN only admits aragorn and ammars-pc; hop via aragorn.
+    denethor = {
+      hostname = "denethor.lan";
+      proxyJump = "aragorn";
+    };
   };
 
   services = {
