@@ -11,6 +11,8 @@ OPENMAP_ANCHOR = '\tmap:HookScript("OnShow", function()\n\t\tC_Timer.After(0.1, 
 OPENMAP_PATCH = '\t\t\tdo return end -- local patch: keep Blizzard live dungeon map\n'
 QUESTLOG_ANCHOR = '        root:CreateButton(ABANDON_QUEST_ABBREV, function() QuestMapQuestOptions_AbandonQuest(questID) end)\n'
 QUESTLOG_PATCH = '        if QuestChain_Show then root:CreateButton("Quest chain", function() QuestChain_Show(questID) end) end -- local patch: QuestChain entry\n'
+ITEMTREE_ANCHOR = '      if ok and number(skillLine) == DisenchantValue.ENCHANTING_SKILL_LINE then\n        return number(rank)\n      end\n    end\n  end\n'
+ITEMTREE_PATCH = '  do return DisenchantValue.EPIC_RANK end -- local patch: no Enchanting rates gear for a maxed enchanter alt\n'
 
 
 def unpack(src, out):
@@ -42,6 +44,13 @@ def unpack(src, out):
         if text.count(QUESTLOG_ANCHOR) != 1 or QUESTLOG_PATCH in text:
             raise ValueError("ForeverQuestLog quest menu anchor changed; review the patch")
         actions.write_text(text.replace(QUESTLOG_ANCHOR, QUESTLOG_ANCHOR + QUESTLOG_PATCH), encoding="utf-8")
+
+    disenchant = out / "ItemTree/Core/DisenchantValue.lua"
+    if disenchant.exists():
+        text = disenchant.read_text(encoding="utf-8")
+        if text.count(ITEMTREE_ANCHOR) != 1 or ITEMTREE_PATCH in text:
+            raise ValueError("ItemTree Enchanting rank anchor changed; review the patch")
+        disenchant.write_text(text.replace(ITEMTREE_ANCHOR, ITEMTREE_ANCHOR + ITEMTREE_PATCH), encoding="utf-8")
 
     folders = sorted(out.iterdir())
     if not folders:

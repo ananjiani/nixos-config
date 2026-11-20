@@ -58,6 +58,7 @@ class AddonTests(unittest.TestCase):
         for folder, file, anchor, patch in [
             ("OpenMap", "Map/Dungeons.lua", unpacker.OPENMAP_ANCHOR, unpacker.OPENMAP_PATCH),
             ("ForeverQuestLog", "Actions.lua", unpacker.QUESTLOG_ANCHOR, unpacker.QUESTLOG_PATCH),
+            ("ItemTree", "Core/DisenchantValue.lua", unpacker.ITEMTREE_ANCHOR, unpacker.ITEMTREE_PATCH),
         ]:
             for text, succeeds in [(anchor, True), ("changed", False), (anchor * 2, False), (anchor + patch, False)]:
                 with self.subTest(folder=folder, text=text):
