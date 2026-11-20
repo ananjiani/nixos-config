@@ -44,6 +44,15 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINAzH8WouJOjPIrJH3ngAxWaSEw6YLDREAbFxIgr7mjX";
     "boromir.lan".publicKey =
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEsPlw7G8qNx5esED6AHc6EQhZk0nuLxfwh1IlZ1k5Nb";
+    aragorn = {
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPBtvaS9tmosKjjAdDGW3byLA5pj1ren754ldSpGRKKZ";
+      extraHostNames = [
+        "aragorn.lan"
+        "100.64.0.22"
+      ];
+    };
+    "denethor.lan".publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEwrCWtzp5GEAuq4bHGw0s30Zln35AmLpMpoVCkQn/KF";
   };
   programs = {
 
