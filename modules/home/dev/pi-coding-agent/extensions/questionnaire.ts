@@ -101,6 +101,7 @@ export default function questionnaire(pi: ExtensionAPI) {
 			const totalTabs = questions.length + 1; // questions + Submit
 
 			void notifyPending(ctx, "has questions for you");
+			pi.events.emit("herdr:blocked", { active: true, label: "Has questions for you" });
 			const result = await ctx.ui.custom<QuestionnaireResult>((tui, theme, _kb, done) => {
 				// State
 				let currentTab = 0;
@@ -376,7 +377,7 @@ export default function questionnaire(pi: ExtensionAPI) {
 					},
 					handleInput,
 				};
-			});
+			}).finally(() => pi.events.emit("herdr:blocked", { active: false }));
 
 			dismissPending();
 
