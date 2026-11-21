@@ -1,0 +1,5 @@
+## Interface: 16001
+## Title: SwingQueue
+## Notes: The game's main-hand swing bar turns red while Heroic Strike is queued, green while Cleave is.
+
+SwingQueue.lua
