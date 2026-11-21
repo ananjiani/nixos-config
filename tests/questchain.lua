@@ -313,7 +313,7 @@ QuestChain_Show(0)
 -- Exercise the patched packaged menu, with and without QuestChain.
 local actions = assert(arg[2], "patched ForeverQuestLog Actions.lua required")
 local entries = {}
-local root = { CreateTitle = function() end, CreateButton = function(_, name, fn) entries[name] = fn end }
+local root = { SetTag = function() end, CreateTitle = function() end, CreateButton = function(_, name, fn) entries[name] = fn end }
 MenuUtil = { CreateContextMenu = function(_, build) build(nil, root) end }
 C_SuperTrack = { GetSuperTrackedQuestID = function() return 0 end }
 C_QuestLog.GetTitleForQuestID = function() return "Current" end
