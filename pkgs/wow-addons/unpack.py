@@ -7,8 +7,6 @@ import stat
 import sys
 import zipfile
 
-OPENMAP_ANCHOR = '\tmap:HookScript("OnShow", function()\n\t\tC_Timer.After(0.1, function()\n'
-OPENMAP_PATCH = '\t\t\tdo return end -- local patch: keep Blizzard live dungeon map\n'
 QUESTLOG_ANCHOR = '        root:CreateButton(ABANDON_QUEST_ABBREV, function() QuestMapQuestOptions_AbandonQuest(questID) end)\n'
 QUESTLOG_PATCH = '        if QuestChain_Show then root:CreateButton("Quest chain", function() QuestChain_Show(questID) end) end -- local patch: QuestChain entry\n'
 
@@ -28,13 +26,6 @@ def unpack(src, out):
                 target.parent.mkdir(parents=True, exist_ok=True)
                 with archive.open(entry) as source, target.open("wb") as dest:
                     shutil.copyfileobj(source, dest)
-
-    dungeons = out / "OpenMap/Map/Dungeons.lua"
-    if dungeons.exists():
-        text = dungeons.read_text(encoding="utf-8")
-        if text.count(OPENMAP_ANCHOR) != 1 or OPENMAP_PATCH in text:
-            raise ValueError("OpenMap live dungeon map anchor changed; review the patch")
-        dungeons.write_text(text.replace(OPENMAP_ANCHOR, OPENMAP_ANCHOR + OPENMAP_PATCH), encoding="utf-8")
 
     actions = out / "ForeverQuestLog/Actions.lua"
     if actions.exists():

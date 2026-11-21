@@ -56,7 +56,6 @@ class AddonTests(unittest.TestCase):
 
     def test_patches(self):
         for folder, file, anchor, patch in [
-            ("OpenMap", "Map/Dungeons.lua", unpacker.OPENMAP_ANCHOR, unpacker.OPENMAP_PATCH),
             ("ForeverQuestLog", "Actions.lua", unpacker.QUESTLOG_ANCHOR, unpacker.QUESTLOG_PATCH),
         ]:
             for text, succeeds in [(anchor, True), ("changed", False), (anchor * 2, False), (anchor + patch, False)]:
