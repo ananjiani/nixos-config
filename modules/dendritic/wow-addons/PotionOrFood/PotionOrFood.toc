@@ -1,0 +1,6 @@
+## Interface: 16001
+## Title: PotionOrFood
+## Notes: Joins Auto Potion's macros: HealthOrFood (potion in combat, food out) and ManaOrDrink (mana potion in combat, water out).
+## Dependencies: AutoPotion
+
+PotionOrFood.lua
