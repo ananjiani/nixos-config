@@ -112,18 +112,18 @@
   };
   wow-atlasloot-forever = {
     pname = "wow-atlasloot-forever";
-    version = "9708/332/AtlasLoot-Classic-Forever-1.4.5-201126-16001.zip";
+    version = "9763/940/AtlasLoot-Classic-Forever-1.4.8-231126-16001.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9708/332/AtlasLoot-Classic-Forever-1.4.5-201126-16001.zip";
-      sha256 = "sha256-yTV+d5t4Xp4luuXZJcLqhugOJMjVOcK/S2V2qU7RFLM=";
+      url = "https://edge.forgecdn.net/files/9763/940/AtlasLoot-Classic-Forever-1.4.8-231126-16001.zip";
+      sha256 = "sha256-DwMFSONh/0y4F5ETFx3bKMSiAqDnAMh6pOYsr7Rfmj8=";
     };
   };
   wow-auto-potion = {
     pname = "wow-auto-potion";
-    version = "9700/638/AutoPotion-4.1.0.zip";
+    version = "9728/791/AutoPotion-4.1.1.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9700/638/AutoPotion-4.1.0.zip";
-      sha256 = "sha256-lNUI3x0OOtgsT4R4PTCaXs2ZnV1rdp8oyzCecRbeHvk=";
+      url = "https://edge.forgecdn.net/files/9728/791/AutoPotion-4.1.1.zip";
+      sha256 = "sha256-PDo9waI7WUwItuO+zozBogC5Na3yIfK94b8oJi9N7qY=";
     };
   };
   wow-bartender4 = {
@@ -176,10 +176,10 @@
   };
   wow-edit-mode-expanded = {
     pname = "wow-edit-mode-expanded";
-    version = "9603/634/EditModeExpanded-12.1-026.zip";
+    version = "9758/714/EditModeExpanded-12.1-027.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9603/634/EditModeExpanded-12.1-026.zip";
-      sha256 = "sha256-AZdG9pWlK2rOGq7XLc42/Js4gXx+a68IEt1rp8JRTn0=";
+      url = "https://edge.forgecdn.net/files/9758/714/EditModeExpanded-12.1-027.zip";
+      sha256 = "sha256-KZ4BH+lA5B/MyhVaeDL2a1Ivk+KhW+DPbUpY+kGbqdY=";
     };
   };
   wow-forever-companion-discovery-journal = {
@@ -192,34 +192,34 @@
   };
   wow-forever-quest-log = {
     pname = "wow-forever-quest-log";
-    version = "9716/117/ForeverQuestLog-0.15.0.zip";
+    version = "9760/510/ForeverQuestLog-0.20.0.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9716/117/ForeverQuestLog-0.15.0.zip";
-      sha256 = "sha256-ztFdMoy7PbLxPdTAtxAFiSnFt+RwLqS8+mhoCXgUR6w=";
+      url = "https://edge.forgecdn.net/files/9760/510/ForeverQuestLog-0.20.0.zip";
+      sha256 = "sha256-6TgFj36IEp8p/3vQQGxokA4/TpWfVUganPdf0m4vRMI=";
     };
   };
   wow-itemtree = {
     pname = "wow-itemtree";
-    version = "9685/220/ItemTree-v1.2.7-forever.zip";
+    version = "9744/134/ItemTree-v1.2.8-forever.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9685/220/ItemTree-v1.2.7-forever.zip";
-      sha256 = "sha256-W4v/D47oWk91kecnytosGG76I8HyIkxhL+bUTQwSG4s=";
+      url = "https://edge.forgecdn.net/files/9744/134/ItemTree-v1.2.8-forever.zip";
+      sha256 = "sha256-9bUhkW2cnKK3aqPSMq/W2Pz1HB9X92avbs15IFuMjys=";
     };
   };
   wow-leatrix-maps = {
     pname = "wow-leatrix-maps";
-    version = "9718/882/Leatrix_Maps-1.60.35-forever.zip";
+    version = "9744/784/Leatrix_Maps-1.60.36-forever.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9718/882/Leatrix_Maps-1.60.35-forever.zip";
-      sha256 = "sha256-bKQI45gZ1hmFItXRLfuC8xAwYY5xgnjBsGNsLT5REcs=";
+      url = "https://edge.forgecdn.net/files/9744/784/Leatrix_Maps-1.60.36-forever.zip";
+      sha256 = "sha256-ofJ3OUuWUyCrLe5I4Q2hnnkGUjKL3o9pJyvstQzN20Y=";
     };
   };
   wow-leatrix-plus = {
     pname = "wow-leatrix-plus";
-    version = "9720/351/Leatrix_Plus-1.60.36-forever.zip";
+    version = "9744/906/Leatrix_Plus-1.60.37-forever.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9720/351/Leatrix_Plus-1.60.36-forever.zip";
-      sha256 = "sha256-iBL2IpGx911Q5zsiUN9YuUHGnYWLqQmpamWZ1LA6apA=";
+      url = "https://edge.forgecdn.net/files/9744/906/Leatrix_Plus-1.60.37-forever.zip";
+      sha256 = "sha256-PeR5o7iEN/7ZQnHwLUa+GlgnR2JWm3mYowHqJWWwJRA=";
     };
   };
   wow-macroforge = {
@@ -232,26 +232,26 @@
   };
   wow-openmap = {
     pname = "wow-openmap";
-    version = "9657/589/OpenMap-v0.8.10-forever.zip";
+    version = "9753/379/OpenMap-v0.8.13-forever.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9657/589/OpenMap-v0.8.10-forever.zip";
-      sha256 = "sha256-t1Zr3AmKWhJ+RxCOx3GrnX1ysBl8jAA5foXo0uvlvx8=";
+      url = "https://edge.forgecdn.net/files/9753/379/OpenMap-v0.8.13-forever.zip";
+      sha256 = "sha256-+WHed1aepA881SODW1OPlcclgrr0RZ007eSvOhMJelg=";
     };
   };
   wow-pawn = {
     pname = "wow-pawn";
-    version = "9722/359/Pawn-2.14.5-Forever.zip";
+    version = "9736/137/Pawn-2.14.8-Forever.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9722/359/Pawn-2.14.5-Forever.zip";
-      sha256 = "sha256-6YBAcJOG1auy60s6DxTDfNL750LIc4WHZCJpCMkhJYA=";
+      url = "https://edge.forgecdn.net/files/9736/137/Pawn-2.14.8-Forever.zip";
+      sha256 = "sha256-tsyhckZhTBKhwk9AT3D3NziXqWzGrH6ksNasO3V2JBk=";
     };
   };
   wow-platynator = {
     pname = "wow-platynator";
-    version = "9717/929/Platynator-549.zip";
+    version = "9735/272/Platynator-550-1-g8af498c.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9717/929/Platynator-549.zip";
-      sha256 = "sha256-zghJq4kSG0czBxGSHGQHP1toluOiHvwilrOjERfEOWk=";
+      url = "https://edge.forgecdn.net/files/9735/272/Platynator-550-1-g8af498c.zip";
+      sha256 = "sha256-qjz/ItPiH6PYqL2Q/kV1WpQ4aE/gI4hw4Z3Tb7k1NTY=";
     };
   };
   wow-procdoc = {
@@ -264,10 +264,10 @@
   };
   wow-spoken-audio-gossip = {
     pname = "wow-spoken-audio-gossip";
-    version = "9602/783/SpokenQuestsAudioGossip-2.7.1.zip";
+    version = "9763/871/SpokenQuestsAudioGossip-2.7.3.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9602/783/SpokenQuestsAudioGossip-2.7.1.zip";
-      sha256 = "sha256-HM9tbrR2NaTztYsPvdR/Ie9pfF+HzDC/1DvQvucH1qk=";
+      url = "https://edge.forgecdn.net/files/9763/871/SpokenQuestsAudioGossip-2.7.3.zip";
+      sha256 = "sha256-8C8noD+pUTlN/YAKpY4cEBslKjoyvVSqAJvUMO7voZ4=";
     };
   };
   wow-spoken-audio-places = {
@@ -280,34 +280,34 @@
   };
   wow-spoken-audio-quests-alliance = {
     pname = "wow-spoken-audio-quests-alliance";
-    version = "9602/705/SpokenQuestsAudioAlliance-2.7.1.zip";
+    version = "9763/845/SpokenQuestsAudioAlliance-2.7.3.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9602/705/SpokenQuestsAudioAlliance-2.7.1.zip";
-      sha256 = "sha256-kGvheR+3s0JA6lWfECdlTmtHRxOKd+GRJQ7ZF9d61Q0=";
+      url = "https://edge.forgecdn.net/files/9763/845/SpokenQuestsAudioAlliance-2.7.3.zip";
+      sha256 = "sha256-9heSQBuMwFm93l/YizL/FPWsvW6ySlcAlOQvV7JbLO8=";
     };
   };
   wow-spoken-audio-quests-horde = {
     pname = "wow-spoken-audio-quests-horde";
-    version = "9602/743/SpokenQuestsAudioHorde-2.7.1.zip";
+    version = "9763/852/SpokenQuestsAudioHorde-2.7.3.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9602/743/SpokenQuestsAudioHorde-2.7.1.zip";
-      sha256 = "sha256-0WVnnTimRpNHZEBBWCr4AmiWIykVStM5KK6xO0PleQ0=";
+      url = "https://edge.forgecdn.net/files/9763/852/SpokenQuestsAudioHorde-2.7.3.zip";
+      sha256 = "sha256-8WATN9j4QpqYVvumm2pWBJCTR6JVcnvpuS2irWCw3I4=";
     };
   };
   wow-spoken-audio-quests-shared = {
     pname = "wow-spoken-audio-quests-shared";
-    version = "9602/751/SpokenQuestsAudioShared-2.7.1.zip";
+    version = "9763/885/SpokenQuestsAudioShared-2.7.3.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9602/751/SpokenQuestsAudioShared-2.7.1.zip";
-      sha256 = "sha256-Xgwu6SQ90HMtlVebMwXzJQ8yXD993A+P93+TMJEFZXU=";
+      url = "https://edge.forgecdn.net/files/9763/885/SpokenQuestsAudioShared-2.7.3.zip";
+      sha256 = "sha256-zaCwL+rbva+0D6IhI5lC+EjD72IkQSr/vGSLF7jhWAg=";
     };
   };
   wow-spoken-audio-readables = {
     pname = "wow-spoken-audio-readables";
-    version = "9411/848/SpokenReadablesAudio-2.3.1.zip";
+    version = "9763/877/SpokenReadablesAudio-2.4.2.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9411/848/SpokenReadablesAudio-2.3.1.zip";
-      sha256 = "sha256-ifOQKlsK62QCYG3TPPF92p0ppwycVBDUnJnCo190yjU=";
+      url = "https://edge.forgecdn.net/files/9763/877/SpokenReadablesAudio-2.4.2.zip";
+      sha256 = "sha256-S18vjlXA+Ubyd/UDgaIePe6Uyuj50cePBIICHSA33a4=";
     };
   };
   wow-total-rp-3 = {
@@ -336,10 +336,10 @@
   };
   wow-wim-3 = {
     pname = "wow-wim-3";
-    version = "9721/125/WIM-3.19.8.zip";
+    version = "9726/631/WIM-3.19.8-1-g1fab027.zip";
     src = fetchurl {
-      url = "https://edge.forgecdn.net/files/9721/125/WIM-3.19.8.zip";
-      sha256 = "sha256-ssnRPJ8sj9G8VTDtt2kEsrBI7YthO7WyhMJnT5XCLMg=";
+      url = "https://edge.forgecdn.net/files/9726/631/WIM-3.19.8-1-g1fab027.zip";
+      sha256 = "sha256-WL/Z+V1RRoEVdhS4f9moXvtS2XOiL8ohSMtIfaU+uug=";
     };
   };
 }
