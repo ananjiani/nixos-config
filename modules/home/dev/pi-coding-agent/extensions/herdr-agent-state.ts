@@ -201,6 +201,9 @@ export default function (pi) {
   }
 
   let agentActive = false;
+  // Local edit: background subagents and processes keep the pane "working".
+  // `herdr integration install pi` overwrites this file and drops it.
+  const backgroundTasks = new Set<string>();
   let blockedCount = 0;
   let blockedMessage: string | undefined;
   let lastState: AgentState | undefined;
@@ -211,7 +214,7 @@ export default function (pi) {
     if (blockedCount > 0) {
       return { state: "blocked" as const, message: blockedMessage };
     }
-    if (agentActive) {
+    if (agentActive || backgroundTasks.size > 0) {
       return { state: "working" as const, message: undefined };
     }
     return { state: "idle" as const, message: undefined };
@@ -244,6 +247,17 @@ export default function (pi) {
     blockedMessage = data.label;
     publishState();
   });
+
+  const trackTask = (key: string, running: boolean) => {
+    if (running) backgroundTasks.add(key);
+    else backgroundTasks.delete(key);
+    if (rootSession) publishState();
+  };
+  pi.events.on("subagents:started", (info) => trackTask(`subagent:${info?.id}`, true));
+  pi.events.on("subagents:completed", (info) => trackTask(`subagent:${info?.id}`, false));
+  pi.events.on("subagents:failed", (info) => trackTask(`subagent:${info?.id}`, false));
+  pi.events.on("processes:started", (info) => trackTask(`process:${info?.id}`, true));
+  pi.events.on("processes:ended", (info) => trackTask(`process:${info?.id}`, false));
 
   pi.on("session_start", async (event, ctx) => {
     if (ctx?.hasUI !== true) {
