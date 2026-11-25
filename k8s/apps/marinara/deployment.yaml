@@ -117,7 +117,7 @@ spec:
                       sleep 1
                     done
         - name: admin-proxy
-          image: caddy:2.11.4-alpine
+          image: caddy:2.11.9-alpine
           ports:
             - name: proxy
               containerPort: 7861
